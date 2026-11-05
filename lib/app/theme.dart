@@ -270,7 +270,7 @@ class AppColorsTheme extends ThemeExtension<AppColorsTheme> {
   final AppColors colors;
 
   static AppColors of(BuildContext context) =>
-      Theme.of(context).extension<AppColorsTheme>()?.colors ?? AppColors.derive(BuiltInThemes.ember);
+      Theme.of(context).extension<AppColorsTheme>()?.colors ?? AppColors.derive(BuiltInThemes.matteBlack);
 
   @override
   AppColorsTheme copyWith({AppColors? colors}) => AppColorsTheme(colors ?? this.colors);

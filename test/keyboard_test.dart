@@ -478,13 +478,13 @@ void main() {
 
       Color panelColour() => tester.widget<Material>(find.ancestor(of: find.byType(TerminalTopRow), matching: find.byType(Material)).first).color!;
 
-      expect(keyColour(), AppColors.derive(BuiltInThemes.ember).raised);
-      expect(panelColour(), AppColors.derive(BuiltInThemes.ember).surface);
-      store.updateSettings(store.settings.copyWith(themeId: BuiltInThemes.paper.id));
+      expect(keyColour(), AppColors.derive(BuiltInThemes.matteBlack).raised);
+      expect(panelColour(), AppColors.derive(BuiltInThemes.matteBlack).surface);
+      store.updateSettings(store.settings.copyWith(themeId: BuiltInThemes.flexokiLight.id));
       await tester.pumpAndSettle();
-      expect(keyColour(), AppColors.derive(BuiltInThemes.paper).raised);
-      expect(panelColour(), AppColors.derive(BuiltInThemes.paper).surface);
-      expect(AppColors.derive(BuiltInThemes.paper).raised, isNot(AppColors.derive(BuiltInThemes.ember).raised));
+      expect(keyColour(), AppColors.derive(BuiltInThemes.flexokiLight).raised);
+      expect(panelColour(), AppColors.derive(BuiltInThemes.flexokiLight).surface);
+      expect(AppColors.derive(BuiltInThemes.flexokiLight).raised, isNot(AppColors.derive(BuiltInThemes.matteBlack).raised));
       await KeyboardFixture.finish(tester, sessions);
     });
 

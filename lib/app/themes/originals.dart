@@ -1,21 +1,23 @@
 import '../theme_spec.dart';
 import '../theme_style.dart';
 
-/// Multiplex's own themes. Ember is the app's signature and keeps its original look.
+/// Multiplex's own looks (shapes, bars, keyboards, backdrops), each on a
+/// real, credited colour scheme read from its published file.
 abstract final class OriginalThemes {
-  static const ember = ThemeSpec(
-    id: 'ember',
-    name: 'Ember',
+  static const matteBlack = ThemeSpec(
+    id: 'matte-black',
+    name: 'Matte Black',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Matte Black from Omarchy (MIT)',
     ansi: [
-      0xFF1B1D1E, 0xFFE0605A, 0xFF8FBF6A, 0xFFE2B65C, 0xFF6B9BD8, 0xFFB78AD6, 0xFF5FB8B2, 0xFFD4D0C8, //
-      0xFF5C6166, 0xFFF07F78, 0xFFA9D88A, 0xFFF3CD7E, 0xFF8DB6EA, 0xFFCDA8E6, 0xFF82D2CC, 0xFFF4F1EA,
+      0xFF121212, 0xFFD35F5F, 0xFFFFC107, 0xFFB91C1C, 0xFFE68E0D, 0xFFD35F5F, 0xFFBEBEBE, 0xFFBEBEBE, //
+      0xFF333333, 0xFFB91C1C, 0xFFFFC107, 0xFFB90A0A, 0xFFF59E0B, 0xFFB91C1C, 0xFFEAEAEA, 0xFFBEBEBE,
     ],
-    foreground: 0xFFE6E1D6,
-    background: 0xFF141618,
-    cursor: 0xFFF2B33D,
-    accent: 0xFFF2B33D,
+    foreground: 0xFFBEBEBE,
+    background: 0xFF121212,
+    cursor: 0xFFBEBEBE,
+    accent: 0xFFE68E0D,
+    selection: 0xFF2A2A2A,
     style: ThemeStyle(
       shape: CornerShape.rounded,
       surface: SurfaceStyle.outlined,
@@ -33,19 +35,20 @@ abstract final class OriginalThemes {
     activeBackground: 2,
   );
 
-  static const slate = ThemeSpec(
-    id: 'slate',
-    name: 'Slate',
+  static const iceberg = ThemeSpec(
+    id: 'iceberg',
+    name: 'Iceberg',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Iceberg by cocopon (MIT)',
     ansi: [
-      0xFF1C2329, 0xFFE06C75, 0xFF7FC08A, 0xFFD9B96B, 0xFF6AA4E0, 0xFFB79BE3, 0xFF5CC4C9, 0xFFC9D1D9, //
-      0xFF4F5B66, 0xFFF08A92, 0xFF9AD9A4, 0xFFEACF86, 0xFF8DBCF0, 0xFFCEB6F0, 0xFF7ED8DC, 0xFFEEF2F5,
+      0xFF1E2132, 0xFFE27878, 0xFFB4BE82, 0xFFE2A478, 0xFF84A0C6, 0xFFA093C7, 0xFF89B8C2, 0xFFC6C8D1, //
+      0xFF6B7089, 0xFFE98989, 0xFFC0CA8E, 0xFFE9B189, 0xFF91ACD1, 0xFFADA0D3, 0xFF95C4CE, 0xFFD2D4DE,
     ],
-    foreground: 0xFFD3DAE1,
-    background: 0xFF111820,
-    cursor: 0xFF7ED8DC,
-    accent: 0xFF7ED8DC,
+    foreground: 0xFFC6C8D1,
+    background: 0xFF161821,
+    cursor: 0xFFC6C8D1,
+    accent: 0xFF84A0C6,
+    selection: 0xFF272C42,
     style: ThemeStyle(
       shape: CornerShape.soft,
       surface: SurfaceStyle.raised,
@@ -61,19 +64,19 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.topo, BackdropPattern.facets],
   );
 
-  static const matte = ThemeSpec(
-    id: 'matte',
-    name: 'Matte',
+  static const oxocarbon = ThemeSpec(
+    id: 'oxocarbon',
+    name: 'Oxocarbon',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Oxocarbon by nyoom-engineering, IBM Carbon colours (MIT)',
     ansi: [
-      0xFF161616, 0xFFD75F5F, 0xFF87AF87, 0xFFD7AF87, 0xFF87AFD7, 0xFFAF87AF, 0xFF87AFAF, 0xFFBCBCBC, //
-      0xFF4E4E4E, 0xFFE07B7B, 0xFFA1C5A1, 0xFFE3C4A0, 0xFFA3C3E3, 0xFFC4A3C4, 0xFFA3C4C4, 0xFFEEEEEE,
+      0xFF161616, 0xFFEE5396, 0xFF42BE65, 0xFFFF7EB6, 0xFF33B1FF, 0xFFBE95FF, 0xFF3DDBD9, 0xFFFFFFFF, //
+      0xFF525252, 0xFFEE5396, 0xFF42BE65, 0xFFFF7EB6, 0xFF33B1FF, 0xFFBE95FF, 0xFF3DDBD9, 0xFFFFFFFF,
     ],
-    foreground: 0xFFD6D6D6,
-    background: 0xFF0B0B0B,
-    cursor: 0xFFEEEEEE,
-    accent: 0xFFD0D0D0,
+    foreground: 0xFFFFFFFF,
+    background: 0xFF1B1B1B,
+    cursor: 0xFF78A9FF,
+    accent: 0xFF33B1FF,
     style: ThemeStyle(
       shape: CornerShape.square,
       surface: SurfaceStyle.flat,
@@ -89,19 +92,20 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.scanlines, BackdropPattern.dots],
   );
 
-  static const phosphor = ThemeSpec(
-    id: 'phosphor',
-    name: 'Phosphor',
+  static const hackerman = ThemeSpec(
+    id: 'hackerman',
+    name: 'Hackerman',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Hackerman from Omarchy (MIT)',
     ansi: [
-      0xFF0B1A0B, 0xFFFF6B4A, 0xFF39FF14, 0xFFD4FF5A, 0xFF5AFFB4, 0xFFB4FF7A, 0xFF7DFFC8, 0xFFA8FFA0, //
-      0xFF2E5A2E, 0xFFFF8F73, 0xFF7CFF5C, 0xFFE8FF8F, 0xFF8FFFCB, 0xFFCCFF9E, 0xFFA6FFDB, 0xFFD9FFD4,
+      0xFF0B0C16, 0xFF50F872, 0xFF4FE88F, 0xFF50F7D4, 0xFF829DD4, 0xFF86A7DF, 0xFF7CF8F7, 0xFFDDF7FF, //
+      0xFF2D3450, 0xFF85FF9D, 0xFF9CF7C2, 0xFFA4FFEC, 0xFFC4D2ED, 0xFFCDDBF4, 0xFFD1FFFE, 0xFFDDF7FF,
     ],
-    foreground: 0xFF4AF626,
-    background: 0xFF050A05,
-    cursor: 0xFF7CFF5C,
-    accent: 0xFF39FF14,
+    foreground: 0xFFDDF7FF,
+    background: 0xFF0B0C16,
+    cursor: 0xFFDDF7FF,
+    accent: 0xFF82FB9C,
+    selection: 0xFF1F253A,
     style: ThemeStyle(
       shape: CornerShape.square,
       surface: SurfaceStyle.outlined,
@@ -117,19 +121,20 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.scanlines, BackdropPattern.stars, BackdropPattern.dots],
   );
 
-  static const espresso = ThemeSpec(
-    id: 'espresso',
-    name: 'Espresso',
+  static const ristretto = ThemeSpec(
+    id: 'ristretto',
+    name: 'Ristretto',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Ristretto from Omarchy (MIT)',
     ansi: [
-      0xFF2B201A, 0xFFD9705A, 0xFFA3B36B, 0xFFE0A85C, 0xFF8FA8C8, 0xFFC48AA3, 0xFF8CBFAF, 0xFFD4C3AE, //
-      0xFF5C4A3E, 0xFFE88E78, 0xFFBCCB88, 0xFFF0C07E, 0xFFABC0DC, 0xFFD8A6BD, 0xFFA8D4C6, 0xFFF5EBDD,
+      0xFF2C2525, 0xFFFD6883, 0xFFADDA78, 0xFFF9CC6C, 0xFFF38D70, 0xFFA8A9EB, 0xFF85DACC, 0xFFE6D9DB, //
+      0xFF72696A, 0xFFFF8297, 0xFFC8E292, 0xFFFCD675, 0xFFF8A788, 0xFFBEBFFD, 0xFF9BF1E1, 0xFFE6D9DB,
     ],
-    foreground: 0xFFE8D9C5,
-    background: 0xFF1E1612,
-    cursor: 0xFFE0A85C,
-    accent: 0xFFD99A5B,
+    foreground: 0xFFE6D9DB,
+    background: 0xFF2C2525,
+    cursor: 0xFFE6D9DB,
+    accent: 0xFFF38D70,
+    selection: 0xFF403E41,
     style: ThemeStyle(
       shape: CornerShape.rounded,
       surface: SurfaceStyle.raised,
@@ -145,19 +150,19 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.mesh, BackdropPattern.topo],
   );
 
-  static const neon = ThemeSpec(
-    id: 'neon',
-    name: 'Neon',
+  static const synthwave84 = ThemeSpec(
+    id: 'synthwave-84',
+    name: 'Synthwave \'84',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Synthwave \'84 by Robb Owen (MIT)',
     ansi: [
-      0xFF141A3A, 0xFFFF3D7F, 0xFF2BFF88, 0xFFFFE53D, 0xFF3DA5FF, 0xFFC63DFF, 0xFF2BF0FF, 0xFFC8D0F0, //
-      0xFF3A4370, 0xFFFF6FA0, 0xFF6BFFAB, 0xFFFFF07A, 0xFF73C0FF, 0xFFD877FF, 0xFF73F6FF, 0xFFFFFFFF,
+      0xFF262335, 0xFFFE4450, 0xFF72F1B8, 0xFFF3E70F, 0xFF03EDF9, 0xFFFF7EDB, 0xFF03EDF9, 0xFFFFFFFF, //
+      0xFF614D85, 0xFFFE4450, 0xFF72F1B8, 0xFFFEDE5D, 0xFF03EDF9, 0xFFFF7EDB, 0xFF03EDF9, 0xFFFFFFFF,
     ],
-    foreground: 0xFFE0E6FF,
-    background: 0xFF0A0E27,
-    cursor: 0xFF2BF0FF,
-    accent: 0xFFFF4FD8,
+    foreground: 0xFFFFFFFF,
+    background: 0xFF262335,
+    cursor: 0xFFFFFFFF,
+    accent: 0xFFFF7EDB,
     style: ThemeStyle(
       shape: CornerShape.round,
       surface: SurfaceStyle.glass,
@@ -173,19 +178,19 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.stars, BackdropPattern.mesh, BackdropPattern.facets],
   );
 
-  static const mono = ThemeSpec(
-    id: 'mono',
-    name: 'Mono',
+  static const vesper = ThemeSpec(
+    id: 'vesper',
+    name: 'Vesper',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Vesper by Rauno Freiberg (MIT)',
     ansi: [
-      0xFF1C1C1C, 0xFF8A8A8A, 0xFFB0B0B0, 0xFFC8C8C8, 0xFF9E9E9E, 0xFF767676, 0xFFBEBEBE, 0xFFD6D6D6, //
-      0xFF4A4A4A, 0xFFA0A0A0, 0xFFC2C2C2, 0xFFDADADA, 0xFFB4B4B4, 0xFF8C8C8C, 0xFFD0D0D0, 0xFFF5F5F5,
+      0xFF101010, 0xFFF5A191, 0xFF90B99F, 0xFFE6B99D, 0xFFACA1CF, 0xFFE29ECA, 0xFFEA83A5, 0xFFA0A0A0, //
+      0xFF7E7E7E, 0xFFFF8080, 0xFF99FFE4, 0xFFFFC799, 0xFFB9AEDA, 0xFFECAAD6, 0xFFF591B2, 0xFFFFFFFF,
     ],
-    foreground: 0xFFE4E4E4,
-    background: 0xFF121212,
-    cursor: 0xFFF5F5F5,
-    accent: 0xFFF0F0F0,
+    foreground: 0xFFFFFFFF,
+    background: 0xFF101010,
+    cursor: 0xFFFFFFFF,
+    accent: 0xFFFFC799,
     style: ThemeStyle(
       shape: CornerShape.soft,
       surface: SurfaceStyle.outlined,
@@ -201,19 +206,19 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.dots, BackdropPattern.scanlines],
   );
 
-  static const contrast = ThemeSpec(
-    id: 'contrast',
-    name: 'High contrast',
+  static const githubHighContrast = ThemeSpec(
+    id: 'github-dark-high-contrast',
+    name: 'GitHub High Contrast',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'GitHub Dark High Contrast, Primer colours (MIT)',
     ansi: [
-      0xFF000000, 0xFFFF5555, 0xFF55FF55, 0xFFFFFF55, 0xFF5599FF, 0xFFFF55FF, 0xFF55FFFF, 0xFFE5E5E5, //
-      0xFF7F7F7F, 0xFFFF8080, 0xFF80FF80, 0xFFFFFF80, 0xFF80B3FF, 0xFFFF80FF, 0xFF80FFFF, 0xFFFFFFFF,
+      0xFF7A828E, 0xFFFF9492, 0xFF26CD4D, 0xFFF0B72F, 0xFF71B7FF, 0xFFCB9EFF, 0xFF39C5CF, 0xFFD9DEE3, //
+      0xFF9EA7B3, 0xFFFFB1AF, 0xFF4AE168, 0xFFF7C843, 0xFF91CBFF, 0xFFCB9EFF, 0xFF39C5CF, 0xFFD9DEE3,
     ],
-    foreground: 0xFFFFFFFF,
-    background: 0xFF000000,
-    cursor: 0xFFFFD000,
-    accent: 0xFFFFD000,
+    foreground: 0xFFF0F3F6,
+    background: 0xFF0A0C10,
+    cursor: 0xFFF0F3F6,
+    accent: 0xFF71B7FF,
     style: ThemeStyle(
       shape: CornerShape.square,
       surface: SurfaceStyle.flat,
@@ -229,19 +234,19 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.dots, BackdropPattern.scanlines],
   );
 
-  static const paper = ThemeSpec(
-    id: 'paper',
-    name: 'Paper',
+  static const flexokiLight = ThemeSpec(
+    id: 'flexoki-light',
+    name: 'Flexoki Light',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Flexoki by Steph Ango (MIT)',
     ansi: [
-      0xFF2B2B2B, 0xFFB3261E, 0xFF3C7A2A, 0xFF8A6200, 0xFF2556A8, 0xFF7B3FA0, 0xFF1C7A78, 0xFFBDB8AE, //
-      0xFF6B6B6B, 0xFFD0453C, 0xFF4F9A3A, 0xFFA87A10, 0xFF3A6FC8, 0xFF9658BF, 0xFF2A9693, 0xFFE8E4DA,
+      0xFF100F0F, 0xFFD14D41, 0xFF879A39, 0xFFD0A215, 0xFF4385BE, 0xFFCE5D97, 0xFF3AA99F, 0xFFFFFCF0, //
+      0xFF100F0F, 0xFFD14D41, 0xFF879A39, 0xFFD0A215, 0xFF4385BE, 0xFFCE5D97, 0xFF3AA99F, 0xFFFFFCF0,
     ],
-    foreground: 0xFF24262A,
-    background: 0xFFF6F3EC,
-    cursor: 0xFFA9670F,
-    accent: 0xFFA9670F,
+    foreground: 0xFF100F0F,
+    background: 0xFFFFFCF0,
+    cursor: 0xFF100F0F,
+    accent: 0xFF4385BE,
     style: ThemeStyle(
       shape: CornerShape.soft,
       surface: SurfaceStyle.outlined,
@@ -257,19 +262,20 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.dots, BackdropPattern.topo],
   );
 
-  static const pastel = ThemeSpec(
-    id: 'pastel',
-    name: 'Pastel',
+  static const rosePineDawn = ThemeSpec(
+    id: 'rose-pine-dawn',
+    name: 'Rosé Pine Dawn',
     builtIn: true,
-    credit: 'Multiplex',
+    credit: 'Rosé Pine (MIT)',
     ansi: [
-      0xFF4A4458, 0xFFC24F66, 0xFF3E8A5B, 0xFF9A6C14, 0xFF4A6FBF, 0xFF9555B0, 0xFF2E8585, 0xFFC9C2D6, //
-      0xFF7A7290, 0xFFD9788C, 0xFF5FA57B, 0xFFB88B32, 0xFF6E8CD4, 0xFFAF7AC6, 0xFF4FA3A3, 0xFFEDE8F5,
+      0xFFF2E9E1, 0xFFB4637A, 0xFF286983, 0xFFEA9D34, 0xFF56949F, 0xFF907AA9, 0xFFD7827E, 0xFF575279, //
+      0xFF9893A5, 0xFFB4637A, 0xFF286983, 0xFFEA9D34, 0xFF56949F, 0xFF907AA9, 0xFFD7827E, 0xFF575279,
     ],
-    foreground: 0xFF4A4458,
-    background: 0xFFFBF7FF,
-    cursor: 0xFF9555B0,
-    accent: 0xFF8A63D2,
+    foreground: 0xFF575279,
+    background: 0xFFFAF4ED,
+    cursor: 0xFFCECACD,
+    accent: 0xFF907AA9,
+    selection: 0xFFDFDAD9,
     style: ThemeStyle(
       shape: CornerShape.round,
       surface: SurfaceStyle.raised,
@@ -285,5 +291,5 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.mesh, BackdropPattern.facets],
   );
 
-  static const all = [ember, slate, matte, phosphor, espresso, neon, mono, contrast, paper, pastel];
+  static const all = [matteBlack, iceberg, oxocarbon, hackerman, ristretto, synthwave84, vesper, githubHighContrast, flexokiLight, rosePineDawn];
 }

@@ -58,7 +58,7 @@ class VaultStore extends ChangeNotifier {
   /// The theme in use. Falls back to the default if it was deleted.
   ThemeSpec get activeTheme => themeById(_doc.settings.themeId);
 
-  ThemeSpec themeById(String id) => _find(allThemes, (t) => t.id == id) ?? BuiltInThemes.ember;
+  ThemeSpec themeById(String id) => _find(allThemes, (t) => t.id == id) ?? BuiltInThemes.matteBlack;
 
   Host? host(String? id) => _find(_doc.hosts, (h) => h.id == id);
   StoredKey? key(String? id) => _find(_doc.keys, (k) => k.id == id);

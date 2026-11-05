@@ -12,8 +12,13 @@ void main() {
   });
 
   test("the theme's own text colour is kept when it reads well enough", () {
-    final look = SelectionLook.of(BuiltInThemes.ember);
-    expect(look.text, Color(BuiltInThemes.ember.foreground));
+    final look = SelectionLook.of(BuiltInThemes.matteBlack);
+    expect(look.text, Color(BuiltInThemes.matteBlack.foreground));
+  });
+
+  test("a scheme's own selection colour is used as it is", () {
+    expect(SelectionLook.of(BuiltInThemes.matteBlack).fill, const Color(0xFF2A2A2A));
+    expect(SelectionLook.of(BuiltInThemes.nightOwl).fill, const Color(0xFF0D486E));
   });
 
   test('falls back to white or black when no theme colour reads', () {

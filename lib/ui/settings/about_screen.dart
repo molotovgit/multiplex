@@ -15,8 +15,8 @@ abstract final class AboutFacts {
   static const sourceUrl = 'https://$sourceAddress';
 
   /// Where the colours of the popular themes were read from.
-  static const themeSource = 'The colours of the popular schemes were read from the alacritty-theme collection (Apache-2.0). '
-      'Each scheme keeps its own licence, named below.';
+  static const themeSource = 'The colours of the schemes were read from the alacritty-theme collection (Apache-2.0) '
+      'and from Omarchy (MIT). Each scheme keeps its own licence, named below.';
 }
 
 /// Reads the native core's version. A class so tests can swap it.

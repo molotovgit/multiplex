@@ -136,7 +136,7 @@ class AppStyleTheme extends ThemeExtension<AppStyleTheme> {
   final SurfaceLook surfaces;
 
   static AppStyleTheme of(BuildContext context) =>
-      Theme.of(context).extension<AppStyleTheme>() ?? AppStyleTheme(const ThemeStyle(), AppColors.derive(BuiltInThemes.ember));
+      Theme.of(context).extension<AppStyleTheme>() ?? AppStyleTheme(const ThemeStyle(), AppColors.derive(BuiltInThemes.matteBlack));
 
   @override
   AppStyleTheme copyWith() => this;

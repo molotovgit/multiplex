@@ -33,7 +33,7 @@ class Harness {
     await tester.pumpWidget(AppScope(
       vault: store,
       manager: sessions,
-      child: MaterialApp(theme: AppTheme.build(BuiltInThemes.ember), home: home()),
+      child: MaterialApp(theme: AppTheme.build(BuiltInThemes.matteBlack), home: home()),
     ));
     await tester.pumpAndSettle();
     return Harness(store, sessions);

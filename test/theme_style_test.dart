@@ -44,7 +44,7 @@ void main() {
       expect(d.keys.cap, KeyCapStyle.raised);
       expect(d.keys.gap, 4);
       expect(d.keys.labelFont, KeyLabelFont.app);
-      expect(BuiltInThemes.ember.style, d);
+      expect(BuiltInThemes.matteBlack.style, d);
     });
 
     test('every field survives a JSON round trip', () {
@@ -83,7 +83,7 @@ void main() {
     });
 
     test('a theme keeps its picture list; unsafe names are dropped', () {
-      final mine = BuiltInThemes.ember.copyWith(id: 'mine', backgrounds: ['a.jpg', 'b.png', 'c.webp'], backdrops: const [], activeBackground: 2);
+      final mine = BuiltInThemes.matteBlack.copyWith(id: 'mine', backgrounds: ['a.jpg', 'b.png', 'c.webp'], backdrops: const [], activeBackground: 2);
       final back = ThemeSpec.fromJson(mine.toJson());
       expect(back.backgrounds, ['a.jpg', 'b.png', 'c.webp']);
       expect(back.currentSlide, const PictureSlide('c.webp'));
@@ -92,7 +92,7 @@ void main() {
       // Clamped to the last step, the plain colour after the one picture.
       expect(odd.activeBackground, 1);
       expect(odd.currentSlide, isNull);
-      expect(BuiltInThemes.ember.copyWith(backdrops: const []).currentSlide, isNull);
+      expect(BuiltInThemes.matteBlack.copyWith(backdrops: const []).currentSlide, isNull);
       // A new list starts at its first picture.
       expect(back.copyWith(backgrounds: ['z.png']).activeBackground, 0);
     });
@@ -103,7 +103,7 @@ void main() {
     });
 
     test('themes carry their style through JSON, copies and export and import', () {
-      final mine = BuiltInThemes.ember.copyWith(id: 'mine', name: 'Mine', style: _Styles.everything);
+      final mine = BuiltInThemes.matteBlack.copyWith(id: 'mine', name: 'Mine', style: _Styles.everything);
       expect(ThemeSpec.fromJson(mine.toJson()).style, _Styles.everything);
       expect(mine.copyWith(name: 'Other').style, _Styles.everything);
       final imported = ThemeImporter().read(ThemeExport.json(mine.copyWith(backgrounds: ['a.jpg'])));
@@ -116,8 +116,8 @@ void main() {
     test('several built-in themes have a look of their own', () {
       final looks = {for (final t in BuiltInThemes.all) t.style};
       expect(looks.length, greaterThanOrEqualTo(5));
-      expect(BuiltInThemes.contrast.style.shape, CornerShape.square);
-      expect(BuiltInThemes.contrast.style.surface, SurfaceStyle.flat);
+      expect(BuiltInThemes.githubHighContrast.style.shape, CornerShape.square);
+      expect(BuiltInThemes.githubHighContrast.style.surface, SurfaceStyle.flat);
       expect(BuiltInThemes.catppuccinMocha.style.shape, CornerShape.round);
       expect(BuiltInThemes.catppuccinMocha.style.surface, SurfaceStyle.raised);
       expect(BuiltInThemes.tokyoNight.style.nav, NavStyle.floating);
@@ -126,13 +126,13 @@ void main() {
   });
 
   group('material theme', () {
-    ThemeData build(ThemeStyle style) => AppTheme.build(BuiltInThemes.ember.copyWith(style: style));
+    ThemeData build(ThemeStyle style) => AppTheme.build(BuiltInThemes.matteBlack.copyWith(style: style));
     RoundedRectangleBorder cardShape(ThemeData t) => t.cardTheme.shape! as RoundedRectangleBorder;
 
     test('the default style keeps the original card, field and button shapes', () {
       final t = build(const ThemeStyle());
       expect(cardShape(t).borderRadius, BorderRadius.circular(14));
-      expect(cardShape(t).side.color, AppColors.derive(BuiltInThemes.ember).outline);
+      expect(cardShape(t).side.color, AppColors.derive(BuiltInThemes.matteBlack).outline);
       expect((t.inputDecorationTheme.border! as OutlineInputBorder).borderRadius, BorderRadius.circular(10));
       // Normal density leaves Material's own choice for the platform.
       expect(t.visualDensity, ThemeData(useMaterial3: true).visualDensity);

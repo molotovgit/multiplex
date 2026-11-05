@@ -5,8 +5,8 @@ import 'theme_spec.dart';
 /// How selected terminal text looks in a theme: a solid fill, and one text
 /// colour that reads on it.
 ///
-/// The fill is the theme's selection colour (or its accent) at a little
-/// under half strength over the background. Drawing the selected text in its
+/// The fill is the scheme's own selection colour, or else its accent at a
+/// little under half strength over the background. Drawing the selected text in its
 /// own colours would leave some of them unreadable, for example a grey
 /// "magenta" on a grey fill, so all selected text takes one colour: the
 /// theme's text colour when it reads well enough, otherwise its background,
@@ -16,12 +16,15 @@ class SelectionLook {
 
   factory SelectionLook.of(ThemeSpec theme) {
     final background = Color(theme.background);
-    final tint = Color(theme.selection ?? theme.accent).withValues(alpha: strength);
-    final fill = Color.alphaBlend(tint, background);
+    // A scheme's own selection colour is made to be used as it is; the
+    // accent is far too strong, so it is laid over the background lightly.
+    final own = theme.selection;
+    final fill = own != null ? Color(own).withValues(alpha: 1) : Color.alphaBlend(Color(theme.accent).withValues(alpha: strength), background);
     return SelectionLook(fill: fill, text: readableOn(fill, [Color(theme.foreground), background]));
   }
 
-  /// How much of the selection colour shows over the background.
+  /// How much of the accent shows over the background when the scheme has
+  /// no selection colour of its own.
   static const strength = 0.45;
 
   /// The contrast selected text keeps at least (WCAG AA for normal text).

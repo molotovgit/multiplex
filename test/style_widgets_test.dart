@@ -43,7 +43,7 @@ class _Harness {
     store = await VaultStore.open(MemoryBackend());
     sessions = SessionManager(store);
     if (style != null) {
-      store.saveTheme(BuiltInThemes.ember.copyWith(id: 'styled', name: 'Styled', style: style));
+      store.saveTheme(BuiltInThemes.matteBlack.copyWith(id: 'styled', name: 'Styled', style: style));
       store.updateSettings(store.settings.copyWith(themeId: 'styled'));
     }
     await tester.pumpWidget(
@@ -164,7 +164,7 @@ void main() {
     Future<void> pump(WidgetTester tester, String? picture, {double dim = 0.4, double blur = 0}) async {
       await tester.pumpWidget(MaterialApp(
         home: ThemeBackdrop(
-          theme: BuiltInThemes.ember.copyWith(id: 'pack'),
+          theme: BuiltInThemes.matteBlack.copyWith(id: 'pack'),
           slide: picture == null ? null : PictureSlide(picture),
           color: const Color(0xFF101010),
           dim: dim,
@@ -254,9 +254,9 @@ void main() {
       await tester.pumpAndSettle();
       final copy = h.store.activeTheme;
       expect(copy.builtIn, isFalse);
-      expect(copy.name, 'Ember copy');
+      expect(copy.name, 'Matte Black copy');
       expect(copy.style.shape, CornerShape.square);
-      expect(BuiltInThemes.ember.style.shape, CornerShape.rounded);
+      expect(BuiltInThemes.matteBlack.style.shape, CornerShape.rounded);
       // Further changes update the copy instead of making more.
       await scrollTo(tester, chip('Floating bar'));
       await tester.tap(chip('Floating bar').first);
@@ -269,7 +269,7 @@ void main() {
 
     testWidgets('the theme editor saves every style control with the theme', (tester) async {
       final h = _Harness();
-      final draft = BuiltInThemes.ember.copyWith(id: 'draft', name: 'Draft');
+      final draft = BuiltInThemes.matteBlack.copyWith(id: 'draft', name: 'Draft');
       await h.open(tester, home: ThemeEditorScreen(theme: draft, isNew: true));
       await scrollTo(tester, chip('Wide'));
       await tester.tap(chip('Wide').first);

@@ -36,7 +36,7 @@ class CustomFont {
 /// User preferences. Saved inside the vault with everything else.
 class AppSettings {
   const AppSettings({
-    this.themeId = 'ember',
+    this.themeId = 'matte-black',
     this.terminalFontId = 'jetbrains',
     this.fontSize = 14,
     this.lineHeight = 1.2,
@@ -163,7 +163,7 @@ class AppSettings {
   factory AppSettings.fromJson(Map<String, dynamic> j) {
     double number(String key, double fallback) => j[key] is num ? (j[key] as num).toDouble() : fallback;
     return AppSettings(
-      themeId: Json.str(j, 'themeId', 'ember'),
+      themeId: Json.str(j, 'themeId', 'matte-black'),
       terminalFontId: Json.str(j, 'terminalFontId', 'jetbrains'),
       fontSize: number('fontSize', 14).clamp(minFontSize, maxFontSize),
       lineHeight: number('lineHeight', 1.2).clamp(minLineHeight, maxLineHeight),

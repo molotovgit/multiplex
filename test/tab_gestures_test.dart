@@ -16,7 +16,7 @@ Future<(VaultStore, SessionManager)> _open(WidgetTester tester, {ThemeStyle styl
   addTearDown(tester.view.reset);
   final store = await VaultStore.open(MemoryBackend());
   final sessions = SessionManager(store);
-  store.saveTheme(BuiltInThemes.ember.copyWith(id: 'styled', name: 'Styled', style: style));
+  store.saveTheme(BuiltInThemes.matteBlack.copyWith(id: 'styled', name: 'Styled', style: style));
   store.updateSettings(store.settings.copyWith(themeId: 'styled'));
   await tester.pumpWidget(MultiplexApp(store: store, sessions: sessions));
   await tester.pumpAndSettle();

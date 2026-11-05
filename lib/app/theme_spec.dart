@@ -197,16 +197,16 @@ class ThemeSpec {
 /// full look of its own (see [ThemeSpec.style]) and backdrops drawn from
 /// its colours.
 abstract final class BuiltInThemes {
-  static const ember = OriginalThemes.ember;
-  static const slate = OriginalThemes.slate;
-  static const matte = OriginalThemes.matte;
-  static const phosphor = OriginalThemes.phosphor;
-  static const espresso = OriginalThemes.espresso;
-  static const neon = OriginalThemes.neon;
-  static const mono = OriginalThemes.mono;
-  static const contrast = OriginalThemes.contrast;
-  static const paper = OriginalThemes.paper;
-  static const pastel = OriginalThemes.pastel;
+  static const matteBlack = OriginalThemes.matteBlack;
+  static const iceberg = OriginalThemes.iceberg;
+  static const oxocarbon = OriginalThemes.oxocarbon;
+  static const hackerman = OriginalThemes.hackerman;
+  static const ristretto = OriginalThemes.ristretto;
+  static const synthwave84 = OriginalThemes.synthwave84;
+  static const vesper = OriginalThemes.vesper;
+  static const githubHighContrast = OriginalThemes.githubHighContrast;
+  static const flexokiLight = OriginalThemes.flexokiLight;
+  static const rosePineDawn = OriginalThemes.rosePineDawn;
   static const tokyoNight = DarkThemes.tokyoNight;
   static const catppuccinMocha = DarkThemes.catppuccinMocha;
   static const gruvboxDark = DarkThemes.gruvboxDark;
@@ -226,5 +226,5 @@ abstract final class BuiltInThemes {
 
   static const all = [...OriginalThemes.all, ...DarkThemes.all, ...LightThemes.all];
 
-  static const defaultId = 'ember';
+  static const defaultId = 'matte-black';
 }

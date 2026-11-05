@@ -220,7 +220,7 @@ void main() {
               SizedBox(width: 160, height: 100, child: ThemePreview(theme: BuiltInThemes.nord)),
               SizedBox(
                 width: 200,
-                child: ThemePreview(theme: BuiltInThemes.paper, fontSize: 28, lineHeight: 1.6, cursorStyle: CursorStyle.underline),
+                child: ThemePreview(theme: BuiltInThemes.flexokiLight, fontSize: 28, lineHeight: 1.6, cursorStyle: CursorStyle.underline),
               ),
             ],
           ),
@@ -240,15 +240,15 @@ void main() {
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
 
-        await tester.tap(find.text('Slate'));
+        await tester.tap(find.text('Iceberg'));
         await tester.pumpAndSettle();
-        expect(store.settings.themeId, BuiltInThemes.slate.id);
-        expect(find.text('Slate applied'), findsOneWidget);
-        expect(find.bySemanticsLabel('Slate theme, selected'), findsOneWidget);
+        expect(store.settings.themeId, BuiltInThemes.iceberg.id);
+        expect(find.text('Iceberg applied'), findsOneWidget);
+        expect(find.bySemanticsLabel('Iceberg theme, selected'), findsOneWidget);
         semantics.dispose();
         final active = find.byWidgetPredicate((w) => w is ThemeCard && w.active);
         expect(active, findsOneWidget);
-        expect(tester.widget<ThemeCard>(active).theme.id, BuiltInThemes.slate.id);
+        expect(tester.widget<ThemeCard>(active).theme.id, BuiltInThemes.iceberg.id);
 
         // The rest of the page lays out without overflowing.
         await scrollTo(tester, 'Your themes');
@@ -331,7 +331,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(store.customThemes, hasLength(1));
       final saved = store.customThemes.single;
-      expect(saved.name, '${BuiltInThemes.ember.name} copy');
+      expect(saved.name, '${BuiltInThemes.matteBlack.name} copy');
       expect(saved.background, 0xFFE6E1D6);
       expect(store.settings.themeId, saved.id);
       await finish(tester);

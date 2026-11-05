@@ -118,9 +118,9 @@ void main() {
     await tester.longPress(find.descendant(of: find.byType(NavigationBar), matching: find.text('Settings')));
     await tester.pumpAndSettle();
     expect(find.text('Switch theme'), findsOneWidget);
-    await tester.tap(find.text('Slate'));
+    await tester.tap(find.text('Iceberg'));
     await tester.pumpAndSettle();
-    expect(app.store.activeTheme.id, BuiltInThemes.slate.id);
+    expect(app.store.activeTheme.id, BuiltInThemes.iceberg.id);
     expect(find.text('Switch theme'), findsOneWidget);
     // A long press elsewhere on the bar does not open it again or change place.
     await tester.tap(find.byTooltip('Close'));
@@ -181,7 +181,7 @@ void main() {
 
   testWidgets('Edit as text shows problems by line and saves once they are fixed', (tester) async {
     final app = _App();
-    final theme = BuiltInThemes.ember.copyWith(id: 'mine', name: 'Mine');
+    final theme = BuiltInThemes.matteBlack.copyWith(id: 'mine', name: 'Mine');
     await app.open(tester, home: ThemeTextEditorScreen(theme: theme, isNew: true, pictures: const {}));
     final field = find.byType(TextField);
     final text = tester.widget<TextField>(field).controller!.text;
