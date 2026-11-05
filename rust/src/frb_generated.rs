@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 620543476;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1108173549;
 
 // Section: executor
 
@@ -119,6 +119,38 @@ fn wire__crate__api__vault__backup_seal_impl(
                     })()
                     .await,
                 )
+            }
+        },
+    )
+}
+fn wire__crate__api__ssh_types__credentials_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "credentials_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Ok::<_, ()>(crate::api::ssh_types::Credentials::default())?;
+                    std::result::Result::Ok(output_ok)
+                })())
             }
         },
     )
@@ -328,6 +360,38 @@ fn wire__crate__api__terminal_types__terminal_palette_default_impl(
         },
     )
 }
+fn wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "tunnel_stats_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Ok::<_, ()>(crate::api::tunnel_types::TunnelStats::default())?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__vault__vault_load_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -459,6 +523,20 @@ impl SseDecode for bool {
     }
 }
 
+impl SseDecode for crate::api::ssh_types::Credentials {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_password = <Option<String>>::sse_decode(deserializer);
+        let mut var_privateKey = <Option<String>>::sse_decode(deserializer);
+        let mut var_keyPassphrase = <Option<String>>::sse_decode(deserializer);
+        return crate::api::ssh_types::Credentials {
+            password: var_password,
+            private_key: var_privateKey,
+            key_passphrase: var_keyPassphrase,
+        };
+    }
+}
+
 impl SseDecode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -567,10 +645,33 @@ impl SseDecode for crate::api::terminal_types::TerminalPalette {
     }
 }
 
+impl SseDecode for crate::api::tunnel_types::TunnelStats {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_connectionsTotal = <u64>::sse_decode(deserializer);
+        let mut var_connectionsActive = <u32>::sse_decode(deserializer);
+        let mut var_bytesSent = <u64>::sse_decode(deserializer);
+        let mut var_bytesReceived = <u64>::sse_decode(deserializer);
+        return crate::api::tunnel_types::TunnelStats {
+            connections_total: var_connectionsTotal,
+            connections_active: var_connectionsActive,
+            bytes_sent: var_bytesSent,
+            bytes_received: var_bytesReceived,
+        };
+    }
+}
+
 impl SseDecode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap()
     }
 }
 
@@ -597,22 +698,31 @@ fn pde_ffi_dispatcher_primary_impl(
     match func_id {
         1 => wire__crate__api__vault__backup_open_impl(port, ptr, rust_vec_len, data_len),
         2 => wire__crate__api__vault__backup_seal_impl(port, ptr, rust_vec_len, data_len),
-        3 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__terminal_types__key_modifiers_default_impl(
+        3 => {
+            wire__crate__api__ssh_types__credentials_default_impl(port, ptr, rust_vec_len, data_len)
+        }
+        4 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
+        5 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__terminal_types__key_modifiers_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        8 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        9 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        11 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -625,15 +735,37 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        6 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
 
 // Section: rust2dart
 
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::ssh_types::Credentials {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.password.into_into_dart().into_dart(),
+            self.private_key.into_into_dart().into_dart(),
+            self.key_passphrase.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::ssh_types::Credentials
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::ssh_types::Credentials>
+    for crate::api::ssh_types::Credentials
+{
+    fn into_into_dart(self) -> crate::api::ssh_types::Credentials {
+        self
+    }
+}
 // Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::keys::KeyKind {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
@@ -720,6 +852,29 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::terminal_types::TerminalPalet
         self
     }
 }
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::tunnel_types::TunnelStats {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.connections_total.into_into_dart().into_dart(),
+            self.connections_active.into_into_dart().into_dart(),
+            self.bytes_sent.into_into_dart().into_dart(),
+            self.bytes_received.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::tunnel_types::TunnelStats
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::tunnel_types::TunnelStats>
+    for crate::api::tunnel_types::TunnelStats
+{
+    fn into_into_dart(self) -> crate::api::tunnel_types::TunnelStats {
+        self
+    }
+}
 
 impl SseEncode for flutter_rust_bridge::for_generated::anyhow::Error {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -739,6 +894,15 @@ impl SseEncode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u8(self as _).unwrap();
+    }
+}
+
+impl SseEncode for crate::api::ssh_types::Credentials {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<String>>::sse_encode(self.password, serializer);
+        <Option<String>>::sse_encode(self.private_key, serializer);
+        <Option<String>>::sse_encode(self.key_passphrase, serializer);
     }
 }
 
@@ -829,10 +993,27 @@ impl SseEncode for crate::api::terminal_types::TerminalPalette {
     }
 }
 
+impl SseEncode for crate::api::tunnel_types::TunnelStats {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.connections_total, serializer);
+        <u32>::sse_encode(self.connections_active, serializer);
+        <u64>::sse_encode(self.bytes_sent, serializer);
+        <u64>::sse_encode(self.bytes_received, serializer);
+    }
+}
+
 impl SseEncode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u64::<NativeEndian>(self).unwrap();
     }
 }
 

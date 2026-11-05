@@ -7,7 +7,9 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/keys.dart';
+import 'api/ssh_types.dart';
 import 'api/terminal_types.dart';
+import 'api/tunnel_types.dart';
 import 'api/vault.dart';
 
 import 'dart:async';
@@ -33,6 +35,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool dco_decode_bool(dynamic raw);
+
+  @protected
+  Credentials dco_decode_credentials(dynamic raw);
 
   @protected
   int dco_decode_i_32(dynamic raw);
@@ -62,7 +67,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TerminalPalette dco_decode_terminal_palette(dynamic raw);
 
   @protected
+  TunnelStats dco_decode_tunnel_stats(dynamic raw);
+
+  @protected
   int dco_decode_u_32(dynamic raw);
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -78,6 +89,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  Credentials sse_decode_credentials(SseDeserializer deserializer);
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
@@ -107,7 +121,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TerminalPalette sse_decode_terminal_palette(SseDeserializer deserializer);
 
   @protected
+  TunnelStats sse_decode_tunnel_stats(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer);
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -126,6 +146,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_credentials(Credentials self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
@@ -164,7 +187,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_tunnel_stats(TunnelStats self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
