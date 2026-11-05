@@ -80,7 +80,8 @@ class MonoText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = AppScope.store(context).settings;
+    // watch: a new terminal font shows up here straight away.
+    final settings = AppScope.watch(context).settings;
     final family = TerminalFonts.byId(settings, settings.terminalFontId).family;
     final base = (style ?? Theme.of(context).textTheme.bodyMedium)?.copyWith(fontFamily: family, letterSpacing: 0);
     if (selectable) return SelectableText(text, style: base, maxLines: maxLines);
