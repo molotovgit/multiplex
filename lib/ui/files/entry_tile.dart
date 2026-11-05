@@ -20,13 +20,7 @@ enum EntryAction {
 
   /// Folders cannot be downloaded (only single files can), and neither can
   /// devices or sockets.
-  static List<EntryAction> forEntry(RemoteEntry entry) => [
-    rename,
-    permissions,
-    copyPath,
-    if (!entry.isDir && entry.kind != EntryKind.other) download,
-    delete,
-  ];
+  static List<EntryAction> forEntry(RemoteEntry entry) => [rename, permissions, copyPath, if (!entry.isDir && entry.kind != EntryKind.other) download, delete];
 }
 
 /// The icon for an entry: folder, file, link to a folder, link, or other.
@@ -77,14 +71,14 @@ class EntryDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
     final small = Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.muted);
-    final parts = [
-      if (entry.kind == EntryKind.file) FileSizes.human(entry.size),
-      if (entry.modified != null) FileDates.short(entry.modified),
-    ];
-    return Row(
+    final parts = [if (entry.kind == EntryKind.file) FileSizes.human(entry.size), if (entry.modified != null) FileDates.short(entry.modified)];
+    // A Wrap, not a Row: with large text the permissions move to their
+    // own line instead of running off the edge.
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
       children: [
-        Flexible(child: Text(parts.join('  ·  '), style: small, maxLines: 1, overflow: TextOverflow.ellipsis)),
-        const SizedBox(width: 12),
+        if (parts.isNotEmpty) Text(parts.join('  ·  '), style: small, maxLines: 1, overflow: TextOverflow.ellipsis),
         MonoText(FileModes.describe(entry.permissions, entry.kind), style: small, maxLines: 1),
       ],
     );
@@ -121,13 +115,7 @@ class EntryTile extends StatelessWidget {
               tooltip: 'More actions for ${entry.name}',
               icon: const Icon(Icons.more_vert),
               onSelected: onAction,
-              itemBuilder: (context) => [
-                for (final action in EntryAction.forEntry(entry))
-                  PopupMenuItem(
-                    value: action,
-                    child: _ActionLabel(action),
-                  ),
-              ],
+              itemBuilder: (context) => [for (final action in EntryAction.forEntry(entry)) PopupMenuItem(value: action, child: _ActionLabel(action))],
             )
           : null,
     );
@@ -140,39 +128,41 @@ class EntryActionSheet extends StatelessWidget {
 
   final RemoteEntry entry;
 
-  static Future<EntryAction?> show(BuildContext context, RemoteEntry entry) =>
-      showModalBottomSheet<EntryAction>(context: context, builder: (_) => EntryActionSheet(entry: entry));
+  static Future<EntryAction?> show(BuildContext context, RemoteEntry entry) => showModalBottomSheet<EntryAction>(
+    context: context,
+    builder: (_) => EntryActionSheet(entry: entry),
+  );
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
+    // Scrolls when large text makes the list taller than the sheet.
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-            child: Row(
-              children: [
-                EntryIcon(entry),
-                const SizedBox(width: 16),
-                Expanded(child: MonoText(entry.name, maxLines: 1, style: Theme.of(context).textTheme.titleSmall)),
-              ],
-            ),
-          ),
-          const Divider(),
-          for (final action in EntryAction.forEntry(entry))
-            ListTile(
-              leading: Icon(action.icon, color: action == EntryAction.delete ? colors.danger : null),
-              title: Text(
-                action.label,
-                style: action == EntryAction.delete ? Theme.of(context).textTheme.bodyLarge?.copyWith(color: colors.danger) : null,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: Row(
+                children: [
+                  EntryIcon(entry),
+                  const SizedBox(width: 16),
+                  Expanded(child: MonoText(entry.name, maxLines: 1, style: Theme.of(context).textTheme.titleSmall)),
+                ],
               ),
-              onTap: () => Navigator.pop(context, action),
             ),
-          const SizedBox(height: 8),
-        ],
+            const Divider(),
+            for (final action in EntryAction.forEntry(entry))
+              ListTile(
+                leading: Icon(action.icon, color: action == EntryAction.delete ? colors.danger : null),
+                title: Text(action.label, style: action == EntryAction.delete ? Theme.of(context).textTheme.bodyLarge?.copyWith(color: colors.danger) : null),
+                onTap: () => Navigator.pop(context, action),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

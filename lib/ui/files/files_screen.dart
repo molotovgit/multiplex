@@ -29,6 +29,10 @@ class _FilesScreenState extends State<FilesScreen> {
   FileActions? _actions;
   StreamSubscription<TransferJob>? _finished;
 
+  /// Uploads finished since the last "Uploaded" message, so a batch of
+  /// files gets one message instead of one per file.
+  int _uploadsDone = 0;
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +67,14 @@ class _FilesScreenState extends State<FilesScreen> {
     final upload = job.direction == TransferDirection.upload;
     if (upload && job.task.remoteFolder == _browser.path && _browser.status == BrowserStatus.ready) _browser.refresh();
     switch (job.state) {
-      case TransferState.done when !upload:
+      case TransferState.done when upload:
+        _uploadsDone++;
+        final stillUploading = _queue.jobs.any((j) => j.isActive && j.direction == TransferDirection.upload);
+        if (!stillUploading) {
+          Toast.show(context, _uploadsDone == 1 ? 'Uploaded ${job.name}' : 'Uploaded $_uploadsDone files');
+          _uploadsDone = 0;
+        }
+      case TransferState.done:
         FileToasts.saved(context, job.result ?? '');
       case TransferState.failed:
         _connection?.check();

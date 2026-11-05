@@ -53,8 +53,7 @@ class FakeFiles implements RemoteFiles {
   @override
   Future<void> writeText({required String path, required String text}) async => texts[path] = text;
 
-  /// Uploads and downloads go through the Rust core; the queue tests use
-  /// fake tasks instead.
+  /// Uploads and downloads are covered by the queue tests' fake tasks.
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -78,8 +77,7 @@ class FakeSsh implements SshSession {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Progress and cancel for the queue tests; cancel makes the task fail
-/// the way the Rust core does.
+/// Progress and cancel; cancel makes the task fail the way the core does.
 class FakeTransfer implements FileTransfer {
   final progress = StreamController<TransferProgress>();
   VoidCallback? onCancel;
@@ -163,11 +161,13 @@ abstract final class Fixtures {
     addTearDown(tester.view.reset);
   }
 
-  /// Shows the files screen for a fake server.
-  static Future<SessionManager> showFiles(WidgetTester tester, FakeSsh ssh) async {
-    final store = await VaultStore.open(MemoryBackend());
-    final manager = SessionManager(store);
-    addTearDown(manager.dispose);
+  /// Made outside the fake clock, so the 2-second timer is not "left running".
+  static late VaultStore store;
+  static late SessionManager sessions;
+
+  /// Shows the files screen; pass [manager] to tick on the fake clock.
+  static Future<void> showFiles(WidgetTester tester, FakeSsh ssh, {SessionManager? manager}) async {
+    manager ??= sessions;
     final session = LiveSession(id: 's1', host: const Host(id: 'h1', label: 'Box', address: 'box.example'), ssh: ssh);
     await tester.pumpWidget(
       AppScope(
@@ -177,7 +177,6 @@ abstract final class Fixtures {
       ),
     );
     await tester.pumpAndSettle();
-    return manager;
   }
 
   /// Every tap target is at least 48 by 48 and has a label (Material's
@@ -321,6 +320,12 @@ void main() {
   });
 
   group('files screen', () {
+    setUpAll(() async {
+      Fixtures.store = await VaultStore.open(MemoryBackend());
+      Fixtures.sessions = SessionManager(Fixtures.store);
+    });
+    tearDownAll(() => Fixtures.sessions.dispose());
+
     testWidgets('lists the home folder, hides dot files, and opens folders', (tester) async {
       await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
       expect(find.text('notes.txt'), findsOneWidget);
@@ -355,13 +360,15 @@ void main() {
 
     testWidgets('a dropped connection shows a banner and takes the actions away', (tester) async {
       final ssh = FakeSsh(FakeFiles(Fixtures.tree()));
-      await Fixtures.showFiles(tester, ssh);
+      final manager = SessionManager(Fixtures.store); // Ticks on the fake clock.
+      await Fixtures.showFiles(tester, ssh, manager: manager);
       ssh.connected = false;
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle(); // The upload button animates away.
       expect(find.textContaining('connection to this server closed'), findsOneWidget);
       expect(find.text('Upload files'), findsNothing);
       expect(find.byTooltip('More actions for notes.txt'), findsNothing);
+      manager.dispose();
     });
 
     testWidgets('permissions: boxes and number stay in step, and the change can be undone', (tester) async {
