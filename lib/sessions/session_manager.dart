@@ -87,7 +87,16 @@ class SessionManager extends ChangeNotifier {
     );
     final number = session.terminals.length + 1;
     final title = number == 1 ? session.host.title : '${session.host.title} ($number)';
-    final controller = TerminalController(shell: shell, title: title, sessionId: session.id);
+    final hostId = session.host.id;
+    // Only saved hosts keep a history; a quick connection leaves none.
+    final saved = _store.host(hostId) != null;
+    final controller = TerminalController(
+      shell: shell,
+      title: title,
+      sessionId: session.id,
+      hostId: saved ? hostId : null,
+      onCommand: saved ? (command) => _store.recordCommand(hostId, command) : null,
+    );
     session.terminals.add(controller);
     notifyListeners();
     return controller;

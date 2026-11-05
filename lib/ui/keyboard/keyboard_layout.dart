@@ -85,9 +85,10 @@ class KeyboardLayout {
       KeySpec.page(KeyboardPage.letters, 'ABC', 'Letters', width: 1.5),
       KeySpec.command(KeyCommand.paste, 'Paste', Icons.content_paste, 'Paste', width: 1.25),
       KeySpec.command(KeyCommand.snippets, 'Snippets', Icons.bolt, 'Snippets', width: 1.25),
-      KeyboardKeys.space(2.5),
+      KeySpec.command(KeyCommand.history, 'History', Icons.history, 'Command history', width: 1.25),
+      KeyboardKeys.space(1.5),
       KeyboardKeys.backspace(1.5),
-      KeyboardKeys.enter(2),
+      KeyboardKeys.enter(1.75),
     ],
   ];
 

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../app/theme_spec.dart';
 import '../src/rust/api/ssh_types.dart';
 import 'app_settings.dart';
+import 'command_history.dart';
 import 'models.dart';
 import 'vault_backend.dart';
 import 'vault_document.dart';
@@ -47,6 +48,10 @@ class VaultStore extends ChangeNotifier {
   AppSettings get settings => _doc.settings;
   List<ThemeSpec> get customThemes => List.unmodifiable(_doc.customThemes);
 
+  /// Recent commands of every host. Read only: change it with
+  /// [recordCommand], [pinCommand], [deleteCommand] and [clearCommands].
+  CommandHistory get commandHistory => _doc.commandHistory;
+
   /// Built-in themes first, then the user's own.
   List<ThemeSpec> get allThemes => [...BuiltInThemes.all, ..._doc.customThemes];
 
@@ -73,6 +78,7 @@ class VaultStore extends ChangeNotifier {
   void deleteHost(String id) {
     _doc.hosts.removeWhere((h) => h.id == id);
     _doc.forwards.removeWhere((f) => f.hostId == id);
+    _doc.commandHistory.clear(id);
     _replaceWhere(_doc.hosts, (h) => h.jumpHostId == id, (h) => h.copyWith(jumpHostId: () => null));
     _changed();
   }
@@ -180,6 +186,29 @@ class VaultStore extends ChangeNotifier {
     _changed();
   }
 
+  // Command history.
+
+  /// Remembers a command the user ran on a host.
+  void recordCommand(String hostId, String command) {
+    if (_doc.commandHistory.record(hostId, command)) _changed();
+  }
+
+  void pinCommand(String hostId, String command, bool pinned) {
+    _doc.commandHistory.setPinned(hostId, command, pinned);
+    _changed();
+  }
+
+  void deleteCommand(String hostId, String command) {
+    _doc.commandHistory.delete(hostId, command);
+    _changed();
+  }
+
+  /// Forgets all commands of a host.
+  void clearCommands(String hostId) {
+    _doc.commandHistory.clear(hostId);
+    _changed();
+  }
+
   void updateSettings(AppSettings settings) {
     _doc.settings = settings;
     _changed();
@@ -204,6 +233,7 @@ class VaultStore extends ChangeNotifier {
         ..forwards.clear()
         ..customThemes.clear();
       _doc.settings = incoming.settings;
+      _doc.commandHistory = CommandHistory();
     }
     _doc.mergeFrom(incoming);
     _changed();

@@ -11,8 +11,13 @@ import '../../sessions/connect_flow.dart';
 import '../../sessions/session_manager.dart';
 import '../../sessions/terminal_controller.dart';
 import '../../src/rust/api/terminal_types.dart';
+import '../appearance/theme_actions.dart';
+import '../appearance/theme_switcher.dart';
 import '../common/widgets.dart';
 import '../files/files_screen.dart';
+import '../history/command_history_sheet.dart';
+import '../history/command_strip.dart';
+import '../history/command_target.dart';
 import '../hosts/host_connector.dart';
 import '../keyboard/keyboard_settings.dart';
 import '../keyboard/terminal_keyboard_panel.dart';
@@ -78,6 +83,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   TerminalController get _terminal => widget.controller;
 
+  /// Where picked recent commands go.
+  late final _commands = TerminalCommandTarget(widget.controller);
+
   @override
   void initState() {
     super.initState();
@@ -112,6 +120,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (snippet == null) return;
     _terminal.paste(snippet.command);
     if (snippet.runImmediately) _terminal.key(TerminalKey.enter);
+    _keepFocus();
+  }
+
+  Future<void> _openHistory() async {
+    await CommandHistorySheet.openFor(context, _commands);
     _keepFocus();
   }
 
@@ -208,11 +221,14 @@ class _TerminalScreenState extends State<TerminalScreen> {
             _TerminalMenu(
               onNewTerminal: () => TerminalScreen.openNew(context, widget.session),
               onTunnels: () => _openPage(TunnelsScreen(host: widget.session.host)),
+              onCommandHistory: _openHistory,
               onPaste: _terminal.pasteClipboard,
               onCopyScreen: () => Toast.copy(context, _terminal.shell.visibleText(), what: 'Screen text copied'),
               onBigger: () => _changeFontSize(1),
               onSmaller: () => _changeFontSize(-1),
               onClearHistory: _terminal.shell.clearHistory,
+              onSwitchTheme: () => ThemeSwitcherSheet.show(context),
+              onNextBackground: AppScope.store(context).activeTheme.backgrounds.length > 1 ? () => ThemeActions(context).nextBackground() : null,
               onClose: _closeTerminal,
               onDisconnect: _disconnect,
             ),
@@ -243,11 +259,18 @@ class _TerminalScreenState extends State<TerminalScreen> {
               TerminalKeyboardPanel(
                 controller: _terminal,
                 onSnippets: _pickSnippet,
+                onHistory: _openHistory,
                 onHide: () => setState(() => _keyboardHidden = true),
                 onSwitchToSystem: _switchToSystemKeyboard,
               )
-            else if (!builtIn)
+            else if (!builtIn) ...[
+              if (KeyboardSettings.of(AppScope.store(context)).showRecentCommands)
+                Material(
+                  color: colors.surface,
+                  child: CommandStrip(target: _commands, onOpenHistory: _openHistory),
+                ),
               KeyBar(controller: _terminal, onSnippets: _pickSnippet, keepFocus: _keepFocus),
+            ],
           ],
         ),
       ),
@@ -260,16 +283,22 @@ class _TerminalMenu extends StatelessWidget {
   const _TerminalMenu({
     required this.onNewTerminal,
     required this.onTunnels,
+    required this.onCommandHistory,
     required this.onPaste,
     required this.onCopyScreen,
     required this.onBigger,
     required this.onSmaller,
     required this.onClearHistory,
+    required this.onSwitchTheme,
+    required this.onNextBackground,
     required this.onClose,
     required this.onDisconnect,
   });
 
-  final VoidCallback onNewTerminal, onTunnels, onPaste, onCopyScreen, onBigger, onSmaller, onClearHistory, onClose, onDisconnect;
+  final VoidCallback onNewTerminal, onTunnels, onCommandHistory, onPaste, onCopyScreen, onBigger, onSmaller, onClearHistory, onSwitchTheme, onClose, onDisconnect;
+
+  /// Null when the theme has fewer than two pictures to move between.
+  final VoidCallback? onNextBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -285,6 +314,10 @@ class _TerminalMenu extends StatelessWidget {
         PopupMenuItem(
           value: onTunnels,
           child: const ListTile(leading: Icon(Icons.swap_horiz), title: Text('Tunnels')),
+        ),
+        PopupMenuItem(
+          value: onCommandHistory,
+          child: const ListTile(leading: Icon(Icons.history), title: Text('Command history')),
         ),
         PopupMenuItem(
           value: onPaste,
@@ -306,8 +339,18 @@ class _TerminalMenu extends StatelessWidget {
         ),
         PopupMenuItem(
           value: onClearHistory,
-          child: const ListTile(leading: Icon(Icons.clear_all), title: Text('Clear history')),
+          child: const ListTile(leading: Icon(Icons.clear_all), title: Text('Clear scrollback')),
         ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: onSwitchTheme,
+          child: const ListTile(leading: AppIcon(AppIcons.palette), title: Text('Switch theme')),
+        ),
+        if (onNextBackground != null)
+          PopupMenuItem(
+            value: onNextBackground,
+            child: const ListTile(leading: AppIcon(AppIcons.image), title: Text('Next background')),
+          ),
         const PopupMenuDivider(),
         PopupMenuItem(
           value: onClose,

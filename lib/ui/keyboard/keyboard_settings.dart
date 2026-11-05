@@ -49,6 +49,7 @@ class KeyboardSettings {
     this.keyPreview = true,
     this.haptics = true,
     this.sound = false,
+    this.showRecentCommands = true,
   });
 
   /// True: the built-in keyboard replaces the phone's keyboard in terminals.
@@ -69,6 +70,9 @@ class KeyboardSettings {
   final bool haptics;
   final bool sound;
 
+  /// A row of recent commands for this host above the keys.
+  final bool showRecentCommands;
+
   /// Reads the saved keyboard settings.
   static KeyboardSettings of(VaultStore store) => KeyboardSettings.fromJson(store.settings.keyboard);
 
@@ -86,6 +90,7 @@ class KeyboardSettings {
     bool? keyPreview,
     bool? haptics,
     bool? sound,
+    bool? showRecentCommands,
   }) =>
       KeyboardSettings(
         enabled: enabled ?? this.enabled,
@@ -98,6 +103,7 @@ class KeyboardSettings {
         keyPreview: keyPreview ?? this.keyPreview,
         haptics: haptics ?? this.haptics,
         sound: sound ?? this.sound,
+        showRecentCommands: showRecentCommands ?? this.showRecentCommands,
       );
 
   Map<String, dynamic> toJson() => {
@@ -111,6 +117,7 @@ class KeyboardSettings {
         'keyPreview': keyPreview,
         'haptics': haptics,
         'sound': sound,
+        'showRecentCommands': showRecentCommands,
       };
 
   /// Unknown or missing values fall back to the defaults, so a backup
@@ -128,6 +135,7 @@ class KeyboardSettings {
       keyPreview: Json.boolean(j, 'keyPreview', d.keyPreview),
       haptics: Json.boolean(j, 'haptics', d.haptics),
       sound: Json.boolean(j, 'sound', d.sound),
+      showRecentCommands: Json.boolean(j, 'showRecentCommands', d.showRecentCommands),
     );
   }
 
@@ -143,9 +151,10 @@ class KeyboardSettings {
       other.swipeForSymbols == swipeForSymbols &&
       other.keyPreview == keyPreview &&
       other.haptics == haptics &&
-      other.sound == sound;
+      other.sound == sound &&
+      other.showRecentCommands == showRecentCommands;
 
   @override
   int get hashCode =>
-      Object.hash(enabled, layout, keyHeight, shape, boldLabels, showAlternates, swipeForSymbols, keyPreview, haptics, sound);
+      Object.hash(enabled, layout, keyHeight, shape, boldLabels, showAlternates, swipeForSymbols, keyPreview, haptics, sound, showRecentCommands);
 }

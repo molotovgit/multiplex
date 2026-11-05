@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../src/rust/api/terminal.dart';
 import '../src/rust/api/terminal_types.dart';
+import 'command_capture.dart';
 
 /// Drives one terminal on screen: listens to the native shell, pulls a new
 /// frame at most once per display frame, and forwards input.
@@ -15,7 +16,7 @@ import '../src/rust/api/terminal_types.dart';
 class TerminalController extends ChangeNotifier {
   // The title is private and changes later, so it cannot be a named "this." parameter.
   // ignore: prefer_initializing_formals
-  TerminalController({required this.shell, required String title, required this.sessionId}) : _title = title {
+  TerminalController({required this.shell, required String title, required this.sessionId, this.hostId, this.onCommand}) : _title = title {
     _events = shell.events().listen(_onEvent, onError: (_) => _end('The terminal stopped unexpectedly.'));
     pull();
   }
@@ -24,6 +25,14 @@ class TerminalController extends ChangeNotifier {
 
   /// The [LiveSession] this terminal belongs to.
   final String sessionId;
+
+  /// The saved host, for its command history. Null for a host that is
+  /// not saved.
+  final String? hostId;
+
+  /// Told each command the user runs (read from the screen at Enter).
+  final void Function(String command)? onCommand;
+  late final _capture = CommandCapture(onCommand: (command) => onCommand?.call(command));
   late final StreamSubscription<ShellEvent> _events;
 
   TerminalFrame? _frame;
@@ -46,10 +55,17 @@ class TerminalController extends ChangeNotifier {
   bool get ctrlLatched => _ctrl;
   bool get altLatched => _alt;
 
+  /// What the user has typed on the current command line so far, read
+  /// from the screen. Empty when no line is being typed.
+  String get typedLine => _capture.typed;
+
+  ScreenText? get _screen => _frame == null ? null : FrameScreenText(_frame!, shell);
+
   /// Takes the current screen from the native side and redraws.
   void pull() {
     _frame = shell.frame();
     if (_frame!.title.isNotEmpty) _title = _frame!.title;
+    _capture.onFrame(FrameScreenText(_frame!, shell));
     notifyListeners();
   }
 
@@ -58,26 +74,59 @@ class TerminalController extends ChangeNotifier {
   /// Text from the keyboard. Uses (and then releases) sticky Ctrl/Alt.
   void type(String text) {
     if (text.isEmpty || ended) return;
-    shell.sendText(text: text, mods: _takeModifiers());
+    final mods = _takeModifiers();
+    _beforeText(text, mods);
+    shell.sendText(text: text, mods: mods);
   }
 
   void key(TerminalKey key, {bool shift = false}) {
     if (ended) return;
     final mods = _takeModifiers();
+    _beforeKey(key);
     shell.sendKey(key: key, mods: KeyModifiers(ctrl: mods.ctrl, alt: mods.alt, shift: shift));
   }
 
   /// A key with explicit modifiers, from a hardware keyboard.
   void keyWith(TerminalKey key, KeyModifiers mods) {
-    if (!ended) shell.sendKey(key: key, mods: mods);
+    if (ended) return;
+    _beforeKey(key);
+    shell.sendKey(key: key, mods: mods);
   }
 
   void textWith(String text, KeyModifiers mods) {
-    if (!ended) shell.sendText(text: text, mods: mods);
+    if (ended) return;
+    _beforeText(text, mods);
+    shell.sendText(text: text, mods: mods);
   }
 
   void paste(String text) {
-    if (!ended && text.isNotEmpty) shell.paste(text: text);
+    if (ended || text.isEmpty) return;
+    // A paste of several lines runs them at once: not one command to keep.
+    if (text.contains('\n') || text.contains('\r')) {
+      _capture.cancel();
+    } else {
+      _capture.input(_screen);
+    }
+    shell.paste(text: text);
+  }
+
+  // Command capture: tell it about each key before the key is sent, so
+  // it sees the screen as it was.
+
+  void _beforeKey(TerminalKey key) {
+    if (key == TerminalKey.enter) {
+      _capture.enter(_screen);
+    } else {
+      _capture.input(_screen);
+    }
+  }
+
+  void _beforeText(String text, KeyModifiers mods) {
+    if (mods.ctrl && CaptureKeys.cancelling.contains(text.toLowerCase())) {
+      _capture.cancel();
+    } else {
+      _capture.input(_screen);
+    }
   }
 
   Future<void> pasteClipboard() async {
@@ -128,6 +177,7 @@ class TerminalController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _capture.flush();
     _events.cancel();
     if (!ended) shell.close();
     super.dispose();
@@ -176,4 +226,10 @@ class TerminalController extends ChangeNotifier {
     _endReason = reason;
     pull();
   }
+}
+
+/// Keys that matter to the command capture.
+abstract final class CaptureKeys {
+  /// With Ctrl these abandon the line: Ctrl+C, Ctrl+D, Ctrl+G.
+  static const cancelling = {'c', 'd', 'g'};
 }

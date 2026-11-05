@@ -22,7 +22,7 @@ enum ModifierKind {
 }
 
 /// Keys that do something other than send input.
-enum KeyCommand { paste, snippets, hide, systemKeyboard }
+enum KeyCommand { paste, snippets, history, hide, systemKeyboard }
 
 /// How strongly a key stands out: plain typing keys or the darker
 /// "special" keys around them.

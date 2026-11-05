@@ -102,6 +102,12 @@ class KeyboardOptionsList extends StatelessWidget {
         ),
         const SectionHeader('Typing'),
         SwitchListTile(
+          title: const Text('Show recent commands'),
+          subtitle: const Text('A row of the commands you ran on this host, above the keys'),
+          value: settings.showRecentCommands,
+          onChanged: (on) => _save(context, settings.copyWith(showRecentCommands: on)),
+        ),
+        SwitchListTile(
           title: const Text('Swipe up for symbols'),
           subtitle: const Text('Swipe up on a key to type its alternate character'),
           value: settings.swipeForSymbols,

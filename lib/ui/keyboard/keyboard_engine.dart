@@ -24,6 +24,7 @@ class KeyboardEngine extends ChangeNotifier {
   KeyboardSettings settings = const KeyboardSettings();
 
   VoidCallback? onSnippets;
+  VoidCallback? onHistory;
   VoidCallback? onHide;
   VoidCallback? onSwitchToSystem;
 
@@ -93,6 +94,8 @@ class KeyboardEngine extends ChangeNotifier {
         onSent?.call('Paste');
       case KeyCommand.snippets:
         onSnippets?.call();
+      case KeyCommand.history:
+        onHistory?.call();
       case KeyCommand.hide:
         onHide?.call();
       case KeyCommand.systemKeyboard:

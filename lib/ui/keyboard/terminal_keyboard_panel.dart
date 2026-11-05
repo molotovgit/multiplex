@@ -5,6 +5,9 @@ import '../../app/terminal_fonts.dart';
 import '../../app/theme_look.dart';
 import '../../app/theme_style.dart';
 import '../../sessions/terminal_controller.dart';
+import '../history/command_history_sheet.dart';
+import '../history/command_strip.dart';
+import '../history/command_target.dart';
 import 'key_face.dart';
 import 'key_sink.dart';
 import 'key_spec.dart';
@@ -26,9 +29,11 @@ class TerminalKeyboardPanel extends StatefulWidget {
     required this.onSnippets,
     required this.onHide,
     required this.onSwitchToSystem,
+    this.onHistory,
   })  : sink = null,
         onSent = null,
-        modifiers = null;
+        modifiers = null,
+        commands = null;
 
   /// The keyboard sending somewhere else: the settings preview and tests.
   const TerminalKeyboardPanel.withSink({
@@ -39,6 +44,8 @@ class TerminalKeyboardPanel extends StatefulWidget {
     required this.onSwitchToSystem,
     this.onSent,
     this.modifiers,
+    this.onHistory,
+    this.commands = const NoCommandTarget(),
   }) : controller = null;
 
   final TerminalController? controller;
@@ -55,12 +62,31 @@ class TerminalKeyboardPanel extends StatefulWidget {
   /// Lets tests use a fake clock for double taps.
   final KeyboardModifiers? modifiers;
 
+  /// Opens the command history. When not set, the panel opens the
+  /// history sheet itself.
+  final VoidCallback? onHistory;
+
+  /// Where recent commands go; the terminal's when not set.
+  final CommandTarget? commands;
+
   @override
   State<TerminalKeyboardPanel> createState() => _TerminalKeyboardPanelState();
 }
 
 class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
   late KeyboardEngine _engine = _newEngine();
+  late CommandTarget _commands = _newCommands();
+
+  CommandTarget _newCommands() => widget.commands ?? TerminalCommandTarget(widget.controller!);
+
+  void _openHistory() {
+    final open = widget.onHistory;
+    if (open != null) {
+      open();
+    } else {
+      CommandHistorySheet.openFor(context, _commands);
+    }
+  }
 
   KeyboardEngine _newEngine() => KeyboardEngine(sink: widget.sink ?? ControllerKeySink(widget.controller!), modifiers: widget.modifiers);
 
@@ -72,6 +98,7 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
       _engine.dispose();
       _engine = _newEngine()..showPage(page);
     }
+    if (old.controller != widget.controller || old.commands != widget.commands) _commands = _newCommands();
   }
 
   @override
@@ -87,6 +114,7 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
     _engine
       ..settings = settings
       ..onSnippets = widget.onSnippets
+      ..onHistory = _openHistory
       ..onHide = widget.onHide
       ..onSwitchToSystem = widget.onSwitchToSystem
       ..onSent = widget.onSent;
@@ -120,6 +148,12 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
                   builder: (context, _) => Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (settings.showRecentCommands)
+                        CommandStrip(
+                          target: _commands,
+                          onOpenHistory: _openHistory,
+                          compact: look.metrics.rowHeight < CommandStrip.height,
+                        ),
                       TerminalTopRow(keyBarIds: keyBar, engine: _engine, look: look),
                       _PageKeys(
                         // A new key per page and layout: key states never carry over.

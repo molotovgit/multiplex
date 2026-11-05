@@ -1,5 +1,6 @@
 import '../app/theme_spec.dart';
 import 'app_settings.dart';
+import 'command_history.dart';
 import 'models.dart';
 
 /// The whole saved state of the app, as one JSON document. It is written
@@ -14,6 +15,7 @@ class VaultDocument {
     List<ForwardRule>? forwards,
     List<ThemeSpec>? customThemes,
     this.settings = const AppSettings(),
+    CommandHistory? commandHistory,
   })  // Always keep our own growable copies, so constant lists passed in
       // (such as the starter snippets) can still be edited later.
       : hosts = List.of(hosts ?? const []),
@@ -22,7 +24,8 @@ class VaultDocument {
         snippets = List.of(snippets ?? const []),
         knownHosts = List.of(knownHosts ?? const []),
         forwards = List.of(forwards ?? const []),
-        customThemes = List.of(customThemes ?? const []);
+        customThemes = List.of(customThemes ?? const []),
+        commandHistory = commandHistory ?? CommandHistory();
 
   /// Bumped when the format changes in a way old versions cannot read.
   static const formatVersion = 1;
@@ -37,6 +40,9 @@ class VaultDocument {
   /// Themes the user made or imported.
   final List<ThemeSpec> customThemes;
   AppSettings settings;
+
+  /// Recent commands per host, for the keyboard's suggestions.
+  CommandHistory commandHistory;
 
   /// A few handy commands so the snippets list is not empty on day one.
   factory VaultDocument.starter() => VaultDocument(snippets: const [
@@ -56,6 +62,7 @@ class VaultDocument {
         'forwards': forwards.map((e) => e.toJson()).toList(),
         'customThemes': customThemes.map((e) => e.toJson()).toList(),
         'settings': settings.toJson(),
+        'commandHistory': commandHistory.toJson(),
       };
 
   factory VaultDocument.fromJson(Map<String, dynamic> j) => VaultDocument(
@@ -67,6 +74,7 @@ class VaultDocument {
         forwards: Json.list(j, 'forwards').map(ForwardRule.fromJson).toList(),
         customThemes: Json.list(j, 'customThemes').map(ThemeSpec.fromJson).toList(),
         settings: j['settings'] is Map ? AppSettings.fromJson((j['settings'] as Map).cast<String, dynamic>()) : const AppSettings(),
+        commandHistory: CommandHistory.fromJson(j['commandHistory']),
       );
 
   /// Adds everything from [other], replacing items with the same id (or,
@@ -80,6 +88,7 @@ class VaultDocument {
     _mergeById(knownHosts, other.knownHosts, (e) => '${e.endpoint} ${e.publicKey}');
     _mergeById(forwards, other.forwards, (e) => e.id);
     _mergeById(customThemes, other.customThemes, (e) => e.id);
+    commandHistory.mergeFrom(other.commandHistory);
   }
 
   static void _mergeById<T>(List<T> into, List<T> from, String Function(T) idOf) {
