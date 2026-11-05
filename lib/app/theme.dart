@@ -98,8 +98,14 @@ abstract final class AppTheme {
       brightness: brightness,
       primary: c.accent,
       onPrimary: c.onAccent,
-      secondary: c.live,
-      onSecondary: c.background,
+      // Material paints selected segments, tonal buttons and chips with
+      // the secondary colours. They follow the accent, so every theme has
+      // one highlight colour; the green "live" colour is used directly
+      // where something is connected or running.
+      secondary: c.accent,
+      onSecondary: c.onAccent,
+      secondaryContainer: Color.alphaBlend(c.accent.withValues(alpha: 0.22), c.surface),
+      onSecondaryContainer: c.text,
       error: c.danger,
       onError: Colors.white,
       surface: c.surface,
