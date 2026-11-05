@@ -11,6 +11,8 @@ import 'api/ssh.dart';
 import 'api/ssh_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
+import 'api/theme.dart';
+import 'api/theme_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
@@ -79,7 +81,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 586138563;
+  int get rustContentHash => -28826769;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -299,6 +301,8 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Future<KeyModifiers> crateApiTerminalTypesKeyModifiersDefault();
+
+  ImportedTheme crateApiThemeParseThemeFile({required String text});
 
   bool crateApiKeysPrivateKeyIsEncrypted({required String pem});
 
@@ -2116,13 +2120,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "key_modifiers_default", argNames: []);
 
   @override
+  ImportedTheme crateApiThemeParseThemeFile({required String text}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_imported_theme,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiThemeParseThemeFileConstMeta,
+        argValues: [text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiThemeParseThemeFileConstMeta =>
+      const TaskConstMeta(debugName: "parse_theme_file", argNames: ["text"]);
+
+  @override
   bool crateApiKeysPrivateKeyIsEncrypted({required String pem}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(pem, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 54)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -2148,7 +2175,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(publicOpenssh, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 54)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 55)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2175,7 +2202,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dir, serializer);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 55)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 56)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2198,7 +2225,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 56)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 57)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2223,7 +2250,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 57,
+            funcId: 58,
             port: port_,
           );
         },
@@ -2250,7 +2277,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 58,
+            funcId: 59,
             port: port_,
           );
         },
@@ -2282,7 +2309,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 59,
+            funcId: 60,
             port: port_,
           );
         },
@@ -2306,7 +2333,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 61)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_8_strict,
@@ -2338,7 +2365,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 61,
+            funcId: 62,
             port: port_,
           );
         },
@@ -2756,6 +2783,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 dco_decode_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeI64(raw);
+  }
+
+  @protected
+  ImportedTheme dco_decode_imported_theme(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return ImportedTheme(
+      name: dco_decode_opt_String(arr[0]),
+      foreground: dco_decode_u_32(arr[1]),
+      background: dco_decode_u_32(arr[2]),
+      cursor: dco_decode_opt_box_autoadd_u_32(arr[3]),
+      selection: dco_decode_opt_box_autoadd_u_32(arr[4]),
+      ansi: dco_decode_list_prim_u_32_strict(arr[5]),
+      format: dco_decode_String(arr[6]),
+    );
   }
 
   @protected
@@ -3554,6 +3598,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  ImportedTheme sse_decode_imported_theme(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_opt_String(deserializer);
+    var var_foreground = sse_decode_u_32(deserializer);
+    var var_background = sse_decode_u_32(deserializer);
+    var var_cursor = sse_decode_opt_box_autoadd_u_32(deserializer);
+    var var_selection = sse_decode_opt_box_autoadd_u_32(deserializer);
+    var var_ansi = sse_decode_list_prim_u_32_strict(deserializer);
+    var var_format = sse_decode_String(deserializer);
+    return ImportedTheme(
+      name: var_name,
+      foreground: var_foreground,
+      background: var_background,
+      cursor: var_cursor,
+      selection: var_selection,
+      ansi: var_ansi,
+      format: var_format,
+    );
   }
 
   @protected
@@ -4454,6 +4519,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_imported_theme(ImportedTheme self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_String(self.name, serializer);
+    sse_encode_u_32(self.foreground, serializer);
+    sse_encode_u_32(self.background, serializer);
+    sse_encode_opt_box_autoadd_u_32(self.cursor, serializer);
+    sse_encode_opt_box_autoadd_u_32(self.selection, serializer);
+    sse_encode_list_prim_u_32_strict(self.ansi, serializer);
+    sse_encode_String(self.format, serializer);
   }
 
   @protected

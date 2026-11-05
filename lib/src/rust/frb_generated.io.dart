@@ -11,6 +11,8 @@ import 'api/ssh.dart';
 import 'api/ssh_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
+import 'api/theme.dart';
+import 'api/theme_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
@@ -214,6 +216,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  ImportedTheme dco_decode_imported_theme(dynamic raw);
 
   @protected
   JumpHost dco_decode_jump_host(dynamic raw);
@@ -498,6 +503,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  ImportedTheme sse_decode_imported_theme(SseDeserializer deserializer);
 
   @protected
   JumpHost sse_decode_jump_host(SseDeserializer deserializer);
@@ -821,6 +829,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_imported_theme(ImportedTheme self, SseSerializer serializer);
 
   @protected
   void sse_encode_jump_host(JumpHost self, SseSerializer serializer);

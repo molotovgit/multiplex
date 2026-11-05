@@ -43,7 +43,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 586138563;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -28826769;
 
 // Section: executor
 
@@ -2694,6 +2694,38 @@ fn wire__crate__api__terminal_types__key_modifiers_default_impl(
         },
     )
 }
+fn wire__crate__api__theme__parse_theme_file_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "parse_theme_file",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                (move || {
+                    let output_ok = crate::api::theme::parse_theme_file(api_text)?;
+                    std::result::Result::Ok(output_ok)
+                })(),
+            )
+        },
+    )
+}
 fn wire__crate__api__keys__private_key_is_encrypted_impl(
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -3349,6 +3381,28 @@ impl SseDecode for i64 {
     }
 }
 
+impl SseDecode for crate::api::theme_types::ImportedTheme {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <Option<String>>::sse_decode(deserializer);
+        let mut var_foreground = <u32>::sse_decode(deserializer);
+        let mut var_background = <u32>::sse_decode(deserializer);
+        let mut var_cursor = <Option<u32>>::sse_decode(deserializer);
+        let mut var_selection = <Option<u32>>::sse_decode(deserializer);
+        let mut var_ansi = <Vec<u32>>::sse_decode(deserializer);
+        let mut var_format = <String>::sse_decode(deserializer);
+        return crate::api::theme_types::ImportedTheme {
+            name: var_name,
+            foreground: var_foreground,
+            background: var_background,
+            cursor: var_cursor,
+            selection: var_selection,
+            ansi: var_ansi,
+            format: var_format,
+        };
+    }
+}
+
 impl SseDecode for crate::api::ssh_types::JumpHost {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3940,20 +3994,20 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        57 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        58 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        58 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        59 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        59 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        61 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        60 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        62 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -4000,11 +4054,12 @@ fn pde_ffi_dispatcher_sync_impl(
         40 => wire__crate__api__ssh__SshSession_info_impl(ptr, rust_vec_len, data_len),
         41 => wire__crate__api__ssh__SshSession_is_connected_impl(ptr, rust_vec_len, data_len),
         47 => wire__crate__api__app__core_version_impl(ptr, rust_vec_len, data_len),
-        53 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
-        54 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
-        55 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
-        56 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
-        60 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        53 => wire__crate__api__theme__parse_theme_file_impl(ptr, rust_vec_len, data_len),
+        54 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
+        55 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
+        56 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
+        57 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
+        61 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -4309,6 +4364,32 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::ssh_types::HostKeyInfo>
     for crate::api::ssh_types::HostKeyInfo
 {
     fn into_into_dart(self) -> crate::api::ssh_types::HostKeyInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::theme_types::ImportedTheme {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.foreground.into_into_dart().into_dart(),
+            self.background.into_into_dart().into_dart(),
+            self.cursor.into_into_dart().into_dart(),
+            self.selection.into_into_dart().into_dart(),
+            self.ansi.into_into_dart().into_dart(),
+            self.format.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::theme_types::ImportedTheme
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::theme_types::ImportedTheme>
+    for crate::api::theme_types::ImportedTheme
+{
+    fn into_into_dart(self) -> crate::api::theme_types::ImportedTheme {
         self
     }
 }
@@ -5059,6 +5140,19 @@ impl SseEncode for i64 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_i64::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for crate::api::theme_types::ImportedTheme {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Option<String>>::sse_encode(self.name, serializer);
+        <u32>::sse_encode(self.foreground, serializer);
+        <u32>::sse_encode(self.background, serializer);
+        <Option<u32>>::sse_encode(self.cursor, serializer);
+        <Option<u32>>::sse_encode(self.selection, serializer);
+        <Vec<u32>>::sse_encode(self.ansi, serializer);
+        <String>::sse_encode(self.format, serializer);
     }
 }
 
