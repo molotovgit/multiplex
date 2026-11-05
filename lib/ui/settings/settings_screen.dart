@@ -9,6 +9,7 @@ import '../common/widgets.dart';
 import 'about_screen.dart';
 import 'app_lock_setup.dart';
 import 'backup_screen.dart';
+import '../keyboard/keyboard_settings_screen.dart';
 import 'key_bar_editor_screen.dart';
 import 'key_bar_layout.dart';
 import 'settings_widgets.dart';
@@ -71,8 +72,7 @@ class SettingsScreen extends StatelessWidget {
 
 /// Opens [screen] on top of settings.
 abstract final class SettingsNavigation {
-  static Future<void> open(BuildContext context, Widget screen) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+  static Future<void> open(BuildContext context, Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 }
 
 /// The current theme, with its colours, opening the appearance screen.
@@ -92,7 +92,10 @@ class _AppearanceSection extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: Text(theme.name, semanticsLabel: 'Theme: ${theme.name}'),
-          subtitle: Padding(padding: const EdgeInsets.only(top: 8), child: ThemeSwatches(theme: theme)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: ThemeSwatches(theme: theme),
+          ),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => SettingsNavigation.open(context, const AppearanceScreen()),
         ),
@@ -137,7 +140,8 @@ class _TerminalSection extends StatelessWidget {
         ChoiceTile<int>(
           icon: Icons.timer_outlined,
           title: 'Keep-alive',
-          description: 'Sends a small signal when the connection is quiet, so routers and servers do not drop it. '
+          description:
+              'Sends a small signal when the connection is quiet, so routers and servers do not drop it. '
               'Applies to connections you open from now on.',
           value: settings.keepAliveSecs,
           options: TerminalChoices.keepAlive,
@@ -175,6 +179,13 @@ class _KeyboardSection extends StatelessWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => SettingsNavigation.open(context, const KeyBarEditorScreen()),
         ),
+        ListTile(
+          leading: const Icon(Icons.keyboard_alt_outlined),
+          title: const Text('Terminal keyboard'),
+          subtitle: const Text('Built-in keyboard, layout, size and feel'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => SettingsNavigation.open(context, const KeyboardSettingsScreen()),
+        ),
       ],
     );
   }
@@ -188,9 +199,12 @@ class _SecuritySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [const SectionHeader('Security'), AppLockSwitch(unlock: unlock, on: on)],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SectionHeader('Security'),
+      AppLockSwitch(unlock: unlock, on: on),
+    ],
+  );
 }
 
 class _BackupSection extends StatelessWidget {
@@ -198,18 +212,18 @@ class _BackupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SectionHeader('Backup & restore'),
-          ListTile(
-            leading: const Icon(Icons.backup_outlined),
-            title: const Text('Backup & restore'),
-            subtitle: const Text('Save everything to an encrypted file, or bring a backup back'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => SettingsNavigation.open(context, const BackupScreen()),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SectionHeader('Backup & restore'),
+      ListTile(
+        leading: const Icon(Icons.backup_outlined),
+        title: const Text('Backup & restore'),
+        subtitle: const Text('Save everything to an encrypted file, or bring a backup back'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => SettingsNavigation.open(context, const BackupScreen()),
+      ),
+    ],
+  );
 }
 
 /// Shown only while connections are open: closes them all. It is in its
@@ -230,7 +244,8 @@ class _ConnectionsSectionState extends State<_ConnectionsSection> {
     final ok = await Confirm.ask(
       context,
       title: 'Disconnect all?',
-      message: 'This closes ${SettingsFormat.count(count, 'connection', 'connections')} '
+      message:
+          'This closes ${SettingsFormat.count(count, 'connection', 'connections')} '
           'with their terminals and tunnels. Anything running in those terminals stops.',
       action: 'Disconnect all',
     );
@@ -264,12 +279,8 @@ class _ConnectionsSectionState extends State<_ConnectionsSection> {
               textColor: danger,
               leading: const Icon(Icons.link_off),
               title: const Text('Disconnect all'),
-              subtitle: Text(
-                _closing ? 'Closing connections...' : '${SettingsFormat.count(count, 'connection', 'connections')} open',
-              ),
-              trailing: _closing
-                  ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : null,
+              subtitle: Text(_closing ? 'Closing connections...' : '${SettingsFormat.count(count, 'connection', 'connections')} open'),
+              trailing: _closing ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2)) : null,
               onTap: _closing ? null : () => _disconnectAll(count),
             ),
           ],
@@ -284,16 +295,16 @@ class _AboutSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SectionHeader('About'),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('About VaultTerm'),
-            subtitle: const Text('Version, source code, licences and theme credits'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => SettingsNavigation.open(context, const AboutScreen()),
-          ),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SectionHeader('About'),
+      ListTile(
+        leading: const Icon(Icons.info_outline),
+        title: const Text('About VaultTerm'),
+        subtitle: const Text('Version, source code, licences and theme credits'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => SettingsNavigation.open(context, const AboutScreen()),
+      ),
+    ],
+  );
 }

@@ -21,10 +21,17 @@ import 'terminal_painter.dart';
 /// - Pinch: changes the font size.
 /// - Long press and drag: selects text; a Copy button appears.
 class TerminalView extends StatefulWidget {
-  const TerminalView({super.key, required this.controller, required this.focusNode});
+  const TerminalView({super.key, required this.controller, required this.focusNode, this.systemKeyboard = true, this.onWantsKeyboard});
 
   final TerminalController controller;
   final FocusNode focusNode;
+
+  /// Whether typing uses the phone's keyboard (true) or the built-in one.
+  final bool systemKeyboard;
+
+  /// Called when a tap asks for a keyboard, so a hidden built-in keyboard
+  /// can come back.
+  final VoidCallback? onWantsKeyboard;
 
   @override
   State<TerminalView> createState() => _TerminalViewState();
@@ -81,7 +88,8 @@ class _TerminalViewState extends State<TerminalView> {
 
   void _showKeyboard() {
     widget.focusNode.requestFocus();
-    SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    widget.onWantsKeyboard?.call();
+    if (widget.systemKeyboard) SystemChannels.textInput.invokeMethod<void>('TextInput.show');
   }
 
   void _onTapUp(TapUpDetails details, CellMetrics m) {
@@ -175,6 +183,7 @@ class _TerminalViewState extends State<TerminalView> {
             return TerminalKeyboard(
               controller: _terminal,
               focusNode: widget.focusNode,
+              systemKeyboard: widget.systemKeyboard,
               child: Semantics(
                 label: 'Terminal',
                 hint: 'Tap to type. Drag to scroll. Long press to select text.',

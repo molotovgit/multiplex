@@ -12,6 +12,8 @@ import '../../src/rust/api/terminal_types.dart';
 import '../common/widgets.dart';
 import '../files/files_screen.dart';
 import '../hosts/host_connector.dart';
+import '../keyboard/keyboard_settings.dart';
+import '../keyboard/terminal_keyboard_panel.dart';
 import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'key_bar.dart';
@@ -49,6 +51,15 @@ class TerminalScreen extends StatefulWidget {
 
 class _TerminalScreenState extends State<TerminalScreen> {
   final _focus = FocusNode(debugLabel: 'terminal');
+
+  /// The user switched to the phone's keyboard for this screen (voice
+  /// input, another language). Not saved: the next terminal starts with
+  /// the built-in keyboard again.
+  bool _useSystem = false;
+
+  /// The built-in keyboard is tucked away; a tap on the terminal or the
+  /// keyboard button brings it back.
+  bool _keyboardHidden = false;
 
   TerminalController get _terminal => widget.controller;
 
@@ -133,11 +144,31 @@ class _TerminalScreenState extends State<TerminalScreen> {
     }
   }
 
+  void _switchToSystemKeyboard() {
+    setState(() => _useSystem = true);
+    // Ask for the phone's keyboard once the text field has its new input
+    // type.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _keepFocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+  }
+
+  void _useBuiltInKeyboard() {
+    SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+    setState(() {
+      _useSystem = false;
+      _keyboardHidden = false;
+    });
+    _keepFocus();
+  }
+
   void _openPage(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
+    final builtIn = KeyboardSettings.of(AppScope.watch(context)).enabled && !_useSystem;
     return ListenableBuilder(
       listenable: _terminal,
       builder: (context, _) => Scaffold(
@@ -151,6 +182,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
             ],
           ),
           actions: [
+            if (KeyboardSettings.of(AppScope.store(context)).enabled && (_useSystem || _keyboardHidden))
+              IconButton(tooltip: 'Built-in keyboard', icon: const Icon(Icons.keyboard_outlined), onPressed: _useBuiltInKeyboard),
             IconButton(tooltip: 'Snippets', icon: const Icon(Icons.bolt_outlined), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -173,11 +206,25 @@ class _TerminalScreenState extends State<TerminalScreen> {
         body: Column(
           children: [
             Expanded(
-              child: TerminalView(controller: _terminal, focusNode: _focus),
+              child: TerminalView(
+                controller: _terminal,
+                focusNode: _focus,
+                systemKeyboard: !builtIn,
+                onWantsKeyboard: () {
+                  if (_keyboardHidden) setState(() => _keyboardHidden = false);
+                },
+              ),
             ),
             if (_terminal.ended)
               _EndedBanner(reason: _terminal.endReason ?? '', onReconnect: _reconnect, onClose: _closeTerminal)
-            else
+            else if (builtIn && !_keyboardHidden)
+              TerminalKeyboardPanel(
+                controller: _terminal,
+                onSnippets: _pickSnippet,
+                onHide: () => setState(() => _keyboardHidden = true),
+                onSwitchToSystem: _switchToSystemKeyboard,
+              )
+            else if (!builtIn)
               KeyBar(controller: _terminal, onSnippets: _pickSnippet, keepFocus: _keepFocus),
           ],
         ),

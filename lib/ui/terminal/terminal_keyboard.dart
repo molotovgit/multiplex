@@ -14,11 +14,15 @@ import '../../src/rust/api/terminal_types.dart';
 /// Hardware keys that are not text (arrows, Ctrl+C, F-keys) are caught
 /// before the text field sees them.
 class TerminalKeyboard extends StatefulWidget {
-  const TerminalKeyboard({super.key, required this.controller, required this.focusNode, required this.child});
+  const TerminalKeyboard({super.key, required this.controller, required this.focusNode, required this.child, this.systemKeyboard = true});
 
   final TerminalController controller;
   final FocusNode focusNode;
   final Widget child;
+
+  /// False while the built-in keyboard is in use: the field keeps focus
+  /// (hardware keys still work) but the phone's keyboard stays closed.
+  final bool systemKeyboard;
 
   @override
   State<TerminalKeyboard> createState() => _TerminalKeyboardState();
@@ -130,7 +134,7 @@ class _TerminalKeyboardState extends State<TerminalKeyboard> {
               onTapOutside: (_) {},
               // No suggestions, no autocorrect, no capital letters: a phone
               // keyboard in "password" mode sends plain keys.
-              keyboardType: TextInputType.visiblePassword,
+              keyboardType: widget.systemKeyboard ? TextInputType.visiblePassword : TextInputType.none,
               autocorrect: false,
               enableSuggestions: false,
               enableIMEPersonalizedLearning: false,
