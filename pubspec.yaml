@@ -70,6 +70,22 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Terminal fonts, both under the SIL Open Font License (see the OFL.txt
+  # next to each font). The no-ligature JetBrains Mono keeps every
+  # character in its own cell; the Nerd Font version adds the powerline
+  # and icon glyphs that fancy shell prompts use.
+  fonts:
+    - family: JetBrainsMonoNerd
+      fonts:
+        - asset: assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNLNerdFontMono-Regular.ttf
+        - asset: assets/fonts/jetbrains-mono-nerd/JetBrainsMonoNLNerdFontMono-Bold.ttf
+          weight: 700
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/ibm-plex-mono/IBMPlexMono-Regular.ttf
+        - asset: assets/fonts/ibm-plex-mono/IBMPlexMono-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

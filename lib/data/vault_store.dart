@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
+import '../app/theme_spec.dart';
 import '../src/rust/api/ssh_types.dart';
 import 'app_settings.dart';
 import 'models.dart';
@@ -44,6 +45,15 @@ class VaultStore extends ChangeNotifier {
   List<KnownHost> get knownHosts => List.unmodifiable(_doc.knownHosts);
   List<ForwardRule> get forwards => List.unmodifiable(_doc.forwards);
   AppSettings get settings => _doc.settings;
+  List<ThemeSpec> get customThemes => List.unmodifiable(_doc.customThemes);
+
+  /// Built-in themes first, then the user's own.
+  List<ThemeSpec> get allThemes => [...BuiltInThemes.all, ..._doc.customThemes];
+
+  /// The theme in use. Falls back to the default if it was deleted.
+  ThemeSpec get activeTheme => themeById(_doc.settings.themeId);
+
+  ThemeSpec themeById(String id) => _find(allThemes, (t) => t.id == id) ?? BuiltInThemes.ember;
 
   Host? host(String? id) => _find(_doc.hosts, (h) => h.id == id);
   StoredKey? key(String? id) => _find(_doc.keys, (k) => k.id == id);
@@ -126,6 +136,18 @@ class VaultStore extends ChangeNotifier {
     _changed();
   }
 
+  /// Adds or updates a custom theme.
+  void saveTheme(ThemeSpec theme) => _upsert(_doc.customThemes, theme, (t) => t.id);
+
+  /// Deletes a custom theme; if it was in use, the default comes back.
+  void deleteTheme(String id) {
+    _doc.customThemes.removeWhere((t) => t.id == id);
+    if (_doc.settings.themeId == id) {
+      _doc.settings = _doc.settings.copyWith(themeId: BuiltInThemes.defaultId);
+    }
+    _changed();
+  }
+
   void updateSettings(AppSettings settings) {
     _doc.settings = settings;
     _changed();
@@ -147,7 +169,8 @@ class VaultStore extends ChangeNotifier {
         ..keys.clear()
         ..snippets.clear()
         ..knownHosts.clear()
-        ..forwards.clear();
+        ..forwards.clear()
+        ..customThemes.clear();
       _doc.settings = incoming.settings;
     }
     _doc.mergeFrom(incoming);

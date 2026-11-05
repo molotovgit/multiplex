@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../app/theme.dart';
 import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
@@ -74,7 +73,7 @@ class SessionManager extends ChangeNotifier {
   /// terminal view sends the real size as soon as it is laid out.
   Future<TerminalController> openTerminal(LiveSession session) async {
     final settings = _store.settings;
-    final theme = TerminalThemes.byId(settings.terminalThemeId);
+    final theme = _store.activeTheme;
     final shell = await session.ssh.openShell(
       options: ShellOptions(
         cols: 80,
@@ -125,7 +124,7 @@ class SessionManager extends ChangeNotifier {
   /// Applies a new terminal theme to every open terminal.
   void applyTerminalTheme() {
     final settings = _store.settings;
-    final palette = TerminalThemes.byId(settings.terminalThemeId).palette(boldIsBright: settings.boldIsBright);
+    final palette = _store.activeTheme.palette(boldIsBright: settings.boldIsBright);
     for (final terminal in terminals) {
       terminal.setPalette(palette);
     }

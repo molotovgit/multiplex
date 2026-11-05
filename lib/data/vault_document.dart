@@ -1,3 +1,4 @@
+import '../app/theme_spec.dart';
 import 'app_settings.dart';
 import 'models.dart';
 
@@ -11,6 +12,7 @@ class VaultDocument {
     List<Snippet>? snippets,
     List<KnownHost>? knownHosts,
     List<ForwardRule>? forwards,
+    List<ThemeSpec>? customThemes,
     this.settings = const AppSettings(),
   })  // Always keep our own growable copies, so constant lists passed in
       // (such as the starter snippets) can still be edited later.
@@ -19,7 +21,8 @@ class VaultDocument {
         keys = List.of(keys ?? const []),
         snippets = List.of(snippets ?? const []),
         knownHosts = List.of(knownHosts ?? const []),
-        forwards = List.of(forwards ?? const []);
+        forwards = List.of(forwards ?? const []),
+        customThemes = List.of(customThemes ?? const []);
 
   /// Bumped when the format changes in a way old versions cannot read.
   static const formatVersion = 1;
@@ -30,6 +33,9 @@ class VaultDocument {
   final List<Snippet> snippets;
   final List<KnownHost> knownHosts;
   final List<ForwardRule> forwards;
+
+  /// Themes the user made or imported.
+  final List<ThemeSpec> customThemes;
   AppSettings settings;
 
   /// A few handy commands so the snippets list is not empty on day one.
@@ -48,6 +54,7 @@ class VaultDocument {
         'snippets': snippets.map((e) => e.toJson()).toList(),
         'knownHosts': knownHosts.map((e) => e.toJson()).toList(),
         'forwards': forwards.map((e) => e.toJson()).toList(),
+        'customThemes': customThemes.map((e) => e.toJson()).toList(),
         'settings': settings.toJson(),
       };
 
@@ -58,6 +65,7 @@ class VaultDocument {
         snippets: Json.list(j, 'snippets').map(Snippet.fromJson).toList(),
         knownHosts: Json.list(j, 'knownHosts').map(KnownHost.fromJson).toList(),
         forwards: Json.list(j, 'forwards').map(ForwardRule.fromJson).toList(),
+        customThemes: Json.list(j, 'customThemes').map(ThemeSpec.fromJson).toList(),
         settings: j['settings'] is Map ? AppSettings.fromJson((j['settings'] as Map).cast<String, dynamic>()) : const AppSettings(),
       );
 
@@ -71,6 +79,7 @@ class VaultDocument {
     _mergeById(snippets, other.snippets, (e) => e.id);
     _mergeById(knownHosts, other.knownHosts, (e) => '${e.endpoint} ${e.publicKey}');
     _mergeById(forwards, other.forwards, (e) => e.id);
+    _mergeById(customThemes, other.customThemes, (e) => e.id);
   }
 
   static void _mergeById<T>(List<T> into, List<T> from, String Function(T) idOf) {
