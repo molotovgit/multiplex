@@ -197,9 +197,14 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
     final builtIn = KeyboardSettings.of(AppScope.watch(context)).enabled && !_useSystem;
+    final tabsByStyle = AppStyleTheme.of(context).style.terminal.showTabs;
     return ListenableBuilder(
-      listenable: _terminal,
-      builder: (context, _) => Scaffold(
+      listenable: Listenable.merge([_terminal, AppScope.sessions(context)]),
+      builder: (context, _) {
+        // A theme can hide the tabs, but never once there are two terminals
+        // to switch between.
+        final showTabs = tabsByStyle || widget.session.terminals.length > 1;
+        return Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
           title: Column(
@@ -212,6 +217,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
           actions: [
             if (KeyboardSettings.of(AppScope.store(context)).enabled && (_useSystem || _keyboardHidden))
               IconButton(tooltip: 'Built-in keyboard', icon: const AppIcon(AppIcons.keyboard), onPressed: _useBuiltInKeyboard),
+            // Without the tab strip its "+" would be gone, so it moves here.
+            if (!showTabs) IconButton(tooltip: 'New terminal', icon: const Icon(Icons.add), onPressed: () => TerminalScreen.openNew(context, widget.session)),
             IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -236,7 +243,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
         body: Column(
           children: [
-            if (AppStyleTheme.of(context).style.terminal.showTabs)
+            if (showTabs)
               TerminalTabStrip(
                 session: widget.session,
                 current: _terminal,
@@ -273,7 +280,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
             ],
           ],
         ),
-      ),
+      );
+      },
     );
   }
 }
