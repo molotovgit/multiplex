@@ -10,5 +10,6 @@ pub mod sftp;
 pub mod shell;
 pub mod ssh;
 pub mod terminal;
+pub mod theme_import;
 pub mod tunnel;
 pub mod vault;

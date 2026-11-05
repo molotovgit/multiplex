@@ -22,9 +22,11 @@ rand = { version = "0.10", features = ["thread_rng"] }
 # with only the NDK, aws-lc-rs would also need cmake and nasm.
 russh = { version = "0.65", default-features = false, features = ["ring", "rsa", "flate2"] }
 russh-sftp = "3"
+serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "sync", "time", "macros", "fs"] }
 tokio-util = "0.7"
+toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
 vt100 = "0.18"
 
 [dev-dependencies]
