@@ -102,6 +102,25 @@ abstract final class KeyboardFixture {
 }
 
 void main() {
+  group('top row fit', () {
+    test('all keys fit: they stretch to fill the row', () {
+      expect(TerminalTopRow.fitScale([50, 50], 120), closeTo(1.2, 1e-9));
+    });
+
+    test('ends on a whole key, at the size closest to the keys own', () {
+      // 2 keys (100) or 3 keys (150) in 130: 1.3x wider or 0.87x narrower.
+      final scale = TerminalTopRow.fitScale([50, 50, 50, 50], 130);
+      expect(scale, closeTo(130 / 150, 1e-9));
+      final wider = TerminalTopRow.fitScale([50, 50, 50, 50], 110);
+      expect(wider, closeTo(1.1, 1e-9));
+    });
+
+    test('no keys or no room changes nothing', () {
+      expect(TerminalTopRow.fitScale([], 100), 1);
+      expect(TerminalTopRow.fitScale([50], 0), 1);
+    });
+  });
+
   group('layouts', () {
     List<String> lettersOf(KeyboardLayoutKind kind, int row) => [
           for (final k in KeyboardLayout.of(kind).page(KeyboardPage.letters)[row])

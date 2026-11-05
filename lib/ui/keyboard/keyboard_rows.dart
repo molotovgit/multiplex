@@ -71,6 +71,22 @@ class TerminalTopRow extends StatelessWidget {
   static double widthOf(KeySpec key) =>
       key.icon != null || key.label.length <= 2 ? KeyboardMetrics.topKeyWidth : KeyboardMetrics.topKeyWideWidth;
 
+  /// How much to widen or narrow the keys so the row ends on a whole key
+  /// instead of half a key at the edge: the scale that fits a whole number
+  /// of them, closest to their own size. When they all fit, they fill the
+  /// row.
+  static double fitScale(List<double> widths, double space) {
+    if (widths.isEmpty || space <= 0) return 1;
+    var used = 0.0, count = 0;
+    while (count < widths.length && used + widths[count] <= space) {
+      used += widths[count++];
+    }
+    if (count == widths.length) return space / used;
+    final wider = count == 0 ? double.infinity : space / used;
+    final narrower = space / (used + widths[count]);
+    return (wider - 1).abs() <= (1 - narrower).abs() ? wider : narrower;
+  }
+
   @override
   Widget build(BuildContext context) {
     final keys = keysFor(keyBarIds);
@@ -80,15 +96,20 @@ class TerminalTopRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                for (final key in keys)
-                  SizedBox(
-                    width: widthOf(key),
-                    child: KeyCap(spec: key, engine: engine, look: look, inScrollingRow: true),
-                  ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final scale = fitScale([for (final key in keys) widthOf(key)], constraints.maxWidth);
+                return ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final key in keys)
+                      SizedBox(
+                        width: widthOf(key) * scale,
+                        child: KeyCap(spec: key, engine: engine, look: look, inScrollingRow: true),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           for (final key in [_system, _hide])
