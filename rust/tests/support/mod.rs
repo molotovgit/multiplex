@@ -151,6 +151,7 @@ impl server::Handler for ClientConn {
 
     async fn shell_request(&mut self, channel: ChannelId, session: &mut Session) -> Result<(), Self::Error> {
         session.channel_success(channel)?;
+        self.shells.insert(channel);
         session.data(channel, b"welcome\r\n$ ".to_vec())?;
         Ok(())
     }
