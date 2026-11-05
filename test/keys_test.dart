@@ -261,6 +261,13 @@ void main() {
     await tester.tap(find.text('Laptop'));
     await tester.pumpAndSettle();
     expect(find.text('Copy public key'), findsOneWidget);
+    await tester.tap(find.byTooltip('Rename key'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Name'), 'Work laptop');
+    await tester.tap(find.text('Save name'));
+    await tester.pumpAndSettle();
+    expect(app.store.key('k1')!.name, 'Work laptop');
+    expect(find.textContaining('Renamed the key'), findsOneWidget);
     expect(find.textContaining('~/.ssh/authorized_keys'), findsOneWidget);
     expect(find.text('Save passphrase'), findsOneWidget);
     await app.finish();
@@ -329,6 +336,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(app.store.knownHosts, isEmpty);
     expect(find.text('No trusted servers yet'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(app.store.knownHosts.single.fingerprint, 'SHA256:srv', reason: 'Undo trusts the same key again');
     await app.finish();
   });
 }

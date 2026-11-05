@@ -25,7 +25,8 @@ abstract final class KeyText {
   static String? problem(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return 'Paste the private key, or choose the key file.';
-    final looksPublic = trimmed.startsWith('ssh-') ||
+    final looksPublic =
+        trimmed.startsWith('ssh-') ||
         trimmed.startsWith('ecdsa-') ||
         trimmed.startsWith('sk-') ||
         trimmed.contains('BEGIN SSH2 PUBLIC KEY') ||
@@ -114,7 +115,8 @@ class _ImportKeyFormState extends State<ImportKeyForm> {
       _pemChanged();
       if (!_needsPassphrase) await _check();
     } catch (error) {
-      if (mounted) setState(() => _error = 'Could not open the file. Details: $error');
+      if (!mounted) return;
+      setState(() => _error = 'Could not open the file. Try again, or paste the key text here instead. Details: $error');
     }
   }
 
@@ -159,89 +161,101 @@ class _ImportKeyFormState extends State<ImportKeyForm> {
   void _save() {
     final info = _checked;
     if (info == null || !(_form.currentState?.validate() ?? false)) return;
-    widget.onCreated(StoredKey(
-      id: VaultStore.newId(),
-      name: _name.text.trim(),
-      privatePem: info.privatePem,
-      publicOpenssh: info.publicOpenssh,
-      fingerprint: info.fingerprint,
-      algorithm: info.algorithm,
-      passphrase: info.encrypted && _savePassphrase ? _passphrase.text : null,
-      encrypted: info.encrypted,
-      createdAt: DateTime.now(),
-    ));
+    widget.onCreated(
+      StoredKey(
+        id: VaultStore.newId(),
+        name: _name.text.trim(),
+        privatePem: info.privatePem,
+        publicOpenssh: info.publicOpenssh,
+        fingerprint: info.fingerprint,
+        algorithm: info.algorithm,
+        passphrase: info.encrypted && _savePassphrase ? _passphrase.text : null,
+        encrypted: info.encrypted,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColorsTheme.of(context);
     final checked = _checked;
     return Form(
       key: _form,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FormRow(
-            child: TextFormField(
-              controller: _name,
-              enabled: !_busy,
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) => (value ?? '').trim().isEmpty ? 'Enter a name for the key.' : null,
-              decoration: const InputDecoration(labelText: 'Name', hintText: 'For example: Office server key'),
-            ),
-          ),
-          FormRow(
-            child: TextField(
-              controller: _pem,
-              enabled: !_busy,
-              minLines: 4,
-              maxLines: 8,
-              keyboardType: TextInputType.multiline,
-              autocorrect: false,
-              enableSuggestions: false,
-              style: MonoStyle.of(context, Theme.of(context).textTheme.bodySmall),
-              onChanged: (_) => _pemChanged(),
-              decoration: const InputDecoration(
-                labelText: 'Private key',
-                hintText: '-----BEGIN OPENSSH PRIVATE KEY-----',
-                alignLabelWithHint: true,
+          Expanded(
+            child: PageWidth(
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 24),
+                children: [
+                  FormRow(
+                    child: TextFormField(
+                      controller: _name,
+                      enabled: !_busy,
+                      textCapitalization: TextCapitalization.sentences,
+                      validator: (value) => (value ?? '').trim().isEmpty ? 'Enter a name for the key.' : null,
+                      decoration: const InputDecoration(labelText: 'Name', hintText: 'For example: Office server key'),
+                    ),
+                  ),
+                  FormRow(
+                    child: TextField(
+                      controller: _pem,
+                      enabled: !_busy,
+                      minLines: 4,
+                      maxLines: 8,
+                      keyboardType: TextInputType.multiline,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      style: MonoStyle.of(context, Theme.of(context).textTheme.bodySmall),
+                      onChanged: (_) => _pemChanged(),
+                      decoration: const InputDecoration(
+                        labelText: 'Private key',
+                        hintText: '-----BEGIN OPENSSH PRIVATE KEY-----',
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                  ),
+                  FormRow(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: _busy ? null : _pickFile,
+                        icon: const Icon(Icons.file_open_outlined),
+                        label: const Text('Choose key file'),
+                      ),
+                    ),
+                  ),
+                  if (_needsPassphrase) ...[
+                    FormRow(
+                      child: SecretField(
+                        controller: _passphrase,
+                        enabled: !_busy,
+                        label: 'Passphrase',
+                        helper: 'This key is protected. Enter the passphrase that was set when the key was made.',
+                        onChanged: (_) => _passphraseChanged(),
+                        onSubmitted: (_) => _check(),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _savePassphrase,
+                      onChanged: _busy ? null : (value) => setState(() => _savePassphrase = value),
+                      title: const Text('Save passphrase in the vault'),
+                      subtitle: Text(
+                        _savePassphrase
+                            ? 'VaultTerm unlocks the key for you when you connect.'
+                            : 'VaultTerm asks for the passphrase each time you connect.',
+                      ),
+                    ),
+                  ],
+                  if (checked != null) FormRow(child: KeyPreview(info: checked)),
+                ],
               ),
             ),
           ),
-          FormRow(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _busy ? null : _pickFile,
-                icon: const Icon(Icons.file_open_outlined),
-                label: const Text('Choose key file'),
-              ),
-            ),
-          ),
-          if (_needsPassphrase) ...[
-            FormRow(
-              child: SecretField(
-                controller: _passphrase,
-                enabled: !_busy,
-                label: 'Passphrase',
-                helper: 'This key is protected. Enter the passphrase that was set when the key was made.',
-                onChanged: (_) => _passphraseChanged(),
-                onSubmitted: (_) => _check(),
-              ),
-            ),
-            SwitchListTile(
-              value: _savePassphrase,
-              onChanged: _busy ? null : (value) => setState(() => _savePassphrase = value),
-              title: const Text('Save passphrase in the vault'),
-              subtitle: Text(_savePassphrase
-                  ? 'VaultTerm unlocks the key for you when you connect.'
-                  : 'VaultTerm asks for the passphrase each time you connect.'),
-            ),
-          ],
-          if (checked != null) FormRow(child: KeyPreview(info: checked)),
-          if (_error != null) FormRow(child: Text(_error!, style: TextStyle(color: colors.danger))),
-          FormRow(
-            child: FilledButton.icon(
+          BottomActionBar(
+            note: _error,
+            noteIsError: true,
+            action: FilledButton.icon(
               onPressed: _busy ? null : (checked == null ? _check : _save),
               icon: _busy
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -278,7 +292,9 @@ class KeyPreview extends StatelessWidget {
               children: [
                 Icon(Icons.verified_outlined, color: colors.live, size: 20),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Key checked: $type', style: text.titleSmall)),
+                Expanded(
+                  child: Text('Key checked: $type', style: text.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+                ),
               ],
             ),
             if (info.comment.trim().isNotEmpty) ...[
@@ -292,7 +308,7 @@ class KeyPreview extends StatelessWidget {
               Row(
                 children: [
                   Icon(Icons.lock_outline, size: 16, color: colors.muted),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text('Protected by a passphrase', style: text.bodySmall?.copyWith(color: colors.muted)),
                 ],
               ),

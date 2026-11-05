@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
+import '../../src/rust/api/ssh_types.dart';
 import '../common/widgets.dart';
 import 'key_labels.dart';
 import 'page_width.dart';
+import 'undo_toast.dart';
 
 /// Servers whose identity the user has accepted, sorted by address.
 class KnownHostsTab extends StatelessWidget {
@@ -22,14 +24,16 @@ class KnownHostsTab extends StatelessWidget {
           return const EmptyState(
             icon: Icons.verified_user_outlined,
             title: 'No trusted servers yet',
-            message: 'The first time you connect to a server, VaultTerm shows its fingerprint and asks you to trust it. '
+            message:
+                'The first time you connect to a server, VaultTerm shows its fingerprint and asks you to trust it. '
                 'Servers you trust are listed here.',
           );
         }
         return PageWidth(
-          child: ListView(
+          child: ListView.builder(
             padding: const EdgeInsets.only(top: 8, bottom: 32),
-            children: [for (final entry in known) KnownHostTile(known: entry)],
+            itemCount: known.length,
+            itemBuilder: (context, i) => KnownHostTile(key: ValueKey('${known[i].endpoint} ${known[i].publicKey}'), known: known[i]),
           ),
         );
       },
@@ -56,7 +60,11 @@ class KnownHostTile extends StatelessWidget {
     );
     if (!sure) return;
     store.forgetKnownHost(known);
-    if (context.mounted) Toast.show(context, 'Forgot $address');
+    if (!context.mounted) return;
+    // Undo trusts the same key again (dated today).
+    UndoToast.show(context, 'Forgot $address', () {
+      store.trustHostKey(known.host, known.port, HostKeyInfo(algorithm: known.algorithm, fingerprint: known.fingerprint, publicKey: known.publicKey));
+    });
   }
 
   @override
@@ -75,11 +83,7 @@ class KnownHostTile extends StatelessWidget {
           MonoText(known.fingerprint, maxLines: 1, style: text.bodySmall?.copyWith(color: colors.muted)),
         ],
       ),
-      trailing: IconButton(
-        tooltip: 'Forget server',
-        icon: const Icon(Icons.delete_outline),
-        onPressed: () => _forget(context),
-      ),
+      trailing: IconButton(tooltip: 'Forget server', icon: const Icon(Icons.delete_outline), onPressed: () => _forget(context)),
     );
   }
 }

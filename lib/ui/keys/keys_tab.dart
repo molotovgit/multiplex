@@ -33,9 +33,10 @@ class KeysTab extends StatelessWidget {
           );
         }
         return PageWidth(
-          child: ListView(
+          child: ListView.builder(
             padding: const EdgeInsets.only(top: 8, bottom: PageLayout.fabClearance),
-            children: [for (final key in keys) KeyTile(storedKey: key, tools: tools)],
+            itemCount: keys.length,
+            itemBuilder: (context, i) => KeyTile(key: ValueKey(keys[i].id), storedKey: keys[i], tools: tools),
           ),
         );
       },
@@ -63,7 +64,7 @@ class KeyTile extends StatelessWidget {
           Flexible(child: Text(storedKey.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
           if (storedKey.encrypted)
             Padding(
-              padding: const EdgeInsets.only(left: 6),
+              padding: const EdgeInsets.only(left: 8),
               child: Tooltip(
                 message: 'Protected by a passphrase',
                 child: Icon(Icons.lock_outline, size: 16, color: colors.muted, semanticLabel: 'Protected by a passphrase'),
@@ -79,7 +80,9 @@ class KeyTile extends StatelessWidget {
         ],
       ),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (context) => KeyDetailScreen(keyId: storedKey.id, tools: tools)),
+        MaterialPageRoute<void>(
+          builder: (context) => KeyDetailScreen(keyId: storedKey.id, tools: tools),
+        ),
       ),
     );
   }

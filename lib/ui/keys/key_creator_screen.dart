@@ -35,11 +35,11 @@ class _KeyCreatorScreenState extends State<KeyCreatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('New key')),
-      body: PageWidth(
-        child: ListView(
-          padding: const EdgeInsets.only(top: 8, bottom: 32),
-          children: [
-            FormRow(
+      body: Column(
+        children: [
+          PageWidth(
+            fillHeight: false,
+            child: FormRow(
               child: SegmentedButton<KeySource>(
                 segments: const [
                   ButtonSegment(value: KeySource.generate, icon: Icon(Icons.auto_awesome_outlined), label: Text('Generate new')),
@@ -49,20 +49,19 @@ class _KeyCreatorScreenState extends State<KeyCreatorScreen> {
                 onSelectionChanged: (choice) => setState(() => _source = choice.first),
               ),
             ),
-            // Both forms stay alive, so switching back and forth does not
-            // lose what was typed.
-            Visibility(
-              visible: _source == KeySource.generate,
-              maintainState: true,
-              child: GenerateKeyForm(tools: widget.tools, onCreated: _finish),
+          ),
+          // Both forms stay alive, so switching back and forth does not
+          // lose what was typed. Each one pins its own button at the bottom.
+          Expanded(
+            child: IndexedStack(
+              index: _source.index,
+              children: [
+                GenerateKeyForm(tools: widget.tools, onCreated: _finish),
+                ImportKeyForm(tools: widget.tools, onCreated: _finish),
+              ],
             ),
-            Visibility(
-              visible: _source == KeySource.import,
-              maintainState: true,
-              child: ImportKeyForm(tools: widget.tools, onCreated: _finish),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

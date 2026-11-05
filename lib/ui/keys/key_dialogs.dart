@@ -13,7 +13,10 @@ class RenameDialog extends StatefulWidget {
 
   /// Returns the new name, or null if cancelled.
   static Future<String?> ask(BuildContext context, {required String title, required String initial, required String action}) {
-    return showDialog<String>(context: context, builder: (context) => RenameDialog(title: title, initial: initial, action: action));
+    return showDialog<String>(
+      context: context,
+      builder: (context) => RenameDialog(title: title, initial: initial, action: action),
+    );
   }
 
   @override
@@ -70,7 +73,10 @@ class PassphraseDialog extends StatefulWidget {
 
   /// Returns the checked passphrase, or null if cancelled.
   static Future<String?> ask(BuildContext context, {required String keyName, required Future<String?> Function(String) check}) {
-    return showDialog<String>(context: context, builder: (context) => PassphraseDialog(keyName: keyName, check: check));
+    return showDialog<String>(
+      context: context,
+      builder: (context) => PassphraseDialog(keyName: keyName, check: check),
+    );
   }
 
   @override
@@ -124,13 +130,17 @@ class _PassphraseDialogState extends State<PassphraseDialog> {
           SecretField(controller: _controller, label: 'Passphrase', autofocus: true, enabled: !_busy, onSubmitted: (_) => _submit()),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: colors.danger)),
+            Text(_error!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.danger)),
           ],
         ],
       ),
       actions: [
         TextButton(onPressed: _busy ? null : () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'Checking…' : 'Save passphrase')),
+        FilledButton.icon(
+          onPressed: _busy ? null : _submit,
+          icon: _busy ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.lock_outline),
+          label: Text(_busy ? 'Checking…' : 'Save passphrase'),
+        ),
       ],
     );
   }

@@ -40,6 +40,13 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
         final users = store.hosts.where((h) => h.keyId == key.id).toList();
         return Scaffold(
           appBar: AppBar(title: Text(key.name)),
+          bottomNavigationBar: BottomActionBar(
+            action: FilledButton.icon(
+              icon: const Icon(Icons.copy_outlined),
+              label: const Text('Copy public key'),
+              onPressed: () => Toast.copy(context, key.publicOpenssh.trim(), what: 'Copied the public key'),
+            ),
+          ),
           body: PageWidth(
             child: ListView(
               padding: const EdgeInsets.only(bottom: 32),
@@ -49,14 +56,13 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                 FormRow(child: MonoText(key.fingerprint, selectable: true)),
                 const SectionHeader('Public key'),
                 PublicKeySection(storedKey: key),
-                if (key.encrypted) ...[
-                  const SectionHeader('Passphrase'),
-                  PassphraseTile(storedKey: key, tools: tools),
-                ],
+                if (key.encrypted) ...[const SectionHeader('Passphrase'), PassphraseTile(storedKey: key, tools: tools)],
                 const SectionHeader('Used by'),
                 KeyUsersTile(users: users),
                 const SizedBox(height: 16),
-                FormRow(child: DeleteKeyButton(storedKey: key, users: users.length)),
+                FormRow(
+                  child: DeleteKeyButton(storedKey: key, users: users.length),
+                ),
               ],
             ),
           ),
@@ -77,6 +83,7 @@ class KeySummaryTile extends StatelessWidget {
     final name = await RenameDialog.ask(context, title: 'Rename key', initial: storedKey.name, action: 'Save name');
     if (name == null || name == storedKey.name) return;
     store.saveKey(storedKey.copyWith(name: name));
+    if (context.mounted) Toast.show(context, 'Renamed the key to "$name"');
   }
 
   @override
@@ -85,14 +92,15 @@ class KeySummaryTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       leading: const Icon(Icons.vpn_key_outlined),
-      title: Text(storedKey.name, style: Theme.of(context).textTheme.titleMedium),
+      title: Text(storedKey.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
       subtitle: Text('${KeyAlgorithms.label(storedKey.algorithm)} · Created $created'),
       trailing: IconButton(tooltip: 'Rename key', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(context)),
     );
   }
 }
 
-/// The public key line, what it is for, and the two ways to use it.
+/// The public key line, what it is for, and installing it on a server.
+/// Copying it is the screen's main action, in the bar at the bottom.
 class PublicKeySection extends StatelessWidget {
   const PublicKeySection({super.key, required this.storedKey});
 
@@ -117,21 +125,13 @@ class PublicKeySection extends StatelessWidget {
             style: text.bodySmall?.copyWith(color: colors.muted),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              FilledButton.icon(
-                icon: const Icon(Icons.copy_outlined),
-                label: const Text('Copy public key'),
-                onPressed: () => Toast.copy(context, storedKey.publicOpenssh.trim(), what: 'Copied the public key'),
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.upload_outlined),
-                label: const Text('Install on a server'),
-                onPressed: () => KeyInstaller.install(context, storedKey),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.upload_outlined),
+              label: const Text('Install on a server'),
+              onPressed: () => KeyInstaller.install(context, storedKey),
+            ),
           ),
         ],
       ),
@@ -226,7 +226,8 @@ class DeleteKeyButton extends StatelessWidget {
     final sure = await Confirm.ask(
       context,
       title: 'Delete "${storedKey.name}"?',
-      message: '$hosts The key is removed from this device and cannot be brought back. '
+      message:
+          '$hosts The key is removed from this device and cannot be brought back. '
           'Servers keep the public key until you remove it there.',
       action: 'Delete key',
     );
