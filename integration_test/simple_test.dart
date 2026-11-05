@@ -1,13 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:vaultterm/main.dart';
+import 'package:vaultterm/src/rust/api/app.dart';
+import 'package:vaultterm/src/rust/api/keys.dart';
 import 'package:vaultterm/src/rust/frb_generated.dart';
 
+/// Runs on a real device or desktop with the native library loaded.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async => await RustLib.init());
-  testWidgets('app starts with the native core loaded', (tester) async {
-    await tester.pumpWidget(const VaultTermApp());
-    expect(find.text('VaultTerm'), findsOneWidget);
+
+  test('the native core loads and answers', () async {
+    expect(coreVersion(), isNotEmpty);
+    final key = await generateKey(kind: KeyKind.ed25519, comment: 'device-test');
+    expect(key.publicOpenssh, startsWith('ssh-ed25519 '));
   });
 }
