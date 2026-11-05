@@ -1,9 +1,111 @@
 import 'package:flutter/material.dart';
 
-/// Themes, fonts and cursor.
+import '../../app/app_scope.dart';
+import '../../app/theme.dart';
+import '../../app/theme_spec.dart';
+import '../common/widgets.dart';
+import 'terminal_text_section.dart';
+import 'theme_actions.dart';
+import 'theme_gallery.dart';
+import 'theme_import_flow.dart';
+
+/// Themes, fonts and cursor. One theme styles the whole app, screens and
+/// terminal alike; tapping a theme uses it at once. Users can make their
+/// own themes, import them from other terminals and pick the terminal
+/// font, size, line height and cursor.
 class AppearanceScreen extends StatelessWidget {
   const AppearanceScreen({super.key});
 
+  /// Widest the font and cursor settings get; the gallery uses the full
+  /// width and adds columns instead.
+  static const _formWidth = 720.0;
+
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Appearance')));
+  Widget build(BuildContext context) {
+    final store = AppScope.store(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Appearance'),
+        actions: [
+          IconButton(icon: const Icon(Icons.add), tooltip: 'Create theme', onPressed: () => ThemeActions(context).create()),
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: 'Import theme',
+            onPressed: () => ThemeImportFlow(context).start(),
+          ),
+        ],
+      ),
+      body: ListenableBuilder(
+        listenable: store,
+        builder: (context, _) {
+          final activeId = store.activeTheme.id;
+          final custom = store.customThemes;
+          return CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(child: SectionHeader('Built-in')),
+              ThemeGridSliver(themes: BuiltInThemes.all, activeId: activeId),
+              const SliverToBoxAdapter(child: SectionHeader('Your themes')),
+              if (custom.isEmpty)
+                const SliverToBoxAdapter(child: _NoCustomThemes())
+              else
+                ThemeGridSliver(themes: custom, activeId: activeId),
+              const SliverToBoxAdapter(child: _ThemeButtons()),
+              SliverToBoxAdapter(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: _formWidth),
+                    child: const TerminalTextSection(),
+                  ),
+                ),
+              ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// What "Your themes" shows before the user has any.
+class _NoCustomThemes extends StatelessWidget {
+  const _NoCustomThemes();
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = AppColorsTheme.of(context).muted;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Text(
+        'Themes you create or import show up here. Start from the theme in use, or bring one from Alacritty, Kitty or Ghostty.',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted),
+      ),
+    );
+  }
+}
+
+/// "Create theme" and "Import theme", under the user's own themes.
+class _ThemeButtons extends StatelessWidget {
+  const _ThemeButtons();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.tonalIcon(
+              onPressed: () => ThemeActions(context).create(),
+              icon: const Icon(Icons.add),
+              label: const Text('Create theme'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => ThemeImportFlow(context).start(),
+              icon: const Icon(Icons.file_download_outlined),
+              label: const Text('Import theme'),
+            ),
+          ],
+        ),
+      );
 }
