@@ -74,6 +74,7 @@ class ThemeSpec {
         'cursor': cursor,
         'accent': accent,
         'selection': selection,
+        'credit': credit,
       };
 
   factory ThemeSpec.fromJson(Map<String, dynamic> j) {
@@ -88,6 +89,7 @@ class ThemeSpec {
       cursor: Json.integer(j, 'cursor', fg),
       accent: Json.integer(j, 'accent', 0xFFF2B33D),
       selection: j['selection'] is num ? (j['selection'] as num).toInt() : null,
+      credit: Json.strOrNull(j, 'credit'),
     );
   }
 }
