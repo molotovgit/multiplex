@@ -4,13 +4,34 @@ import 'package:local_auth/local_auth.dart';
 import 'app_scope.dart';
 import 'theme.dart';
 
+/// Asks the phone to confirm it is the owner: fingerprint, face or the
+/// device PIN. A class so tests can stand in for the phone.
+class DeviceUnlock {
+  const DeviceUnlock();
+
+  static final _auth = LocalAuthentication();
+
+  /// True when the owner confirmed. Throws [LocalAuthException] when the
+  /// prompt was cancelled or could not be shown.
+  Future<bool> confirm() => _auth.authenticate(localizedReason: 'Unlock Multiplex');
+
+  /// Whether the phone has any lock (biometrics or a PIN) to confirm with.
+  Future<bool> hasAnyLock() => _auth.isDeviceSupported();
+}
+
 /// Covers the app until the user unlocks it with fingerprint, face or the
 /// device PIN, when "App lock" is on. It locks again after the app has
 /// been in the background for a while.
+///
+/// Only a confirmed unlock opens the app. Cancelling the prompt, a timeout
+/// or a lockout leave it locked, with a button to try again. The one way in
+/// without confirming is a phone with no lock at all, where the prompt can
+/// never succeed and the user would be shut out of their own data.
 class LockGate extends StatefulWidget {
-  const LockGate({super.key, required this.child});
+  const LockGate({super.key, required this.child, this.unlock = const DeviceUnlock()});
 
   final Widget child;
+  final DeviceUnlock unlock;
 
   @override
   State<LockGate> createState() => _LockGateState();
@@ -20,10 +41,12 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
   /// Coming back sooner than this does not ask again.
   static const _grace = Duration(seconds: 60);
 
-  final _auth = LocalAuthentication();
   bool _unlocked = false;
   bool _asking = false;
   DateTime? _leftAt;
+
+  /// Why the last try did not unlock, shown under the button.
+  String? _message;
 
   @override
   void initState() {
@@ -60,16 +83,47 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
     }
     if (_asking) return;
     _asking = true;
+    var open = false;
+    String? message;
     try {
-      final ok = await _auth.authenticate(localizedReason: 'Unlock Multiplex');
-      if (mounted) setState(() => _unlocked = ok);
+      open = await widget.unlock.confirm();
+      if (!open) message = 'Not unlocked. Try again.';
+    } on LocalAuthException catch (e) {
+      if (e.code == LocalAuthExceptionCode.noCredentialsSet) {
+        open = true;
+      } else {
+        message = _why(e.code);
+      }
     } catch (_) {
-      // No biometrics or PIN set up on this device: do not lock the user out.
-      if (mounted) setState(() => _unlocked = true);
+      // Something unexpected: open only if the phone has no lock to check.
+      open = !await _hasAnyLock();
+      if (!open) message = 'Could not ask for your fingerprint or PIN. Try again.';
     } finally {
       _asking = false;
     }
+    if (mounted) {
+      setState(() {
+        _unlocked = open;
+        _message = message;
+      });
+    }
   }
+
+  Future<bool> _hasAnyLock() async {
+    try {
+      return await widget.unlock.hasAnyLock();
+    } catch (_) {
+      return true;
+    }
+  }
+
+  static String _why(LocalAuthExceptionCode code) => switch (code) {
+        LocalAuthExceptionCode.userCanceled || LocalAuthExceptionCode.systemCanceled => 'Unlock was cancelled.',
+        LocalAuthExceptionCode.timeout => 'The unlock prompt timed out.',
+        LocalAuthExceptionCode.temporaryLockout => 'Too many tries. Wait a moment, then try again.',
+        LocalAuthExceptionCode.biometricLockout => 'Fingerprint is locked. Unlock with your PIN.',
+        _ => 'Not unlocked. Try again.',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +139,10 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
             Text('Multiplex is locked', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 20),
             FilledButton.icon(onPressed: _unlock, icon: const Icon(Icons.fingerprint), label: const Text('Unlock')),
+            if (_message != null) ...[
+              const SizedBox(height: 12),
+              Text(_message!, style: TextStyle(color: colors.muted)),
+            ],
           ],
         ),
       ),
