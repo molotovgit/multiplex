@@ -114,6 +114,14 @@ abstract final class AppTheme {
         StyleDensity.comfortable => const VisualDensity(horizontal: 0, vertical: 1),
       };
 
+  /// Bottom bar labels. Monospace app fonts are wider, so five labels of a
+  /// phone-width bar would run into each other: drop the letter spacing and
+  /// one point of size there.
+  static TextStyle? _navLabel(TextStyle? base, {required bool monospace}) {
+    if (base == null || !monospace) return base;
+    return base.copyWith(letterSpacing: 0, fontSize: (base.fontSize ?? 12) - 1);
+  }
+
   static double? _listPadding(StyleDensity d) => switch (d) {
         StyleDensity.compact => 4,
         StyleDensity.normal => null,
@@ -196,7 +204,7 @@ abstract final class AppTheme {
         indicatorColor: c.accent.withValues(alpha: 0.2),
         iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: selectedOrMuted.resolve(s))),
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (s) => scaled.textTheme.labelMedium?.copyWith(
+          (s) => _navLabel(scaled.textTheme.labelMedium, monospace: style.appFont != ThemeStyle.systemFont)?.copyWith(
             color: s.contains(WidgetState.selected) ? c.text : c.muted,
             fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
           ),
