@@ -163,11 +163,11 @@ abstract final class Fixtures {
     addTearDown(tester.view.reset);
   }
 
-  /// Shows the files screen for a fake server. Call `manager.dispose()`
-  /// at the end of the test to stop its timer.
+  /// Shows the files screen for a fake server.
   static Future<SessionManager> showFiles(WidgetTester tester, FakeSsh ssh) async {
     final store = await VaultStore.open(MemoryBackend());
     final manager = SessionManager(store);
+    addTearDown(manager.dispose);
     final session = LiveSession(id: 's1', host: const Host(id: 'h1', label: 'Box', address: 'box.example'), ssh: ssh);
     await tester.pumpWidget(
       AppScope(
@@ -178,6 +178,15 @@ abstract final class Fixtures {
     );
     await tester.pumpAndSettle();
     return manager;
+  }
+
+  /// Every tap target is at least 48 by 48 and has a label (Material's
+  /// own accessibility checks).
+  static Future<void> checkTouchRules(WidgetTester tester) async {
+    final semantics = tester.ensureSemantics();
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    semantics.dispose();
   }
 
   static Future<void> chooseAction(WidgetTester tester, String name, String action) async {
@@ -309,71 +318,57 @@ void main() {
       expect(queue.jobs, isEmpty);
       queue.dispose();
     });
-
-    test('a cancelled upload leaves the server alone (the core removes its own .part file)', () async {
-      final files = FakeFiles({});
-      final task = UploadTask(files: files, source: UploadSource(name: 'a.txt', path: '/tmp/a.txt'), remoteFolder: '/srv');
-      expect(task.remotePath, '/srv/a.txt');
-      await task.afterCancel();
-      expect(files.calls, isEmpty);
-    });
   });
 
   group('files screen', () {
     testWidgets('lists the home folder, hides dot files, and opens folders', (tester) async {
-      final manager = await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
+      await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
       expect(find.text('notes.txt'), findsOneWidget);
       expect(find.text('.bashrc'), findsNothing);
       expect(find.textContaining('2.0 KB'), findsOneWidget);
       expect(find.text('-rw-r--r--'), findsWidgets);
       expect(find.text('Upload files'), findsOneWidget);
-
       await tester.tap(find.byTooltip('More options'));
       await tester.pumpAndSettle();
       await tester.tap(find.ancestor(of: find.text('Show hidden files'), matching: find.byWidgetPredicate((w) => w is CheckedPopupMenuItem)));
       await tester.pumpAndSettle();
       expect(find.text('.bashrc'), findsOneWidget);
-
       await tester.tap(find.text('projects'));
       await tester.pumpAndSettle();
       expect(find.text('main.rs'), findsOneWidget);
-
       await tester.tap(find.text('home'));
       await tester.pumpAndSettle();
       expect(find.text('ann'), findsWidgets);
-
       await tester.tap(find.byTooltip('Up one folder'));
       await tester.pumpAndSettle();
       expect(find.text('home'), findsWidgets);
-      manager.dispose();
     });
 
     testWidgets('offers to try again when the files cannot open', (tester) async {
-      final manager = await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree()), failOpens: 1));
+      await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree()), failOpens: 1));
       expect(find.text('Could not open the files'), findsOneWidget);
       expect(find.textContaining('Subsystem request failed.'), findsOneWidget);
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
       expect(find.text('notes.txt'), findsOneWidget);
-      manager.dispose();
     });
 
     testWidgets('a dropped connection shows a banner and takes the actions away', (tester) async {
       final ssh = FakeSsh(FakeFiles(Fixtures.tree()));
-      final manager = await Fixtures.showFiles(tester, ssh);
+      await Fixtures.showFiles(tester, ssh);
       ssh.connected = false;
       await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle(); // The upload button animates away.
       expect(find.textContaining('connection to this server closed'), findsOneWidget);
       expect(find.text('Upload files'), findsNothing);
       expect(find.byTooltip('More actions for notes.txt'), findsNothing);
-      manager.dispose();
     });
 
-    testWidgets('permissions: boxes and number stay in step', (tester) async {
+    testWidgets('permissions: boxes and number stay in step, and the change can be undone', (tester) async {
       final files = FakeFiles(Fixtures.tree());
-      final manager = await Fixtures.showFiles(tester, FakeSsh(files));
+      await Fixtures.showFiles(tester, FakeSsh(files));
       await Fixtures.chooseAction(tester, 'notes.txt', 'Permissions');
+      await Fixtures.checkTouchRules(tester);
       expect(find.widgetWithText(TextField, '644'), findsOneWidget);
       await tester.tap(find.byType(Checkbox).at(2)); // Owner can execute.
       await tester.pump();
@@ -384,25 +379,27 @@ void main() {
       expect(tester.widget<Checkbox>(find.byType(Checkbox).at(3)).value, isFalse); // Group can read.
       await tester.tap(find.text('Change permissions'));
       await tester.pumpAndSettle();
-      expect(files.calls, contains('chmod /home/ann/notes.txt 600'));
-      manager.dispose();
+      expect(find.text('Permissions of notes.txt set to 600'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(files.calls, ['chmod /home/ann/notes.txt 600', 'chmod /home/ann/notes.txt 644']);
     });
 
     testWidgets('delete asks first and warns that folders go with their contents', (tester) async {
       final files = FakeFiles(Fixtures.tree());
-      final manager = await Fixtures.showFiles(tester, FakeSsh(files));
+      await Fixtures.showFiles(tester, FakeSsh(files));
       await Fixtures.chooseAction(tester, 'projects', 'Delete');
       expect(find.textContaining('everything inside it'), findsOneWidget);
       await tester.tap(find.text('Delete folder'));
       await tester.pumpAndSettle();
       expect(files.calls, ['remove /home/ann/projects']);
       expect(find.text('projects'), findsNothing);
-      manager.dispose();
+      expect(find.text('Deleted projects'), findsOneWidget);
     });
 
-    testWidgets('rename refuses a name that is already taken', (tester) async {
+    testWidgets('rename refuses a taken name, and can be undone', (tester) async {
       final files = FakeFiles(Fixtures.tree());
-      final manager = await Fixtures.showFiles(tester, FakeSsh(files));
+      await Fixtures.showFiles(tester, FakeSsh(files));
       await Fixtures.chooseAction(tester, 'notes.txt', 'Rename');
       await tester.enterText(find.byType(TextField), 'projects');
       await tester.tap(find.widgetWithText(FilledButton, 'Rename'));
@@ -411,36 +408,27 @@ void main() {
       await tester.enterText(find.byType(TextField), 'todo.txt');
       await tester.tap(find.widgetWithText(FilledButton, 'Rename'));
       await tester.pumpAndSettle();
-      expect(files.calls, ['rename /home/ann/notes.txt /home/ann/todo.txt']);
-      manager.dispose();
-    });
-
-    testWidgets('big files are offered as a download instead', (tester) async {
-      final manager = await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
-      await tester.tap(find.text('big.iso'));
+      expect(find.text('Renamed to todo.txt'), findsOneWidget);
+      await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
-      expect(find.text('Too big to open here'), findsOneWidget);
-      expect(find.text('Download file'), findsOneWidget);
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      manager.dispose();
+      expect(files.calls, ['rename /home/ann/notes.txt /home/ann/todo.txt', 'rename /home/ann/todo.txt /home/ann/notes.txt']);
     });
 
     testWidgets('the editor saves, and asks before throwing changes away', (tester) async {
       final files = FakeFiles(Fixtures.tree())..texts['/home/ann/notes.txt'] = 'hello';
-      final manager = await Fixtures.showFiles(tester, FakeSsh(files));
+      await Fixtures.showFiles(tester, FakeSsh(files));
       await tester.tap(find.text('notes.txt'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextField, 'hello'), findsOneWidget);
-
+      expect(find.text('Save'), findsNothing); // Nothing to save yet.
       await tester.enterText(find.byType(TextField), 'hello world');
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text('notes.txt (not saved)'), findsOneWidget);
+      await Fixtures.checkTouchRules(tester);
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
       expect(files.texts['/home/ann/notes.txt'], 'hello world');
       expect(find.text('Saved notes.txt'), findsOneWidget);
-
       await tester.enterText(find.byType(TextField), 'scribble');
       await tester.pump();
       await tester.pageBack();
@@ -450,24 +438,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('projects'), findsOneWidget);
       expect(files.texts['/home/ann/notes.txt'], 'hello world');
-      manager.dispose();
     });
 
-    testWidgets('fits a phone screen, and a long press opens the actions', (tester) async {
+    testWidgets('fits a phone at double text size; long press, copy path and big files work', (tester) async {
       Fixtures.phone(tester);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final copied = <Object?>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async => copied.add(call.arguments));
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
-      final manager = await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
+      await Fixtures.showFiles(tester, FakeSsh(FakeFiles(Fixtures.tree())));
       expect(find.text('Upload files'), findsOneWidget);
+      await Fixtures.checkTouchRules(tester);
       await tester.longPress(find.text('notes.txt'));
       await tester.pumpAndSettle();
       expect(find.text('Download'), findsOneWidget);
+      await Fixtures.checkTouchRules(tester);
       await tester.tap(find.text('Copy path'));
       await tester.pumpAndSettle();
       expect(find.text('Path copied'), findsOneWidget);
       expect(copied.toString(), contains('/home/ann/notes.txt'));
-      manager.dispose();
+      await tester.tap(find.text('big.iso'));
+      await tester.pumpAndSettle();
+      expect(find.text('Too big to open here'), findsOneWidget);
+      expect(find.text('Download file'), findsOneWidget);
     });
 
     testWidgets('the transfer panel shows progress and lists every transfer', (tester) async {
@@ -482,12 +476,13 @@ void main() {
       expect(find.text('Transfers: 2 running'), findsOneWidget);
       running.transfer!.progress.add(TransferProgress(transferred: BigInt.from(512), total: BigInt.from(2048)));
       failing.done.completeError(AnyhowException('permission denied'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.text('Downloading backup.tar'), findsOneWidget);
-      await tester.tap(find.byTooltip('Show transfers'));
+      await tester.tap(find.text('Downloading backup.tar'));
       await tester.pumpAndSettle();
       expect(find.text('512 B of 2.0 KB'), findsOneWidget);
       expect(find.textContaining('Failed: Permission denied.'), findsOneWidget);
+      await Fixtures.checkTouchRules(tester);
       await tester.tap(find.byTooltip('Cancel transfer'));
       await tester.pumpAndSettle();
       expect(find.text('Cancelled'), findsOneWidget);

@@ -124,7 +124,7 @@ class UploadSource {
 }
 
 /// Uploads one local file into a server folder. An existing file with the
-/// same name is replaced. The core writes to "<name>.part" first and
+/// same name is replaced. The core writes to `<name>.part` first and
 /// removes that itself on cancel or failure, so a stopped upload leaves
 /// the old file as it was and nothing needs tidying here.
 class UploadTask extends TransferTask {
