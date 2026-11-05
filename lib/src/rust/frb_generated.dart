@@ -3,7 +3,7 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
-import 'api/simple.dart';
+import 'api/terminal_types.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -57,9 +57,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
       RustLibWire.fromExternalLibrary;
 
   @override
-  Future<void> executeRustInitializers() async {
-    await api.crateApiSimpleInitApp();
-  }
+  Future<void> executeRustInitializers() async {}
 
   @override
   ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig =>
@@ -69,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1918914929;
+  int get rustContentHash => -503361176;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -81,9 +79,9 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
-  String crateApiSimpleGreet({required String name});
+  Future<KeyModifiers> crateApiTerminalTypesKeyModifiersDefault();
 
-  Future<void> crateApiSimpleInitApp();
+  Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault();
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -95,30 +93,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
-  String crateApiSimpleGreet({required String name}) {
-    return handler.executeSync(
-      SyncTask(
-        callFfi: () {
+  Future<KeyModifiers> crateApiTerminalTypesKeyModifiersDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 1,
+            port: port_,
+          );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_String,
+          decodeSuccessData: sse_decode_key_modifiers,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleGreetConstMeta,
-        argValues: [name],
+        constMeta: kCrateApiTerminalTypesKeyModifiersDefaultConstMeta,
+        argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleGreetConstMeta =>
-      const TaskConstMeta(debugName: "greet", argNames: ["name"]);
+  TaskConstMeta get kCrateApiTerminalTypesKeyModifiersDefaultConstMeta =>
+      const TaskConstMeta(debugName: "key_modifiers_default", argNames: []);
 
   @override
-  Future<void> crateApiSimpleInitApp() {
+  Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault() {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
@@ -131,33 +133,61 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
         },
         codec: SseCodec(
-          decodeSuccessData: sse_decode_unit,
+          decodeSuccessData: sse_decode_terminal_palette,
           decodeErrorData: null,
         ),
-        constMeta: kCrateApiSimpleInitAppConstMeta,
+        constMeta: kCrateApiTerminalTypesTerminalPaletteDefaultConstMeta,
         argValues: [],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiSimpleInitAppConstMeta =>
-      const TaskConstMeta(debugName: "init_app", argNames: []);
+  TaskConstMeta get kCrateApiTerminalTypesTerminalPaletteDefaultConstMeta =>
+      const TaskConstMeta(debugName: "terminal_palette_default", argNames: []);
 
   @protected
-  String dco_decode_String(dynamic raw) {
+  bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as String;
+    return raw as bool;
   }
 
   @protected
-  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
+  KeyModifiers dco_decode_key_modifiers(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
-    return raw as Uint8List;
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return KeyModifiers(
+      ctrl: dco_decode_bool(arr[0]),
+      alt: dco_decode_bool(arr[1]),
+      shift: dco_decode_bool(arr[2]),
+    );
   }
 
   @protected
-  int dco_decode_u_8(dynamic raw) {
+  Uint32List dco_decode_list_prim_u_32_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as Uint32List;
+  }
+
+  @protected
+  TerminalPalette dco_decode_terminal_palette(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return TerminalPalette(
+      ansi: dco_decode_list_prim_u_32_strict(arr[0]),
+      foreground: dco_decode_u_32(arr[1]),
+      background: dco_decode_u_32(arr[2]),
+      cursor: dco_decode_u_32(arr[3]),
+      boldIsBright: dco_decode_bool(arr[4]),
+    );
+  }
+
+  @protected
+  int dco_decode_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
   }
@@ -169,23 +199,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  String sse_decode_String(SseDeserializer deserializer) {
+  bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var inner = sse_decode_list_prim_u_8_strict(deserializer);
-    return utf8.decoder.convert(inner);
+    return deserializer.buffer.getUint8() != 0;
   }
 
   @protected
-  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
+  KeyModifiers sse_decode_key_modifiers(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_ctrl = sse_decode_bool(deserializer);
+    var var_alt = sse_decode_bool(deserializer);
+    var var_shift = sse_decode_bool(deserializer);
+    return KeyModifiers(ctrl: var_ctrl, alt: var_alt, shift: var_shift);
+  }
+
+  @protected
+  Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
-    return deserializer.buffer.getUint8List(len_);
+    return deserializer.buffer.getUint32List(len_);
   }
 
   @protected
-  int sse_decode_u_8(SseDeserializer deserializer) {
+  TerminalPalette sse_decode_terminal_palette(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8();
+    var var_ansi = sse_decode_list_prim_u_32_strict(deserializer);
+    var var_foreground = sse_decode_u_32(deserializer);
+    var var_background = sse_decode_u_32(deserializer);
+    var var_cursor = sse_decode_u_32(deserializer);
+    var var_boldIsBright = sse_decode_bool(deserializer);
+    return TerminalPalette(
+      ansi: var_ansi,
+      foreground: var_foreground,
+      background: var_background,
+      cursor: var_cursor,
+      boldIsBright: var_boldIsBright,
+    );
+  }
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint32();
   }
 
   @protected
@@ -200,31 +255,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
+  void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
+    serializer.buffer.putUint8(self ? 1 : 0);
   }
 
   @protected
-  void sse_encode_String(String self, SseSerializer serializer) {
+  void sse_encode_key_modifiers(KeyModifiers self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+    sse_encode_bool(self.ctrl, serializer);
+    sse_encode_bool(self.alt, serializer);
+    sse_encode_bool(self.shift, serializer);
   }
 
   @protected
-  void sse_encode_list_prim_u_8_strict(
-    Uint8List self,
+  void sse_encode_list_prim_u_32_strict(
+    Uint32List self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
-    serializer.buffer.putUint8List(self);
+    serializer.buffer.putUint32List(self);
   }
 
   @protected
-  void sse_encode_u_8(int self, SseSerializer serializer) {
+  void sse_encode_terminal_palette(
+    TerminalPalette self,
+    SseSerializer serializer,
+  ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self);
+    sse_encode_list_prim_u_32_strict(self.ansi, serializer);
+    sse_encode_u_32(self.foreground, serializer);
+    sse_encode_u_32(self.background, serializer);
+    sse_encode_u_32(self.cursor, serializer);
+    sse_encode_bool(self.boldIsBright, serializer);
+  }
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint32(self);
   }
 
   @protected
@@ -236,11 +306,5 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }
