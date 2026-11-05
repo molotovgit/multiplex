@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/selection_look.dart';
 import '../../app/terminal_fonts.dart';
-import '../../app/theme.dart';
 import '../../app/theme_look.dart';
 import '../../app/theme_slides.dart';
 import '../../data/app_settings.dart';
@@ -170,7 +170,6 @@ class _TerminalViewState extends State<TerminalView> {
   @override
   Widget build(BuildContext context) {
     final store = AppScope.store(context);
-    final colors = AppColorsTheme.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge([store, _terminal]),
       builder: (context, _) {
@@ -180,7 +179,7 @@ class _TerminalViewState extends State<TerminalView> {
         final styleKey = (family, settings.fontSize, settings.lineHeight);
         final frame = _terminal.frame;
         final theme = store.activeTheme;
-        final selectionColor = Color(theme.selection ?? colors.accent.withValues(alpha: 0.35).toARGB32()).withValues(alpha: 0.45);
+        final selectionLook = SelectionLook.of(theme);
         final style = AppStyleTheme.of(context).style;
         final backdrop = style.backdrop;
         final slide = ActiveSlide.of(theme, settings);
@@ -232,7 +231,7 @@ class _TerminalViewState extends State<TerminalView> {
                                       focused: widget.focusNode.hasFocus,
                                       cursorStyle: settings.cursorStyle,
                                       selection: _selection,
-                                      selectionColor: selectionColor,
+                                      selectionLook: selectionLook,
                                       paintBackground: slide == null,
                                     ),
                                   ),

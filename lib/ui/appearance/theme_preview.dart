@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/backdrops/backdrop_painter.dart';
+import '../../app/selection_look.dart';
 import '../../app/terminal_fonts.dart';
 import '../../app/theme_spec.dart';
 import '../../app/theme_style.dart';
@@ -51,14 +52,6 @@ abstract final class PreviewScript {
 
   /// The title shown on the fake tab, underlined in the accent colour.
   static const tab = 'host';
-}
-
-/// Colours the preview takes from a theme, the same way the real
-/// terminal does.
-abstract final class PreviewColors {
-  /// The real terminal marks selected text with the selection colour (or
-  /// the accent when there is none) at a little under half strength.
-  static Color selection(ThemeSpec theme) => Color(theme.selection ?? theme.accent).withValues(alpha: 0.45);
 }
 
 /// A small fake terminal drawn in a theme's own colours. Used in the theme
@@ -200,14 +193,18 @@ class _PreviewLine extends StatelessWidget {
 
 /// Turns a [PreviewSegment] into styled text.
 abstract final class _SegmentSpan {
-  static TextSpan of(PreviewSegment segment, ThemeSpec theme, TextStyle base) => TextSpan(
-        text: segment.text,
-        style: base.copyWith(
-          color: Color(segment.ansi == null ? theme.foreground : theme.ansi[segment.ansi!]),
-          fontWeight: segment.bold ? FontWeight.w700 : FontWeight.w400,
-          backgroundColor: segment.selected ? PreviewColors.selection(theme) : null,
-        ),
-      );
+  static TextSpan of(PreviewSegment segment, ThemeSpec theme, TextStyle base) {
+    // Selected text looks as it does in the real terminal.
+    final selection = segment.selected ? SelectionLook.of(theme) : null;
+    return TextSpan(
+      text: segment.text,
+      style: base.copyWith(
+        color: selection?.text ?? Color(segment.ansi == null ? theme.foreground : theme.ansi[segment.ansi!]),
+        fontWeight: segment.bold ? FontWeight.w700 : FontWeight.w400,
+        backgroundColor: selection?.fill,
+      ),
+    );
+  }
 }
 
 /// A tab title with an accent underline, like the terminal's own tab bar.

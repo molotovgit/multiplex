@@ -1,4 +1,8 @@
+import 'dart:ui' show ClipOp;
+
 import 'package:flutter/material.dart';
+
+import '../../app/selection_look.dart';
 
 import '../../data/app_settings.dart';
 import '../../src/rust/api/terminal_types.dart';
@@ -139,7 +143,7 @@ class TerminalPainter extends CustomPainter {
     required this.focused,
     required this.cursorStyle,
     required this.selection,
-    required this.selectionColor,
+    required this.selectionLook,
     this.paintBackground = true,
   });
 
@@ -153,7 +157,7 @@ class TerminalPainter extends CustomPainter {
   final bool focused;
   final CursorStyle cursorStyle;
   final CellSelection? selection;
-  final Color selectionColor;
+  final SelectionLook selectionLook;
 
   /// False when a picture shows behind the text: only cells with their
   /// own colour are filled.
@@ -175,24 +179,57 @@ class TerminalPainter extends CustomPainter {
           canvas.drawRect(Rect.fromLTWH(laid.run.col * w, y, laid.run.width * w, h), bg);
         }
       }
-      for (final laid in runs) {
-        laid.painter.paint(canvas, Offset(laid.run.col * w, y));
+      final selected = _selectedCells(row);
+      if (selected == null) {
+        for (final laid in runs) {
+          laid.painter.paint(canvas, Offset(laid.run.col * w, y));
+        }
+      } else {
+        _paintSelectedRow(canvas, runs, y, selected);
       }
     }
-    _paintSelection(canvas);
     _paintCursor(canvas);
   }
 
-  void _paintSelection(Canvas canvas) {
+  /// The selected columns of a row, both ends included, or null.
+  (int, int)? _selectedCells(int row) {
     final sel = selection;
-    if (sel == null) return;
+    if (sel == null) return null;
     final (r0, c0, r1, c1) = sel.ordered;
-    final paint = Paint()..color = selectionColor;
-    for (var row = r0; row <= r1; row++) {
-      final from = row == r0 ? c0 : 0;
-      final to = row == r1 ? c1 : frame.cols - 1;
-      canvas.drawRect(Rect.fromLTWH(from * metrics.width, row * metrics.height, (to - from + 1) * metrics.width, metrics.height), paint);
+    if (row < r0 || row > r1) return null;
+    return (row == r0 ? c0 : 0, row == r1 ? c1 : frame.cols - 1);
+  }
+
+  /// Text outside the selection in its own colours; the selection as a
+  /// solid fill with its text in the one colour that reads on it.
+  void _paintSelectedRow(Canvas canvas, List<LaidRun> runs, double y, (int, int) cells) {
+    final w = metrics.width;
+    final (from, to) = cells;
+    final rect = Rect.fromLTWH(from * w, y, (to - from + 1) * w, metrics.height);
+    canvas
+      ..save()
+      ..clipRect(rect, clipOp: ClipOp.difference);
+    for (final laid in runs) {
+      laid.painter.paint(canvas, Offset(laid.run.col * w, y));
     }
+    canvas
+      ..restore()
+      ..drawRect(rect, Paint()..color = selectionLook.fill)
+      ..save()
+      ..clipRect(rect);
+    for (final laid in runs) {
+      final run = laid.run;
+      if (run.col > to || run.col + run.width <= from) continue;
+      final style = (laid.painter.text! as TextSpan).style!;
+      final painter = TextPainter(
+        text: TextSpan(text: run.text, style: style.copyWith(color: selectionLook.text, decorationColor: selectionLook.text)),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      painter.paint(canvas, Offset(run.col * w, y));
+      painter.dispose();
+    }
+    canvas.restore();
   }
 
   void _paintCursor(Canvas canvas) {
@@ -258,6 +295,7 @@ class TerminalPainter extends CustomPainter {
       old.cursorOn != cursorOn ||
       old.focused != focused ||
       old.selection != selection ||
+      old.selectionLook != selectionLook ||
       old.cursorStyle != cursorStyle ||
       old.paintBackground != paintBackground;
 }
