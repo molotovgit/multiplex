@@ -70,6 +70,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The font licences, shown on the Open-source licences page.
+  assets:
+    - assets/fonts/jetbrains-mono-nerd/OFL.txt
+    - assets/fonts/ibm-plex-mono/OFL.txt
+
   # Terminal fonts, both under the SIL Open Font License (see the OFL.txt
   # next to each font). The no-ligature JetBrains Mono keeps every
   # character in its own cell; the Nerd Font version adds the powerline
