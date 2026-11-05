@@ -4,22 +4,22 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/app_settings.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/src/rust/api/theme_types.dart';
-import 'package:vaultterm/ui/appearance/appearance_screen.dart';
-import 'package:vaultterm/ui/appearance/color_tools.dart';
-import 'package:vaultterm/ui/appearance/font_file.dart';
-import 'package:vaultterm/ui/appearance/theme_download.dart';
-import 'package:vaultterm/ui/appearance/theme_export.dart';
-import 'package:vaultterm/ui/appearance/theme_gallery.dart';
-import 'package:vaultterm/ui/appearance/theme_import.dart';
-import 'package:vaultterm/ui/appearance/theme_preview.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/app_settings.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/theme_types.dart';
+import 'package:multiplex/ui/appearance/appearance_screen.dart';
+import 'package:multiplex/ui/appearance/color_tools.dart';
+import 'package:multiplex/ui/appearance/font_file.dart';
+import 'package:multiplex/ui/appearance/theme_download.dart';
+import 'package:multiplex/ui/appearance/theme_export.dart';
+import 'package:multiplex/ui/appearance/theme_gallery.dart';
+import 'package:multiplex/ui/appearance/theme_import.dart';
+import 'package:multiplex/ui/appearance/theme_preview.dart';
 
 /// Test data that would otherwise need the native library or real files.
 abstract final class _Fixtures {
@@ -84,7 +84,7 @@ void main() {
   });
 
   group('theme import', () {
-    test('VaultTerm JSON comes back with the same colours and a new id', () {
+    test('Multiplex JSON comes back with the same colours and a new id', () {
       final original = BuiltInThemes.tokyoNight;
       final read = ThemeImporter(parse: (_) => throw StateError('JSON must not reach the theme reader')).read(ThemeExport.json(original));
       expect(read.id, isNot(original.id));
@@ -130,7 +130,7 @@ void main() {
           isA<ThemeImportException>().having(
             (e) => e.message,
             'message',
-            startsWith('The theme has no background colour. VaultTerm can import'),
+            startsWith('The theme has no background colour. Multiplex can import'),
           ),
         ),
       );
@@ -337,7 +337,7 @@ void main() {
       await finish(tester);
     });
 
-    testWidgets('a pasted VaultTerm theme opens for review and is saved', (tester) async {
+    testWidgets('a pasted Multiplex theme opens for review and is saved', (tester) async {
       await open(tester, const Size(1280, 800));
       await tester.tap(find.byTooltip('Import theme'));
       await tester.pumpAndSettle();

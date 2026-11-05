@@ -52,7 +52,7 @@ class ThemeDownloader {
     final uri = parseLink(link);
     final client = _newClient()
       ..connectionTimeout = timeout
-      ..userAgent = 'VaultTerm';
+      ..userAgent = 'Multiplex';
     try {
       final text = await _download(client, uri).timeout(timeout);
       return ThemeDownload(text: text, sourceName: ThemeSourceName.fromUrl(uri));

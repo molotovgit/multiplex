@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/data/models.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/src/rust/api/ssh_types.dart';
-import 'package:vaultterm/src/rust/api/tunnel_types.dart';
+import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/src/rust/api/ssh_types.dart';
+import 'package:multiplex/src/rust/api/tunnel_types.dart';
 
 Host _host(String id, {String? jump, String? keyId}) => Host(
       id: id,

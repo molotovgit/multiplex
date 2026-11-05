@@ -94,18 +94,18 @@ class ThemeSpec {
   }
 }
 
-/// The themes that come with VaultTerm.
+/// The themes that come with Multiplex.
 ///
-/// Ember, Slate, Paper and High contrast are VaultTerm's own. The others
+/// Ember, Slate, Paper and High contrast are Multiplex's own. The others
 /// use the published colours of popular open-source schemes, read from
-/// the alacritty-theme collection (Apache-2.0) with VaultTerm's own theme
+/// the alacritty-theme collection (Apache-2.0) with Multiplex's own theme
 /// importer; each scheme keeps its own licence, named in [ThemeSpec.credit].
 abstract final class BuiltInThemes {
   static const ember = ThemeSpec(
     id: 'ember',
     name: 'Ember',
     builtIn: true,
-    credit: 'VaultTerm',
+    credit: 'Multiplex',
     ansi: [
       0xFF1B1D1E, 0xFFE0605A, 0xFF8FBF6A, 0xFFE2B65C, 0xFF6B9BD8, 0xFFB78AD6, 0xFF5FB8B2, 0xFFD4D0C8, //
       0xFF5C6166, 0xFFF07F78, 0xFFA9D88A, 0xFFF3CD7E, 0xFF8DB6EA, 0xFFCDA8E6, 0xFF82D2CC, 0xFFF4F1EA,
@@ -120,7 +120,7 @@ abstract final class BuiltInThemes {
     id: 'slate',
     name: 'Slate',
     builtIn: true,
-    credit: 'VaultTerm',
+    credit: 'Multiplex',
     ansi: [
       0xFF1C2329, 0xFFE06C75, 0xFF7FC08A, 0xFFD9B96B, 0xFF6AA4E0, 0xFFB79BE3, 0xFF5CC4C9, 0xFFC9D1D9, //
       0xFF4F5B66, 0xFFF08A92, 0xFF9AD9A4, 0xFFEACF86, 0xFF8DBCF0, 0xFFCEB6F0, 0xFF7ED8DC, 0xFFEEF2F5,
@@ -135,7 +135,7 @@ abstract final class BuiltInThemes {
     id: 'paper',
     name: 'Paper',
     builtIn: true,
-    credit: 'VaultTerm',
+    credit: 'Multiplex',
     ansi: [
       0xFF2B2B2B, 0xFFB3261E, 0xFF3C7A2A, 0xFF8A6200, 0xFF2556A8, 0xFF7B3FA0, 0xFF1C7A78, 0xFFBDB8AE, //
       0xFF6B6B6B, 0xFFD0453C, 0xFF4F9A3A, 0xFFA87A10, 0xFF3A6FC8, 0xFF9658BF, 0xFF2A9693, 0xFFE8E4DA,
@@ -150,7 +150,7 @@ abstract final class BuiltInThemes {
     id: 'contrast',
     name: 'High contrast',
     builtIn: true,
-    credit: 'VaultTerm',
+    credit: 'Multiplex',
     ansi: [
       0xFF000000, 0xFFFF5555, 0xFF55FF55, 0xFFFFFF55, 0xFF5599FF, 0xFFFF55FF, 0xFF55FFFF, 0xFFE5E5E5, //
       0xFF7F7F7F, 0xFFFF8080, 0xFF80FF80, 0xFFFFFF80, 0xFF80B3FF, 0xFFFF80FF, 0xFF80FFFF, 0xFFFFFFFF,

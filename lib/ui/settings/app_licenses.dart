@@ -36,7 +36,7 @@ abstract final class AppLicenses {
         yield LicenseEntryWithLineBreaks([font.packageName], text);
       } catch (e) {
         // A missing asset must not break the whole licence page.
-        debugPrint('VaultTerm: could not load the licence for ${font.packageName} (${font.asset}): $e');
+        debugPrint('Multiplex: could not load the licence for ${font.packageName} (${font.asset}): $e');
       }
     }
   }

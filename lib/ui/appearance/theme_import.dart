@@ -22,7 +22,7 @@ class ThemeImportException implements Exception {
   String toString() => message;
 }
 
-/// Reads theme text into a [ThemeSpec]. Understands VaultTerm's own JSON
+/// Reads theme text into a [ThemeSpec]. Understands Multiplex's own JSON
 /// and, through the Rust core, Alacritty (.toml), Kitty (.conf) and
 /// Ghostty theme files.
 class ThemeImporter {
@@ -77,12 +77,12 @@ class ThemeImporter {
       data = jsonDecode(text);
     } on FormatException {
       throw const ThemeImportException(
-        'This looks like a VaultTerm theme, but the JSON could not be read. Check that all of it was copied.',
+        'This looks like a Multiplex theme, but the JSON could not be read. Check that all of it was copied.',
       );
     }
     if (data is! Map<String, dynamic> || data['foreground'] is! num || data['background'] is! num) {
       throw const ThemeImportException(
-        'This JSON is not a VaultTerm theme. Export a theme from VaultTerm and import that.',
+        'This JSON is not a Multiplex theme. Export a theme from Multiplex and import that.',
       );
     }
     final spec = ThemeSpec.fromJson(data);
@@ -97,7 +97,7 @@ class ThemeImporter {
       imported = _parse(text);
     } on AnyhowException catch (e) {
       throw ThemeImportException(
-        '${_sentence(e.message)} VaultTerm can import Alacritty, Kitty and Ghostty themes and its own exported themes.',
+        '${_sentence(e.message)} Multiplex can import Alacritty, Kitty and Ghostty themes and its own exported themes.',
       );
     }
     final opaque = [for (final c in imported.ansi) 0xFF000000 | c];

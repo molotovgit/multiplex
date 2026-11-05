@@ -20,8 +20,8 @@ abstract interface class VaultBackend {
 class EncryptedFileBackend implements VaultBackend {
   EncryptedFileBackend._(this._path, this._key);
 
-  static const _keyName = 'vaultterm.master_key.v1';
-  static const _fileName = 'vault.vtv';
+  static const _keyName = 'multiplex.master_key.v1';
+  static const _fileName = 'vault.mpv';
 
   final String _path;
   final List<int> _key;

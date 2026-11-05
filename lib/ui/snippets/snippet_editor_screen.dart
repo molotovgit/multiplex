@@ -62,7 +62,7 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
     final sure = await Confirm.ask(
       context,
       title: 'Delete "${snippet.name}"?',
-      message: 'The snippet is removed from VaultTerm. You can undo this for a few seconds.',
+      message: 'The snippet is removed from Multiplex. You can undo this for a few seconds.',
       action: 'Delete snippet',
     );
     if (!sure || !mounted) return;

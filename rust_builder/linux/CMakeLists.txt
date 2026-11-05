@@ -5,17 +5,17 @@ cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0079 NEW)
 
 # Project-level configuration.
-set(PROJECT_NAME "vaultterm_core")
+set(PROJECT_NAME "multiplex_core")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 include("../cargokit/cmake/cargokit.cmake")
-apply_cargokit(${PROJECT_NAME} ../../rust vaultterm_core "")
+apply_cargokit(${PROJECT_NAME} ../../rust multiplex_core "")
 target_link_libraries(${BINARY_NAME} PRIVATE "${${PROJECT_NAME}_cargokit_lib}")
 
 # List of absolute paths to libraries that should be bundled with the plugin.
 # This list could contain prebuilt libraries, or libraries created by an
 # external build triggered from this build file.
-set(vaultterm_core_bundled_libraries
+set(multiplex_core_bundled_libraries
   "${${PROJECT_NAME}_cargokit_lib}"
   PARENT_SCOPE
 )

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/models.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/src/rust/api/ssh_types.dart';
-import 'package:vaultterm/ui/keys/authorized_keys.dart';
-import 'package:vaultterm/ui/snippets/host_picker.dart';
-import 'package:vaultterm/ui/snippets/run_output_view.dart';
-import 'package:vaultterm/ui/snippets/snippet_list.dart';
-import 'package:vaultterm/ui/snippets/snippets_screen.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/ssh_types.dart';
+import 'package:multiplex/ui/keys/authorized_keys.dart';
+import 'package:multiplex/ui/snippets/host_picker.dart';
+import 'package:multiplex/ui/snippets/run_output_view.dart';
+import 'package:multiplex/ui/snippets/snippet_list.dart';
+import 'package:multiplex/ui/snippets/snippets_screen.dart';
 
 /// A phone-sized app with a fresh vault (which starts with a few
 /// snippets) around the widget under test.

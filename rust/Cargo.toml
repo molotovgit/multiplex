@@ -1,8 +1,8 @@
 [package]
-name = "vaultterm_core"
+name = "multiplex_core"
 version = "0.1.0"
 edition = "2021"
-description = "Native core of VaultTerm: SSH, SFTP, port forwarding, terminal emulation, keys and encryption."
+description = "Native core of Multiplex: SSH, SFTP, port forwarding, terminal emulation, keys and encryption."
 publish = false
 
 [lib]

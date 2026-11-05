@@ -179,7 +179,7 @@ class PassphraseTile extends StatelessWidget {
     return ListTile(
       leading: Icon(saved ? Icons.lock_open_outlined : Icons.lock_outline),
       title: Text(saved ? 'Saved in the vault' : 'Not saved'),
-      subtitle: Text(saved ? 'VaultTerm unlocks the key for you when you connect.' : 'VaultTerm asks for it each time you connect.'),
+      subtitle: Text(saved ? 'Multiplex unlocks the key for you when you connect.' : 'Multiplex asks for it each time you connect.'),
       trailing: saved
           ? TextButton(onPressed: () => _forget(context), child: const Text('Forget passphrase'))
           : TextButton(onPressed: () => _save(context), child: const Text('Save passphrase')),

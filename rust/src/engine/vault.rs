@@ -1,4 +1,4 @@
-//! Encryption for everything VaultTerm saves.
+//! Encryption for everything Multiplex saves.
 //!
 //! - [`VaultCipher`] locks the app's data file with a random 32-byte key.
 //!   The app keeps that key in the phone's secure key store (Android
@@ -21,7 +21,7 @@ use thiserror::Error;
 pub enum VaultError {
     #[error("the key must be 32 bytes")]
     BadKey,
-    #[error("this is not a VaultTerm file")]
+    #[error("this is not a Multiplex file")]
     NotAVaultFile,
     #[error("wrong key or password, or the file was changed")]
     CannotDecrypt,
@@ -39,7 +39,7 @@ pub struct VaultCipher;
 
 impl VaultCipher {
     /// Marks the file format, version 1.
-    const MAGIC: &'static [u8; 4] = b"VTV1";
+    const MAGIC: &'static [u8; 4] = b"MPV1";
 
     /// A fresh random key for a new install.
     pub fn new_key() -> Vec<u8> {
@@ -101,7 +101,7 @@ impl KdfSettings {
 pub struct BackupCipher;
 
 impl BackupCipher {
-    const MAGIC: &'static [u8; 4] = b"VTB1";
+    const MAGIC: &'static [u8; 4] = b"MPB1";
     const SALT_LEN: usize = 16;
     /// MAGIC + three u32 settings + salt.
     const HEADER_LEN: usize = 4 + 12 + Self::SALT_LEN;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app/terminal_fonts.dart';
-import 'app/vault_term_app.dart';
+import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'sessions/session_manager.dart';
@@ -15,5 +15,5 @@ Future<void> main() async {
   await RustLib.init();
   final store = await VaultStore.open(await EncryptedFileBackend.open());
   await TerminalFonts.loadCustomFonts(store.settings);
-  runApp(VaultTermApp(store: store, sessions: SessionManager(store)));
+  runApp(MultiplexApp(store: store, sessions: SessionManager(store)));
 }

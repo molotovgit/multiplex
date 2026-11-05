@@ -4,10 +4,10 @@ mod support;
 
 use support::{Logins, TestServer, PASSWORD};
 use tokio::net::TcpListener;
-use vaultterm_core::api::keys::KeyKind;
-use vaultterm_core::api::ssh_types::{ConnectError, Credentials, JumpHost};
-use vaultterm_core::engine::keys::KeyFactory;
-use vaultterm_core::engine::ssh::Connector;
+use multiplex_core::api::keys::KeyKind;
+use multiplex_core::api::ssh_types::{ConnectError, Credentials, JumpHost};
+use multiplex_core::engine::keys::KeyFactory;
+use multiplex_core::engine::ssh::Connector;
 
 fn password_logins() -> Logins {
     Logins { password: Some(PASSWORD.into()), ..Default::default() }

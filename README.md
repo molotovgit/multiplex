@@ -1,6 +1,6 @@
-# vaultterm
+# multiplex
 
-VaultTerm: SSH, SFTP and port forwarding client
+Multiplex: SSH, SFTP and port forwarding client
 
 ## Getting Started
 

@@ -27,7 +27,7 @@ abstract final class KeyKinds {
 /// The comment at the end of a new public key, which helps tell keys
 /// apart in a server's authorized_keys file.
 abstract final class KeyComments {
-  static String forName(String name) => name.trim().isEmpty ? 'vaultterm' : '${name.trim()}@vaultterm';
+  static String forName(String name) => name.trim().isEmpty ? 'multiplex' : '${name.trim()}@multiplex';
 }
 
 /// Turns the algorithm names SSH uses into names people recognise.

@@ -1,4 +1,4 @@
-package io.github.molotovgit.vaultterm
+package io.github.molotovgit.multiplex
 
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -32,6 +32,6 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private companion object {
-        const val SCREEN_CHANNEL = "vaultterm/screen"
+        const val SCREEN_CHANNEL = "multiplex/screen"
     }
 }

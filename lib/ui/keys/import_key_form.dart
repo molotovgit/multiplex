@@ -41,7 +41,7 @@ abstract final class KeyText {
     return switch (error.kind) {
       KeyProblemKind.passphraseNeeded => 'This key is protected. Enter its passphrase, then check the key again.',
       KeyProblemKind.wrongPassphrase => 'That passphrase does not unlock the key. Check it and try again.',
-      KeyProblemKind.unreadable => 'This is not a private key VaultTerm can read. Paste the whole key, including the BEGIN and END lines.',
+      KeyProblemKind.unreadable => 'This is not a private key Multiplex can read. Paste the whole key, including the BEGIN and END lines.',
       KeyProblemKind.failed => 'Could not read the key. Details: ${error.detail}',
     };
   }
@@ -242,8 +242,8 @@ class _ImportKeyFormState extends State<ImportKeyForm> {
                       title: const Text('Save passphrase in the vault'),
                       subtitle: Text(
                         _savePassphrase
-                            ? 'VaultTerm unlocks the key for you when you connect.'
-                            : 'VaultTerm asks for the passphrase each time you connect.',
+                            ? 'Multiplex unlocks the key for you when you connect.'
+                            : 'Multiplex asks for the passphrase each time you connect.',
                       ),
                     ),
                   ],

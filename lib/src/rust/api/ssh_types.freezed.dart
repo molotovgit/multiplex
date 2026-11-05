@@ -366,9 +366,9 @@ class ConnectError_AuthFailed extends ConnectError {
   
 
  final  String host;
-/// Methods VaultTerm tried, such as "publickey" or "password".
+/// Methods Multiplex tried, such as "publickey" or "password".
  final  List<String> _tried;
-/// Methods VaultTerm tried, such as "publickey" or "password".
+/// Methods Multiplex tried, such as "publickey" or "password".
  List<String> get tried {
   if (_tried is EqualUnmodifiableListView) return _tried;
   // ignore: implicit_dynamic_type

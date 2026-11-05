@@ -18,7 +18,7 @@ pub enum KeyError {
     PassphraseNeeded,
     #[error("the passphrase is wrong")]
     WrongPassphrase,
-    #[error("this is not a private key VaultTerm can read: {0}")]
+    #[error("this is not a private key Multiplex can read: {0}")]
     Unreadable(String),
     #[error("could not create the key: {0}")]
     Generate(String),

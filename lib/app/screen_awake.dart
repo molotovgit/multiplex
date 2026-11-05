@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 /// Keeps the screen on while a terminal is open, so a long command stays
 /// visible. Uses a small native call on Android; other platforms ignore it.
 abstract final class ScreenAwake {
-  static const _channel = MethodChannel('vaultterm/screen');
+  static const _channel = MethodChannel('multiplex/screen');
 
   /// How many open terminal screens want the screen on.
   static int _holders = 0;

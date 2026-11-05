@@ -8,9 +8,9 @@ import 'settings_widgets.dart';
 
 /// Facts about this build of the app.
 abstract final class AboutFacts {
-  static const appName = 'VaultTerm';
+  static const appName = 'Multiplex';
   static const description = 'An open-source SSH client with SFTP, port forwarding and an encrypted vault.';
-  static const sourceAddress = 'github.com/molotovgit/vaultterm';
+  static const sourceAddress = 'github.com/molotovgit/multiplex';
   static const sourceUrl = 'https://$sourceAddress';
 
   /// Where the colours of the popular themes were read from.
@@ -66,7 +66,7 @@ class AboutScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.gavel_outlined),
               title: const Text('Open-source licences'),
-              subtitle: const Text('The software and fonts VaultTerm is built with'),
+              subtitle: const Text('The software and fonts Multiplex is built with'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => showLicensePage(
                 context: context,

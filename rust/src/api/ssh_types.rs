@@ -18,7 +18,7 @@ pub struct ConnectOptions {
     pub jump: Option<JumpHost>,
 }
 
-/// What VaultTerm may try when logging in. Everything that is set is
+/// What Multiplex may try when logging in. Everything that is set is
 /// tried in order: key, password, then keyboard-interactive (answered with
 /// the password).
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -63,7 +63,7 @@ pub enum ConnectError {
     #[error("login to {host} was refused")]
     AuthFailed {
         host: String,
-        /// Methods VaultTerm tried, such as "publickey" or "password".
+        /// Methods Multiplex tried, such as "publickey" or "password".
         tried: Vec<String>,
         /// Methods the server said it accepts.
         server_accepts: Vec<String>,

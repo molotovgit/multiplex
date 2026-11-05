@@ -1271,6 +1271,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "multiplex_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2 0.5.3",
+ "base64",
+ "chacha20poly1305",
+ "flutter_rust_bridge",
+ "rand",
+ "russh",
+ "russh-sftp",
+ "serde",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "vt100",
+]
+
+[[package]]
 name = "nix"
 version = "0.31.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2326,27 +2347,6 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
-
-[[package]]
-name = "vaultterm_core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2 0.5.3",
- "base64",
- "chacha20poly1305",
- "flutter_rust_bridge",
- "rand",
- "russh",
- "russh-sftp",
- "serde",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util",
- "toml",
- "vt100",
-]
 
 [[package]]
 name = "version_check"

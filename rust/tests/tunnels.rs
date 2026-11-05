@@ -9,9 +9,9 @@ use std::time::Duration;
 use support::{echo_service, Logins, TestServer, PASSWORD};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use vaultterm_core::api::tunnel_types::{TunnelKind, TunnelSpec};
-use vaultterm_core::engine::ssh::{Connection, Connector};
-use vaultterm_core::engine::tunnel::Tunnel;
+use multiplex_core::api::tunnel_types::{TunnelKind, TunnelSpec};
+use multiplex_core::engine::ssh::{Connection, Connector};
+use multiplex_core::engine::tunnel::Tunnel;
 
 async fn connect() -> Arc<Connection> {
     let server = TestServer::start(Logins { password: Some(PASSWORD.into()), ..Default::default() }).await;

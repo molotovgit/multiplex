@@ -56,8 +56,8 @@ class ExportController extends ChangeNotifier {
     try {
       sealed = await cipher.seal(password, store.exportJson());
     } catch (e) {
-      debugPrint('VaultTerm: backup encryption failed: $e');
-      _error = 'VaultTerm could not encrypt the backup. Try again. If it keeps failing, restart the app.';
+      debugPrint('Multiplex: backup encryption failed: $e');
+      _error = 'Multiplex could not encrypt the backup. Try again. If it keeps failing, restart the app.';
       _set(ExportStage.idle);
       return ExportOutcome.failed;
     }
@@ -71,7 +71,7 @@ class ExportController extends ChangeNotifier {
         return ExportOutcome.cancelled;
       }
     } catch (e) {
-      debugPrint('VaultTerm: saving the backup failed: $e');
+      debugPrint('Multiplex: saving the backup failed: $e');
       _error = 'The backup could not be saved there. Choose another folder and try again.';
       _set(ExportStage.idle);
       return ExportOutcome.failed;
@@ -115,13 +115,13 @@ class RestoreResult {
 
 /// The words shown for restore problems.
 abstract final class RestoreMessages {
-  static const notABackup = 'This file is not a VaultTerm backup. Choose a file that ends in .vtbackup.';
-  static const tooLarge = 'This file is too large to be a VaultTerm backup. Choose another file.';
+  static const notABackup = 'This file is not a Multiplex backup. Choose a file that ends in .mpbackup.';
+  static const tooLarge = 'This file is too large to be a Multiplex backup. Choose another file.';
   static const cannotRead = 'The file could not be read. Choose it again, or copy it to this device first.';
   static const emptyPassword = 'Type the password the backup was made with.';
   static const wrongPassword = 'This password does not open the backup. Check it and try again.';
   static const unreadable = 'The backup opened, but its contents could not be read. '
-      'It may come from a newer version of VaultTerm; update the app and try again.';
+      'It may come from a newer version of Multiplex; update the app and try again.';
 }
 
 /// Brings a backup back: pick the file, type its password, then add it to
@@ -175,7 +175,7 @@ class RestoreController extends ChangeNotifier {
       _error = RestoreMessages.tooLarge;
       _stage = RestoreStage.chooseFile;
     } catch (e) {
-      debugPrint('VaultTerm: reading the backup file failed: $e');
+      debugPrint('Multiplex: reading the backup file failed: $e');
       _error = RestoreMessages.cannotRead;
       _stage = RestoreStage.chooseFile;
     } finally {
@@ -202,9 +202,9 @@ class RestoreController extends ChangeNotifier {
     try {
       json = await cipher.open(password, data);
     } catch (e) {
-      // The core says "not a VaultTerm file" for a damaged header; any
+      // The core says "not a Multiplex file" for a damaged header; any
       // other failure means the password did not unlock it.
-      if (e.toString().contains('not a VaultTerm file')) {
+      if (e.toString().contains('not a Multiplex file')) {
         _forgetBackup();
         _error = RestoreMessages.notABackup;
         _stage = RestoreStage.chooseFile;

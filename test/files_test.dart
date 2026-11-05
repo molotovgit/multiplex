@@ -4,21 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/data/models.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/src/rust/api/sftp.dart';
-import 'package:vaultterm/src/rust/api/sftp_types.dart';
-import 'package:vaultterm/src/rust/api/ssh.dart';
-import 'package:vaultterm/ui/files/file_format.dart';
-import 'package:vaultterm/ui/files/files_screen.dart';
-import 'package:vaultterm/ui/files/remote_paths.dart';
-import 'package:vaultterm/ui/files/transfer_panel.dart';
-import 'package:vaultterm/ui/files/transfer_queue.dart';
-import 'package:vaultterm/ui/files/transfer_tasks.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/sftp.dart';
+import 'package:multiplex/src/rust/api/sftp_types.dart';
+import 'package:multiplex/src/rust/api/ssh.dart';
+import 'package:multiplex/ui/files/file_format.dart';
+import 'package:multiplex/ui/files/files_screen.dart';
+import 'package:multiplex/ui/files/remote_paths.dart';
+import 'package:multiplex/ui/files/transfer_panel.dart';
+import 'package:multiplex/ui/files/transfer_queue.dart';
+import 'package:multiplex/ui/files/transfer_tasks.dart';
 
 /// A server kept in memory. Records every change it is asked to make.
 class FakeFiles implements RemoteFiles {

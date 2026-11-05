@@ -1,10 +1,10 @@
 //! Optional tests against a real SSH server (for example OpenSSH on a VPS).
 //!
 //! They are skipped unless these environment variables are set:
-//! - `VT_LIVE_HOST`  server address
-//! - `VT_LIVE_USER`  user name
-//! - `VT_LIVE_KEY`   path to a private key file that may log in
-//! - `VT_LIVE_PORT`  optional, defaults to 22
+//! - `MPX_LIVE_HOST`  server address
+//! - `MPX_LIVE_USER`  user name
+//! - `MPX_LIVE_KEY`   path to a private key file that may log in
+//! - `MPX_LIVE_PORT`  optional, defaults to 22
 //!
 //! Everything they create lives in a fresh folder under /tmp and is
 //! deleted again. Nothing about the server is stored in the repository.
@@ -18,21 +18,21 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
-use vaultterm_core::api::ssh_types::{ConnectError, ConnectOptions, Credentials};
-use vaultterm_core::api::terminal_types::{KeyModifiers, ShellEvent, ShellOptions, TerminalPalette};
-use vaultterm_core::api::tunnel_types::{TunnelKind, TunnelSpec};
-use vaultterm_core::engine::sftp::{RemotePath, SftpBrowser};
-use vaultterm_core::engine::shell::ShellSession;
-use vaultterm_core::engine::ssh::{Connection, Connector};
-use vaultterm_core::engine::tunnel::Tunnel;
+use multiplex_core::api::ssh_types::{ConnectError, ConnectOptions, Credentials};
+use multiplex_core::api::terminal_types::{KeyModifiers, ShellEvent, ShellOptions, TerminalPalette};
+use multiplex_core::api::tunnel_types::{TunnelKind, TunnelSpec};
+use multiplex_core::engine::sftp::{RemotePath, SftpBrowser};
+use multiplex_core::engine::shell::ShellSession;
+use multiplex_core::engine::ssh::{Connection, Connector};
+use multiplex_core::engine::tunnel::Tunnel;
 
 /// Connection settings from the environment, or `None` to skip.
 fn live_options() -> Option<ConnectOptions> {
-    let host = std::env::var("VT_LIVE_HOST").ok()?;
-    let username = std::env::var("VT_LIVE_USER").ok()?;
-    let key_path = std::env::var("VT_LIVE_KEY").ok()?;
-    let port = std::env::var("VT_LIVE_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(22);
-    let private_key = std::fs::read_to_string(key_path).expect("VT_LIVE_KEY is not readable");
+    let host = std::env::var("MPX_LIVE_HOST").ok()?;
+    let username = std::env::var("MPX_LIVE_USER").ok()?;
+    let key_path = std::env::var("MPX_LIVE_KEY").ok()?;
+    let port = std::env::var("MPX_LIVE_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(22);
+    let private_key = std::fs::read_to_string(key_path).expect("MPX_LIVE_KEY is not readable");
     Some(ConnectOptions {
         host,
         port,
@@ -48,7 +48,7 @@ fn live_options() -> Option<ConnectOptions> {
 /// Connects, accepting the server key on first sight like a user would.
 async fn live_connect() -> Option<Arc<Connection>> {
     let Some(mut options) = live_options() else {
-        eprintln!("live tests skipped: set VT_LIVE_HOST, VT_LIVE_USER and VT_LIVE_KEY to run them");
+        eprintln!("live tests skipped: set MPX_LIVE_HOST, MPX_LIVE_USER and MPX_LIVE_KEY to run them");
         return None;
     };
     match Connector::connect(options.clone()).await {
@@ -60,7 +60,7 @@ async fn live_connect() -> Option<Arc<Connection>> {
 
 fn unique_dir() -> String {
     let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-    format!("/tmp/vaultterm-test-{nanos}")
+    format!("/tmp/multiplex-test-{nanos}")
 }
 
 #[tokio::test]
@@ -81,11 +81,11 @@ async fn live_exec_and_shell() {
     };
     let shell = ShellSession::open(&conn, options, Arc::new(move |e| tx.send(e).is_ok())).await.unwrap();
     // The shell computes 6*7, so seeing 42 proves it ran (not just echoed).
-    shell.send_text("echo vt-$((6*7))", KeyModifiers::default());
-    shell.send_key(vaultterm_core::api::terminal_types::TerminalKey::Enter, KeyModifiers::default());
+    shell.send_text("echo mpx-$((6*7))", KeyModifiers::default());
+    shell.send_key(multiplex_core::api::terminal_types::TerminalKey::Enter, KeyModifiers::default());
     let found = tokio::time::timeout(Duration::from_secs(10), async {
         loop {
-            if shell.visible_text().contains("vt-42") {
+            if shell.visible_text().contains("mpx-42") {
                 return;
             }
             if let Some(ShellEvent::Changed) = rx.recv().await {
@@ -94,7 +94,7 @@ async fn live_exec_and_shell() {
         }
     })
     .await;
-    assert!(found.is_ok(), "shell output never showed vt-42:\n{}", shell.visible_text());
+    assert!(found.is_ok(), "shell output never showed mpx-42:\n{}", shell.visible_text());
     shell.close();
     conn.disconnect().await;
 }
@@ -108,8 +108,8 @@ async fn live_sftp_round_trip() {
     let dir = unique_dir();
     sftp.make_dir(&dir).await.unwrap();
     let file = RemotePath::join(&dir, "hello.txt");
-    sftp.write_text(&file, "hello from vaultterm\n").await.unwrap();
-    assert_eq!(sftp.read_text(&file, 1024).await.unwrap(), "hello from vaultterm\n");
+    sftp.write_text(&file, "hello from multiplex\n").await.unwrap();
+    assert_eq!(sftp.read_text(&file, 1024).await.unwrap(), "hello from multiplex\n");
 
     sftp.make_dir(&RemotePath::join(&dir, "sub")).await.unwrap();
     let listing = sftp.list(&dir).await.unwrap();

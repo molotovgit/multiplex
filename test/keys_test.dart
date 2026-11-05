@@ -2,20 +2,20 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/models.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/src/rust/api/keys.dart' show KeyKind, KeyPairInfo;
-import 'package:vaultterm/src/rust/api/ssh_types.dart';
-import 'package:vaultterm/ui/keys/authorized_keys.dart';
-import 'package:vaultterm/ui/keys/key_detail_screen.dart';
-import 'package:vaultterm/ui/keys/key_labels.dart';
-import 'package:vaultterm/ui/keys/key_tools.dart';
-import 'package:vaultterm/ui/keys/keychain_screen.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/keys.dart' show KeyKind, KeyPairInfo;
+import 'package:multiplex/src/rust/api/ssh_types.dart';
+import 'package:multiplex/ui/keys/authorized_keys.dart';
+import 'package:multiplex/ui/keys/key_detail_screen.dart';
+import 'package:multiplex/ui/keys/key_labels.dart';
+import 'package:multiplex/ui/keys/key_tools.dart';
+import 'package:multiplex/ui/keys/keychain_screen.dart';
 
 /// Stands in for the Rust key functions. Key text containing "LOCKED"
 /// needs the passphrase "secret"; text without "BEGIN" is not a key.
@@ -95,7 +95,7 @@ abstract final class Sample {
         id: 'k1',
         name: 'Laptop',
         privatePem: 'LOCKED BEGIN',
-        publicOpenssh: 'ssh-ed25519 AAAAkey laptop@vaultterm',
+        publicOpenssh: 'ssh-ed25519 AAAAkey laptop@multiplex',
         fingerprint: 'SHA256:abcdef',
         algorithm: 'ssh-ed25519',
         encrypted: encrypted,
@@ -126,7 +126,7 @@ void main() {
         markTestSkipped('needs a POSIX sh on the PATH');
         return;
       }
-      final home = await Directory.systemTemp.createTemp('vaultterm_keys_');
+      final home = await Directory.systemTemp.createTemp('multiplex_keys_');
       addTearDown(() => home.delete(recursive: true));
       await Directory('${home.path}/.ssh').create();
       // An existing file without a final line break must not get glued.
@@ -161,7 +161,7 @@ void main() {
     expect(KeyAlgorithms.label('ecdsa-sha2-nistp256'), 'ECDSA P-256');
     expect(KeyAlgorithms.label('rsa-sha2-512'), 'RSA');
     expect(KeyAlgorithms.label('something-new'), 'something-new');
-    expect(KeyComments.forName(' Work laptop '), 'Work laptop@vaultterm');
+    expect(KeyComments.forName(' Work laptop '), 'Work laptop@multiplex');
   });
 
   testWidgets('an empty keychain explains keys and offers to make one', (tester) async {
@@ -189,7 +189,7 @@ void main() {
 
     await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Laptop');
     final comment = tester.widget<TextField>(find.widgetWithText(TextField, 'Comment'));
-    expect(comment.controller!.text, 'Laptop@vaultterm', reason: 'the comment follows the name');
+    expect(comment.controller!.text, 'Laptop@multiplex', reason: 'the comment follows the name');
 
     // A passphrase that does not match its repeat stops the form.
     await tester.enterText(find.widgetWithText(TextFormField, 'Passphrase (optional)'), 'pw');
@@ -212,7 +212,7 @@ void main() {
     expect(saved.encrypted, isTrue);
     expect(saved.passphrase, isNull, reason: 'the switch was turned off');
     expect(tools.kind, KeyKind.rsa4096);
-    expect(tools.comment, 'Laptop@vaultterm');
+    expect(tools.comment, 'Laptop@multiplex');
     expect(tools.passphrase, 'pw');
     await app.finish();
   });

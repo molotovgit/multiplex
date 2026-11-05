@@ -61,7 +61,7 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
     if (_asking) return;
     _asking = true;
     try {
-      final ok = await _auth.authenticate(localizedReason: 'Unlock VaultTerm');
+      final ok = await _auth.authenticate(localizedReason: 'Unlock Multiplex');
       if (mounted) setState(() => _unlocked = ok);
     } catch (_) {
       // No biometrics or PIN set up on this device: do not lock the user out.
@@ -82,7 +82,7 @@ class _LockGateState extends State<LockGate> with WidgetsBindingObserver {
           children: [
             Icon(Icons.lock_outline, size: 48, color: colors.accent),
             const SizedBox(height: 16),
-            Text('VaultTerm is locked', style: Theme.of(context).textTheme.titleMedium),
+            Text('Multiplex is locked', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 20),
             FilledButton.icon(onPressed: _unlock, icon: const Icon(Icons.fingerprint), label: const Text('Unlock')),
           ],

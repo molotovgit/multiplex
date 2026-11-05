@@ -63,7 +63,7 @@ abstract final class LocalNames {
 abstract final class DownloadFolder {
   /// Made inside the app's documents on phones, which have no shared
   /// downloads folder the app can write to directly.
-  static const subfolder = 'VaultTerm downloads';
+  static const subfolder = 'Multiplex downloads';
 
   static Future<Directory> resolve() async {
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

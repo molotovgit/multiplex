@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
 
 void main() {
   test('every built-in theme has 16 colours and a unique id', () {

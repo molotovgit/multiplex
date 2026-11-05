@@ -18,10 +18,10 @@ abstract final class ShellQuote {
 /// ~/.ssh/authorized_keys, and reads its result.
 abstract final class AuthorizedKeys {
   /// Printed by the command when the key was added.
-  static const addedMarker = 'VAULTTERM_KEY_ADDED';
+  static const addedMarker = 'MULTIPLEX_KEY_ADDED';
 
   /// Printed by the command when the key was already there.
-  static const presentMarker = 'VAULTTERM_KEY_PRESENT';
+  static const presentMarker = 'MULTIPLEX_KEY_PRESENT';
 
   /// The public key as one clean line.
   static String keyLine(String publicOpenssh) => publicOpenssh.trim().split(RegExp(r'[\r\n]+')).first.trim();

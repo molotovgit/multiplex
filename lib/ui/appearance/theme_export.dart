@@ -8,7 +8,7 @@ import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 import '../common/widgets.dart';
 
-/// A theme as VaultTerm's own JSON, the format "Import theme" reads back.
+/// A theme as Multiplex's own JSON, the format "Import theme" reads back.
 abstract final class ThemeExport {
   static String json(ThemeSpec theme) => const JsonEncoder.withIndent('  ').convert(theme.toJson());
 

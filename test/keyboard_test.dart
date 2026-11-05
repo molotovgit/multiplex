@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/src/rust/api/terminal_types.dart';
-import 'package:vaultterm/ui/keyboard/key_press_tracker.dart';
-import 'package:vaultterm/ui/keyboard/key_repeater.dart';
-import 'package:vaultterm/ui/keyboard/key_sink.dart';
-import 'package:vaultterm/ui/keyboard/key_spec.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_engine.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_layout.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_modifiers.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_rows.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_settings.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_settings_screen.dart';
-import 'package:vaultterm/ui/keyboard/keyboard_style.dart';
-import 'package:vaultterm/ui/keyboard/terminal_keyboard_panel.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/terminal_types.dart';
+import 'package:multiplex/ui/keyboard/key_press_tracker.dart';
+import 'package:multiplex/ui/keyboard/key_repeater.dart';
+import 'package:multiplex/ui/keyboard/key_sink.dart';
+import 'package:multiplex/ui/keyboard/key_spec.dart';
+import 'package:multiplex/ui/keyboard/keyboard_engine.dart';
+import 'package:multiplex/ui/keyboard/keyboard_layout.dart';
+import 'package:multiplex/ui/keyboard/keyboard_modifiers.dart';
+import 'package:multiplex/ui/keyboard/keyboard_rows.dart';
+import 'package:multiplex/ui/keyboard/keyboard_settings.dart';
+import 'package:multiplex/ui/keyboard/keyboard_settings_screen.dart';
+import 'package:multiplex/ui/keyboard/keyboard_style.dart';
+import 'package:multiplex/ui/keyboard/terminal_keyboard_panel.dart';
 
 /// One thing the keyboard sent.
 class Sent {

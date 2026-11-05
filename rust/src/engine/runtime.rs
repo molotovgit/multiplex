@@ -15,7 +15,7 @@ pub struct AsyncRuntime;
 static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
     Builder::new_multi_thread()
         .worker_threads(4)
-        .thread_name("vaultterm-net")
+        .thread_name("multiplex-net")
         .enable_all()
         .build()
         .expect("could not start the network runtime")

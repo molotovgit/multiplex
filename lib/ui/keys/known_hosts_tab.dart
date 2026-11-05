@@ -25,7 +25,7 @@ class KnownHostsTab extends StatelessWidget {
             icon: Icons.verified_user_outlined,
             title: 'No trusted servers yet',
             message:
-                'The first time you connect to a server, VaultTerm shows its fingerprint and asks you to trust it. '
+                'The first time you connect to a server, Multiplex shows its fingerprint and asks you to trust it. '
                 'Servers you trust are listed here.',
           );
         }

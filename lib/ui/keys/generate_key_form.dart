@@ -145,8 +145,8 @@ class _GenerateKeyFormState extends State<GenerateKeyForm> {
                             title: const Text('Save passphrase in the vault'),
                             subtitle: Text(
                               _savePassphrase
-                                  ? 'VaultTerm unlocks the key for you when you connect.'
-                                  : 'VaultTerm asks for the passphrase each time you connect.',
+                                  ? 'Multiplex unlocks the key for you when you connect.'
+                                  : 'Multiplex asks for the passphrase each time you connect.',
                             ),
                           ),
                   ),

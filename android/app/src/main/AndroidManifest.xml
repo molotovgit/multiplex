@@ -4,7 +4,7 @@
     <!-- Fingerprint, face or PIN for the optional app lock. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
-        android:label="VaultTerm"
+        android:label="Multiplex"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"

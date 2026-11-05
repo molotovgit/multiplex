@@ -7,9 +7,9 @@ use std::time::Duration;
 
 use support::{Logins, TestServer, PASSWORD};
 use tokio::sync::mpsc;
-use vaultterm_core::api::terminal_types::{KeyModifiers, ShellEvent, ShellOptions, TerminalPalette};
-use vaultterm_core::engine::shell::ShellSession;
-use vaultterm_core::engine::ssh::Connector;
+use multiplex_core::api::terminal_types::{KeyModifiers, ShellEvent, ShellOptions, TerminalPalette};
+use multiplex_core::engine::shell::ShellSession;
+use multiplex_core::engine::ssh::Connector;
 
 fn options() -> ShellOptions {
     ShellOptions {

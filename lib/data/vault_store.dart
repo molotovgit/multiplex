@@ -227,7 +227,7 @@ class VaultStore extends ChangeNotifier {
     // Chain writes so two saves never overlap on disk.
     final previous = _saving ?? Future.value();
     final next = previous.then((_) => _backend.save(json));
-    _saving = next.catchError((Object e) => debugPrint('VaultTerm: saving failed: $e'));
+    _saving = next.catchError((Object e) => debugPrint('Multiplex: saving failed: $e'));
     return _saving!;
   }
 }

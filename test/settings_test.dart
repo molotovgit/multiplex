@@ -4,25 +4,25 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:vaultterm/app/app_scope.dart';
-import 'package:vaultterm/app/theme.dart';
-import 'package:vaultterm/app/theme_spec.dart';
-import 'package:vaultterm/data/app_settings.dart';
-import 'package:vaultterm/data/models.dart';
-import 'package:vaultterm/data/vault_backend.dart';
-import 'package:vaultterm/data/vault_store.dart';
-import 'package:vaultterm/sessions/session_manager.dart';
-import 'package:vaultterm/ui/settings/about_screen.dart';
-import 'package:vaultterm/ui/settings/app_licenses.dart';
-import 'package:vaultterm/ui/settings/app_lock_setup.dart';
-import 'package:vaultterm/ui/settings/backup_controllers.dart';
-import 'package:vaultterm/ui/settings/backup_screen.dart';
-import 'package:vaultterm/ui/settings/backup_service.dart';
-import 'package:vaultterm/ui/settings/key_bar_editor_screen.dart';
-import 'package:vaultterm/ui/settings/key_bar_layout.dart';
-import 'package:vaultterm/ui/settings/restore_panel.dart';
-import 'package:vaultterm/ui/settings/settings_screen.dart';
-import 'package:vaultterm/ui/settings/settings_widgets.dart';
+import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/app/theme.dart';
+import 'package:multiplex/app/theme_spec.dart';
+import 'package:multiplex/data/app_settings.dart';
+import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/vault_backend.dart';
+import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/ui/settings/about_screen.dart';
+import 'package:multiplex/ui/settings/app_licenses.dart';
+import 'package:multiplex/ui/settings/app_lock_setup.dart';
+import 'package:multiplex/ui/settings/backup_controllers.dart';
+import 'package:multiplex/ui/settings/backup_screen.dart';
+import 'package:multiplex/ui/settings/backup_service.dart';
+import 'package:multiplex/ui/settings/key_bar_editor_screen.dart';
+import 'package:multiplex/ui/settings/key_bar_layout.dart';
+import 'package:multiplex/ui/settings/restore_panel.dart';
+import 'package:multiplex/ui/settings/settings_screen.dart';
+import 'package:multiplex/ui/settings/settings_widgets.dart';
 
 /// Stands in for the Rust cipher: wraps the JSON with the password in a
 /// file that starts like a real backup, so the format check passes.
@@ -38,7 +38,7 @@ class FakeCipher implements BackupCipher {
 
   @override
   Future<String> open(String password, List<int> data) async {
-    if (!BackupFormat.looksLikeBackup(data)) throw Exception('this is not a VaultTerm file');
+    if (!BackupFormat.looksLikeBackup(data)) throw Exception('this is not a Multiplex file');
     final inner = jsonDecode(utf8.decode(data.sublist(BackupFormat.minBytes))) as Map<String, dynamic>;
     if (inner['p'] != password) throw Exception('wrong key or password, or the file was changed');
     return inner['j'] as String;
@@ -144,7 +144,7 @@ void main() {
     });
 
     test('backup file names use the date and the backup extension', () {
-      expect(BackupFormat.fileNameFor(DateTime(2026, 3, 7)), 'vaultterm-backup-2026-03-07.vtbackup');
+      expect(BackupFormat.fileNameFor(DateTime(2026, 3, 7)), 'multiplex-backup-2026-03-07.mpbackup');
     });
 
     test('only files that start like a backup are accepted', () {
@@ -199,7 +199,7 @@ void main() {
       final export = ExportController(store: store, cipher: cipher, files: files, clock: () => DateTime(2026, 11, 5));
 
       expect(await export.export('correct horse'), ExportOutcome.saved);
-      expect(files.savedName, 'vaultterm-backup-2026-11-05.vtbackup');
+      expect(files.savedName, 'multiplex-backup-2026-11-05.mpbackup');
       expect(await cipher.open('correct horse', files.savedBytes!), store.exportJson());
       expect(export.result!.summary.hosts, 2);
       expect(export.busy, isFalse);
@@ -230,7 +230,7 @@ void main() {
       cipher = FakeCipher();
       files = FakeFiles();
       final source = await Fixture.store(hosts: ['a', 'b']);
-      files.toPick = PickedBackup('mine.vtbackup', await cipher.seal('correct horse', source.exportJson()));
+      files.toPick = PickedBackup('mine.mpbackup', await cipher.seal('correct horse', source.exportJson()));
       target = await Fixture.store(hosts: ['c']);
       restore = RestoreController(store: target, cipher: cipher, files: files);
     });
@@ -245,7 +245,7 @@ void main() {
     test('a wrong password can be retried, then the backup is added', () async {
       await restore.chooseFile();
       expect(restore.stage, RestoreStage.enterPassword);
-      expect(restore.fileName, 'mine.vtbackup');
+      expect(restore.fileName, 'mine.mpbackup');
 
       await restore.open('wrong password');
       expect(restore.stage, RestoreStage.enterPassword);
@@ -365,7 +365,7 @@ void main() {
       await tester.enterText(fields.at(1), 'correct horse');
       await tester.tap(find.text('Export backup'));
       await tester.pumpAndSettle();
-      expect(files.savedName, endsWith('.vtbackup'));
+      expect(files.savedName, endsWith('.mpbackup'));
       expect(find.text('Backup saved'), findsWidgets);
       await app.finish(tester);
     });
@@ -374,7 +374,7 @@ void main() {
       final cipher = FakeCipher();
       final files = FakeFiles();
       final source = await Fixture.store(hosts: ['a']);
-      files.toPick = PickedBackup('mine.vtbackup', await cipher.seal('correct horse', source.exportJson()));
+      files.toPick = PickedBackup('mine.mpbackup', await cipher.seal('correct horse', source.exportJson()));
       final app = await Fixture.pump(tester, BackupScreen(cipher: cipher, files: files));
 
       await tester.tap(find.widgetWithText(Tab, 'Restore'));

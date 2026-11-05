@@ -12,7 +12,7 @@ import 'theme_import.dart';
 /// Where an imported theme comes from.
 enum ThemeImportSource { file, paste, link }
 
-/// "Import theme": the user picks where the theme comes from, VaultTerm
+/// "Import theme": the user picks where the theme comes from, Multiplex
 /// reads it, and the editor opens so the user can look it over and save it.
 class ThemeImportFlow {
   ThemeImportFlow(this.context, {ThemeImporter? importer, ThemeDownloader? downloader})
@@ -83,7 +83,7 @@ class _ImportSourceSheet extends StatelessWidget {
                   Text('Import theme', style: text.titleLarge),
                   const SizedBox(height: 4),
                   Text(
-                    'Alacritty, Kitty and Ghostty themes work, and themes exported from VaultTerm. You can check and change the colours before saving.',
+                    'Alacritty, Kitty and Ghostty themes work, and themes exported from Multiplex. You can check and change the colours before saving.',
                     style: text.bodyMedium,
                   ),
                 ],

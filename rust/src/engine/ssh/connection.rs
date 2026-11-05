@@ -97,7 +97,7 @@ struct OpenHop {
 pub struct Connector;
 
 impl Connector {
-    const CLIENT_ID: &'static str = concat!("SSH-2.0-VaultTerm_", env!("CARGO_PKG_VERSION"));
+    const CLIENT_ID: &'static str = concat!("SSH-2.0-Multiplex_", env!("CARGO_PKG_VERSION"));
 
     pub async fn connect(options: ConnectOptions) -> Result<Connection, ConnectError> {
         let limit = Duration::from_secs(u64::from(options.connect_timeout_secs.max(1)));

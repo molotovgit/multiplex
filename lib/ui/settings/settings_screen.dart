@@ -300,7 +300,7 @@ class _AboutSection extends StatelessWidget {
       const SectionHeader('About'),
       ListTile(
         leading: const Icon(Icons.info_outline),
-        title: const Text('About VaultTerm'),
+        title: const Text('About Multiplex'),
         subtitle: const Text('Version, source code, licences and theme credits'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => SettingsNavigation.open(context, const AboutScreen()),

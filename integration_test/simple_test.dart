@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:vaultterm/src/rust/api/app.dart';
-import 'package:vaultterm/src/rust/api/keys.dart';
-import 'package:vaultterm/src/rust/frb_generated.dart';
+import 'package:multiplex/src/rust/api/app.dart';
+import 'package:multiplex/src/rust/api/keys.dart';
+import 'package:multiplex/src/rust/frb_generated.dart';
 
 /// Runs on a real device or desktop with the native library loaded.
 void main() {

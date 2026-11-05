@@ -32,7 +32,7 @@ sealed class ConnectError with _$ConnectError implements FrbException {
   const factory ConnectError.authFailed({
     required String host,
 
-    /// Methods VaultTerm tried, such as "publickey" or "password".
+    /// Methods Multiplex tried, such as "publickey" or "password".
     required List<String> tried,
 
     /// Methods the server said it accepts.
@@ -111,7 +111,7 @@ class ConnectOptions {
           jump == other.jump;
 }
 
-/// What VaultTerm may try when logging in. Everything that is set is
+/// What Multiplex may try when logging in. Everything that is set is
 /// tried in order: key, password, then keyboard-interactive (answered with
 /// the password).
 class Credentials {

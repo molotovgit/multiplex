@@ -13,7 +13,7 @@ use russh::server::{self, Auth, ChannelOpenHandle, Msg, Server as _, Session, Ve
 use russh::{Channel, ChannelId};
 use tokio::net::{TcpListener, TcpStream};
 
-use vaultterm_core::api::ssh_types::{ConnectOptions, Credentials};
+use multiplex_core::api::ssh_types::{ConnectOptions, Credentials};
 
 pub const USER: &str = "alice";
 pub const PASSWORD: &str = "secret";

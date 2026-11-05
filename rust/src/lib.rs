@@ -1,4 +1,4 @@
-//! VaultTerm's native core.
+//! Multiplex's native core.
 //!
 //! - `api`: the functions and types Flutter calls (bridged by
 //!   flutter_rust_bridge).

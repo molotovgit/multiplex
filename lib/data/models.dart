@@ -1,4 +1,4 @@
-/// Everything VaultTerm saves. All of it lives in one encrypted file (see
+/// Everything Multiplex saves. All of it lives in one encrypted file (see
 /// [VaultStore]); these classes only describe the data and how it turns
 /// into JSON and back.
 library;

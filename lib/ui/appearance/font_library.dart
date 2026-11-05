@@ -60,7 +60,7 @@ class FontLibrary {
     final bytes = await picked.readAsBytes();
     final info = FontFileInfo.read(bytes);
     if (!info.isFont) {
-      throw FontFileException('"${picked.name}" is not a font VaultTerm can use. Pick a TrueType (.ttf) or OpenType (.otf) font.');
+      throw FontFileException('"${picked.name}" is not a font Multiplex can use. Pick a TrueType (.ttf) or OpenType (.otf) font.');
     }
 
     final id = VaultStore.newId();

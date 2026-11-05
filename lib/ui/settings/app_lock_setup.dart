@@ -63,7 +63,7 @@ class DeviceUnlock {
 
 /// The words shown for each [UnlockResult].
 abstract final class AppLockMessages {
-  static const turnedOn = 'App lock is on. VaultTerm asks for your fingerprint, face or PIN when it opens.';
+  static const turnedOn = 'App lock is on. Multiplex asks for your fingerprint, face or PIN when it opens.';
   static const turnedOff = 'App lock is off.';
   static const cancelled = 'App lock is still off.';
   static const lockedOut = 'Too many tries. Wait a moment, then try again.';
@@ -74,7 +74,7 @@ abstract final class AppLockMessages {
       'None is set up yet. Add one in the device settings, then turn on app lock again.';
 
   static const notSupportedTitle = 'App lock is not available here';
-  static const notSupported = 'This device cannot check a fingerprint, face or PIN for VaultTerm, so the app cannot lock itself.';
+  static const notSupported = 'This device cannot check a fingerprint, face or PIN for Multiplex, so the app cannot lock itself.';
 }
 
 /// The "App lock" switch. Turning it on first asks the device to confirm
@@ -137,7 +137,7 @@ class _AppLockSwitchState extends State<AppLockSwitch> {
     return SwitchListTile(
       secondary: const Icon(Icons.fingerprint),
       title: const Text('App lock'),
-      subtitle: const Text('Ask for fingerprint, face or device PIN when VaultTerm opens'),
+      subtitle: const Text('Ask for fingerprint, face or device PIN when Multiplex opens'),
       value: widget.on,
       onChanged: _checking ? null : _changed,
     );

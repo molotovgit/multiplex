@@ -9,8 +9,8 @@ import 'theme.dart';
 
 /// The root widget. Rebuilds the theme whenever the user picks another
 /// one, so the whole app changes at once.
-class VaultTermApp extends StatelessWidget {
-  const VaultTermApp({super.key, required this.store, required this.sessions});
+class MultiplexApp extends StatelessWidget {
+  const MultiplexApp({super.key, required this.store, required this.sessions});
 
   final VaultStore store;
   final SessionManager sessions;
@@ -23,7 +23,7 @@ class VaultTermApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: store,
         builder: (context, _) => MaterialApp(
-          title: 'VaultTerm',
+          title: 'Multiplex',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.build(store.activeTheme),
           home: const LockGate(child: HomeShell()),

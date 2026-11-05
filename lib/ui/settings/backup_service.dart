@@ -65,7 +65,7 @@ class PickerBackupFiles implements BackupFiles {
 
   @override
   Future<PickedBackup?> pick() async {
-    final file = await FilePicker.pickFile(dialogTitle: 'Choose a VaultTerm backup');
+    final file = await FilePicker.pickFile(dialogTitle: 'Choose a Multiplex backup');
     if (file == null) return null;
     final size = file.lengthSync() ?? await file.length();
     if (size != null && size > BackupFormat.maxBytes) throw const BackupTooLarge();
@@ -81,7 +81,7 @@ class PickerBackupFiles implements BackupFiles {
 /// this too; checking here as well lets us say "not a backup" before
 /// asking for a password.
 abstract final class BackupFormat {
-  /// Backups start with the letters "VTB1".
+  /// Backups start with the letters "MPB1".
   static const magic = [0x56, 0x54, 0x42, 0x31];
 
   /// Magic, three numbers for the key settings, salt, then the nonce.
@@ -90,7 +90,7 @@ abstract final class BackupFormat {
   /// Real backups are small (text); anything bigger is the wrong file.
   static const maxBytes = 64 * 1024 * 1024;
 
-  static const extension = 'vtbackup';
+  static const extension = 'mpbackup';
 
   static bool looksLikeBackup(List<int> bytes) {
     if (bytes.length < minBytes) return false;
@@ -100,10 +100,10 @@ abstract final class BackupFormat {
     return true;
   }
 
-  /// "vaultterm-backup-2026-11-05.vtbackup", using the local date.
+  /// "multiplex-backup-2026-11-05.mpbackup", using the local date.
   static String fileNameFor(DateTime date) {
     String two(int n) => n.toString().padLeft(2, '0');
-    return 'vaultterm-backup-${date.year}-${two(date.month)}-${two(date.day)}.$extension';
+    return 'multiplex-backup-${date.year}-${two(date.month)}-${two(date.day)}.$extension';
   }
 }
 
