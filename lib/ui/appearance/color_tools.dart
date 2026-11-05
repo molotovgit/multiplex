@@ -20,8 +20,9 @@ abstract final class ColorHex {
 /// How readable one colour is on another, using the WCAG contrast ratio:
 /// 1 means no difference at all, 21 is black on white.
 abstract final class ColorContrast {
-  /// Below this, text is very hard to read. The editor warns about it.
-  static const lowText = 3.0;
+  /// Below this, normal-sized text is hard to read (the WCAG AA level).
+  /// The editor warns about it.
+  static const lowText = 4.5;
 
   /// Below this, an accent colour does not stand out from the background.
   static const lowAccent = 3.0;

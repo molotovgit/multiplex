@@ -102,7 +102,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = AppScope.store(context).settings;
+    final settings = AppScope.watch(context).settings;
     final ratio = ColorContrast.ratio(_draft.foreground, _draft.background);
     return PopScope(
       canPop: !_changed,
@@ -113,89 +113,117 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
         appBar: AppBar(
           leading: IconButton(icon: const Icon(Icons.close), tooltip: 'Cancel', onPressed: () => Navigator.maybePop(context)),
           title: Text(widget.title),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilledButton(onPressed: _save, child: const Text('Save theme')),
-            ),
-          ],
         ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxWidth),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: ThemePreview(
-                    theme: _draft,
-                    fontFamily: TerminalFonts.byId(settings, settings.terminalFontId).family,
-                    fontSize: 14,
-                    lineHeight: settings.lineHeight,
-                    cursorStyle: settings.cursorStyle,
-                    borderRadius: BorderRadius.circular(14),
+        // The one main action sits at the bottom, within thumb reach, where
+        // its label can wrap at any text size.
+        bottomNavigationBar: _SaveBar(onSave: _save),
+        // Keeps the form clear of a notch when the phone lies on its side.
+        body: SafeArea(
+          top: false,
+          bottom: false,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _maxWidth),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: ThemePreview(
+                      theme: _draft,
+                      fontFamily: TerminalFonts.byId(settings, settings.terminalFontId).family,
+                      fontSize: 14,
+                      lineHeight: settings.lineHeight,
+                      cursorStyle: settings.cursorStyle,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.only(bottom: 32),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                        child: TextField(
-                          controller: _name,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: InputDecoration(labelText: 'Name', errorText: _nameError),
-                          onChanged: (_) => setState(() {
-                            _changed = true;
-                            _nameError = null;
-                          }),
+                  Expanded(
+                    child: ListView(
+                      // Room at the end so the last colours clear the gesture bar.
+                      padding: EdgeInsets.only(bottom: 32 + MediaQuery.paddingOf(context).bottom),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                          child: TextField(
+                            controller: _name,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: InputDecoration(labelText: 'Name', errorText: _nameError),
+                            onChanged: (_) => setState(() {
+                              _changed = true;
+                              _nameError = null;
+                            }),
+                          ),
                         ),
-                      ),
-                      if (ratio < ColorContrast.lowText)
-                        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: ContrastWarning(ratio: ratio)),
-                      const SectionHeader('Main colours'),
-                      ColorRow(
-                        label: 'Background',
-                        description: 'Behind the terminal text and the app\'s screens',
-                        color: _draft.background,
-                        onTap: () => _pickMain('Background', _draft.background, (v) => _draft.copyWith(background: v)),
-                      ),
-                      ColorRow(
-                        label: 'Text',
-                        description: 'Normal terminal and app text',
-                        color: _draft.foreground,
-                        onTap: () => _pickMain('Text', _draft.foreground, (v) => _draft.copyWith(foreground: v)),
-                      ),
-                      ColorRow(
-                        label: 'Cursor',
-                        description: 'Where typing goes in the terminal',
-                        color: _draft.cursor,
-                        onTap: () => _pickMain('Cursor', _draft.cursor, (v) => _draft.copyWith(cursor: v)),
-                      ),
-                      ColorRow(
-                        label: 'Accent',
-                        description: 'Buttons, tabs and highlights in the app',
-                        color: _draft.accent,
-                        onTap: () => _pickMain('Accent', _draft.accent, (v) => _draft.copyWith(accent: v)),
-                      ),
-                      ColorRow(
-                        label: 'Selection',
-                        description: 'Behind text you mark in the terminal',
-                        color: _draft.selection,
-                        emptyText: 'Same as accent',
-                        onTap: _pickSelection,
-                      ),
-                      const SectionHeader('Terminal colours'),
-                      AnsiColorGrid(ansi: _draft.ansi, onTap: _pickAnsi),
-                    ],
+                        if (ratio < ColorContrast.lowText)
+                          Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: ContrastWarning(ratio: ratio)),
+                        const SectionHeader('Main colours'),
+                        ColorRow(
+                          label: 'Background',
+                          description: 'Behind the terminal text and the app\'s screens',
+                          color: _draft.background,
+                          onTap: () => _pickMain('Background', _draft.background, (v) => _draft.copyWith(background: v)),
+                        ),
+                        ColorRow(
+                          label: 'Text',
+                          description: 'Normal terminal and app text',
+                          color: _draft.foreground,
+                          onTap: () => _pickMain('Text', _draft.foreground, (v) => _draft.copyWith(foreground: v)),
+                        ),
+                        ColorRow(
+                          label: 'Cursor',
+                          description: 'Where typing goes in the terminal',
+                          color: _draft.cursor,
+                          onTap: () => _pickMain('Cursor', _draft.cursor, (v) => _draft.copyWith(cursor: v)),
+                        ),
+                        ColorRow(
+                          label: 'Accent',
+                          description: 'Buttons, tabs and highlights in the app',
+                          color: _draft.accent,
+                          onTap: () => _pickMain('Accent', _draft.accent, (v) => _draft.copyWith(accent: v)),
+                        ),
+                        ColorRow(
+                          label: 'Selection',
+                          description: 'Behind text you mark in the terminal',
+                          color: _draft.selection,
+                          emptyText: 'Same as accent',
+                          onTap: _pickSelection,
+                        ),
+                        const SectionHeader('Terminal colours'),
+                        AnsiColorGrid(ansi: _draft.ansi, onTap: _pickAnsi),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// "Save theme" across the bottom of the editor, clear of the gesture bar.
+class _SaveBar extends StatelessWidget {
+  const _SaveBar({required this.onSave});
+
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: _ThemeEditorScreenState._maxWidth, minHeight: 48),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(onPressed: onSave, child: const Text('Save theme', textAlign: TextAlign.center)),
+              ),
+            ),
+          ),
+        ),
+      );
 }

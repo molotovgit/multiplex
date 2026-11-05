@@ -16,11 +16,11 @@ class ThemeActions {
 
   VaultStore get _store => AppScope.store(context);
 
-  /// Makes [theme] the app's theme. The screens restyle at once; open
-  /// terminals are repainted in the new colours.
+  /// Makes [theme] the app's theme and says so. The screens restyle at
+  /// once; open terminals are repainted in the new colours.
   void use(ThemeSpec theme) {
-    _store.updateSettings(_store.settings.copyWith(themeId: theme.id));
-    AppScope.sessions(context).applyTerminalTheme();
+    _apply(theme);
+    Toast.show(context, '${theme.name} applied');
   }
 
   /// Saves a theme the user made or changed. With [andUse] it also
@@ -28,8 +28,13 @@ class ThemeActions {
   void save(ThemeSpec theme, {required bool andUse}) {
     _store.saveTheme(theme);
     if (andUse || _store.settings.themeId == theme.id) {
-      use(theme);
+      _apply(theme);
     }
+  }
+
+  void _apply(ThemeSpec theme) {
+    _store.updateSettings(_store.settings.copyWith(themeId: theme.id));
+    AppScope.sessions(context).applyTerminalTheme();
   }
 
   /// Opens the editor on a copy of the theme in use.

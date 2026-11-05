@@ -56,6 +56,7 @@ class ThemeExportDialog extends StatelessWidget {
     final colors = AppColorsTheme.of(context);
     return AlertDialog(
       title: const Text('Export theme'),
+      scrollable: true,
       content: SizedBox(
         width: 480,
         child: Column(
@@ -66,7 +67,7 @@ class ThemeExportDialog extends StatelessWidget {
             const SizedBox(height: 12),
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: colors.raised, borderRadius: BorderRadius.circular(10)),
               child: SingleChildScrollView(
                 child: MonoText(json, selectable: true, style: Theme.of(context).textTheme.bodySmall),

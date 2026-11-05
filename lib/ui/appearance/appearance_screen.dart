@@ -22,7 +22,6 @@ class AppearanceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.store(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appearance'),
@@ -35,34 +34,40 @@ class AppearanceScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: store,
-        builder: (context, _) {
-          final activeId = store.activeTheme.id;
-          final custom = store.customThemes;
-          return CustomScrollView(
-            slivers: [
-              const SliverToBoxAdapter(child: SectionHeader('Built-in')),
-              ThemeGridSliver(themes: BuiltInThemes.all, activeId: activeId),
-              const SliverToBoxAdapter(child: SectionHeader('Your themes')),
-              if (custom.isEmpty)
-                const SliverToBoxAdapter(child: _NoCustomThemes())
-              else
-                ThemeGridSliver(themes: custom, activeId: activeId),
-              const SliverToBoxAdapter(child: _ThemeButtons()),
-              SliverToBoxAdapter(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: _formWidth),
-                    child: const TerminalTextSection(),
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-            ],
-          );
-        },
-      ),
+      // Side insets keep the page clear of a notch in landscape.
+      body: const SafeArea(top: false, bottom: false, child: _AppearanceBody()),
+    );
+  }
+}
+
+/// The galleries and the terminal text settings, in one scrolling page.
+/// Redraws whenever a theme or setting changes.
+class _AppearanceBody extends StatelessWidget {
+  const _AppearanceBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.watch(context);
+    final activeId = store.activeTheme.id;
+    final custom = store.customThemes;
+    return CustomScrollView(
+      slivers: [
+        const SliverToBoxAdapter(child: SectionHeader('Built-in')),
+        ThemeGridSliver(themes: BuiltInThemes.all, activeId: activeId),
+        const SliverToBoxAdapter(child: SectionHeader('Your themes')),
+        if (custom.isEmpty) const SliverToBoxAdapter(child: _NoCustomThemes()) else ThemeGridSliver(themes: custom, activeId: activeId),
+        const SliverToBoxAdapter(child: _ThemeButtons()),
+        SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppearanceScreen._formWidth),
+              child: const TerminalTextSection(),
+            ),
+          ),
+        ),
+        // Room at the end so the last controls clear the gesture bar.
+        SliverPadding(padding: EdgeInsets.only(bottom: 32 + MediaQuery.paddingOf(context).bottom)),
+      ],
     );
   }
 }

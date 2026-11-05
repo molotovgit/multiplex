@@ -117,8 +117,12 @@ class ThemeImporter {
       cursor: cursor,
       accent: pickAccent(ansi: opaque, cursor: cursor, background: background),
       selection: imported.selection == null ? null : 0xFF000000 | imported.selection!,
+      credit: 'Imported from ${_formatName(imported.format)}',
     );
   }
+
+  /// "alacritty" -> "Alacritty".
+  static String _formatName(String format) => format.isEmpty ? 'a theme file' : format[0].toUpperCase() + format.substring(1);
 
   /// "the theme has no background colour" -> "The theme has no background colour."
   static String _sentence(String message) {

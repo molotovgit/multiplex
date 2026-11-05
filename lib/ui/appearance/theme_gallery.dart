@@ -28,7 +28,8 @@ class ThemeGridSliver extends StatelessWidget {
     // The name and credit lines grow with the user's text size, so the
     // card's footer is measured from it.
     final scaler = MediaQuery.textScalerOf(context);
-    final footer = math.max(40.0, scaler.scale(14) * 1.45 + scaler.scale(12) * 1.4) + 18;
+    // The menu button needs a full 48 dp, plus 4 dp above and below.
+    final footer = math.max(48.0, scaler.scale(14) * 1.45 + scaler.scale(12) * 1.4) + 8;
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverLayoutBuilder(
@@ -66,10 +67,13 @@ class ThemeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
-    final settings = AppScope.store(context).settings;
+    final settings = AppScope.watch(context).settings;
+    // Read out as one item, for example "Tokyo Night theme, selected";
+    // the check mark and accent border show the same thing to the eye.
     return Semantics(
       container: true,
-      selected: active,
+      button: true,
+      label: '${theme.name} theme${active ? ', selected' : ''}',
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
@@ -110,20 +114,28 @@ class _CardFooter extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final credit = theme.credit ?? (theme.isDark ? 'Dark' : 'Light');
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+      padding: const EdgeInsets.fromLTRB(12, 4, 0, 4),
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(theme.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.titleSmall),
-                Text(credit, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodySmall?.copyWith(color: colors.muted)),
-              ],
+            // The card's own label already says this to screen readers.
+            child: ExcludeSemantics(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    theme.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  Text(credit, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodySmall?.copyWith(color: colors.muted)),
+                ],
+              ),
             ),
           ),
-          if (active) Icon(Icons.check_circle, size: 20, color: colors.accent, semanticLabel: 'In use'),
+          if (active) Icon(Icons.check_circle, size: 20, color: colors.accent),
           _ThemeMenu(theme: theme),
         ],
       ),
@@ -191,7 +203,7 @@ class _MenuLabel extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: color),
           const SizedBox(width: 12),
-          Text(label, style: TextStyle(color: color)),
+          Text(label, style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: color)),
         ],
       );
 }

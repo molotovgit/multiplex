@@ -60,7 +60,7 @@ class _TerminalTextSectionState extends State<TerminalTextSection> {
 
   @override
   Widget build(BuildContext context) {
-    final store = AppScope.store(context);
+    final store = AppScope.watch(context);
     final settings = store.settings;
     final fontSize = settings.fontSize;
     final lineHeight = settings.lineHeight;
@@ -165,7 +165,7 @@ class _FontTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             TerminalTextSection.sample,
             maxLines: 1,
@@ -222,7 +222,10 @@ class _SettingSlider extends StatelessWidget {
               semanticFormatterCallback: (_) => '$label $shown',
             ),
           ),
-          SizedBox(width: 40, child: Text(shown, textAlign: TextAlign.end, style: TextStyle(color: muted))),
+          SizedBox(
+            width: 48,
+            child: Text(shown, textAlign: TextAlign.end, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted)),
+          ),
         ],
       ),
     );

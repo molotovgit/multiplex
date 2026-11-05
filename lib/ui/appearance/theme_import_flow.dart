@@ -68,45 +68,48 @@ class _ImportSourceSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    // Scrolls when large text makes the choices taller than the sheet.
     return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Import theme', style: text.titleLarge),
-                const SizedBox(height: 4),
-                Text(
-                  'Alacritty, Kitty and Ghostty themes work, and themes exported from VaultTerm. You can check and change the colours before saving.',
-                  style: text.bodyMedium,
-                ),
-              ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Import theme', style: text.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Alacritty, Kitty and Ghostty themes work, and themes exported from VaultTerm. You can check and change the colours before saving.',
+                    style: text.bodyMedium,
+                  ),
+                ],
+              ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.file_open_outlined),
-            title: const Text('Choose a file'),
-            subtitle: const Text('.toml, .conf, .json, or a theme file with no extension'),
-            onTap: () => Navigator.pop(context, ThemeImportSource.file),
-          ),
-          ListTile(
-            leading: const Icon(Icons.content_paste),
-            title: const Text('Paste text'),
-            subtitle: const Text('The contents of a theme file'),
-            onTap: () => Navigator.pop(context, ThemeImportSource.paste),
-          ),
-          ListTile(
-            leading: const Icon(Icons.link),
-            title: const Text('Download from a link'),
-            subtitle: const Text('An https link to a theme file, GitHub pages included'),
-            onTap: () => Navigator.pop(context, ThemeImportSource.link),
-          ),
-          const SizedBox(height: 8),
-        ],
+            ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: const Text('Choose a file'),
+              subtitle: const Text('.toml, .conf, .json, or a theme file with no extension'),
+              onTap: () => Navigator.pop(context, ThemeImportSource.file),
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste),
+              title: const Text('Paste text'),
+              subtitle: const Text('The contents of a theme file'),
+              onTap: () => Navigator.pop(context, ThemeImportSource.paste),
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Download from a link'),
+              subtitle: const Text('An https link to a theme file, GitHub pages included'),
+              onTap: () => Navigator.pop(context, ThemeImportSource.link),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -178,7 +181,7 @@ class _PasteThemeDialogState extends State<PasteThemeDialog> {
                 autocorrect: false,
                 enableSuggestions: false,
                 keyboardType: TextInputType.multiline,
-                style: TextStyle(fontFamily: TerminalFonts.jetbrains.family, fontSize: 13, letterSpacing: 0),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: TerminalFonts.jetbrains.family, letterSpacing: 0),
                 decoration: InputDecoration(
                   hintText: '[colors.primary]\nbackground = "#1a1b26"\n...',
                   errorText: _error,
@@ -242,6 +245,7 @@ class _LinkThemeDialogState extends State<LinkThemeDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
         title: const Text('Download a theme'),
+        scrollable: true,
         content: SizedBox(
           width: 520,
           child: Column(

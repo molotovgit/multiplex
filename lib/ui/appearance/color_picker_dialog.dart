@@ -107,7 +107,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
                 FilteringTextInputFormatter.allow(RegExp('[#0-9a-fA-F]')),
                 LengthLimitingTextInputFormatter(7),
               ],
-              style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               decoration: InputDecoration(labelText: 'Hex colour', hintText: '#rrggbb', errorText: _hexError),
             ),
             const SizedBox(height: 8),
@@ -135,8 +135,6 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
             if (picks.isNotEmpty) ...[
               const _Heading('From this theme'),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
                 children: [for (final c in picks) _QuickPick(color: c, selected: c == _value, onTap: () => _setColor(c))],
               ),
             ],
@@ -211,17 +209,22 @@ class _HslSlider extends StatelessWidget {
     final muted = AppColorsTheme.of(context).muted;
     return Row(
       children: [
-        SizedBox(width: 84, child: Text(label)),
+        SizedBox(width: 88, child: Text(label)),
         Expanded(
           child: Slider(value: value.clamp(0, max), max: max, onChanged: onChanged, semanticFormatterCallback: (_) => '$label $shown'),
         ),
-        SizedBox(width: 44, child: Text(shown, textAlign: TextAlign.end, style: TextStyle(color: muted))),
+        SizedBox(
+          width: 48,
+          child: Text(shown, textAlign: TextAlign.end, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted)),
+        ),
       ],
     );
   }
 }
 
-/// A round swatch of one of the theme's colours.
+/// A round swatch of one of the theme's colours. The swatch is 32 dp,
+/// the area that reacts to a tap is 48 dp, which also leaves 16 dp
+/// between neighbouring swatches.
 class _QuickPick extends StatelessWidget {
   const _QuickPick({required this.color, required this.selected, required this.onTap});
 
@@ -241,14 +244,19 @@ class _QuickPick extends StatelessWidget {
         label: 'Use $hex',
         child: InkResponse(
           onTap: onTap,
-          radius: 20,
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: Color(color),
-              shape: BoxShape.circle,
-              border: Border.all(color: selected ? colors.accent : colors.outline, width: selected ? 3 : 1),
+          radius: 24,
+          child: SizedBox.square(
+            dimension: 48,
+            child: Center(
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Color(color),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: selected ? colors.accent : colors.outline, width: selected ? 3 : 1),
+                ),
+              ),
             ),
           ),
         ),

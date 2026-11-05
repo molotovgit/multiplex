@@ -45,12 +45,21 @@ class ColorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = AppColorsTheme.of(context).muted;
+    final colors = AppColorsTheme.of(context);
+    final small = Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted);
+    // The value sits under the description rather than at the end of the
+    // row, so it can wrap when the user picks a large text size.
     return ListTile(
       leading: ColorSwatchBox(color: color),
       title: Text(label),
-      subtitle: Text(description),
-      trailing: color == null ? Text(emptyText ?? 'Not set', style: TextStyle(color: muted)) : MonoText(ColorHex.format(color!)),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(description),
+          if (color == null) Text(emptyText ?? 'Not set', style: small) else MonoText(ColorHex.format(color!), style: small),
+        ],
+      ),
       onTap: onTap,
     );
   }
@@ -84,20 +93,23 @@ class _WideAnsiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColorsTheme.of(context).muted);
+    final label = Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColorsTheme.of(context).muted);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final bright in [false, true]) ...[
-            Padding(padding: const EdgeInsets.only(top: 8, bottom: 6), child: Text(bright ? 'Bright' : 'Normal', style: label)),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, top: 8, bottom: 4),
+              child: Text(bright ? 'Bright' : 'Normal', style: label),
+            ),
             Row(
               children: [
                 for (var i = 0; i < 8; i++)
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: _AnsiTile(index: bright ? i + 8 : i, color: ansi[bright ? i + 8 : i], onTap: onTap, showName: true),
                     ),
                   ),
@@ -118,7 +130,7 @@ class _NarrowAnsiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = Theme.of(context).textTheme.labelMedium?.copyWith(color: AppColorsTheme.of(context).muted);
+    final label = Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColorsTheme.of(context).muted);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -133,7 +145,8 @@ class _NarrowAnsiGrid extends StatelessWidget {
           ),
           for (var i = 0; i < 8; i++)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              // 48 dp rows with 8 dp between them, so each colour is easy to hit.
+              padding: const EdgeInsets.only(top: 8),
               child: Row(
                 children: [
                   SizedBox(width: 80, child: Text(AnsiNames.normal[i])),
@@ -178,8 +191,11 @@ class _AnsiTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () => onTap(index),
-        child: Padding(
+        child: Container(
+          // The swatch can be small, but the place to tap is at least 48 dp.
+          constraints: const BoxConstraints(minHeight: 48),
           padding: const EdgeInsets.all(4),
+          alignment: Alignment.centerLeft,
           child: showName
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -216,8 +232,8 @@ class ContrastWarning extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Text will be hard to read: it barely stands out from the background '
-                '(contrast ${ratio.toStringAsFixed(1)} to 1). Make the text or the background lighter or darker.',
+                'Text will be hard to read: the contrast with the background is ${ratio.toStringAsFixed(1)} to 1, '
+                'and at least 4.5 to 1 is needed. Make the text or the background lighter or darker.',
               ),
             ),
           ],

@@ -235,9 +235,17 @@ void main() {
         await open(tester, size);
         expect(find.text('Built-in'), findsOneWidget);
 
+        final semantics = tester.ensureSemantics();
+        // Every tap target is at least 48 dp and has a label.
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+
         await tester.tap(find.text('Nord'));
         await tester.pumpAndSettle();
         expect(store.settings.themeId, BuiltInThemes.nord.id);
+        expect(find.text('Nord applied'), findsOneWidget);
+        expect(find.bySemanticsLabel('Nord theme, selected'), findsOneWidget);
+        semantics.dispose();
         final active = find.byWidgetPredicate((w) => w is ThemeCard && w.active);
         expect(active, findsOneWidget);
         expect(tester.widget<ThemeCard>(active).theme.id, BuiltInThemes.nord.id);
@@ -254,20 +262,67 @@ void main() {
       });
     }
 
+    testWidgets('large text does not break the page or the editor', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await open(tester, const Size(360, 740));
+
+      // The import sheet and the paste dialog.
+      await tester.tap(find.byTooltip('Import theme'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      // At this size the sheet scrolls, so bring the choice into view first.
+      await tester.ensureVisible(find.text('Paste text'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Paste text'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, 'Your themes');
+      await scrollTo(tester, 'Blinking cursor');
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byTooltip('Create theme'));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, 'Terminal colours');
+      await scrollTo(tester, 'Bright');
+      expect(tester.takeException(), isNull);
+
+      // The colour dialog, opened from the red swatch.
+      final semantics = tester.ensureSemantics();
+      final red = find.bySemanticsLabel(RegExp(r'^Red, #'));
+      await tester.ensureVisible(red);
+      await tester.pumpAndSettle();
+      await tester.tap(red);
+      await tester.pumpAndSettle();
+      expect(find.text('Use colour'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+      await finish(tester);
+    });
+
     testWidgets('Create theme saves a copy of the theme in use and uses it', (tester) async {
       await open(tester, const Size(360, 740));
       await tester.tap(find.byTooltip('Create theme'));
       await tester.pumpAndSettle();
       expect(find.text('New theme'), findsOneWidget);
+      final semantics = tester.ensureSemantics();
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
 
       // Making the background the same as the text brings up the warning.
       expect(find.textContaining('hard to read'), findsNothing);
       await tester.tap(find.text('Background'));
       await tester.pumpAndSettle();
+      // The colour dialog's swatches and sliders are big enough to hit too.
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await tester.enterText(find.widgetWithText(TextField, 'Hex colour'), '#e6e1d6');
       await tester.tap(find.text('Use colour'));
       await tester.pumpAndSettle();
       expect(find.textContaining('hard to read'), findsOneWidget);
+      semantics.dispose();
 
       await scrollTo(tester, 'Terminal colours');
       await scrollTo(tester, 'Bright');
