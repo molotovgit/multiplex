@@ -2,8 +2,10 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/app_icons.dart';
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
@@ -17,6 +19,7 @@ import '../keys/keychain_screen.dart';
 import '../sessions/sessions_screen.dart';
 import '../settings/settings_screen.dart';
 import '../snippets/snippets_screen.dart';
+import 'tab_scrub.dart';
 
 /// One top-level place in the app.
 class _Destination {
@@ -29,8 +32,9 @@ class _Destination {
 /// The app's main frame with the five main places. The theme's style picks
 /// the navigation: a bottom bar with or without labels, a floating bar, or
 /// a side rail. Wide screens (tablets, desktop) always get the side rail,
-/// unless the floating bar is chosen. A long press on Settings opens the
-/// theme switcher.
+/// unless the floating bar is chosen. Swiping sideways moves between the
+/// places, and so does sliding a finger along the bottom bar. A long press
+/// on Settings opens the theme switcher.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -60,7 +64,41 @@ class _HomeShellState extends State<HomeShell> {
   /// Where Settings is in [_destinations].
   static const _settingsIndex = 4;
 
-  void _select(int index) => setState(() => _index = index);
+  final _pager = PageController();
+
+  /// Keeps the screens, and which one is open, when a theme change moves
+  /// them to another place in the tree (another navigation style).
+  final _pagesKey = GlobalKey();
+
+  /// Set while a tap on the bar animates the screens there, so the tabs
+  /// passed on the way do not light up.
+  int? _target;
+
+  @override
+  void dispose() {
+    _pager.dispose();
+    super.dispose();
+  }
+
+  void _select(int index) {
+    if (index == _index) return;
+    setState(() => _index = index);
+    if (!_pager.hasClients) return;
+    final duration = AppMotion.of(context).page;
+    if (duration == Duration.zero) {
+      _pager.jumpToPage(index);
+      return;
+    }
+    _target = index;
+    _pager.animateToPage(index, duration: duration, curve: Curves.easeOutCubic).whenComplete(() => _target = null);
+  }
+
+  void _paged(int index) {
+    if (_target != null && index != _target) return;
+    if (index == _index) return;
+    HapticFeedback.selectionClick();
+    setState(() => _index = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +108,12 @@ class _HomeShellState extends State<HomeShell> {
     final wide = MediaQuery.sizeOf(context).width >= _railBreakpoint;
     final store = AppScope.watch(context);
     final theme = store.activeTheme;
-    final pages = IndexedStack(index: _index, children: _pages);
+    final pages = PageView(
+      key: _pagesKey,
+      controller: _pager,
+      onPageChanged: _paged,
+      children: [for (final page in _pages) _KeepAlive(child: page)],
+    );
     final slide = look.style.backdrop.onScreens ? ActiveSlide.of(theme, store.settings) : null;
     final body = slide != null ? _ScreensBackdrop(theme: theme, slide: slide, child: pages) : pages;
 
@@ -83,6 +126,7 @@ class _HomeShellState extends State<HomeShell> {
           onSelect: _select,
           sessionCount: sessions.activeCount,
           onLongPressSettings: () => ThemeSwitcherSheet.show(context),
+          pages: _pager,
         );
         if (nav == NavStyle.rail || (wide && nav != NavStyle.floating)) {
           return Scaffold(
@@ -138,9 +182,13 @@ class _NavModel {
     required this.onSelect,
     required this.sessionCount,
     required this.onLongPressSettings,
+    required this.pages,
   });
 
   final List<_Destination> destinations;
+
+  /// The screens; the bar's gestures move them.
+  final PageController pages;
   final int index;
   final ValueChanged<int> onSelect;
 
@@ -171,7 +219,8 @@ class _NavIcon extends StatelessWidget {
 }
 
 /// The bottom bar, with labels or icons only. Icons-only items still have
-/// their names as tooltips and for screen readers.
+/// their names for screen readers. A finger on the bar can also slide
+/// between the screens (see [TabScrub]).
 class _ShellNavigationBar extends StatelessWidget {
   const _ShellNavigationBar({required this.model, required this.labels, this.height, this.background});
 
@@ -181,11 +230,8 @@ class _ShellNavigationBar extends StatelessWidget {
   final Color? background;
 
   @override
-  Widget build(BuildContext context) => _BarLongPress(
-        count: model.destinations.length,
-        target: _HomeShellState._settingsIndex,
-        onLongPress: model.onLongPressSettings,
-        child: NavigationBar(
+  Widget build(BuildContext context) {
+    final bar = NavigationBar(
           selectedIndex: model.index,
           onDestinationSelected: model.onSelect,
           height: height,
@@ -197,12 +243,20 @@ class _ShellNavigationBar extends StatelessWidget {
                 icon: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d)),
                 selectedIcon: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d)),
                 label: d.label,
-                // Its long press opens the theme switcher instead of a tooltip.
-                tooltip: model.isSettings(d) ? '' : null,
+                // A long press on the bar moves between the screens (and
+                // opens the theme switcher on Settings), so no tooltips.
+                tooltip: '',
               ),
           ],
-        ),
-      );
+        );
+    return TabScrub(
+      count: model.destinations.length,
+      pages: model.pages,
+      settingsSlot: _HomeShellState._settingsIndex,
+      onHoldSettings: model.onLongPressSettings,
+      child: bar,
+    );
+  }
 }
 
 /// The side rail, kept clear of a notch or camera cut-out.
@@ -320,30 +374,6 @@ class _GlassBackdrop extends StatelessWidget {
   }
 }
 
-/// A long press on one of a bottom bar's equal slots. The bar's items
-/// all have the same width, so the slot follows from where the finger is.
-class _BarLongPress extends StatelessWidget {
-  const _BarLongPress({required this.count, required this.target, required this.onLongPress, required this.child});
-
-  final int count;
-  final int target;
-  final VoidCallback onLongPress;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onLongPressStart: (details) {
-            final slot = (details.localPosition.dx / constraints.maxWidth * count).floor().clamp(0, count - 1);
-            final rtl = Directionality.of(context) == TextDirection.rtl;
-            if ((rtl ? count - 1 - slot : slot) == target) onLongPress();
-          },
-          child: child,
-        ),
-      );
-}
-
 /// A rail icon; the Settings one also answers a long press.
 class _RailIcon extends StatelessWidget {
   const _RailIcon({required this.model, required this.destination, required this.selected});
@@ -394,5 +424,27 @@ class _ScreensBackdrop extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Keeps a main screen alive while another one is shown, so its scroll
+/// position and anything typed are still there when the user comes back.
+class _KeepAlive extends StatefulWidget {
+  const _KeepAlive({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<_KeepAlive> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

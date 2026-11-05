@@ -35,6 +35,13 @@ class AppMotion {
         MotionSpeed.normal => const Duration(milliseconds: 250),
       };
 
+  /// Moving between the main screens after a tap on the bar.
+  Duration get page => switch (speed) {
+        MotionSpeed.off => Duration.zero,
+        MotionSpeed.fast => const Duration(milliseconds: 200),
+        MotionSpeed.normal => const Duration(milliseconds: 320),
+      };
+
   /// Sheets slide in at this speed and leave a little faster.
   AnimationStyle get sheet => switch (speed) {
         MotionSpeed.off => AnimationStyle.noAnimation,
