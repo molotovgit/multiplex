@@ -207,6 +207,7 @@ abstract final class BuiltInThemes {
   static const githubHighContrast = OriginalThemes.githubHighContrast;
   static const flexokiLight = OriginalThemes.flexokiLight;
   static const rosePineDawn = OriginalThemes.rosePineDawn;
+  static const millennium = OriginalThemes.millennium;
   static const tokyoNight = DarkThemes.tokyoNight;
   static const catppuccinMocha = DarkThemes.catppuccinMocha;
   static const gruvboxDark = DarkThemes.gruvboxDark;
