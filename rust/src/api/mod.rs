@@ -2,6 +2,7 @@
 //! generates the matching Dart code from these files.
 
 pub mod keys;
+pub mod sftp_types;
 pub mod ssh_types;
 pub mod terminal_types;
 pub mod tunnel_types;
