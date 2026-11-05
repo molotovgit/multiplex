@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -23,6 +25,7 @@ import '../keyboard/keyboard_settings.dart';
 import '../keyboard/terminal_keyboard_panel.dart';
 import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
+import '../common/collapsible.dart';
 import 'key_bar.dart';
 import 'terminal_tab_strip.dart';
 import 'terminal_view.dart';
@@ -86,6 +89,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
   /// Where picked recent commands go.
   late final _commands = TerminalCommandTarget(widget.controller);
 
+  /// The tab strip shows for a moment when the screen opens, then folds
+  /// away so the terminal has the room; a tap on the title brings it back.
+  bool _tabsOpen = true;
+  Timer? _tabsTimer;
+
+  static const _tabsFor = Duration(seconds: 4);
+
+  void _peekTabs() {
+    _tabsTimer?.cancel();
+    if (!_tabsOpen) setState(() => _tabsOpen = true);
+    _tabsTimer = Timer(_tabsFor, () {
+      if (mounted) setState(() => _tabsOpen = false);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +115,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
     _keepAwake = AppScope.store(context).settings.keepScreenOn;
     if (_keepAwake) ScreenAwake.hold();
+    _peekTabs();
   }
 
   /// Whether this screen asked to keep the display on (released on close).
@@ -104,6 +123,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   @override
   void dispose() {
+    _tabsTimer?.cancel();
     _terminal.onBell = null;
     _terminal.onRemoteCopy = null;
     if (_keepAwake) ScreenAwake.release();
@@ -207,18 +227,26 @@ class _TerminalScreenState extends State<TerminalScreen> {
         return Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_terminal.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-              MonoText(widget.session.host.target, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.muted), maxLines: 1),
-            ],
+          title: Semantics(
+            button: showTabs,
+            hint: showTabs ? 'Shows the tabs' : null,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: showTabs ? _peekTabs : null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_terminal.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  MonoText(widget.session.host.target, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.muted), maxLines: 1),
+                ],
+              ),
+            ),
           ),
           actions: [
             if (KeyboardSettings.of(AppScope.store(context)).enabled && (_useSystem || _keyboardHidden))
               IconButton(tooltip: 'Built-in keyboard', icon: const AppIcon(AppIcons.keyboard), onPressed: _useBuiltInKeyboard),
-            // Without the tab strip its "+" would be gone, so it moves here.
-            if (!showTabs) IconButton(tooltip: 'New terminal', icon: const Icon(Icons.add), onPressed: () => TerminalScreen.openNew(context, widget.session)),
+            // While the tab strip is away its "+" sits here.
+            if (!(showTabs && _tabsOpen)) IconButton(tooltip: 'New terminal', icon: const Icon(Icons.add), onPressed: () => TerminalScreen.openNew(context, widget.session)),
             IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -244,11 +272,15 @@ class _TerminalScreenState extends State<TerminalScreen> {
         body: Column(
           children: [
             if (showTabs)
-              TerminalTabStrip(
-                session: widget.session,
-                current: _terminal,
-                onSelect: (other) => TerminalScreen.switchTo(context, widget.session, other),
-                onNew: () => TerminalScreen.openNew(context, widget.session),
+              Collapsible(
+                open: _tabsOpen,
+                from: Alignment.topCenter,
+                child: TerminalTabStrip(
+                  session: widget.session,
+                  current: _terminal,
+                  onSelect: (other) => TerminalScreen.switchTo(context, widget.session, other),
+                  onNew: () => TerminalScreen.openNew(context, widget.session),
+                ),
               ),
             Expanded(
               child: TerminalView(
@@ -274,7 +306,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               if (KeyboardSettings.of(AppScope.store(context)).showRecentCommands)
                 Material(
                   color: colors.surface,
-                  child: CommandStrip(target: _commands, onOpenHistory: _openHistory),
+                  child: CommandStrip(target: _commands, onOpenHistory: _openHistory, autoHide: true),
                 ),
               KeyBar(controller: _terminal, onSnippets: _pickSnippet, keepFocus: _keepFocus),
             ],
