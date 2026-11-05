@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
-import '../../app/theme.dart';
 import '../common/widgets.dart';
 import '../terminal/key_bar_items.dart';
 import 'key_bar_layout.dart';
@@ -27,7 +26,9 @@ class KeyBarEditorScreen extends StatelessWidget {
       action: 'Reset to default',
       destructive: false,
     );
-    if (ok && context.mounted) _save(context, KeyBarLayout.standard());
+    if (!ok || !context.mounted) return;
+    _save(context, KeyBarLayout.standard());
+    Toast.show(context, 'The key bar has the standard keys again');
   }
 
   @override
@@ -66,8 +67,9 @@ class KeyBarEditorScreen extends StatelessWidget {
   }
 }
 
-/// The keys in the bar as a list that can be dragged into a new order,
-/// with a remove button on each and "Add keys" at the end.
+/// The keys in the bar as a list that can be dragged into a new order.
+/// Each row also has a remove button and a "Move" menu, so the order can
+/// be changed without dragging.
 class _KeyList extends StatelessWidget {
   const _KeyList({required this.layout, required this.onChanged});
 
@@ -88,6 +90,8 @@ class _KeyList extends StatelessWidget {
         key: ValueKey(items[index].id),
         item: items[index],
         index: index,
+        count: items.length,
+        onMove: (to) => onChanged(layout.moved(index, to)),
         onRemove: () => onChanged(layout.without(items[index].id)),
       ),
     );
@@ -100,39 +104,58 @@ class _ListHeader extends StatelessWidget {
   final int count;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = AppColorsTheme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SectionHeader('Keys in the bar', trailing: Padding(padding: const EdgeInsets.only(right: 8), child: Text('$count'))),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 8),
-          child: Text(
-            count == 0 ? 'The bar is empty. Add keys to show them above the keyboard.' : 'Drag the handle to change the order.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted),
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SectionHeader('Keys in the bar', trailing: Padding(padding: const EdgeInsets.only(right: 8), child: Text('$count'))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 8),
+            child: HelpText(
+              count == 0
+                  ? 'The bar is empty. Add keys to show them above the keyboard.'
+                  : 'Drag the handle or use Move to change the order.',
+            ),
           ),
-        ),
-      ],
-    );
-  }
+        ],
+      );
 }
 
-/// One key in the list: what it looks like, its name, remove, and the
-/// handle to drag it.
+/// Where the "Move" menu can send a key.
+enum _MoveTo { up, down, start, end }
+
+/// One key in the list: its name, remove, the Move menu, and the handle
+/// to drag it. Every control is at least 48 dp with 8 dp between them.
 class _KeyRow extends StatelessWidget {
-  const _KeyRow({super.key, required this.item, required this.index, required this.onRemove});
+  const _KeyRow({
+    super.key,
+    required this.item,
+    required this.index,
+    required this.count,
+    required this.onMove,
+    required this.onRemove,
+  });
 
   final KeyBarItem item;
   final int index;
+  final int count;
+  final ValueChanged<int> onMove;
   final VoidCallback onRemove;
+
+  bool get _isFirst => index == 0;
+  bool get _isLast => index == count - 1;
+
+  void _move(_MoveTo where) => onMove(switch (where) {
+        _MoveTo.up => index - 1,
+        _MoveTo.down => index + 1,
+        _MoveTo.start => 0,
+        _MoveTo.end => count - 1,
+      });
 
   @override
   Widget build(BuildContext context) {
     return Material(
       type: MaterialType.transparency,
       child: ListTile(
-        leading: SizedBox(width: 64, child: Align(alignment: Alignment.centerLeft, child: KeyCap(item))),
         title: Text(item.name),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -142,11 +165,29 @@ class _KeyRow extends StatelessWidget {
               tooltip: 'Remove ${item.name}',
               onPressed: onRemove,
             ),
+            const SizedBox(width: 8),
+            PopupMenuButton<_MoveTo>(
+              icon: const Icon(Icons.swap_vert),
+              tooltip: 'Move ${item.name}',
+              enabled: count > 1,
+              onSelected: _move,
+              itemBuilder: (_) => [
+                PopupMenuItem(value: _MoveTo.up, enabled: !_isFirst, child: const Text('Move up')),
+                PopupMenuItem(value: _MoveTo.down, enabled: !_isLast, child: const Text('Move down')),
+                PopupMenuItem(value: _MoveTo.start, enabled: !_isFirst, child: const Text('Move to the start')),
+                PopupMenuItem(value: _MoveTo.end, enabled: !_isLast, child: const Text('Move to the end')),
+              ],
+            ),
+            const SizedBox(width: 8),
             ReorderableDragStartListener(
               index: index,
-              child: Tooltip(
-                message: 'Drag to move ${item.name}',
-                child: const Padding(padding: EdgeInsets.all(8), child: Icon(Icons.drag_handle)),
+              child: Semantics(
+                label: 'Drag to move ${item.name}',
+                child: Tooltip(
+                  message: 'Drag to move',
+                  excludeFromSemantics: true,
+                  child: const SizedBox.square(dimension: 48, child: Icon(Icons.drag_handle)),
+                ),
               ),
             ),
           ],
@@ -164,15 +205,13 @@ class _AddKeysButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 12, SettingsLayout.gutter, 0),
+        padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 16, SettingsLayout.gutter, 0),
         child: Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
             icon: const Icon(Icons.add),
             label: Text(enabled ? 'Add key' : 'Every key is in the bar'),
-            onPressed: enabled
-                ? () => showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => const AddKeySheet())
-                : null,
+            onPressed: enabled ? () => AddKeySheet.show(context) : null,
           ),
         ),
       );

@@ -3,30 +3,80 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 
-/// Sizes shared by the settings screens.
+/// Sizes shared by the settings screens. Spacing follows the 4/8 grid.
 abstract final class SettingsLayout {
-  /// On wide screens the content stays this wide, so lines stay readable.
+  /// On wide screens lists stay this wide.
   static const maxContentWidth = 720.0;
+
+  /// Pages that are mostly sentences and fields stay narrower, so lines
+  /// stay easy to read.
+  static const maxReadingWidth = 600.0;
 
   /// Space around cards and blocks of text.
   static const gutter = 16.0;
+
+  /// Icon sizes: small marks inside chips, and icons inside boxes.
+  static const iconSmall = 16.0;
+  static const iconMedium = 20.0;
 }
 
-/// Keeps its child at a readable width and centred on wide screens.
-/// On phones it simply fills the width.
+/// How long the small "this part changed" animations take.
+abstract final class SettingsMotion {
+  static const change = Duration(milliseconds: 200);
+
+  /// No motion when the user asked the system for less of it.
+  static Duration of(BuildContext context) => MediaQuery.disableAnimationsOf(context) ? Duration.zero : change;
+}
+
+/// Keeps its child at a readable width and centred on wide screens, and
+/// clear of the system bars and notches at the bottom and sides. On
+/// phones it simply fills the width.
 class ContentWidth extends StatelessWidget {
-  const ContentWidth({super.key, required this.child});
+  const ContentWidth({super.key, required this.child, this.maxWidth = SettingsLayout.maxContentWidth});
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: child,
+          ),
+        ),
+      );
+}
+
+/// Fades between old and new content and lets the space grow or shrink
+/// smoothly, so the user sees which part changed. Give each state of the
+/// child its own key.
+class FadeChange extends StatelessWidget {
+  const FadeChange({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: SettingsLayout.maxContentWidth),
-          child: child,
+  Widget build(BuildContext context) {
+    final duration = SettingsMotion.of(context);
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: duration,
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        layoutBuilder: (current, previous) => Stack(
+          alignment: Alignment.topCenter,
+          children: [...previous, ?current],
         ),
-      );
+        child: child,
+      ),
+    );
+  }
 }
 
 /// Formats numbers and counts the way people say them.
@@ -156,7 +206,7 @@ class ChoiceDialog<T> extends StatelessWidget {
 /// A row of small dots with a theme's main colours: background, text,
 /// accent and the six bright-ish ANSI colours.
 class ThemeSwatches extends StatelessWidget {
-  const ThemeSwatches({super.key, required this.theme, this.size = 14});
+  const ThemeSwatches({super.key, required this.theme, this.size = 16});
 
   final ThemeSpec theme;
   final double size;
@@ -222,21 +272,23 @@ class NoticeBox extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: colors.raised,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: tint.withValues(alpha: 0.5)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_icon, color: tint, size: 20),
-            const SizedBox(width: 10),
+            Icon(_icon, color: tint, size: SettingsLayout.iconMedium),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (title != null) ...[
-                    Text(title!, style: textTheme.titleSmall),
-                    const SizedBox(height: 2),
+                    // Same weight as the section headings, so a screen
+                    // uses only two weights.
+                    Text(title!, style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
                   ],
                   Text(text, style: textTheme.bodyMedium),
                 ],

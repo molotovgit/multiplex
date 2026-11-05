@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
 import 'backup_service.dart';
+import 'settings_widgets.dart';
 
 /// A password field with a button to show or hide what was typed.
 class PasswordField extends StatefulWidget {
@@ -9,6 +10,7 @@ class PasswordField extends StatefulWidget {
     super.key,
     required this.controller,
     required this.label,
+    this.focusNode,
     this.helper,
     this.errorText,
     this.validator,
@@ -21,6 +23,9 @@ class PasswordField extends StatefulWidget {
 
   final TextEditingController controller;
   final String label;
+
+  /// Lets the screen put the cursor back here after a failed check.
+  final FocusNode? focusNode;
   final String? helper;
 
   /// An error set from outside, such as "wrong password".
@@ -42,6 +47,7 @@ class _PasswordFieldState extends State<PasswordField> {
   @override
   Widget build(BuildContext context) => TextFormField(
         controller: widget.controller,
+        focusNode: widget.focusNode,
         enabled: widget.enabled,
         obscureText: !_visible,
         autocorrect: false,
@@ -77,6 +83,7 @@ class BackupSummaryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
+    final body = Theme.of(context).textTheme.bodyMedium;
     final parts = summary.parts;
     return Semantics(
       label: summary.describe(),
@@ -87,7 +94,7 @@ class BackupSummaryView extends StatelessWidget {
           children: [
             for (var i = 0; i < parts.length; i++)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: colors.raised,
                   borderRadius: BorderRadius.circular(8),
@@ -96,9 +103,9 @@ class BackupSummaryView extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(_icons[i], size: 16, color: parts[i].$1 == 0 ? colors.muted : colors.accent),
-                    const SizedBox(width: 6),
-                    Text(parts[i].$2, style: TextStyle(color: parts[i].$1 == 0 ? colors.muted : colors.text)),
+                    Icon(_icons[i], size: SettingsLayout.iconSmall, color: parts[i].$1 == 0 ? colors.muted : colors.accent),
+                    const SizedBox(width: 8),
+                    Text(parts[i].$2, style: body?.copyWith(color: parts[i].$1 == 0 ? colors.muted : colors.text)),
                   ],
                 ),
               ),
@@ -123,7 +130,7 @@ class BackupCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const SizedBox(height: 14),
+                if (i > 0) const SizedBox(height: 16),
                 children[i],
               ],
             ],

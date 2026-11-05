@@ -8,7 +8,8 @@ import 'backup_widgets.dart';
 import 'settings_widgets.dart';
 
 /// The restore steps in one card: choose a file, type its password, then
-/// add it to the current data or replace everything.
+/// add it to the current data or replace everything. Each step has one
+/// main button and a way back.
 class RestorePanel extends StatelessWidget {
   const RestorePanel({super.key, required this.controller});
 
@@ -17,59 +18,89 @@ class RestorePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: controller,
-        builder: (context, _) => BackupCard(
-          children: switch (controller.stage) {
-            RestoreStage.chooseFile => [
-                const HelpText('Brings back hosts, keys, snippets, known hosts, tunnels, themes and settings from a backup file.'),
-                if (controller.error != null) NoticeBox(tone: NoticeTone.error, text: controller.error!),
-                _ChooseFileButton(controller: controller),
-              ],
-            RestoreStage.enterPassword || RestoreStage.opening => [
-                _PickedFileRow(controller: controller),
-                _PasswordStep(controller: controller),
-              ],
-            RestoreStage.chooseMode => [_ModeStep(controller: controller)],
-            RestoreStage.finished => [_FinishedStep(controller: controller)],
-          },
+        builder: (context, _) {
+          final stage = controller.stage;
+          // Typing the password and opening share a key, so the password
+          // field keeps its text while the backup opens.
+          final step = stage == RestoreStage.opening ? RestoreStage.enterPassword : stage;
+          return BackupCard(
+            children: [
+              FadeChange(
+                child: KeyedSubtree(
+                  key: ValueKey(step),
+                  child: switch (step) {
+                    RestoreStage.chooseFile => _ChooseFileStep(controller: controller),
+                    RestoreStage.enterPassword || RestoreStage.opening => _PasswordStep(controller: controller),
+                    RestoreStage.chooseMode => _ModeStep(controller: controller),
+                    RestoreStage.finished => _FinishedStep(controller: controller),
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      );
+}
+
+/// "Step 2 of 3: ..." above each step, so the user knows how far along
+/// they are.
+class _StepLabel extends StatelessWidget {
+  const _StepLabel(this.number, this.text);
+
+  final int number;
+  final String text;
+
+  static const steps = 3;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Text(
+          'Step $number of $steps: $text',
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
       );
 }
 
-class _ChooseFileButton extends StatelessWidget {
-  const _ChooseFileButton({required this.controller});
+/// Children of a step, stacked with even gaps.
+class _StepColumn extends StatelessWidget {
+  const _StepColumn({required this.children});
 
-  final RestoreController controller;
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
-          icon: const Icon(Icons.folder_open_outlined),
-          label: const Text('Choose backup file'),
-          onPressed: controller.picking ? null : controller.chooseFile,
-        ),
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: 16),
+            children[i],
+          ],
+        ],
       );
 }
 
-/// The chosen file's name, with a way to pick a different one.
-class _PickedFileRow extends StatelessWidget {
-  const _PickedFileRow({required this.controller});
+class _ChooseFileStep extends StatelessWidget {
+  const _ChooseFileStep({required this.controller});
 
   final RestoreController controller;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = AppColorsTheme.of(context);
-    final busy = controller.stage == RestoreStage.opening || controller.picking;
-    return Row(
-      children: [
-        Icon(Icons.description_outlined, color: colors.muted),
-        const SizedBox(width: 10),
-        Expanded(child: MonoText(controller.fileName ?? '', maxLines: 2)),
-        TextButton(onPressed: busy ? null : controller.chooseFile, child: const Text('Choose another file')),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => _StepColumn(
+        children: [
+          const _StepLabel(1, 'choose the backup file'),
+          const HelpText('Brings back hosts, keys, snippets, known hosts, tunnels, themes and settings from a backup file.'),
+          if (controller.error != null) NoticeBox(tone: NoticeTone.error, text: controller.error!),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.folder_open_outlined),
+              label: const Text('Choose backup file'),
+              onPressed: controller.picking ? null : controller.chooseFile,
+            ),
+          ),
+        ],
+      );
 }
 
 /// The password for the picked backup, and "Open backup".
@@ -84,29 +115,48 @@ class _PasswordStep extends StatefulWidget {
 
 class _PasswordStepState extends State<_PasswordStep> {
   final _password = TextEditingController();
+  final _focus = FocusNode();
 
   @override
   void dispose() {
     _password.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
   Future<void> _open() async {
     FocusScope.of(context).unfocus();
     await widget.controller.open(_password.text);
-    // Once opened the password is no longer needed.
-    if (mounted && widget.controller.stage == RestoreStage.chooseMode) _password.clear();
+    if (!mounted) return;
+    if (widget.controller.stage == RestoreStage.enterPassword) {
+      // Wrong password: put the cursor back with the text selected, so
+      // the user can retype straight away.
+      _focus.requestFocus();
+      _password.selection = TextSelection(baseOffset: 0, extentOffset: _password.text.length);
+    } else {
+      // Once opened the password is no longer needed.
+      _password.clear();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
+    final colors = AppColorsTheme.of(context);
     final opening = controller.stage == RestoreStage.opening;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return _StepColumn(
       children: [
+        const _StepLabel(2, 'type its password'),
+        Row(
+          children: [
+            Icon(Icons.description_outlined, color: colors.muted),
+            const SizedBox(width: 12),
+            Expanded(child: MonoText(controller.fileName ?? '', maxLines: 2)),
+          ],
+        ),
         PasswordField(
           controller: _password,
+          focusNode: _focus,
           enabled: !opening,
           label: 'Backup password',
           errorText: controller.error,
@@ -115,33 +165,38 @@ class _PasswordStepState extends State<_PasswordStep> {
           onSubmitted: (_) => _open(),
           onChanged: (_) => controller.clearError(),
         ),
-        const SizedBox(height: 14),
-        if (opening) ...[
-          const BusyNote('Opening the backup...'),
-          const SizedBox(height: 14),
-        ],
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton.icon(
-            icon: const Icon(Icons.lock_open_outlined),
-            label: const Text('Open backup'),
-            onPressed: opening ? null : _open,
-          ),
+        if (opening) const BusyNote('Opening the backup...'),
+        // Wraps onto two lines on narrow phones or with large text.
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            FilledButton.icon(
+              icon: const Icon(Icons.lock_open_outlined),
+              label: const Text('Open backup'),
+              onPressed: opening ? null : _open,
+            ),
+            TextButton(onPressed: opening ? null : controller.chooseFile, child: const Text('Choose another file')),
+            TextButton(onPressed: opening ? null : controller.startOver, child: const Text('Cancel')),
+          ],
         ),
       ],
     );
   }
 }
 
-/// What the backup holds, and the two ways to bring it in.
+/// What the backup holds, and the two ways to bring it in. The
+/// destructive one is set apart, in the danger colour, and asks first.
 class _ModeStep extends StatelessWidget {
   const _ModeStep({required this.controller});
 
   final RestoreController controller;
 
-  void _add(BuildContext context) {
-    controller.apply(replace: false);
+  void _finish(BuildContext context, {required bool replace}) {
+    controller.apply(replace: replace);
     AppScope.sessions(context).applyTerminalTheme();
+    Toast.show(context, 'Backup restored');
   }
 
   Future<void> _replace(BuildContext context) async {
@@ -152,9 +207,7 @@ class _ModeStep extends StatelessWidget {
           'and the backup takes their place. This cannot be undone.',
       action: 'Replace everything',
     );
-    if (!ok || !context.mounted) return;
-    controller.apply(replace: true);
-    AppScope.sessions(context).applyTerminalTheme();
+    if (ok && context.mounted) _finish(context, replace: true);
   }
 
   @override
@@ -164,21 +217,24 @@ class _ModeStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const NoticeBox(tone: NoticeTone.success, title: 'Backup opened', text: 'Choose how to bring it in.'),
-        const SizedBox(height: 14),
+        const _StepLabel(3, 'choose how to bring it in'),
+        const NoticeBox(tone: NoticeTone.success, title: 'Backup opened', text: 'It holds:'),
+        const SizedBox(height: 16),
         if (incoming != null) BackupSummaryView(summary: incoming),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         Align(
           alignment: Alignment.centerLeft,
           child: FilledButton.icon(
             icon: const Icon(Icons.merge_type),
             label: const Text('Add to current data'),
-            onPressed: () => _add(context),
+            onPressed: () => _finish(context, replace: false),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         const HelpText('Keeps what you have. Items that are in both are updated from the backup.'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 24),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
@@ -188,9 +244,9 @@ class _ModeStep extends StatelessWidget {
             onPressed: () => _replace(context),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         const HelpText('Deletes your current data first, then loads the backup and its settings.'),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(onPressed: controller.startOver, child: const Text('Cancel')),
@@ -210,8 +266,7 @@ class _FinishedStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final result = controller.result;
     final what = result?.summary.describe() ?? 'the backup';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return _StepColumn(
       children: [
         NoticeBox(
           tone: NoticeTone.success,
@@ -220,7 +275,6 @@ class _FinishedStep extends StatelessWidget {
               ? 'Your data was replaced with $what from the backup, and its settings.'
               : 'Added $what from the backup. Everything you had is still here.',
         ),
-        const SizedBox(height: 14),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(onPressed: controller.startOver, child: const Text('Restore another backup')),

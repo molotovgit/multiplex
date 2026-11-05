@@ -9,7 +9,8 @@ import 'restore_panel.dart';
 import 'settings_widgets.dart';
 
 /// Export the whole vault to one password-protected file, or bring such a
-/// file back.
+/// file back. Export and restore sit on separate tabs, so each view has
+/// one main button.
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key, this.cipher = const CoreBackupCipher(), this.files = const PickerBackupFiles()});
 
@@ -23,6 +24,8 @@ class BackupScreen extends StatefulWidget {
 }
 
 class _BackupScreenState extends State<BackupScreen> {
+  // The controllers live here, so a restore in progress survives
+  // switching tabs.
   late final ExportController _export;
   late final RestoreController _restore;
 
@@ -42,18 +45,35 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Backup & restore')),
-        body: ContentWidth(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 32),
+  Widget build(BuildContext context) => DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Backup & restore'),
+            bottom: const TabBar(tabs: [Tab(text: 'Export'), Tab(text: 'Restore')]),
+          ),
+          body: TabBarView(
             children: [
-              const SectionHeader('Export a backup'),
-              ExportPanel(controller: _export),
-              const SectionHeader('Restore a backup'),
-              RestorePanel(controller: _restore),
+              _TabPage(child: ExportPanel(controller: _export)),
+              _TabPage(child: RestorePanel(controller: _restore)),
             ],
           ),
+        ),
+      );
+}
+
+/// One tab's scrolling page, at reading width.
+class _TabPage extends StatelessWidget {
+  const _TabPage({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ContentWidth(
+        maxWidth: SettingsLayout.maxReadingWidth,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, SettingsLayout.gutter, SettingsLayout.gutter, 32),
+          children: [child],
         ),
       );
 }
@@ -72,6 +92,8 @@ class _ExportPanelState extends State<ExportPanel> {
   final _form = GlobalKey<FormState>();
   final _password = TextEditingController();
   final _repeat = TextEditingController();
+  final _passwordFocus = FocusNode();
+  final _repeatFocus = FocusNode();
 
   /// Check the fields as the user types only after a first try, so they
   /// are not told off before they have finished.
@@ -81,12 +103,19 @@ class _ExportPanelState extends State<ExportPanel> {
   void dispose() {
     _password.dispose();
     _repeat.dispose();
+    _passwordFocus.dispose();
+    _repeatFocus.dispose();
     super.dispose();
   }
 
   Future<void> _export() async {
     setState(() => _tried = true);
-    if (!(_form.currentState?.validate() ?? false)) return;
+    if (!(_form.currentState?.validate() ?? false)) {
+      // Put the cursor in the first field that needs fixing.
+      final first = BackupPassword.check(_password.text) != null ? _passwordFocus : _repeatFocus;
+      first.requestFocus();
+      return;
+    }
     FocusScope.of(context).unfocus();
     final outcome = await widget.controller.export(_password.text);
     if (!mounted) return;
@@ -112,7 +141,6 @@ class _ExportPanelState extends State<ExportPanel> {
       listenable: Listenable.merge([controller, store]),
       builder: (context, _) {
         final busy = controller.busy;
-        final result = controller.result;
         return Form(
           key: _form,
           autovalidateMode: _tried ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
@@ -128,6 +156,7 @@ class _ExportPanelState extends State<ExportPanel> {
               ),
               PasswordField(
                 controller: _password,
+                focusNode: _passwordFocus,
                 enabled: !busy,
                 label: 'Backup password',
                 helper: 'At least ${BackupPassword.minLength} characters',
@@ -137,6 +166,7 @@ class _ExportPanelState extends State<ExportPanel> {
               ),
               PasswordField(
                 controller: _repeat,
+                focusNode: _repeatFocus,
                 enabled: !busy,
                 label: 'Type the password again',
                 autofillHint: AutofillHints.newPassword,
@@ -144,15 +174,7 @@ class _ExportPanelState extends State<ExportPanel> {
                 onSubmitted: (_) => _export(),
                 validator: (value) => BackupPassword.checkRepeat(_password.text, value ?? ''),
               ),
-              if (controller.stage == ExportStage.encrypting) const BusyNote('Encrypting the backup...'),
-              if (controller.stage == ExportStage.saving) const BusyNote('Choose where to save the backup.'),
-              if (controller.error != null) NoticeBox(tone: NoticeTone.error, text: controller.error!),
-              if (result != null)
-                NoticeBox(
-                  tone: NoticeTone.success,
-                  title: 'Backup saved',
-                  text: '${result.fileName} holds ${result.summary.describe()}, plus your settings.',
-                ),
+              FadeChange(child: _ExportStatus(key: ValueKey(_ExportStatus.keyFor(controller)), controller: controller)),
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilledButton.icon(
@@ -166,5 +188,32 @@ class _ExportPanelState extends State<ExportPanel> {
         );
       },
     );
+  }
+}
+
+/// The line under the fields: progress while working, then the result or
+/// what went wrong. Empty before the first export.
+class _ExportStatus extends StatelessWidget {
+  const _ExportStatus({super.key, required this.controller});
+
+  final ExportController controller;
+
+  /// Changes whenever the shown message changes, so it fades over.
+  static String keyFor(ExportController c) => '${c.stage.name}|${c.error}|${c.result?.fileName}';
+
+  @override
+  Widget build(BuildContext context) {
+    final result = controller.result;
+    return switch (controller.stage) {
+      ExportStage.encrypting => const BusyNote('Encrypting the backup...'),
+      ExportStage.saving => const BusyNote('Choose where to save the backup.'),
+      ExportStage.idle when controller.error != null => NoticeBox(tone: NoticeTone.error, text: controller.error!),
+      ExportStage.idle when result != null => NoticeBox(
+          tone: NoticeTone.success,
+          title: 'Backup saved',
+          text: '${result.fileName} holds ${result.summary.describe()}, plus your settings.',
+        ),
+      ExportStage.idle => const SizedBox(width: double.infinity),
+    };
   }
 }
