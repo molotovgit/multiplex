@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
 import '../../data/vault_store.dart';
@@ -15,6 +16,7 @@ class TunnelEditorSheet extends StatefulWidget {
   static Future<void> show(BuildContext context, {required String hostId, ForwardRule? rule}) {
     return showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: AppMotion.of(context).sheet,
       isScrollControlled: true,
       builder: (_) => TunnelEditorSheet(hostId: hostId, rule: rule),
     );

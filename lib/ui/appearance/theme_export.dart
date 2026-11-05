@@ -7,15 +7,17 @@ import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 import '../common/widgets.dart';
+import 'theme_import.dart';
+import 'theme_pack_file.dart';
 
 /// A theme as Multiplex's own JSON, the format "Import theme" reads back.
 abstract final class ThemeExport {
   static String json(ThemeSpec theme) => const JsonEncoder.withIndent('  ').convert(theme.toJson());
 
   /// "Tokyo Night copy" -> "tokyo-night-copy.json".
-  static String fileName(ThemeSpec theme) {
+  static String fileName(ThemeSpec theme, {bool withPictures = false}) {
     final slug = theme.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
-    return '${slug.isEmpty ? 'theme' : slug}.json';
+    return '${slug.isEmpty ? 'theme' : slug}${withPictures ? '-with-pictures' : ''}.json';
   }
 }
 
@@ -34,18 +36,22 @@ class ThemeExportDialog extends StatelessWidget {
     await showDialog<void>(context: context, builder: (_) => ThemeExportDialog(theme: theme, json: json));
   }
 
-  Future<void> _saveFile(BuildContext context) async {
-    final name = ThemeExport.fileName(theme);
+  /// Saves the theme alone, or with its pictures in the same file.
+  Future<void> _saveFile(BuildContext context, {bool withPictures = false}) async {
+    final name = ThemeExport.fileName(theme, withPictures: withPictures);
     try {
+      final text = withPictures ? await ThemePackFile.write(theme) : json;
       final saved = await FilePicker.saveFile(
         fileName: name,
-        bytes: utf8.encode(json),
+        bytes: utf8.encode(text),
         mimeType: 'application/json',
         dialogTitle: 'Save theme',
       );
       if (saved == null || !context.mounted) return;
       Toast.show(context, 'Saved $name');
       Navigator.pop(context);
+    } on ThemeImportException catch (e) {
+      if (context.mounted) Toast.show(context, e.message);
     } catch (e) {
       if (context.mounted) Toast.show(context, 'Could not save the file ($e). Try another folder.');
     }
@@ -64,6 +70,13 @@ class ThemeExportDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('"${theme.name}" is copied to the clipboard. Paste it into Import theme on another device, or save it as a file.'),
+            if (theme.backgrounds.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'The text holds the colours and style only. To take the ${theme.backgrounds.length} background '
+                '${theme.backgrounds.length == 1 ? 'picture' : 'pictures'} along, save the file with pictures.',
+              ),
+            ],
             const SizedBox(height: 12),
             Container(
               constraints: const BoxConstraints(maxHeight: 200),
@@ -78,6 +91,8 @@ class ThemeExportDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        if (theme.backgrounds.isNotEmpty)
+          OutlinedButton(onPressed: () => _saveFile(context, withPictures: true), child: const Text('Save with pictures')),
         FilledButton(onPressed: () => _saveFile(context), child: const Text('Save as file')),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/theme.dart';
 import '../../src/rust/api/sftp_types.dart';
 import '../common/widgets.dart';
@@ -130,6 +131,7 @@ class EntryActionSheet extends StatelessWidget {
 
   static Future<EntryAction?> show(BuildContext context, RemoteEntry entry) => showModalBottomSheet<EntryAction>(
     context: context,
+    sheetAnimationStyle: AppMotion.of(context).sheet,
     builder: (_) => EntryActionSheet(entry: entry),
   );
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';
@@ -10,6 +11,7 @@ abstract final class HostPicker {
   static Future<Host?> pick(BuildContext context, {required String title}) {
     return showModalBottomSheet<Host>(
       context: context,
+      sheetAnimationStyle: AppMotion.of(context).sheet,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => HostPickerSheet(title: title),

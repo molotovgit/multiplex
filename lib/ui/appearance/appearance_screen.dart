@@ -1,6 +1,6 @@
-import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/app_icons.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
@@ -10,6 +10,7 @@ import 'terminal_text_section.dart';
 import 'theme_actions.dart';
 import 'theme_gallery.dart';
 import 'theme_import_flow.dart';
+import 'theme_switcher.dart';
 
 /// Themes, style, fonts and cursor. One theme styles the whole app,
 /// screens and terminal alike, colours and the look of the elements;
@@ -29,6 +30,7 @@ class AppearanceScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Appearance'),
         actions: [
+          IconButton(icon: const AppIcon(AppIcons.palette), tooltip: 'Switch theme', onPressed: () => ThemeSwitcherSheet.show(context)),
           IconButton(icon: const Icon(Icons.add), tooltip: 'Create theme', onPressed: () => ThemeActions(context).create()),
           IconButton(
             icon: const AppIcon(AppIcons.download),
@@ -61,6 +63,7 @@ class _AppearanceBody extends StatelessWidget {
         if (custom.isEmpty) const SliverToBoxAdapter(child: _NoCustomThemes()) else ThemeGridSliver(themes: custom, activeId: activeId),
         const SliverToBoxAdapter(child: _ThemeButtons()),
         const SliverToBoxAdapter(child: _FormWidth(child: StyleQuickArea())),
+        const SliverToBoxAdapter(child: _FormWidth(child: MotionSetting())),
         const SliverToBoxAdapter(child: _FormWidth(child: TerminalTextSection())),
         // Room at the end so the last controls clear the gesture bar.
         SliverPadding(padding: EdgeInsets.only(bottom: 32 + MediaQuery.paddingOf(context).bottom)),
@@ -118,6 +121,11 @@ class _ThemeButtons extends StatelessWidget {
               onPressed: () => ThemeImportFlow(context).start(),
               icon: const AppIcon(AppIcons.download),
               label: const Text('Import theme'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => ThemeImportFlow(context).installFromRepo(),
+              icon: const Icon(Icons.link),
+              label: const Text('Install theme from link'),
             ),
           ],
         ),

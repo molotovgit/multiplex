@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../app/terminal_fonts.dart';
+import '../../app/theme_backgrounds.dart';
 import '../../app/theme_look.dart';
 import '../../app/theme_spec.dart';
 import '../../data/vault_store.dart';
@@ -11,6 +12,7 @@ import 'color_tools.dart';
 import 'theme_actions.dart';
 import 'theme_editor_parts.dart';
 import 'style_section.dart';
+import 'style_terminal_parts.dart';
 import 'theme_preview.dart';
 
 /// Changes every colour of a theme while a preview shows the result.
@@ -85,13 +87,34 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
     final store = AppScope.store(context);
     // Built-in themes never change; saving one makes a new theme instead.
     final existing = !widget.isNew && !widget.theme.builtIn && store.customThemes.any((t) => t.id == widget.theme.id);
-    final saved = _draft.copyWith(id: existing ? widget.theme.id : VaultStore.newId(), name: name);
-    final actions = ThemeActions(context)..save(saved, andUse: !existing);
-    // A picture this theme no longer shows can go.
-    actions.forgetBackground(widget.theme.style.terminal.backgroundImage);
+    // A new theme keeps the draft's id, so its pictures stay in its folder.
+    final idTaken = BuiltInThemes.all.any((t) => t.id == _draft.id) || store.customThemes.any((t) => t.id == _draft.id);
+    final id = existing ? widget.theme.id : (idTaken ? VaultStore.newId() : _draft.id);
+    final saved = _draft.copyWith(id: id, name: name);
+    ThemeActions(context).save(saved, andUse: !existing);
+    _tidyPictures(saved);
     setState(() => _changed = false);
     Toast.show(context, 'Saved ${saved.name}');
     Navigator.pop(context);
+  }
+
+  /// Moves pictures along when the id changed, and deletes the ones the
+  /// saved theme no longer lists.
+  Future<void> _tidyPictures(ThemeSpec saved) async {
+    if (saved.id != _draft.id) {
+      await ThemeBackgrounds.copy(_draft.id, saved.id, saved.backgrounds);
+      await ThemeBackgrounds.deleteFolder(_draft.id);
+    }
+    await ThemeBackgrounds.keepOnly(saved.id, saved.backgrounds);
+  }
+
+  /// Pictures added to a discarded draft are not needed.
+  Future<void> _dropDraftPictures() async {
+    if (widget.isNew) {
+      await ThemeBackgrounds.deleteFolder(_draft.id);
+    } else {
+      await ThemeBackgrounds.keepOnly(widget.theme.id, widget.theme.backgrounds);
+    }
   }
 
   Future<void> _confirmLeave() async {
@@ -102,9 +125,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
       action: 'Discard',
     );
     if (!leave || !mounted) return;
-    // A picture picked for the discarded draft is not needed.
-    final picked = _draft.style.terminal.backgroundImage;
-    if (picked != widget.theme.style.terminal.backgroundImage) ThemeActions(context).forgetBackground(picked);
+    _dropDraftPictures();
     Navigator.pop(context);
   }
 
@@ -199,6 +220,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
                         const SectionHeader('Terminal colours'),
                         AnsiColorGrid(ansi: _draft.ansi, onTap: _pickAnsi),
                         StyleSection(theme: _draft, onChanged: (style) => _update(_draft.copyWith(style: style))),
+                        BackgroundsSection(theme: _draft, onChanged: _update),
                       ],
                     ),
                   ),

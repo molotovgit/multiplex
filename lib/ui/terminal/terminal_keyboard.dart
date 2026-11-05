@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/app_shortcuts.dart';
 import '../../sessions/terminal_controller.dart';
 import '../../src/rust/api/terminal_types.dart';
 
@@ -86,6 +87,8 @@ class _TerminalKeyboardState extends State<TerminalKeyboard> {
 
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
+    // The app's own shortcut, handled above the terminal.
+    if (AppShortcuts.isThemeSwitcherKey(event)) return KeyEventResult.ignored;
     final keys = HardwareKeyboard.instance;
     final mods = KeyModifiers(ctrl: keys.isControlPressed, alt: keys.isAltPressed, shift: keys.isShiftPressed);
     final special = _HardwareKeys.special[event.logicalKey];

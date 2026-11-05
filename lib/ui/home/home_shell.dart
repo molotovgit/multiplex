@@ -6,7 +6,11 @@ import '../../app/app_icons.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
+import '../../app/theme_slides.dart';
+import '../../app/theme_spec.dart';
 import '../../app/theme_style.dart';
+import '../appearance/theme_switcher.dart';
+import '../common/theme_backdrop.dart';
 import '../hosts/hosts_screen.dart';
 import '../keys/keychain_screen.dart';
 import '../sessions/sessions_screen.dart';
@@ -24,7 +28,8 @@ class _Destination {
 /// The app's main frame with the five main places. The theme's style picks
 /// the navigation: a bottom bar with or without labels, a floating bar, or
 /// a side rail. Wide screens (tablets, desktop) always get the side rail,
-/// unless the floating bar is chosen.
+/// unless the floating bar is chosen. A long press on Settings opens the
+/// theme switcher.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -51,6 +56,9 @@ class _HomeShellState extends State<HomeShell> {
 
   static const _pages = <Widget>[HostsScreen(), SessionsScreen(), SnippetsScreen(), KeychainScreen(), SettingsScreen()];
 
+  /// Where Settings is in [_destinations].
+  static const _settingsIndex = 4;
+
   void _select(int index) => setState(() => _index = index);
 
   @override
@@ -59,12 +67,22 @@ class _HomeShellState extends State<HomeShell> {
     final look = AppStyleTheme.of(context);
     final nav = look.style.nav;
     final wide = MediaQuery.sizeOf(context).width >= _railBreakpoint;
-    final body = IndexedStack(index: _index, children: _pages);
+    final store = AppScope.watch(context);
+    final theme = store.activeTheme;
+    final pages = IndexedStack(index: _index, children: _pages);
+    final slide = look.style.backdrop.onScreens ? ActiveSlide.of(theme, store.settings) : null;
+    final body = slide != null ? _ScreensBackdrop(theme: theme, slide: slide, child: pages) : pages;
 
     return ListenableBuilder(
       listenable: sessions,
       builder: (context, _) {
-        final bar = _NavModel(destinations: _destinations, index: _index, onSelect: _select, sessionCount: sessions.activeCount);
+        final bar = _NavModel(
+          destinations: _destinations,
+          index: _index,
+          onSelect: _select,
+          sessionCount: sessions.activeCount,
+          onLongPressSettings: () => ThemeSwitcherSheet.show(context),
+        );
         if (nav == NavStyle.rail || (wide && nav != NavStyle.floating)) {
           return Scaffold(
             body: Row(
@@ -96,11 +114,22 @@ class _HomeShellState extends State<HomeShell> {
 
 /// What every navigation style needs to show.
 class _NavModel {
-  const _NavModel({required this.destinations, required this.index, required this.onSelect, required this.sessionCount});
+  const _NavModel({
+    required this.destinations,
+    required this.index,
+    required this.onSelect,
+    required this.sessionCount,
+    required this.onLongPressSettings,
+  });
 
   final List<_Destination> destinations;
   final int index;
   final ValueChanged<int> onSelect;
+
+  /// Opens the theme switcher.
+  final VoidCallback onLongPressSettings;
+
+  bool isSettings(_Destination d) => d.label == 'Settings';
 
   /// Open connections, shown as a badge on Sessions.
   final int sessionCount;
@@ -134,20 +163,27 @@ class _ShellNavigationBar extends StatelessWidget {
   final Color? background;
 
   @override
-  Widget build(BuildContext context) => NavigationBar(
-        selectedIndex: model.index,
-        onDestinationSelected: model.onSelect,
-        height: height,
-        backgroundColor: background,
-        labelBehavior: labels ? NavigationDestinationLabelBehavior.alwaysShow : NavigationDestinationLabelBehavior.alwaysHide,
-        destinations: [
-          for (final d in model.destinations)
-            NavigationDestination(
-              icon: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d)),
-              selectedIcon: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d)),
-              label: d.label,
-            ),
-        ],
+  Widget build(BuildContext context) => _BarLongPress(
+        count: model.destinations.length,
+        target: _HomeShellState._settingsIndex,
+        onLongPress: model.onLongPressSettings,
+        child: NavigationBar(
+          selectedIndex: model.index,
+          onDestinationSelected: model.onSelect,
+          height: height,
+          backgroundColor: background,
+          labelBehavior: labels ? NavigationDestinationLabelBehavior.alwaysShow : NavigationDestinationLabelBehavior.alwaysHide,
+          destinations: [
+            for (final d in model.destinations)
+              NavigationDestination(
+                icon: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d)),
+                selectedIcon: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d)),
+                label: d.label,
+                // Its long press opens the theme switcher instead of a tooltip.
+                tooltip: model.isSettings(d) ? '' : null,
+              ),
+          ],
+        ),
       );
 }
 
@@ -168,8 +204,8 @@ class _ShellRail extends StatelessWidget {
           destinations: [
             for (final d in model.destinations)
               NavigationRailDestination(
-                icon: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d)),
-                selectedIcon: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d)),
+                icon: _RailIcon(model: model, destination: d, selected: false),
+                selectedIcon: _RailIcon(model: model, destination: d, selected: true),
                 label: Text(d.label),
               ),
           ],
@@ -246,6 +282,83 @@ class _GlassBackdrop extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: SurfaceLook.glassBlur, sigmaY: SurfaceLook.glassBlur),
         child: child,
       ),
+    );
+  }
+}
+
+/// A long press on one of a bottom bar's equal slots. The bar's items
+/// all have the same width, so the slot follows from where the finger is.
+class _BarLongPress extends StatelessWidget {
+  const _BarLongPress({required this.count, required this.target, required this.onLongPress, required this.child});
+
+  final int count;
+  final int target;
+  final VoidCallback onLongPress;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) => GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onLongPressStart: (details) {
+            final slot = (details.localPosition.dx / constraints.maxWidth * count).floor().clamp(0, count - 1);
+            final rtl = Directionality.of(context) == TextDirection.rtl;
+            if ((rtl ? count - 1 - slot : slot) == target) onLongPress();
+          },
+          child: child,
+        ),
+      );
+}
+
+/// A rail icon; the Settings one also answers a long press.
+class _RailIcon extends StatelessWidget {
+  const _RailIcon({required this.model, required this.destination, required this.selected});
+
+  final _NavModel model;
+  final _Destination destination;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _NavIcon(destination: destination, selected: selected, badge: model.badgeFor(destination));
+    if (!model.isSettings(destination)) return icon;
+    return GestureDetector(onLongPress: model.onLongPressSettings, child: icon);
+  }
+}
+
+/// The theme's picture behind the five main screens. Their own
+/// backgrounds turn see-through; cards and bars keep theirs, and the
+/// picture is dimmed more than behind the terminal.
+class _ScreensBackdrop extends StatelessWidget {
+  const _ScreensBackdrop({required this.theme, required this.slide, required this.child});
+
+  final ThemeSpec theme;
+  final ThemeSlide slide;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = Theme.of(context);
+    final backdrop = theme.style.backdrop;
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ThemeBackdrop(
+            theme: theme,
+            slide: slide,
+            color: AppColorsTheme.of(context).background,
+            dim: backdrop.screenDim,
+            blur: backdrop.blur,
+          ),
+        ),
+        Theme(
+          data: data.copyWith(
+            scaffoldBackgroundColor: Colors.transparent,
+            appBarTheme: data.appBarTheme.copyWith(backgroundColor: Colors.transparent),
+          ),
+          child: child,
+        ),
+      ],
     );
   }
 }

@@ -1,5 +1,17 @@
 import 'models.dart';
 
+/// How fast theme changes and sheets move. The system's "reduce motion"
+/// setting always wins and turns motion off.
+enum MotionSpeed {
+  off('Off'),
+  fast('Fast'),
+  normal('Normal');
+
+  const MotionSpeed(this.label);
+
+  final String label;
+}
+
 /// How the terminal cursor looks when the program does not choose.
 enum CursorStyle { block, bar, underline }
 
@@ -38,6 +50,8 @@ class AppSettings {
     this.appLock = false,
     this.keepScreenOn = true,
     this.keyboard = const {},
+    this.motion = MotionSpeed.normal,
+    this.backdropPicks = const {},
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -73,6 +87,13 @@ class AppSettings {
   /// this file.
   final Map<String, dynamic> keyboard;
 
+  /// Speed of theme changes and sheets.
+  final MotionSpeed motion;
+
+  /// The background step chosen for each built-in theme, by theme id.
+  /// Built-in themes cannot be saved, so their choice is kept here.
+  final Map<String, int> backdropPicks;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -98,6 +119,8 @@ class AppSettings {
     bool? appLock,
     bool? keepScreenOn,
     Map<String, dynamic>? keyboard,
+    MotionSpeed? motion,
+    Map<String, int>? backdropPicks,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -114,6 +137,8 @@ class AppSettings {
         appLock: appLock ?? this.appLock,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         keyboard: keyboard ?? this.keyboard,
+        motion: motion ?? this.motion,
+        backdropPicks: backdropPicks ?? this.backdropPicks,
       );
 
   Map<String, dynamic> toJson() => {
@@ -131,6 +156,8 @@ class AppSettings {
         'appLock': appLock,
         'keepScreenOn': keepScreenOn,
         'keyboard': keyboard,
+        'motion': motion.name,
+        'backdropPicks': backdropPicks,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -150,6 +177,12 @@ class AppSettings {
       appLock: Json.boolean(j, 'appLock', false),
       keepScreenOn: Json.boolean(j, 'keepScreenOn', true),
       keyboard: j['keyboard'] is Map ? (j['keyboard'] as Map).cast<String, dynamic>() : const {},
+      motion: MotionSpeed.values.asNameMap()[j['motion']] ?? MotionSpeed.normal,
+      backdropPicks: {
+        if (j['backdropPicks'] is Map)
+          for (final e in (j['backdropPicks'] as Map).entries)
+            if (e.key is String && e.value is int) e.key as String: e.value as int,
+      },
     );
   }
 }

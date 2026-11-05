@@ -88,10 +88,14 @@ class ThemeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: ThemePreview(
-                  theme: theme,
-                  fontFamily: TerminalFonts.byId(settings, settings.terminalFontId).family,
-                  cursorStyle: settings.cursorStyle,
+                // Drawn once per card; the gallery scrolls over a stored layer.
+                child: RepaintBoundary(
+                  child: ThemePreview(
+                    theme: theme,
+                    fontFamily: TerminalFonts.byId(settings, settings.terminalFontId).family,
+                    cursorStyle: settings.cursorStyle,
+                    backdrop: theme.backdrops.firstOrNull,
+                  ),
                 ),
               ),
               SizedBox(height: footerHeight, child: _CardFooter(theme: theme, active: active)),
@@ -145,7 +149,7 @@ class _CardFooter extends StatelessWidget {
   }
 }
 
-enum _ThemeAction { edit, editCopy, duplicate, export, delete }
+enum _ThemeAction { edit, editCopy, editText, duplicate, export, delete }
 
 /// The card's "more" menu. Built-in themes cannot change, so they offer
 /// a copy to edit instead of Edit and Delete.
@@ -161,6 +165,8 @@ class _ThemeMenu extends StatelessWidget {
         actions.edit(theme);
       case _ThemeAction.editCopy:
         actions.editCopy(theme);
+      case _ThemeAction.editText:
+        actions.editAsText(theme);
       case _ThemeAction.duplicate:
         actions.duplicate(theme);
       case _ThemeAction.export:
@@ -184,6 +190,7 @@ class _ThemeMenu extends StatelessWidget {
           const PopupMenuItem(value: _ThemeAction.edit, child: _MenuLabel(Icons.edit_outlined, 'Edit')),
           const PopupMenuItem(value: _ThemeAction.duplicate, child: _MenuLabel(Icons.copy_outlined, 'Duplicate')),
         ],
+        const PopupMenuItem(value: _ThemeAction.editText, child: _MenuLabel(Icons.data_object, 'Edit as text')),
         const PopupMenuItem(value: _ThemeAction.export, child: _MenuLabel(Icons.ios_share, 'Export')),
         if (!theme.builtIn)
           PopupMenuItem(value: _ThemeAction.delete, child: _MenuLabel(Icons.delete_outline, 'Delete', color: danger)),

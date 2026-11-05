@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../common/widgets.dart';
@@ -84,6 +85,7 @@ class AddKeySheet extends StatelessWidget {
   /// Opens the sheet, kept clear of the system bars.
   static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
         context: context,
+        sheetAnimationStyle: AppMotion.of(context).sheet,
         isScrollControlled: true,
         useSafeArea: true,
         builder: (_) => const AddKeySheet(),

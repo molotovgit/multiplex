@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
@@ -37,6 +38,7 @@ class RemoteRunSheet extends StatefulWidget {
   static Future<void> show(BuildContext context, {required Host host, required RemoteJob job}) {
     return showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: AppMotion.of(context).sheet,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => RemoteRunSheet(host: host, job: job),

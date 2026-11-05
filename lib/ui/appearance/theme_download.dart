@@ -14,7 +14,7 @@ class ThemeDownload {
 
 /// Fetches a theme file from an https link. Refuses plain http, files
 /// over 1 MB and servers that take longer than 15 seconds.
-class ThemeDownloader {
+class ThemeDownloader implements ThemeFetcher {
   /// [newClient] makes the HTTP client; tests pass their own.
   ThemeDownloader({HttpClient Function()? newClient}) : _newClient = newClient ?? HttpClient.new;
 
@@ -50,14 +50,30 @@ class ThemeDownloader {
   /// message for the user when anything goes wrong.
   Future<ThemeDownload> fetch(String link) async {
     final uri = parseLink(link);
+    final bytes = await fetchBytes(uri, maxBytes: ThemeImporter.maxBytes, tooBig: ThemeImportException.tooBig);
+    return ThemeDownload(text: ThemeImporter.decode(bytes), sourceName: ThemeSourceName.fromUrl(uri));
+  }
+
+  /// Downloads up to [maxBytes] from an https [uri]. Redirects must stay
+  /// on https; slow servers and big files are refused with a message.
+  @override
+  Future<Uint8List> fetchBytes(
+    Uri uri, {
+    required int maxBytes,
+    required ThemeImportException tooBig,
+    Duration limit = timeout,
+    Map<String, String> headers = const {},
+  }) async {
+    if (uri.scheme != 'https') {
+      throw const ThemeImportException('Only https links are allowed, so the theme cannot be changed on the way. Use a link that starts with https://');
+    }
     final client = _newClient()
       ..connectionTimeout = timeout
       ..userAgent = 'Multiplex';
     try {
-      final text = await _download(client, uri).timeout(timeout);
-      return ThemeDownload(text: text, sourceName: ThemeSourceName.fromUrl(uri));
+      return await _download(client, uri, maxBytes, tooBig, headers).timeout(limit);
     } on TimeoutException {
-      throw const ThemeImportException('The link took longer than 15 seconds to answer. Check your connection and try again.');
+      throw ThemeImportException('${uri.host} took longer than ${limit.inSeconds} seconds. Check your connection and try again.');
     } on HandshakeException {
       throw ThemeImportException('The secure connection to ${uri.host} failed. Check the link, or try again on another network.');
     } on SocketException {
@@ -70,10 +86,11 @@ class ThemeDownloader {
     }
   }
 
-  Future<String> _download(HttpClient client, Uri start) async {
+  Future<Uint8List> _download(HttpClient client, Uri start, int maxBytes, ThemeImportException tooBig, Map<String, String> headers) async {
     var uri = start;
     for (var hop = 0;; hop++) {
       final request = await client.getUrl(uri);
+      headers.forEach(request.headers.set);
       // Redirects are followed by hand so none of them can leave https.
       request.followRedirects = false;
       final response = await request.close();
@@ -91,15 +108,37 @@ class ThemeDownloader {
       }
       if (response.statusCode != HttpStatus.ok) {
         await response.drain<void>();
-        throw ThemeImportException('The server answered with error ${response.statusCode}. Check that the link opens the theme file.');
+        throw ThemeDownloadStatusException(response.statusCode);
       }
-      if (response.contentLength > ThemeImporter.maxBytes) throw ThemeImportException.tooBig;
+      if (response.contentLength > maxBytes) throw tooBig;
       final bytes = BytesBuilder(copy: false);
       await for (final chunk in response) {
         bytes.add(chunk);
-        if (bytes.length > ThemeImporter.maxBytes) throw ThemeImportException.tooBig;
+        if (bytes.length > maxBytes) throw tooBig;
       }
-      return ThemeImporter.decode(bytes.takeBytes());
+      return bytes.takeBytes();
     }
   }
+}
+
+/// The server answered with an error code instead of the file.
+class ThemeDownloadStatusException extends ThemeImportException {
+  ThemeDownloadStatusException(this.statusCode)
+      : super(statusCode == HttpStatus.notFound
+            ? 'Nothing was found at this link (error 404). Check that the link is right and the repository is public.'
+            : 'The server answered with error $statusCode. Check that the link opens the theme file, or try again later.');
+
+  final int statusCode;
+}
+
+/// Downloads bytes from https links. [ThemeDownloader] does it for real;
+/// tests pass their own.
+abstract interface class ThemeFetcher {
+  Future<Uint8List> fetchBytes(
+    Uri uri, {
+    required int maxBytes,
+    required ThemeImportException tooBig,
+    Duration limit,
+    Map<String, String> headers,
+  });
 }

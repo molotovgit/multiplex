@@ -240,15 +240,15 @@ void main() {
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
         await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
 
-        await tester.tap(find.text('Nord'));
+        await tester.tap(find.text('Slate'));
         await tester.pumpAndSettle();
-        expect(store.settings.themeId, BuiltInThemes.nord.id);
-        expect(find.text('Nord applied'), findsOneWidget);
-        expect(find.bySemanticsLabel('Nord theme, selected'), findsOneWidget);
+        expect(store.settings.themeId, BuiltInThemes.slate.id);
+        expect(find.text('Slate applied'), findsOneWidget);
+        expect(find.bySemanticsLabel('Slate theme, selected'), findsOneWidget);
         semantics.dispose();
         final active = find.byWidgetPredicate((w) => w is ThemeCard && w.active);
         expect(active, findsOneWidget);
-        expect(tester.widget<ThemeCard>(active).theme.id, BuiltInThemes.nord.id);
+        expect(tester.widget<ThemeCard>(active).theme.id, BuiltInThemes.slate.id);
 
         // The rest of the page lays out without overflowing.
         await scrollTo(tester, 'Your themes');

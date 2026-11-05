@@ -55,7 +55,9 @@ class AppColors {
       surface: dark ? mix(bg, fg, 0.05) : mix(bg, Colors.white, 0.6),
       raised: dark ? mix(bg, fg, 0.10) : mix(bg, fg, 0.06),
       outline: dark ? mix(bg, fg, 0.17) : mix(bg, fg, 0.15),
-      text: fg,
+      // The app's text must read at 4.5:1 on cards even when a scheme's
+      // own text colour is softer; the terminal keeps the exact colour.
+      text: _Contrast.readable(fg, dark ? mix(bg, fg, 0.05) : mix(bg, Colors.white, 0.6)),
       muted: _Contrast.readableMuted(fg, bg, dark ? mix(bg, fg, 0.05) : mix(bg, Colors.white, 0.6)),
       accent: accent,
       onAccent: accent.computeLuminance() > 0.4 ? mix(bg, Colors.black, dark ? 0.4 : 0.85) : Colors.white,
@@ -85,7 +87,19 @@ abstract final class _Contrast {
       final candidate = Color.lerp(text, background, t)!;
       if (ratio(candidate, surface) >= minimum) return candidate;
     }
-    return text;
+    return readable(text, surface);
+  }
+
+  /// [color] as it is when it reads well on [surface]; otherwise moved
+  /// towards white (dark surfaces) or black (light ones) until it does.
+  static Color readable(Color color, Color surface) {
+    if (ratio(color, surface) >= minimum) return color;
+    final target = surface.computeLuminance() < 0.18 ? Colors.white : Colors.black;
+    for (var t = 0.05; t < 1; t += 0.05) {
+      final candidate = Color.lerp(color, target, t)!;
+      if (ratio(candidate, surface) >= minimum) return candidate;
+    }
+    return target;
   }
 }
 

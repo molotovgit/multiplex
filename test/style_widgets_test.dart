@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/app/app_scope.dart';
 import 'package:multiplex/app/multiplex_app.dart';
-import 'package:multiplex/app/terminal_backgrounds.dart';
+import 'package:multiplex/app/theme_backgrounds.dart';
 import 'package:multiplex/app/theme.dart';
 import 'package:multiplex/app/theme_spec.dart';
 import 'package:multiplex/app/theme_style.dart';
@@ -17,7 +17,7 @@ import 'package:multiplex/ui/appearance/theme_editor_screen.dart';
 import 'package:multiplex/ui/home/home_shell.dart';
 import 'package:multiplex/ui/keyboard/key_sink.dart';
 import 'package:multiplex/ui/keyboard/terminal_keyboard_panel.dart';
-import 'package:multiplex/ui/terminal/terminal_backdrop.dart';
+import 'package:multiplex/ui/common/theme_backdrop.dart';
 
 /// A keyboard sink that ignores everything.
 class _NoSink implements KeySink {
@@ -117,41 +117,50 @@ void main() {
     });
   });
 
-  group('terminal backdrop', () {
-    late Directory folder;
+  group('background picture', () {
+    late Directory root;
     setUp(() {
-      folder = Directory.systemTemp.createTempSync('backgrounds');
-      File('${folder.path}${Platform.pathSeparator}bg.png').writeAsBytesSync([0x89, 0x50, 0x4E, 0x47]);
-      TerminalBackgrounds.folderOverride = folder;
+      root = Directory.systemTemp.createTempSync('backgrounds');
+      Directory('${root.path}${Platform.pathSeparator}pack').createSync();
+      File('${root.path}${Platform.pathSeparator}pack${Platform.pathSeparator}bg.png').writeAsBytesSync([0x89, 0x50, 0x4E, 0x47]);
+      ThemeBackgrounds.rootOverride = root;
     });
     tearDown(() {
-      TerminalBackgrounds.folderOverride = null;
-      folder.deleteSync(recursive: true);
+      ThemeBackgrounds.rootOverride = null;
+      root.deleteSync(recursive: true);
     });
 
-    Future<void> pump(WidgetTester tester, TerminalStyle style) async {
-      await tester.pumpWidget(MaterialApp(home: TerminalBackdrop(style: style, color: const Color(0xFF101010))));
+    Future<void> pump(WidgetTester tester, String? picture, {double dim = 0.4, double blur = 0}) async {
+      await tester.pumpWidget(MaterialApp(
+        home: ThemeBackdrop(
+          theme: BuiltInThemes.ember.copyWith(id: 'pack'),
+          slide: picture == null ? null : PictureSlide(picture),
+          color: const Color(0xFF101010),
+          dim: dim,
+          blur: blur,
+        ),
+      ));
       await tester.pump();
     }
 
     testWidgets('without a picture only the colour shows', (tester) async {
-      await pump(tester, const TerminalStyle());
-      expect(find.byKey(TerminalBackdrop.dimKey), findsNothing);
+      await pump(tester, null);
+      expect(find.byKey(ThemeBackdrop.dimKey), findsNothing);
       expect(find.byType(Image), findsNothing);
     });
 
-    testWidgets('a picture is dimmed with the background colour', (tester) async {
-      await pump(tester, const TerminalStyle(backgroundImage: 'bg.png', dim: 0.6, blur: 4));
+    testWidgets('a picture is blurred and dimmed with the background colour', (tester) async {
+      await pump(tester, 'bg.png', dim: 0.6, blur: 4);
       expect(find.byType(Image), findsOneWidget);
       expect(find.byType(ImageFiltered), findsOneWidget);
-      final dim = tester.widget<ColoredBox>(find.byKey(TerminalBackdrop.dimKey));
+      final dim = tester.widget<ColoredBox>(find.byKey(ThemeBackdrop.dimKey));
       expect(dim.color.a, closeTo(0.6, 0.01));
       expect(dim.color.r, closeTo(const Color(0xFF101010).r, 0.01));
     });
 
     testWidgets('a picture missing on this device falls back to the colour', (tester) async {
-      await pump(tester, const TerminalStyle(backgroundImage: 'gone.png'));
-      expect(find.byKey(TerminalBackdrop.dimKey), findsNothing);
+      await pump(tester, 'gone.png');
+      expect(find.byType(Image), findsNothing);
     });
   });
 

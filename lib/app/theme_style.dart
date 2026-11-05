@@ -102,13 +102,55 @@ abstract final class _Enum {
 
 /// The look of the terminal screen.
 class TerminalStyle {
-  const TerminalStyle({this.padding = 4, this.backgroundImage, this.dim = 0.4, this.blur = 0, this.showTabs = false});
+  const TerminalStyle({this.padding = 4, this.showTabs = false});
 
   /// Space between the screen edge and the text.
   final double padding;
 
-  /// File name of a picture in the app's backgrounds folder, or null.
-  final String? backgroundImage;
+  /// Shows a strip of the connection's terminals above the text.
+  final bool showTabs;
+
+  static const paddings = [0.0, 4.0, 8.0, 16.0];
+
+  TerminalStyle copyWith({double? padding, bool? showTabs}) =>
+      TerminalStyle(padding: padding ?? this.padding, showTabs: showTabs ?? this.showTabs);
+
+  Map<String, dynamic> toJson() => {'padding': padding, 'showTabs': showTabs};
+
+  factory TerminalStyle.fromJson(Map<String, dynamic> j) {
+    const d = TerminalStyle();
+    return TerminalStyle(
+      padding: _Enum.nearest(j['padding'], paddings, d.padding),
+      showTabs: Json.boolean(j, 'showTabs', d.showTabs),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) => other is TerminalStyle && other.padding == padding && other.showTabs == showTabs;
+
+  @override
+  int get hashCode => Object.hash(padding, showTabs);
+}
+
+/// A backdrop drawn in code from a theme's own colours. Built-in themes
+/// come with two or three; no image files are involved.
+enum BackdropPattern {
+  mesh('Soft mesh'),
+  dots('Dot grid'),
+  scanlines('Scanlines'),
+  topo('Contour rings'),
+  facets('Low-poly facets'),
+  stars('Starfield');
+
+  const BackdropPattern(this.label);
+
+  final String label;
+}
+
+/// How the theme's background pictures show: dimmed with the theme's
+/// background colour, blurred, and optionally behind the main screens.
+class BackdropStyle {
+  const BackdropStyle({this.dim = 0.4, this.blur = 0, this.onScreens = false});
 
   /// How much the picture is covered by the theme's background, 0 to 0.9.
   final double dim;
@@ -116,65 +158,54 @@ class TerminalStyle {
   /// Blur of the picture, 0 to 20.
   final double blur;
 
-  /// Shows a strip of the connection's terminals above the text.
-  final bool showTabs;
+  /// Also shows the picture behind the five main screens.
+  final bool onScreens;
 
-  static const paddings = [0.0, 4.0, 8.0, 16.0];
   static const maxDim = 0.9;
   static const maxBlur = 20.0;
 
-  bool get hasImage => backgroundImage != null;
+  /// Behind lists and cards the picture is dimmed at least this much, so
+  /// text stays readable.
+  static const minScreenDim = 0.7;
 
-  TerminalStyle copyWith({double? padding, String? Function()? backgroundImage, double? dim, double? blur, bool? showTabs}) =>
-      TerminalStyle(
-        padding: padding ?? this.padding,
-        backgroundImage: backgroundImage != null ? backgroundImage() : this.backgroundImage,
+  double get screenDim => dim < minScreenDim ? minScreenDim : dim;
+
+  BackdropStyle copyWith({double? dim, double? blur, bool? onScreens}) => BackdropStyle(
         dim: (dim ?? this.dim).clamp(0.0, maxDim),
         blur: (blur ?? this.blur).clamp(0.0, maxBlur),
-        showTabs: showTabs ?? this.showTabs,
+        onScreens: onScreens ?? this.onScreens,
       );
 
-  Map<String, dynamic> toJson() => {
-        'padding': padding,
-        'backgroundImage': backgroundImage,
-        'dim': dim,
-        'blur': blur,
-        'showTabs': showTabs,
-      };
+  Map<String, dynamic> toJson() => {'dim': dim, 'blur': blur, 'onScreens': onScreens};
 
-  factory TerminalStyle.fromJson(Map<String, dynamic> j) {
-    const d = TerminalStyle();
+  factory BackdropStyle.fromJson(Map<String, dynamic> j) {
+    const d = BackdropStyle();
     double number(String key, double fallback, double max) => j[key] is num ? (j[key] as num).toDouble().clamp(0.0, max) : fallback;
-    return TerminalStyle(
-      padding: _Enum.nearest(j['padding'], paddings, d.padding),
-      backgroundImage: safeFileName(j['backgroundImage']),
+    return BackdropStyle(
       dim: number('dim', d.dim, maxDim),
       blur: number('blur', d.blur, maxBlur),
-      showTabs: Json.boolean(j, 'showTabs', d.showTabs),
+      onScreens: Json.boolean(j, 'onScreens', d.onScreens),
     );
   }
 
-  /// Themes can come from anywhere, so only a plain file name is kept:
-  /// nothing that could point outside the backgrounds folder.
-  static String? safeFileName(Object? value) {
+  @override
+  bool operator ==(Object other) => other is BackdropStyle && other.dim == dim && other.blur == blur && other.onScreens == onScreens;
+
+  @override
+  int get hashCode => Object.hash(dim, blur, onScreens);
+}
+
+/// Background picture names come from theme files and links, so only a
+/// plain file name is kept: nothing that could point outside the theme's
+/// own folder.
+abstract final class SafeFileName {
+  static String? of(Object? value) {
     if (value is! String) return null;
     final name = value.trim();
     if (name.isEmpty || name.length > 128 || name.startsWith('.')) return null;
     if (!RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(name)) return null;
     return name;
   }
-
-  @override
-  bool operator ==(Object other) =>
-      other is TerminalStyle &&
-      other.padding == padding &&
-      other.backgroundImage == backgroundImage &&
-      other.dim == dim &&
-      other.blur == blur &&
-      other.showTabs == showTabs;
-
-  @override
-  int get hashCode => Object.hash(padding, backgroundImage, dim, blur, showTabs);
 }
 
 /// The look of the built-in keyboard's keys.
@@ -211,7 +242,8 @@ class KeysStyle {
 }
 
 /// Everything about a theme's look apart from its colours: corners,
-/// surfaces, density, fonts, navigation, icons, terminal and keyboard.
+/// surfaces, density, fonts, navigation, icons, terminal, background
+/// pictures and keyboard.
 /// The defaults are Multiplex's original look.
 class ThemeStyle {
   const ThemeStyle({
@@ -223,6 +255,7 @@ class ThemeStyle {
     this.nav = NavStyle.labelled,
     this.icons = IconStyle.outlined,
     this.terminal = const TerminalStyle(),
+    this.backdrop = const BackdropStyle(),
     this.keys = const KeysStyle(),
   });
 
@@ -238,6 +271,7 @@ class ThemeStyle {
   final NavStyle nav;
   final IconStyle icons;
   final TerminalStyle terminal;
+  final BackdropStyle backdrop;
   final KeysStyle keys;
 
   /// The platform's own font for the app's screens.
@@ -253,6 +287,7 @@ class ThemeStyle {
     NavStyle? nav,
     IconStyle? icons,
     TerminalStyle? terminal,
+    BackdropStyle? backdrop,
     KeysStyle? keys,
   }) =>
       ThemeStyle(
@@ -264,6 +299,7 @@ class ThemeStyle {
         nav: nav ?? this.nav,
         icons: icons ?? this.icons,
         terminal: terminal ?? this.terminal,
+        backdrop: backdrop ?? this.backdrop,
         keys: keys ?? this.keys,
       );
 
@@ -276,6 +312,7 @@ class ThemeStyle {
         'nav': nav.name,
         'icons': icons.name,
         'terminal': terminal.toJson(),
+        'backdrop': backdrop.toJson(),
         'keys': keys.toJson(),
       };
 
@@ -296,6 +333,7 @@ class ThemeStyle {
       nav: _Enum.read(NavStyle.values, j['nav'], d.nav),
       icons: _Enum.read(IconStyle.values, j['icons'], d.icons),
       terminal: TerminalStyle.fromJson(part('terminal')),
+      backdrop: BackdropStyle.fromJson(part('backdrop')),
       keys: KeysStyle.fromJson(part('keys')),
     );
   }
@@ -311,8 +349,9 @@ class ThemeStyle {
       other.nav == nav &&
       other.icons == icons &&
       other.terminal == terminal &&
+      other.backdrop == backdrop &&
       other.keys == keys;
 
   @override
-  int get hashCode => Object.hash(shape, surface, density, appFont, textScale, nav, icons, terminal, keys);
+  int get hashCode => Object.hash(shape, surface, density, appFont, textScale, nav, icons, terminal, backdrop, keys);
 }

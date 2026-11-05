@@ -137,12 +137,17 @@ class _MiniContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  FilledButton(style: buttonStyle, onPressed: () {}, child: const Text('Connect')),
-                  const SizedBox(width: 8),
-                  OutlinedButton(style: buttonStyle, onPressed: () {}, child: const Text('Edit')),
-                ],
+              // Shrinks to fit when a side rail or large text leaves less room.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    FilledButton(style: buttonStyle, onPressed: () {}, child: const Text('Connect')),
+                    const SizedBox(width: 8),
+                    OutlinedButton(style: buttonStyle, onPressed: () {}, child: const Text('Edit')),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               // Takes what is left; at large sizes the end is cut off.

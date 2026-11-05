@@ -88,7 +88,8 @@ class ThemeImporter {
     final spec = ThemeSpec.fromJson(data);
     final name = data['name'] is String && (data['name'] as String).trim().isNotEmpty ? spec.name.trim() : fallback;
     final accent = data['accent'] is num ? spec.accent : pickAccent(ansi: spec.ansi, cursor: spec.cursor, background: spec.background);
-    return spec.copyWith(id: VaultStore.newId(), name: name, accent: accent);
+    // Picture names are kept out: the pictures stay on the other device.
+    return spec.copyWith(id: VaultStore.newId(), name: name, accent: accent, backgrounds: const []);
   }
 
   ThemeSpec _fromThemeFile(String text, String fallback) {

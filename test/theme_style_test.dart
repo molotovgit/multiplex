@@ -20,7 +20,8 @@ abstract final class _Styles {
     textScale: 1.2,
     nav: NavStyle.rail,
     icons: IconStyle.filled,
-    terminal: TerminalStyle(padding: 16, backgroundImage: 'abc.png', dim: 0.6, blur: 8, showTabs: true),
+    terminal: TerminalStyle(padding: 16, showTabs: true),
+    backdrop: BackdropStyle(dim: 0.6, blur: 8, onScreens: true),
     keys: KeysStyle(cap: KeyCapStyle.outlined, gap: 6, labelFont: KeyLabelFont.terminal),
   );
 }
@@ -38,8 +39,8 @@ void main() {
       expect(d.nav, NavStyle.labelled);
       expect(d.icons, IconStyle.outlined);
       expect(d.terminal.padding, 4);
-      expect(d.terminal.hasImage, isFalse);
       expect(d.terminal.showTabs, isFalse);
+      expect(d.backdrop.onScreens, isFalse);
       expect(d.keys.cap, KeyCapStyle.raised);
       expect(d.keys.gap, 4);
       expect(d.keys.labelFont, KeyLabelFont.app);
@@ -60,24 +61,40 @@ void main() {
         'shape': 'blob',
         'nav': 42,
         'textScale': 3.0,
-        'terminal': {'padding': 5, 'dim': 7, 'blur': -3},
+        'terminal': {'padding': 5},
+        'backdrop': {'dim': 7, 'blur': -3},
         'keys': {'gap': 100, 'cap': 'shiny'},
       });
       expect(odd.shape, CornerShape.rounded);
       expect(odd.nav, NavStyle.labelled);
       expect(odd.textScale, 1.2);
       expect(odd.terminal.padding, 4);
-      expect(odd.terminal.dim, TerminalStyle.maxDim);
-      expect(odd.terminal.blur, 0);
+      expect(odd.backdrop.dim, BackdropStyle.maxDim);
+      expect(odd.backdrop.blur, 0);
       expect(odd.keys.gap, 6);
       expect(odd.keys.cap, KeyCapStyle.raised);
     });
 
     test('a background picture is only ever a plain file name', () {
       for (final bad in ['../secret.png', 'a/b.png', r'a\b.png', '.hidden', '', 'x' * 200, 42]) {
-        expect(TerminalStyle.safeFileName(bad), isNull, reason: '$bad');
+        expect(SafeFileName.of(bad), isNull, reason: '$bad');
       }
-      expect(TerminalStyle.safeFileName('3f2a-b.jpg'), '3f2a-b.jpg');
+      expect(SafeFileName.of('3f2a-b.jpg'), '3f2a-b.jpg');
+    });
+
+    test('a theme keeps its picture list; unsafe names are dropped', () {
+      final mine = BuiltInThemes.ember.copyWith(id: 'mine', backgrounds: ['a.jpg', 'b.png', 'c.webp'], backdrops: const [], activeBackground: 2);
+      final back = ThemeSpec.fromJson(mine.toJson());
+      expect(back.backgrounds, ['a.jpg', 'b.png', 'c.webp']);
+      expect(back.currentSlide, const PictureSlide('c.webp'));
+      final odd = ThemeSpec.fromJson({...mine.toJson(), 'backgrounds': ['ok.jpg', '../x.jpg', 7], 'activeBackground': 9});
+      expect(odd.backgrounds, ['ok.jpg']);
+      // Clamped to the last step, the plain colour after the one picture.
+      expect(odd.activeBackground, 1);
+      expect(odd.currentSlide, isNull);
+      expect(BuiltInThemes.ember.copyWith(backdrops: const []).currentSlide, isNull);
+      // A new list starts at its first picture.
+      expect(back.copyWith(backgrounds: ['z.png']).activeBackground, 0);
     });
 
     test('a theme saved before styles existed loads with the default style', () {
@@ -89,9 +106,11 @@ void main() {
       final mine = BuiltInThemes.ember.copyWith(id: 'mine', name: 'Mine', style: _Styles.everything);
       expect(ThemeSpec.fromJson(mine.toJson()).style, _Styles.everything);
       expect(mine.copyWith(name: 'Other').style, _Styles.everything);
-      final imported = ThemeImporter().read(ThemeExport.json(mine));
+      final imported = ThemeImporter().read(ThemeExport.json(mine.copyWith(backgrounds: ['a.jpg'])));
       expect(imported.style, _Styles.everything);
       expect(imported.id, isNot('mine'));
+      // The pictures do not travel in the text, so their names do not either.
+      expect(imported.backgrounds, isEmpty);
     });
 
     test('several built-in themes have a look of their own', () {

@@ -1,6 +1,6 @@
-import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/app_icons.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';

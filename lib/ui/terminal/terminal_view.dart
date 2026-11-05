@@ -8,9 +8,10 @@ import '../../app/app_scope.dart';
 import '../../app/terminal_fonts.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
+import '../../app/theme_slides.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/terminal_controller.dart';
-import 'terminal_backdrop.dart';
+import '../common/theme_backdrop.dart';
 import 'terminal_keyboard.dart';
 import 'terminal_painter.dart';
 
@@ -180,8 +181,10 @@ class _TerminalViewState extends State<TerminalView> {
         final frame = _terminal.frame;
         final theme = store.activeTheme;
         final selectionColor = Color(theme.selection ?? colors.accent.withValues(alpha: 0.35).toARGB32()).withValues(alpha: 0.45);
-        final look = AppStyleTheme.of(context).style.terminal;
-        _padding = look.padding;
+        final style = AppStyleTheme.of(context).style;
+        final backdrop = style.backdrop;
+        final slide = ActiveSlide.of(theme, settings);
+        _padding = style.terminal.padding;
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -205,7 +208,13 @@ class _TerminalViewState extends State<TerminalView> {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: TerminalBackdrop(style: look, color: Color(frame?.background ?? theme.background)),
+                          child: ThemeBackdrop(
+                            theme: theme,
+                            slide: slide,
+                            color: Color(frame?.background ?? theme.background),
+                            dim: backdrop.dim,
+                            blur: backdrop.blur,
+                          ),
                         ),
                         Positioned.fill(
                           child: Padding(
@@ -224,7 +233,7 @@ class _TerminalViewState extends State<TerminalView> {
                                       cursorStyle: settings.cursorStyle,
                                       selection: _selection,
                                       selectionColor: selectionColor,
-                                      paintBackground: !look.hasImage,
+                                      paintBackground: slide == null,
                                     ),
                                   ),
                           ),

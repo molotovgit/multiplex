@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';
@@ -88,6 +89,7 @@ abstract final class SnippetPicker {
   static Future<Snippet?> show(BuildContext context) {
     return showModalBottomSheet<Snippet>(
       context: context,
+      sheetAnimationStyle: AppMotion.of(context).sheet,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => const SnippetPickerSheet(),

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../app/backdrops/backdrop_painter.dart';
 import '../../app/terminal_fonts.dart';
 import '../../app/theme_spec.dart';
+import '../../app/theme_style.dart';
 import '../../data/app_settings.dart';
 
 /// One piece of text in the fake terminal, with the palette colour it is
@@ -76,6 +78,7 @@ class ThemePreview extends StatelessWidget {
     this.cursorStyle = CursorStyle.block,
     this.showPalette = true,
     this.borderRadius = BorderRadius.zero,
+    this.backdrop,
   });
 
   final ThemeSpec theme;
@@ -89,6 +92,9 @@ class ThemePreview extends StatelessWidget {
   /// Shows all 16 palette colours as a thin strip along the bottom.
   final bool showPalette;
   final BorderRadius borderRadius;
+
+  /// A backdrop drawn faintly behind the text, as in the gallery.
+  final BackdropPattern? backdrop;
 
   /// Size used before scaling when the preview fills its width.
   static const _fitFontSize = 12.0;
@@ -122,13 +128,16 @@ class ThemePreview extends StatelessWidget {
           borderRadius: borderRadius,
           child: ColoredBox(
             color: Color(theme.background),
-            child: Column(
-              mainAxisSize: fits ? MainAxisSize.max : MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                body,
-                if (showPalette) _PaletteStrip(theme: theme, height: fits ? 4 : 6),
-              ],
+            child: CustomPaint(
+              painter: backdrop == null ? null : _FaintBackdrop(backdrop!, BackdropColors.of(theme)),
+              child: Column(
+                mainAxisSize: fits ? MainAxisSize.max : MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  body,
+                  if (showPalette) _PaletteStrip(theme: theme, height: fits ? 4 : 6),
+                ],
+              ),
             ),
           ),
         ),
@@ -270,4 +279,28 @@ class _PaletteStrip extends StatelessWidget {
           children: [for (final colour in theme.ansi) Expanded(child: ColoredBox(color: Color(colour)))],
         ),
       );
+}
+
+/// A theme's backdrop behind the preview, toned down with the theme's
+/// background so the sample text stays clear.
+class _FaintBackdrop extends CustomPainter {
+  _FaintBackdrop(this.pattern, this.colors);
+
+  final BackdropPattern pattern;
+  final BackdropColors colors;
+
+  /// How much of the background colour covers the drawing.
+  static const _veil = 0.35;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    BackdropPainter.of(pattern).paint(canvas, size, colors);
+    canvas.drawRect(Offset.zero & size, Paint()..color = colors.background.withValues(alpha: _veil));
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_FaintBackdrop old) => old.pattern != pattern || old.colors != colors;
 }

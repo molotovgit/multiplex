@@ -479,7 +479,8 @@ void main() {
       for (final theme in BuiltInThemes.all) {
         expect(find.text(theme.name), findsOneWidget, reason: theme.name);
       }
-      expect(find.text('Gruvbox by morhetz (MIT)'), findsOneWidget);
+      // Gruvbox Dark and Gruvbox Light share their author's credit.
+      expect(find.text('Gruvbox by morhetz (MIT)'), findsNWidgets(2));
       await app.finish(tester);
     });
   });

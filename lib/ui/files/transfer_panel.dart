@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_motion.dart';
 import '../../app/theme.dart';
 import '../common/widgets.dart';
 import 'file_format.dart';
@@ -117,6 +118,7 @@ class TransferSheet extends StatelessWidget {
 
   static Future<void> show(BuildContext context, TransferQueue queue) => showModalBottomSheet<void>(
     context: context,
+    sheetAnimationStyle: AppMotion.of(context).sheet,
     isScrollControlled: true,
     builder: (_) => TransferSheet(queue: queue),
   );
