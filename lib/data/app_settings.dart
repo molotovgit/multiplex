@@ -37,6 +37,7 @@ class AppSettings {
     this.boldIsBright = false,
     this.appLock = false,
     this.keepScreenOn = true,
+    this.keyboard = const {},
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -66,6 +67,12 @@ class AppSettings {
   final bool appLock;
   final bool keepScreenOn;
 
+  /// Settings of the built-in terminal keyboard (on or off, layout, size,
+  /// sound and so on). Kept as plain JSON owned by the keyboard's own
+  /// settings class, so the keyboard can add options without changing
+  /// this file.
+  final Map<String, dynamic> keyboard;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -90,6 +97,7 @@ class AppSettings {
     bool? boldIsBright,
     bool? appLock,
     bool? keepScreenOn,
+    Map<String, dynamic>? keyboard,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -105,6 +113,7 @@ class AppSettings {
         boldIsBright: boldIsBright ?? this.boldIsBright,
         appLock: appLock ?? this.appLock,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+        keyboard: keyboard ?? this.keyboard,
       );
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +130,7 @@ class AppSettings {
         'boldIsBright': boldIsBright,
         'appLock': appLock,
         'keepScreenOn': keepScreenOn,
+        'keyboard': keyboard,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -139,6 +149,7 @@ class AppSettings {
       boldIsBright: Json.boolean(j, 'boldIsBright', false),
       appLock: Json.boolean(j, 'appLock', false),
       keepScreenOn: Json.boolean(j, 'keepScreenOn', true),
+      keyboard: j['keyboard'] is Map ? (j['keyboard'] as Map).cast<String, dynamic>() : const {},
     );
   }
 }
