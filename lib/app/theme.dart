@@ -54,12 +54,36 @@ class AppColors {
       raised: dark ? mix(bg, fg, 0.10) : mix(bg, fg, 0.06),
       outline: dark ? mix(bg, fg, 0.17) : mix(bg, fg, 0.15),
       text: fg,
-      muted: mix(fg, bg, 0.42),
+      muted: _Contrast.readableMuted(fg, bg, dark ? mix(bg, fg, 0.05) : mix(bg, Colors.white, 0.6)),
       accent: accent,
       onAccent: accent.computeLuminance() > 0.4 ? mix(bg, Colors.black, dark ? 0.4 : 0.85) : Colors.white,
       live: Color(theme.ansi[2]),
       danger: Color(theme.ansi[1]),
     );
+  }
+}
+
+/// Contrast helpers for derived colours.
+abstract final class _Contrast {
+  /// WCAG minimum for normal text.
+  static const minimum = 4.5;
+
+  /// WCAG contrast ratio between two colours (1 to 21).
+  static double ratio(Color a, Color b) {
+    final la = a.computeLuminance(), lb = b.computeLuminance();
+    final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  /// The softest mix of text towards the background that still reads well
+  /// on the surface colour: starts at 40 % and moves back towards the text
+  /// colour until the contrast reaches 4.5:1.
+  static Color readableMuted(Color text, Color background, Color surface) {
+    for (var t = 0.40; t > 0; t -= 0.02) {
+      final candidate = Color.lerp(text, background, t)!;
+      if (ratio(candidate, surface) >= minimum) return candidate;
+    }
+    return text;
   }
 }
 
@@ -89,7 +113,17 @@ abstract final class AppTheme {
       surfaceContainerHigh: c.raised,
       surfaceContainerHighest: c.raised,
     );
-    final base = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness);
+    final material = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness);
+    // Two weights across the app: 400 for text, 600 for titles and the
+    // labels on buttons, tabs and menus (Material would add a third, 500).
+    final base = material.copyWith(
+      textTheme: material.textTheme.copyWith(
+        labelLarge: material.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        titleSmall: material.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        titleMedium: material.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        labelMedium: material.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
     final selectedOrMuted = WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.accent : c.muted);
     return base.copyWith(
       scaffoldBackgroundColor: c.background,

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vaultterm/app/theme.dart';
 import 'package:vaultterm/app/theme_spec.dart';
@@ -36,5 +37,17 @@ void main() {
     // Deleting the theme in use falls back to the default.
     store.deleteTheme('mine');
     expect(store.activeTheme.id, BuiltInThemes.defaultId);
+  });
+
+  test('muted text stays readable (4.5:1) on every built-in theme', () {
+    double ratio(Color a, Color b) {
+      final la = a.computeLuminance(), lb = b.computeLuminance();
+      return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
+    }
+
+    for (final theme in BuiltInThemes.all) {
+      final c = AppColors.derive(theme);
+      expect(ratio(c.muted, c.surface), greaterThanOrEqualTo(4.5), reason: theme.name);
+    }
   });
 }
