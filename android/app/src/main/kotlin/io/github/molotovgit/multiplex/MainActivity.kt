@@ -29,9 +29,37 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SESSIONS_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setOpenSessions" -> {
+                    val count = call.argument<Int>("count") ?: 0
+                    val summary = call.argument<String>("summary") ?: ""
+                    if (count > 0) askForNotificationsOnce()
+                    SessionService.update(this, count, summary)
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /** Android 13+ hides the "connected" notification without this. */
+    private fun askForNotificationsOnce() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+    }
+
+    override fun onDestroy() {
+        // The app is being closed for good: let the connections go too.
+        if (isFinishing) SessionService.update(this, 0, "")
+        super.onDestroy()
     }
 
     private companion object {
         const val SCREEN_CHANNEL = "multiplex/screen"
+        const val SESSIONS_CHANNEL = "multiplex/sessions"
     }
 }

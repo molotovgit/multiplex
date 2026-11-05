@@ -4,6 +4,7 @@ import 'app/terminal_fonts.dart';
 import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
+import 'sessions/background_keeper.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
 import 'ui/settings/app_licenses.dart';
@@ -15,5 +16,8 @@ Future<void> main() async {
   await RustLib.init();
   final store = await VaultStore.open(await EncryptedFileBackend.open());
   await TerminalFonts.loadCustomFonts(store.settings);
-  runApp(MultiplexApp(store: store, sessions: SessionManager(store)));
+  final sessions = SessionManager(store);
+  // Lives as long as the app: keeps connections alive in the background.
+  BackgroundKeeper(sessions);
+  runApp(MultiplexApp(store: store, sessions: sessions));
 }
