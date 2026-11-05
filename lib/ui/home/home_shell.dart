@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -97,11 +98,11 @@ class _HomeShellState extends State<HomeShell> {
         if (nav == NavStyle.floating) {
           // The pages run on under the bar; Scaffold adds the bar's height
           // to their bottom padding, so lists still scroll clear of it.
-          return Scaffold(extendBody: true, body: body, bottomNavigationBar: _FloatingNavBar(model: bar));
+          return Scaffold(extendBody: true, body: _ClearOfBar(child: body), bottomNavigationBar: _FloatingNavBar(model: bar));
         }
         return Scaffold(
           extendBody: look.surfaces.isGlass,
-          body: body,
+          body: look.surfaces.isGlass ? _ClearOfBar(child: body) : body,
           bottomNavigationBar: _GlassBackdrop(
             enabled: look.surfaces.isGlass,
             child: _ShellNavigationBar(model: bar, labels: nav == NavStyle.labelled),
@@ -109,6 +110,23 @@ class _HomeShellState extends State<HomeShell> {
         );
       },
     );
+  }
+}
+
+/// For pages that run on under the bottom bar. Scaffold adds the bar's
+/// height to their padding but not to their view padding, which is what a
+/// page's own floating button keeps clear of, so "New host" and the like
+/// would sit hidden behind the bar.
+class _ClearOfBar extends StatelessWidget {
+  const _ClearOfBar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final bottom = math.max(media.viewPadding.bottom, media.padding.bottom);
+    return MediaQuery(data: media.copyWith(viewPadding: media.viewPadding.copyWith(bottom: bottom)), child: child);
   }
 }
 

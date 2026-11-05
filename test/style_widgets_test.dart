@@ -96,6 +96,24 @@ void main() {
       await h.finish(tester);
     });
 
+    testWidgets("a page's own button stays above the floating bar", (tester) async {
+      final h = _Harness();
+      await h.open(tester, style: const ThemeStyle(nav: NavStyle.floating));
+      final bar = tester.getRect(find.byKey(HomeShell.floatingBarKey));
+      final button = tester.getRect(find.widgetWithText(FloatingActionButton, 'New host'));
+      expect(button.bottom, lessThanOrEqualTo(bar.top));
+      await h.finish(tester);
+    });
+
+    testWidgets("a page's own button stays above a see-through bar", (tester) async {
+      final h = _Harness();
+      await h.open(tester, style: const ThemeStyle(surface: SurfaceStyle.glass));
+      final bar = tester.getRect(find.byType(NavigationBar));
+      final button = tester.getRect(find.widgetWithText(FloatingActionButton, 'New host'));
+      expect(button.bottom, lessThanOrEqualTo(bar.top));
+      await h.finish(tester);
+    });
+
     testWidgets('the side rail is used on phones when chosen', (tester) async {
       final h = _Harness();
       await h.open(tester, style: const ThemeStyle(nav: NavStyle.rail));
