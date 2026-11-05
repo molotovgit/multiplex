@@ -35,6 +35,12 @@ class KeyFace extends StatelessWidget {
   /// Set for modifier keys.
   final ModifierMode? mode;
 
+  /// How far the hint sits from the corner: further in on rounder keys,
+  /// so it stays inside the curve instead of on it.
+  double get _hintInset => (look.metrics.radius * 0.3).clamp(3.0, 8.0);
+
+  double get _hintClearance => _hintInset + 2;
+
   @override
   Widget build(BuildContext context) {
     final p = look.palette;
@@ -58,25 +64,33 @@ class KeyFace extends StatelessWidget {
               : (cap == KeyCapStyle.outlined ? Border.all(color: p.bubbleBorder) : null),
           boxShadow: cap == KeyCapStyle.raised ? [BoxShadow(color: p.shadow, offset: const Offset(0, 1))] : null,
         ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: _KeyLabel(spec: spec, look: look, color: fg, shift: shift, mode: mode),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            // On a key narrower than its rounding (a pill) there is no
+            // corner to put the hint in, so it sits centred on top.
+            final pill = look.metrics.radius * 2 >= box.maxWidth - 1;
+            final hintShown = hint != null && hint.length <= 3;
+            final hintHeight = (look.text.hint?.fontSize ?? 10) * 1.2;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Center(
+                  child: Padding(
+                    // The label sits a little lower to keep clear of the hint.
+                    padding: EdgeInsets.only(left: 2, right: 2, top: !hintShown ? 0 : (pill ? hintHeight : _hintClearance)),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: _KeyLabel(spec: spec, look: look, color: fg, shift: shift, mode: mode),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            if (hint != null && hint.length <= 3)
-              Positioned(
-                top: 3,
-                right: 4,
-                child: Text(hint, style: look.text.hint),
-              ),
-          ],
+                if (hintShown)
+                  pill
+                      ? Positioned(top: 3, left: 0, right: 0, child: Text(hint, style: look.text.hint, textAlign: TextAlign.center))
+                      : Positioned(top: _hintInset, right: _hintInset + 1, child: Text(hint, style: look.text.hint)),
+              ],
+            );
+          },
         ),
       ),
     );
