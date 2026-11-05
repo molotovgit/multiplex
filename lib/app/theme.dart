@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'gloss.dart';
 import 'theme_look.dart';
 import 'theme_spec.dart';
 import 'theme_style.dart';
@@ -185,7 +186,7 @@ abstract final class AppTheme {
     );
     final scaled = base.copyWith(textTheme: _scaled(base.textTheme, style.textScale));
     final selectedOrMuted = WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.accent : c.muted);
-    return scaled.copyWith(
+    final themed = scaled.copyWith(
       scaffoldBackgroundColor: c.background,
       extensions: [AppColorsTheme(c), look],
       appBarTheme: AppBarTheme(
@@ -259,6 +260,50 @@ abstract final class AppTheme {
         contentTextStyle: TextStyle(color: c.text),
         actionTextColor: c.accent,
       ),
+    );
+    return surfaces.isGlossy ? _glossy(themed, c, spec) : themed;
+  }
+
+  /// The glossy style: banded title bars and bottom bar in the accent with
+  /// white text, shaded buttons with a dark edge, and a green main button
+  /// with a rounded end.
+  static ThemeData _glossy(ThemeData t, AppColors c, ThemeSpec theme) {
+    final bar = Gloss.darken(c.accent, 0.1);
+    final edge = Gloss.darken(c.accent, 0.55);
+    final green = Color(theme.ansi[2]);
+    final shine = [Shadow(offset: const Offset(1, 1), color: Gloss.darken(c.accent, 0.55))];
+    final buttons = Gloss.buttonStyle(face: c.background, edge: edge, text: c.text);
+    const white = Colors.white;
+    return t.copyWith(
+      appBarTheme: t.appBarTheme.copyWith(
+        backgroundColor: c.accent,
+        foregroundColor: white,
+        iconTheme: const IconThemeData(color: white),
+        actionsIconTheme: const IconThemeData(color: white),
+        shape: GlossBorder(side: BorderSide(color: bar)),
+        titleTextStyle: t.appBarTheme.titleTextStyle?.copyWith(color: white, fontWeight: FontWeight.w700, shadows: shine),
+      ),
+      navigationBarTheme: t.navigationBarTheme.copyWith(
+        backgroundColor: c.accent,
+        elevation: 0,
+        indicatorColor: Gloss.darken(c.accent, 0.35),
+        iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? white : white.withValues(alpha: 0.85))),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (s) => t.navigationBarTheme.labelTextStyle?.resolve(s)?.copyWith(color: s.contains(WidgetState.selected) ? white : white.withValues(alpha: 0.85), shadows: shine),
+        ),
+      ),
+      floatingActionButtonTheme: t.floatingActionButtonTheme.copyWith(
+        backgroundColor: green,
+        foregroundColor: white,
+        elevation: 2,
+        highlightElevation: 0,
+        // A start button: square at the start, round at the end.
+        shape: GlossBorder(radius: const BorderRadius.horizontal(left: Radius.circular(4), right: Radius.circular(28)), side: BorderSide(color: Gloss.darken(green, 0.35))),
+        extendedTextStyle: t.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, fontStyle: FontStyle.italic, shadows: [Shadow(offset: const Offset(1, 1), color: Gloss.darken(green, 0.5))]),
+      ),
+      filledButtonTheme: FilledButtonThemeData(style: buttons),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: buttons),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: buttons),
     );
   }
 }

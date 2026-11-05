@@ -112,6 +112,7 @@ class FlowingTabIndicator extends StatelessWidget {
     required this.color,
     required this.size,
     this.centerY,
+    this.shape = const StadiumBorder(),
   });
 
   final int count;
@@ -126,6 +127,8 @@ class FlowingTabIndicator extends StatelessWidget {
 
   /// Where its middle sits from the top; the middle of the bar when null.
   final double? centerY;
+
+  final ShapeBorder shape;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -148,7 +151,7 @@ class FlowingTabIndicator extends StatelessWidget {
                     top: (centerY ?? box.maxHeight / 2) - height / 2,
                     height: height,
                     child: IgnorePointer(
-                      child: DecoratedBox(decoration: ShapeDecoration(color: color, shape: const StadiumBorder())),
+                      child: DecoratedBox(decoration: ShapeDecoration(color: color, shape: shape)),
                     ),
                   ),
                 ],

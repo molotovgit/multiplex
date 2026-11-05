@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/app_icons.dart';
 import '../../app/app_motion.dart';
+import '../../app/gloss.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
@@ -283,12 +284,18 @@ class _ShellNavigationBarState extends State<_ShellNavigationBar> {
               ),
           ],
         );
+    final glossy = AppStyleTheme.of(context).surfaces.isGlossy;
+    final barColor = background ?? theme.backgroundColor;
     return Material(
-      color: background ?? theme.backgroundColor,
+      color: glossy ? Colors.transparent : barColor,
       elevation: theme.elevation ?? 0,
       shadowColor: theme.shadowColor,
       surfaceTintColor: Colors.transparent,
-      child: TabScrub(
+      // Glossy bars are banded like a taskbar, with a shine on top.
+      shape: glossy ? const GlossBorder() : null,
+      child: DecoratedBox(
+        decoration: BoxDecoration(gradient: glossy && barColor != null && barColor.a > 0 ? Gloss.band(barColor) : null),
+        child: TabScrub(
         count: count,
         pages: model.pages,
         settingsSlot: _HomeShellState._settingsIndex,
@@ -312,6 +319,8 @@ class _ShellNavigationBarState extends State<_ShellNavigationBar> {
                     // Just behind the icon, the size of Material's own mark.
                     size: Size(math.min(slot - 8, _iconMark.width), _iconMark.height),
                     centerY: _iconY,
+                    // A pushed-in taskbar button rather than a pill.
+                    shape: glossy ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)) : const StadiumBorder(),
                   );
                 },
               ),
@@ -319,6 +328,7 @@ class _ShellNavigationBarState extends State<_ShellNavigationBar> {
             bar,
           ],
         ),
+      ),
       ),
     );
   }
