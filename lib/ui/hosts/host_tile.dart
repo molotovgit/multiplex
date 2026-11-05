@@ -12,9 +12,13 @@ import 'host_editor_screen.dart';
 
 /// One saved host in the list. Tap connects; the menu has the rest.
 class HostTile extends StatelessWidget {
-  const HostTile({super.key, required this.host});
+  const HostTile({super.key, required this.host, this.compactMenu = false});
 
   final Host host;
+
+  /// Leaves out Move up / Move down (for the Recent shortcuts, which are
+  /// not in the arranged order).
+  final bool compactMenu;
 
   Future<void> _openFiles(BuildContext context) async {
     final session = await HostConnector.connect(context, host);
@@ -100,9 +104,22 @@ class HostTile extends StatelessWidget {
           2 => _open(context, TunnelsScreen(host: host)),
           3 => _open(context, HostEditorScreen(host: host)),
           4 => _duplicate(context),
+          6 => AppScope.store(context).moveHost(host.id, -1),
+          7 => AppScope.store(context).moveHost(host.id, 1),
           _ => _delete(context),
         },
-        itemBuilder: (_) => const [
+        itemBuilder: (_) => [
+          if (!compactMenu) ...const [
+            PopupMenuItem(
+              value: 6,
+              child: ListTile(leading: Icon(Icons.arrow_upward), title: Text('Move up')),
+            ),
+            PopupMenuItem(
+              value: 7,
+              child: ListTile(leading: Icon(Icons.arrow_downward), title: Text('Move down')),
+            ),
+            PopupMenuDivider(),
+          ],
           PopupMenuItem(
             value: 0,
             child: ListTile(leading: Icon(Icons.terminal), title: Text('Open terminal')),

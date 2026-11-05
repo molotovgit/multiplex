@@ -77,6 +77,43 @@ class VaultStore extends ChangeNotifier {
     _changed();
   }
 
+  /// Saves a new order of hosts (as the user dragged them), each with the
+  /// group it now belongs to. Hosts not in [order] keep their place at the
+  /// end, so nothing is ever lost.
+  void arrangeHosts(List<({String id, String? groupId})> order) {
+    final byId = {for (final h in _doc.hosts) h.id: h};
+    final arranged = <Host>[];
+    for (final place in order) {
+      final host = byId.remove(place.id);
+      if (host == null) continue;
+      arranged.add(host.groupId == place.groupId ? host : host.copyWith(groupId: () => place.groupId));
+    }
+    arranged.addAll(_doc.hosts.where((h) => byId.containsKey(h.id)));
+    _doc.hosts
+      ..clear()
+      ..addAll(arranged);
+    _changed();
+  }
+
+  /// Moves a host one place up (-1) or down (+1) among the hosts of its own
+  /// group. The button alternative to dragging.
+  void moveHost(String id, int step) {
+    final host = this.host(id);
+    if (host == null) return;
+    final sameGroup = [
+      for (var i = 0; i < _doc.hosts.length; i++)
+        if (_doc.hosts[i].groupId == host.groupId) i,
+    ];
+    final at = sameGroup.indexOf(_doc.hosts.indexOf(host));
+    final to = at + step;
+    if (at < 0 || to < 0 || to >= sameGroup.length) return;
+    final a = sameGroup[at], b = sameGroup[to];
+    final swap = _doc.hosts[a];
+    _doc.hosts[a] = _doc.hosts[b];
+    _doc.hosts[b] = swap;
+    _changed();
+  }
+
   void markConnected(String hostId) {
     _replaceWhere(_doc.hosts, (h) => h.id == hostId, (h) => h.copyWith(lastConnectedAt: DateTime.now()));
     _changed();
@@ -113,14 +150,9 @@ class VaultStore extends ChangeNotifier {
   /// is replaced, which is what the user wants after confirming a change.
   void trustHostKey(String host, int port, HostKeyInfo key) {
     _doc.knownHosts.removeWhere((k) => k.host == host && k.port == port);
-    _doc.knownHosts.add(KnownHost(
-      host: host,
-      port: port,
-      publicKey: key.publicKey,
-      fingerprint: key.fingerprint,
-      algorithm: key.algorithm,
-      addedAt: DateTime.now(),
-    ));
+    _doc.knownHosts.add(
+      KnownHost(host: host, port: port, publicKey: key.publicKey, fingerprint: key.fingerprint, algorithm: key.algorithm, addedAt: DateTime.now()),
+    );
     _changed();
   }
 

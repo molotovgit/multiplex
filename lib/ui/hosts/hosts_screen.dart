@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
-import '../../data/vault_store.dart';
 import '../common/widgets.dart';
+import 'arranged_host_list.dart';
 import 'host_connector.dart';
 import 'host_editor_screen.dart';
 import 'host_tile.dart';
@@ -57,16 +57,19 @@ class _HostsScreenState extends State<HostsScreen> {
               searchField: _SearchField(controller: _search, onChanged: _onQuery),
             );
           }
+          final header = [_SearchField(controller: _search, onChanged: _onQuery), ..._recent(hosts)];
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 840),
-              child: ListView(
-                padding: const EdgeInsets.only(bottom: 96),
-                children: [
-                  _SearchField(controller: _search, onChanged: _onQuery),
-                  ..._sections(store, hosts),
-                ],
-              ),
+              child: _query.isNotEmpty
+                  ? ListView(padding: const EdgeInsets.only(bottom: 96), children: [header.first, ..._searchResults(hosts)])
+                  : ArrangedHostList(
+                      header: header,
+                      groupMenu: (group) => _GroupMenu(
+                        group: group,
+                        onAddHost: () => _openEditor(groupId: group.id),
+                      ),
+                    ),
             ),
           );
         },
@@ -76,47 +79,30 @@ class _HostsScreenState extends State<HostsScreen> {
 
   void _onQuery(String value) => setState(() => _query = value.trim());
 
-  /// The list content: search results, or recent + grouped hosts.
-  List<Widget> _sections(VaultStore store, List<Host> hosts) {
-    if (_query.isNotEmpty) {
-      final q = _query.toLowerCase();
-      final matches = hosts.where((h) => '${h.label} ${h.address} ${h.username}'.toLowerCase().contains(q)).toList();
-      final quick = QuickTarget.parse(_query);
-      return [
-        if (quick != null) QuickConnectTile(target: quick),
-        if (matches.isEmpty && quick == null)
-          const Padding(
-            padding: EdgeInsets.all(32),
-            child: Center(child: Text('No hosts match. Try a name or an address.')),
-          ),
-        for (final host in matches) HostTile(host: host),
-      ];
-    }
-
-    final recent = hosts.where((h) => h.lastConnectedAt != null).toList()..sort((a, b) => b.lastConnectedAt!.compareTo(a.lastConnectedAt!));
-    final groups = [...store.groups]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    final ungrouped = hosts.where((h) => store.group(h.groupId) == null).toList()..sort(_byTitle);
-
+  /// Hosts matching the search, plus "connect to user@host" when the text
+  /// looks like an address.
+  List<Widget> _searchResults(List<Host> hosts) {
+    final q = _query.toLowerCase();
+    final matches = hosts.where((h) => '${h.label} ${h.address} ${h.username}'.toLowerCase().contains(q)).toList();
+    final quick = QuickTarget.parse(_query);
     return [
-      if (recent.length > 1 && hosts.length > _recentCount) ...[
-        const SectionHeader('Recent'),
-        for (final host in recent.take(_recentCount)) HostTile(host: host),
-      ],
-      for (final group in groups) ...[
-        SectionHeader(
-          group.name,
-          trailing: _GroupMenu(
-            group: group,
-            onAddHost: () => _openEditor(groupId: group.id),
-          ),
+      if (quick != null) QuickConnectTile(target: quick),
+      if (matches.isEmpty && quick == null)
+        const Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: Text('No hosts match. Try a name or an address.')),
         ),
-        for (final host in (hosts.where((h) => h.groupId == group.id).toList()..sort(_byTitle))) HostTile(host: host),
-      ],
-      if (ungrouped.isNotEmpty) ...[SectionHeader(groups.isEmpty ? 'All hosts' : 'Other hosts'), for (final host in ungrouped) HostTile(host: host)],
+      for (final host in matches) HostTile(host: host),
     ];
   }
 
-  static int _byTitle(Host a, Host b) => a.title.toLowerCase().compareTo(b.title.toLowerCase());
+  /// The last few hosts used, above the arranged list (not draggable: they
+  /// are shortcuts, the real place of each host is below).
+  List<Widget> _recent(List<Host> hosts) {
+    final recent = hosts.where((h) => h.lastConnectedAt != null).toList()..sort((a, b) => b.lastConnectedAt!.compareTo(a.lastConnectedAt!));
+    if (recent.length < 2 || hosts.length <= _recentCount) return const [];
+    return [const SectionHeader('Recent'), for (final host in recent.take(_recentCount)) HostTile(host: host, compactMenu: true)];
+  }
 }
 
 class _SearchField extends StatelessWidget {
