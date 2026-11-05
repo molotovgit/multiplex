@@ -186,6 +186,10 @@ impl SftpBrowser {
     }
 
     /// Copies a local file to the server. Returns the bytes sent.
+    ///
+    /// The data goes to a temporary name next to the target and only
+    /// replaces it once complete, so a cancelled or failed upload never
+    /// destroys the file that was there before.
     pub async fn upload(
         &self,
         local: &Path,
@@ -195,12 +199,30 @@ impl SftpBrowser {
     ) -> anyhow::Result<u64> {
         let mut source = tokio::fs::File::open(local).await?;
         let total = source.metadata().await?.len();
+        let partial = format!("{remote}.part");
         let mut target = self
             .sftp
-            .open_with_flags(remote, OpenFlags::CREATE | OpenFlags::TRUNCATE | OpenFlags::WRITE)
+            .open_with_flags(&partial, OpenFlags::CREATE | OpenFlags::TRUNCATE | OpenFlags::WRITE)
             .await?;
-        let sent = Self::copy(&mut source, &mut target, ProgressReporter::new(progress, total), &cancel).await?;
-        target.shutdown().await?;
+        let copied = Self::copy(&mut source, &mut target, ProgressReporter::new(progress, total), &cancel).await;
+        let finished = match copied {
+            Ok(sent) => target.shutdown().await.map(|_| sent).map_err(anyhow::Error::from),
+            Err(err) => Err(err),
+        };
+        let sent = match finished {
+            Ok(sent) => sent,
+            Err(err) => {
+                drop(target);
+                let _ = self.sftp.remove_file(&partial).await;
+                return Err(err);
+            }
+        };
+        // Plain SFTP rename refuses to replace an existing file, so the old
+        // one is removed first, at the last possible moment.
+        if self.sftp.try_exists(remote).await.unwrap_or(false) {
+            self.sftp.remove_file(remote).await?;
+        }
+        self.sftp.rename(&partial, remote).await?;
         Ok(sent)
     }
 
@@ -215,7 +237,11 @@ impl SftpBrowser {
     ) -> anyhow::Result<u64> {
         let total = self.sftp.metadata(remote).await?.size.unwrap_or(0);
         let mut source = self.sftp.open(remote).await?;
-        let partial = local.with_extension("part");
+        // "notes.txt.part", not "notes.part": two downloads that share a
+        // base name, or a user file called notes.part, never collide.
+        let mut partial_name = local.as_os_str().to_owned();
+        partial_name.push(".part");
+        let partial = std::path::PathBuf::from(partial_name);
         let mut target = tokio::fs::File::create(&partial).await?;
         let result = Self::copy(&mut source, &mut target, ProgressReporter::new(progress, total), &cancel).await;
         match result {

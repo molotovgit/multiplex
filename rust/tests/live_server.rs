@@ -148,7 +148,14 @@ async fn live_sftp_round_trip() {
     let token = CancellationToken::new();
     token.cancel();
     assert!(sftp.download(&remote_blob, &cancelled, Arc::new(|_| true), token).await.is_err());
-    assert!(!cancelled.exists() && !cancelled.with_extension("part").exists());
+    assert!(!cancelled.exists() && !local.path().join("cancelled.bin.part").exists());
+
+    // Uploading over an existing file replaces it only when complete.
+    let text_file = local.path().join("small.txt");
+    std::fs::write(&text_file, b"new contents").unwrap();
+    sftp.upload(&text_file, &renamed, Arc::new(|_| true), CancellationToken::new()).await.unwrap();
+    assert_eq!(sftp.read_text(&renamed, 1024).await.unwrap(), "new contents");
+    assert!(sftp.stat(&format!("{renamed}.part")).await.is_err(), "upload left its temporary file");
 
     sftp.remove(&dir).await.unwrap();
     assert!(sftp.stat(&dir).await.is_err(), "test folder was not removed");
