@@ -8,6 +8,7 @@ import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/ui/appearance/theme_switcher.dart';
+import 'package:multiplex/ui/home/tab_scrub.dart';
 
 /// Opens the app at phone size in a theme with [style].
 Future<(VaultStore, SessionManager)> _open(WidgetTester tester, {ThemeStyle style = const ThemeStyle()}) async {
@@ -99,4 +100,21 @@ void main() {
     expect(tester.widget<PageView>(find.byType(PageView)).controller!.page, 4);
     await _finish(tester, sessions);
   });
+
+  for (final (name, style) in [
+    ('labelled bar', const ThemeStyle()),
+    ('floating bar', const ThemeStyle(nav: NavStyle.floating)),
+    ('icons-only bar', const ThemeStyle(nav: NavStyle.iconsOnly)),
+  ]) {
+    testWidgets('the open-tab mark sits just behind the icon ($name)', (tester) async {
+      final (_, sessions) = await _open(tester, style: style);
+      final mark = tester.getRect(find.descendant(of: find.byType(FlowingTabIndicator), matching: find.byType(DecoratedBox)));
+      final icon = tester.getRect(find.byIcon(Icons.dns).first);
+      expect((mark.center - icon.center).distance, lessThan(1.5));
+      expect(mark.height, 32);
+      final label = find.descendant(of: find.byType(NavigationBar), matching: find.text('Hosts'));
+      if (label.evaluate().isNotEmpty) expect(tester.getRect(label).top, greaterThanOrEqualTo(mark.bottom - 0.5));
+      await _finish(tester, sessions);
+    });
+  }
 }

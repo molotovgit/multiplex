@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_icons.dart';
@@ -221,7 +222,7 @@ class _NavIcon extends StatelessWidget {
 /// The bottom bar, with labels or icons only. Icons-only items still have
 /// their names for screen readers. A finger on the bar can also slide
 /// between the screens (see [TabScrub]).
-class _ShellNavigationBar extends StatelessWidget {
+class _ShellNavigationBar extends StatefulWidget {
   const _ShellNavigationBar({required this.model, required this.labels, this.height, this.background});
 
   final _NavModel model;
@@ -230,7 +231,33 @@ class _ShellNavigationBar extends StatelessWidget {
   final Color? background;
 
   @override
+  State<_ShellNavigationBar> createState() => _ShellNavigationBarState();
+}
+
+class _ShellNavigationBarState extends State<_ShellNavigationBar> {
+  /// Material's mark behind a bar icon.
+  static const _iconMark = Size(64, 32);
+
+  final _stackKey = GlobalKey();
+
+  /// Where the middle of the icons sits from the top of the bar, measured
+  /// after layout: it depends on the label's font and size, and on whether
+  /// a label wraps.
+  double? _iconY;
+
+  void _measure(Duration _) {
+    if (!mounted) return;
+    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final icon = _IconProbe.find(stack);
+    if (stack == null || icon == null || !icon.hasSize) return;
+    final y = stack.globalToLocal(icon.localToGlobal(icon.size.center(Offset.zero))).dy;
+    if (_iconY == null || (y - _iconY!).abs() > 0.5) setState(() => _iconY = y);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final model = widget.model, labels = widget.labels, height = widget.height, background = widget.background;
+    WidgetsBinding.instance.addPostFrameCallback(_measure);
     final theme = NavigationBarTheme.of(context);
     final barHeight = height ?? theme.height ?? 80;
     final count = model.destinations.length;
@@ -247,8 +274,8 @@ class _ShellNavigationBar extends StatelessWidget {
           destinations: [
             for (final d in model.destinations)
               NavigationDestination(
-                icon: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d)),
-                selectedIcon: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d)),
+                icon: _IconProbe(child: _NavIcon(destination: d, selected: false, badge: model.badgeFor(d))),
+                selectedIcon: _IconProbe(child: _NavIcon(destination: d, selected: true, badge: model.badgeFor(d))),
                 label: d.label,
                 // A long press on the bar moves between the screens (and
                 // opens the theme switcher on Settings), so no tooltips.
@@ -267,6 +294,7 @@ class _ShellNavigationBar extends StatelessWidget {
         settingsSlot: _HomeShellState._settingsIndex,
         onHoldSettings: model.onLongPressSettings,
         child: Stack(
+          key: _stackKey,
           children: [
             Positioned(
               left: 0,
@@ -276,14 +304,14 @@ class _ShellNavigationBar extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, box) {
                   final slot = box.maxWidth / count;
-                  // Around the icon and its label, or just the icon.
-                  final size = labels ? Size(math.min(slot - 8, 84), barHeight - 14) : Size(math.min(slot - 8, 64), math.min(barHeight - 16, 40));
                   return FlowingTabIndicator(
                     count: count,
                     pages: model.pages,
                     index: model.index,
                     color: theme.indicatorColor ?? Theme.of(context).colorScheme.secondaryContainer,
-                    size: size,
+                    // Just behind the icon, the size of Material's own mark.
+                    size: Size(math.min(slot - 8, _iconMark.width), _iconMark.height),
+                    centerY: _iconY,
                   );
                 },
               ),
@@ -295,6 +323,32 @@ class _ShellNavigationBar extends StatelessWidget {
     );
   }
 }
+
+/// Marks a bar icon so the bar can find where Material put it.
+class _IconProbe extends SingleChildRenderObjectWidget {
+  const _IconProbe({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderIconProbe();
+
+  /// The first marked icon under [root], if any.
+  static RenderBox? find(RenderObject? root) {
+    RenderBox? found;
+    void visit(RenderObject node) {
+      if (found != null) return;
+      if (node is _RenderIconProbe) {
+        found = node;
+        return;
+      }
+      node.visitChildren(visit);
+    }
+
+    if (root != null) visit(root);
+    return found;
+  }
+}
+
+class _RenderIconProbe extends RenderProxyBox {}
 
 /// The side rail, kept clear of a notch or camera cut-out.
 class _ShellRail extends StatelessWidget {
