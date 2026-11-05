@@ -212,23 +212,31 @@ class _ShellRail extends StatelessWidget {
   final _NavModel model;
   final bool labels;
 
+  /// Narrower than this, labels would take a quarter of the screen from
+  /// the pages, so the rail shows icons only.
+  static const _labelsFrom = 600.0;
+
   @override
-  Widget build(BuildContext context) => SafeArea(
-        right: false,
-        child: NavigationRail(
-          selectedIndex: model.index,
-          onDestinationSelected: model.onSelect,
-          labelType: labels ? NavigationRailLabelType.all : NavigationRailLabelType.none,
-          destinations: [
-            for (final d in model.destinations)
-              NavigationRailDestination(
-                icon: _RailIcon(model: model, destination: d, selected: false),
-                selectedIcon: _RailIcon(model: model, destination: d, selected: true),
-                label: Text(d.label),
-              ),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) {
+    final roomy = MediaQuery.sizeOf(context).width >= _labelsFrom;
+    return SafeArea(
+      right: false,
+      child: NavigationRail(
+        selectedIndex: model.index,
+        onDestinationSelected: model.onSelect,
+        minWidth: roomy ? 72 : 56,
+        labelType: labels && roomy ? NavigationRailLabelType.all : NavigationRailLabelType.none,
+        destinations: [
+          for (final d in model.destinations)
+            NavigationRailDestination(
+              icon: _RailIcon(model: model, destination: d, selected: false),
+              selectedIcon: _RailIcon(model: model, destination: d, selected: true),
+              label: Text(d.label),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 /// A rounded bar that floats above the content, inset from the edges and
@@ -240,6 +248,7 @@ class _FloatingNavBar extends StatelessWidget {
 
   static const _maxWidth = 560.0;
   static const _height = 64.0;
+  static const _endInset = 12.0;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +280,14 @@ class _FloatingNavBar extends StatelessWidget {
                 removeBottom: true,
                 removeLeft: true,
                 removeRight: true,
-                child: _ShellNavigationBar(model: model, labels: true, height: _height, background: surfaces.bar),
+                // The end items keep clear of the bar's round ends.
+                child: ColoredBox(
+                  color: surfaces.bar,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: _endInset),
+                    child: _ShellNavigationBar(model: model, labels: true, height: _height, background: Colors.transparent),
+                  ),
+                ),
               ),
             ),
           ),

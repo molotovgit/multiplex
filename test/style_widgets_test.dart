@@ -119,6 +119,19 @@ void main() {
       await h.open(tester, style: const ThemeStyle(nav: NavStyle.rail));
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.byType(NavigationBar), findsNothing);
+      // Icons only on a phone, so the pages keep their width.
+      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).labelType, NavigationRailLabelType.none);
+      expect(tester.getSize(find.byType(NavigationRail)).width, lessThanOrEqualTo(56));
+      await h.finish(tester);
+    });
+
+    testWidgets('the floating bar keeps its end items clear of its round ends', (tester) async {
+      final h = _Harness();
+      await h.open(tester, style: const ThemeStyle(nav: NavStyle.floating));
+      final bar = tester.getRect(find.byKey(HomeShell.floatingBarKey));
+      final items = tester.getRect(find.descendant(of: find.byKey(HomeShell.floatingBarKey), matching: find.byType(NavigationBar)));
+      expect(items.left - bar.left, greaterThanOrEqualTo(12));
+      expect(bar.right - items.right, greaterThanOrEqualTo(12));
       await h.finish(tester);
     });
 

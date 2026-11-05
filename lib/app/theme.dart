@@ -215,8 +215,8 @@ abstract final class AppTheme {
         indicatorColor: c.accent.withValues(alpha: 0.2),
         selectedIconTheme: IconThemeData(color: c.accent),
         unselectedIconTheme: IconThemeData(color: c.muted),
-        selectedLabelTextStyle: TextStyle(color: c.text, fontWeight: FontWeight.w600),
-        unselectedLabelTextStyle: TextStyle(color: c.muted),
+        selectedLabelTextStyle: scaled.textTheme.labelMedium?.copyWith(color: c.text, fontWeight: FontWeight.w600),
+        unselectedLabelTextStyle: scaled.textTheme.labelMedium?.copyWith(color: c.muted, fontWeight: FontWeight.w400),
       ),
       cardTheme: CardThemeData(
         color: surfaces.card,
