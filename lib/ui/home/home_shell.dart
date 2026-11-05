@@ -231,11 +231,18 @@ class _ShellNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = NavigationBarTheme.of(context);
+    final barHeight = height ?? theme.height ?? 80;
+    final count = model.destinations.length;
     final bar = NavigationBar(
           selectedIndex: model.index,
           onDestinationSelected: model.onSelect,
           height: height,
-          backgroundColor: background,
+          // The bar's own colour and mark are drawn underneath, so the mark
+          // can stretch and flow between the tabs.
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          indicatorColor: Colors.transparent,
           labelBehavior: labels ? NavigationDestinationLabelBehavior.alwaysShow : NavigationDestinationLabelBehavior.alwaysHide,
           destinations: [
             for (final d in model.destinations)
@@ -249,12 +256,42 @@ class _ShellNavigationBar extends StatelessWidget {
               ),
           ],
         );
-    return TabScrub(
-      count: model.destinations.length,
-      pages: model.pages,
-      settingsSlot: _HomeShellState._settingsIndex,
-      onHoldSettings: model.onLongPressSettings,
-      child: bar,
+    return Material(
+      color: background ?? theme.backgroundColor,
+      elevation: theme.elevation ?? 0,
+      shadowColor: theme.shadowColor,
+      surfaceTintColor: Colors.transparent,
+      child: TabScrub(
+        count: count,
+        pages: model.pages,
+        settingsSlot: _HomeShellState._settingsIndex,
+        onHoldSettings: model.onLongPressSettings,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: barHeight,
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final slot = box.maxWidth / count;
+                  // Around the icon and its label, or just the icon.
+                  final size = labels ? Size(math.min(slot - 8, 84), barHeight - 14) : Size(math.min(slot - 8, 64), math.min(barHeight - 16, 40));
+                  return FlowingTabIndicator(
+                    count: count,
+                    pages: model.pages,
+                    index: model.index,
+                    color: theme.indicatorColor ?? Theme.of(context).colorScheme.secondaryContainer,
+                    size: size,
+                  );
+                },
+              ),
+            ),
+            bar,
+          ],
+        ),
+      ),
     );
   }
 }

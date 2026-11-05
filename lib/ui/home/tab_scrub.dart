@@ -1,3 +1,5 @@
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -95,4 +97,77 @@ class _TabScrubState extends State<TabScrub> {
           );
         },
       );
+}
+
+/// The mark behind the open tab of a bar with [count] equal items. It
+/// follows the screens as they move: the edge in front goes first and the
+/// one behind catches up, so it stretches across and flows into the next
+/// tab, and it thins a little while stretched.
+class FlowingTabIndicator extends StatelessWidget {
+  const FlowingTabIndicator({
+    super.key,
+    required this.count,
+    required this.pages,
+    required this.index,
+    required this.color,
+    required this.size,
+  });
+
+  final int count;
+  final PageController pages;
+
+  /// The open tab, used before the screens are laid out.
+  final int index;
+  final Color color;
+
+  /// The mark at rest.
+  final Size size;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, box) {
+          final slot = box.maxWidth / count;
+          final rtl = Directionality.of(context) == TextDirection.rtl;
+          return ListenableBuilder(
+            listenable: pages,
+            builder: (context, _) {
+              final page = pages.hasClients && pages.position.haveDimensions ? pages.page ?? index.toDouble() : index.toDouble();
+              final (left, right) = edges(page, count: count, slot: slot, width: size.width);
+              final stretch = ((right - left - size.width) / slot).clamp(0.0, 1.0);
+              final height = size.height * (1 - 0.18 * stretch);
+              final x = rtl ? box.maxWidth - right : left;
+              return Stack(
+                children: [
+                  Positioned(
+                    left: x,
+                    width: right - left,
+                    top: (box.maxHeight - height) / 2,
+                    height: height,
+                    child: IgnorePointer(
+                      child: DecoratedBox(decoration: ShapeDecoration(color: color, shape: const StadiumBorder())),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+  /// The left and right edges of a mark [width] wide at screen position
+  /// [page] (fractional while moving), counted from the start of the bar.
+  /// The right edge eases out and the left one eases in, so whichever way
+  /// it moves, the edge in front leads and the mark stretches between.
+  static (double, double) edges(double page, {required int count, required double slot, required double width}) {
+    final p = page.clamp(0.0, count - 1.0);
+    final from = p.floor();
+    final to = (from + 1).clamp(0, count - 1);
+    final f = p - from;
+    double centre(int i) => (i + 0.5) * slot;
+    final lead = Curves.easeOutCubic.transform(f);
+    final trail = Curves.easeInCubic.transform(f);
+    final left = lerpDouble(centre(from), centre(to), trail)! - width / 2;
+    final right = lerpDouble(centre(from), centre(to), lead)! + width / 2;
+    return (left, right);
+  }
 }
