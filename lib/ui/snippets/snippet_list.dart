@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -69,7 +70,7 @@ class SnippetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
     return ListTile(
-      leading: const Icon(Icons.bolt_outlined),
+      leading: const AppIcon(AppIcons.snippets),
       title: Text(snippet.name.isEmpty ? 'Untitled snippet' : snippet.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: MonoText(
         SnippetText.preview(snippet.command),

@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -58,7 +59,7 @@ class KeyTile extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     return ListTile(
       isThreeLine: true,
-      leading: const Icon(Icons.vpn_key_outlined),
+      leading: const AppIcon(AppIcons.vpnKey),
       title: Row(
         children: [
           Flexible(child: Text(storedKey.name, maxLines: 1, overflow: TextOverflow.ellipsis)),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../app/terminal_fonts.dart';
+import '../../app/theme_look.dart';
 import '../../app/theme_spec.dart';
 import '../../data/vault_store.dart';
 import '../common/widgets.dart';
@@ -9,6 +10,7 @@ import 'color_picker_dialog.dart';
 import 'color_tools.dart';
 import 'theme_actions.dart';
 import 'theme_editor_parts.dart';
+import 'style_section.dart';
 import 'theme_preview.dart';
 
 /// Changes every colour of a theme while a preview shows the result.
@@ -84,7 +86,9 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
     // Built-in themes never change; saving one makes a new theme instead.
     final existing = !widget.isNew && !widget.theme.builtIn && store.customThemes.any((t) => t.id == widget.theme.id);
     final saved = _draft.copyWith(id: existing ? widget.theme.id : VaultStore.newId(), name: name);
-    ThemeActions(context).save(saved, andUse: !existing);
+    final actions = ThemeActions(context)..save(saved, andUse: !existing);
+    // A picture this theme no longer shows can go.
+    actions.forgetBackground(widget.theme.style.terminal.backgroundImage);
     setState(() => _changed = false);
     Toast.show(context, 'Saved ${saved.name}');
     Navigator.pop(context);
@@ -97,7 +101,11 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
       message: widget.isNew ? 'The theme has not been saved and will be lost.' : 'Your changes to this theme will be lost.',
       action: 'Discard',
     );
-    if (leave && mounted) Navigator.pop(context);
+    if (!leave || !mounted) return;
+    // A picture picked for the discarded draft is not needed.
+    final picked = _draft.style.terminal.backgroundImage;
+    if (picked != widget.theme.style.terminal.backgroundImage) ThemeActions(context).forgetBackground(picked);
+    Navigator.pop(context);
   }
 
   @override
@@ -134,7 +142,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
                       fontSize: 14,
                       lineHeight: settings.lineHeight,
                       cursorStyle: settings.cursorStyle,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(StyleShapes.of(_draft.style.shape).card),
                     ),
                   ),
                   Expanded(
@@ -190,6 +198,7 @@ class _ThemeEditorScreenState extends State<ThemeEditorScreen> {
                         ),
                         const SectionHeader('Terminal colours'),
                         AnsiColorGrid(ansi: _draft.ansi, onTap: _pickAnsi),
+                        StyleSection(theme: _draft, onChanged: (style) => _update(_draft.copyWith(style: style))),
                       ],
                     ),
                   ),

@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -91,7 +92,7 @@ class KeySummaryTile extends StatelessWidget {
     final created = MaterialLocalizations.of(context).formatShortDate(storedKey.createdAt);
     return ListTile(
       contentPadding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      leading: const Icon(Icons.vpn_key_outlined),
+      leading: const AppIcon(AppIcons.vpnKey),
       title: Text(storedKey.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
       subtitle: Text('${KeyAlgorithms.label(storedKey.algorithm)} · Created $created'),
       trailing: IconButton(tooltip: 'Rename key', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(context)),
@@ -197,7 +198,7 @@ class KeyUsersTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final names = users.map((h) => h.title).join(', ');
     return ListTile(
-      leading: const Icon(Icons.dns_outlined),
+      leading: const AppIcon(AppIcons.hosts),
       title: Text(switch (users.length) {
         0 => 'No hosts use this key yet',
         1 => '1 host',

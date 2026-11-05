@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/terminal_fonts.dart';
+import '../../app/theme_look.dart';
+import '../../app/theme_style.dart';
 import '../../sessions/terminal_controller.dart';
 import 'key_face.dart';
 import 'key_sink.dart';
@@ -88,10 +91,12 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
       ..onSwitchToSystem = widget.onSwitchToSystem
       ..onSent = widget.onSent;
     final palette = KeyboardPalette.of(context);
+    final style = AppStyleTheme.of(context).style;
+    final terminalFont = TerminalFonts.byId(store.settings, store.settings.terminalFontId).family;
     final look = KeyLook(
       palette: palette,
-      metrics: KeyboardMetrics.resolve(settings, MediaQuery.sizeOf(context)),
-      text: KeyTextStyles.of(context, settings, palette),
+      metrics: KeyboardMetrics.resolve(settings, MediaQuery.sizeOf(context), style: style),
+      text: KeyTextStyles.of(context, settings, palette, fontFamily: style.keys.labelFont == KeyLabelFont.terminal ? terminalFont : null),
       showHints: settings.showAlternates,
     );
     final layout = KeyboardLayout.of(settings.layout);

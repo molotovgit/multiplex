@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -126,7 +127,7 @@ class _SessionCard extends StatelessWidget {
                 ),
                 TextButton.icon(
                   onPressed: () => _open(context, FilesScreen(session: session)),
-                  icon: const Icon(Icons.folder_outlined),
+                  icon: const AppIcon(AppIcons.folder),
                   label: const Text('Files'),
                 ),
                 TextButton.icon(

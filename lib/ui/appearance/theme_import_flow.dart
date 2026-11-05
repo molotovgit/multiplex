@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -90,7 +91,7 @@ class _ImportSourceSheet extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.file_open_outlined),
+              leading: const AppIcon(AppIcons.fileOpen),
               title: const Text('Choose a file'),
               subtitle: const Text('.toml, .conf, .json, or a theme file with no extension'),
               onTap: () => Navigator.pop(context, ThemeImportSource.file),

@@ -1,16 +1,19 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 import '../common/widgets.dart';
+import 'style_quick_area.dart';
 import 'terminal_text_section.dart';
 import 'theme_actions.dart';
 import 'theme_gallery.dart';
 import 'theme_import_flow.dart';
 
-/// Themes, fonts and cursor. One theme styles the whole app, screens and
-/// terminal alike; tapping a theme uses it at once. Users can make their
+/// Themes, style, fonts and cursor. One theme styles the whole app,
+/// screens and terminal alike, colours and the look of the elements;
+/// tapping a theme uses it at once. Users can make their
 /// own themes, import them from other terminals and pick the terminal
 /// font, size, line height and cursor.
 class AppearanceScreen extends StatelessWidget {
@@ -28,7 +31,7 @@ class AppearanceScreen extends StatelessWidget {
         actions: [
           IconButton(icon: const Icon(Icons.add), tooltip: 'Create theme', onPressed: () => ThemeActions(context).create()),
           IconButton(
-            icon: const Icon(Icons.file_download_outlined),
+            icon: const AppIcon(AppIcons.download),
             tooltip: 'Import theme',
             onPressed: () => ThemeImportFlow(context).start(),
           ),
@@ -57,19 +60,25 @@ class _AppearanceBody extends StatelessWidget {
         const SliverToBoxAdapter(child: SectionHeader('Your themes')),
         if (custom.isEmpty) const SliverToBoxAdapter(child: _NoCustomThemes()) else ThemeGridSliver(themes: custom, activeId: activeId),
         const SliverToBoxAdapter(child: _ThemeButtons()),
-        SliverToBoxAdapter(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: AppearanceScreen._formWidth),
-              child: const TerminalTextSection(),
-            ),
-          ),
-        ),
+        const SliverToBoxAdapter(child: _FormWidth(child: StyleQuickArea())),
+        const SliverToBoxAdapter(child: _FormWidth(child: TerminalTextSection())),
         // Room at the end so the last controls clear the gesture bar.
         SliverPadding(padding: EdgeInsets.only(bottom: 32 + MediaQuery.paddingOf(context).bottom)),
       ],
     );
   }
+}
+
+/// Keeps a form readable on wide screens.
+class _FormWidth extends StatelessWidget {
+  const _FormWidth({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: AppearanceScreen._formWidth), child: child),
+      );
 }
 
 /// What "Your themes" shows before the user has any.
@@ -107,7 +116,7 @@ class _ThemeButtons extends StatelessWidget {
             ),
             OutlinedButton.icon(
               onPressed: () => ThemeImportFlow(context).start(),
-              icon: const Icon(Icons.file_download_outlined),
+              icon: const AppIcon(AppIcons.download),
               label: const Text('Import theme'),
             ),
           ],

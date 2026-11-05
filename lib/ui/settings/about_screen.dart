@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
@@ -49,7 +50,7 @@ class AboutScreen extends StatelessWidget {
           children: [
             const _AppHeader(),
             ListTile(
-              leading: const Icon(Icons.memory_outlined),
+              leading: const AppIcon(AppIcons.memory),
               title: const Text('Core version'),
               subtitle: MonoText(coreVersion),
             ),
@@ -64,7 +65,7 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.gavel_outlined),
+              leading: const AppIcon(AppIcons.gavel),
               title: const Text('Open-source licences'),
               subtitle: const Text('The software and fonts Multiplex is built with'),
               trailing: const Icon(Icons.chevron_right),

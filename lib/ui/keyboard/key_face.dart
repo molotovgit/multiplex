@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme_style.dart';
+
 import 'key_spec.dart';
 import 'keyboard_modifiers.dart';
 import 'keyboard_style.dart';
@@ -44,14 +46,17 @@ class KeyFace extends StatelessWidget {
     if (pressed) fill = Color.alphaBlend(p.pressed.withValues(alpha: 0.6), fill);
     final fg = locked ? p.onAccent : p.label;
     final hint = look.showHints && spec.alternates.isNotEmpty ? spec.alternates.first.label : null;
+    final cap = look.metrics.cap;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: KeyboardMetrics.gapX, vertical: KeyboardMetrics.gapY),
+      padding: EdgeInsets.symmetric(horizontal: look.metrics.gapX, vertical: look.metrics.gapY),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: fill,
           borderRadius: look.radius,
-          border: oneShot ? Border.all(color: p.accent, width: 1.5) : null,
-          boxShadow: [BoxShadow(color: p.shadow, offset: const Offset(0, 1))],
+          border: oneShot
+              ? Border.all(color: p.accent, width: 1.5)
+              : (cap == KeyCapStyle.outlined ? Border.all(color: p.bubbleBorder) : null),
+          boxShadow: cap == KeyCapStyle.raised ? [BoxShadow(color: p.shadow, offset: const Offset(0, 1))] : null,
         ),
         child: Stack(
           fit: StackFit.expand,

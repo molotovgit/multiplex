@@ -2,11 +2,13 @@ import 'dart:typed_data';
 
 import '../data/models.dart';
 import '../src/rust/api/terminal_types.dart';
+import 'theme_style.dart';
 
-/// One theme for the whole app: the terminal colours plus an accent. The
-/// app's own surfaces are derived from these (see [AppColors.derive]), so
-/// switching a theme restyles everything at once, terminal and screens
-/// alike.
+/// One theme for the whole app: the terminal colours plus an accent, and
+/// a [ThemeStyle] for the look of the elements (corners, surfaces,
+/// navigation, fonts, terminal and keyboard). The app's own surfaces are
+/// derived from these (see [AppColors.derive]), so switching a theme
+/// restyles everything at once, terminal and screens alike.
 class ThemeSpec {
   const ThemeSpec({
     required this.id,
@@ -19,6 +21,7 @@ class ThemeSpec {
     this.selection,
     this.credit,
     this.builtIn = false,
+    this.style = const ThemeStyle(),
   });
 
   final String id;
@@ -38,6 +41,9 @@ class ThemeSpec {
   final String? credit;
   final bool builtIn;
 
+  /// The look of the elements; colours stay in the fields above.
+  final ThemeStyle style;
+
   /// True when the background is dark.
   bool get isDark {
     final r = (background >> 16) & 0xFF, g = (background >> 8) & 0xFF, b = background & 0xFF;
@@ -52,7 +58,7 @@ class ThemeSpec {
         boldIsBright: boldIsBright,
       );
 
-  ThemeSpec copyWith({String? id, String? name, List<int>? ansi, int? foreground, int? background, int? cursor, int? accent, int? Function()? selection}) =>
+  ThemeSpec copyWith({String? id, String? name, List<int>? ansi, int? foreground, int? background, int? cursor, int? accent, int? Function()? selection, ThemeStyle? style}) =>
       ThemeSpec(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -63,6 +69,7 @@ class ThemeSpec {
         accent: accent ?? this.accent,
         selection: selection != null ? selection() : this.selection,
         credit: credit,
+        style: style ?? this.style,
       );
 
   Map<String, dynamic> toJson() => {
@@ -75,6 +82,7 @@ class ThemeSpec {
         'accent': accent,
         'selection': selection,
         'credit': credit,
+        'style': style.toJson(),
       };
 
   factory ThemeSpec.fromJson(Map<String, dynamic> j) {
@@ -90,6 +98,7 @@ class ThemeSpec {
       accent: Json.integer(j, 'accent', 0xFFF2B33D),
       selection: j['selection'] is num ? (j['selection'] as num).toInt() : null,
       credit: Json.strOrNull(j, 'credit'),
+      style: ThemeStyle.fromJson(j['style']),
     );
   }
 }
@@ -100,6 +109,8 @@ class ThemeSpec {
 /// use the published colours of popular open-source schemes, read from
 /// the alacritty-theme collection (Apache-2.0) with Multiplex's own theme
 /// importer; each scheme keeps its own licence, named in [ThemeSpec.credit].
+/// Several come with a look of their own (see [ThemeSpec.style]), so the
+/// gallery shows the range; Ember keeps the original look.
 abstract final class BuiltInThemes {
   static const ember = ThemeSpec(
     id: 'ember',
@@ -159,6 +170,7 @@ abstract final class BuiltInThemes {
     background: 0xFF000000,
     cursor: 0xFFFFD000,
     accent: 0xFFFFD000,
+    style: ThemeStyle(shape: CornerShape.square, surface: SurfaceStyle.flat, icons: IconStyle.filled),
   );
 
   static const tokyoNight = ThemeSpec(
@@ -174,6 +186,7 @@ abstract final class BuiltInThemes {
     background: 0xFF1A1B26,
     cursor: 0xFFC0CAF5,
     accent: 0xFF7AA2F7,
+    style: ThemeStyle(shape: CornerShape.soft, nav: NavStyle.floating, terminal: TerminalStyle(padding: 8)),
   );
 
   static const catppuccinMocha = ThemeSpec(
@@ -189,6 +202,7 @@ abstract final class BuiltInThemes {
     background: 0xFF1E1E2E,
     cursor: 0xFFF5E0DC,
     accent: 0xFFCBA6F7,
+    style: ThemeStyle(shape: CornerShape.round, surface: SurfaceStyle.raised, keys: KeysStyle(gap: 6)),
   );
 
   static const catppuccinLatte = ThemeSpec(
@@ -204,6 +218,7 @@ abstract final class BuiltInThemes {
     background: 0xFFEFF1F5,
     cursor: 0xFFDC8A78,
     accent: 0xFF8839EF,
+    style: ThemeStyle(shape: CornerShape.round, surface: SurfaceStyle.raised, keys: KeysStyle(gap: 6)),
   );
 
   static const gruvboxDark = ThemeSpec(
@@ -219,6 +234,7 @@ abstract final class BuiltInThemes {
     background: 0xFF282828,
     cursor: 0xFFEBDBB2,
     accent: 0xFFFABD2F,
+    style: ThemeStyle(shape: CornerShape.soft, density: StyleDensity.compact, keys: KeysStyle(cap: KeyCapStyle.flat, gap: 2)),
   );
 
   static const nord = ThemeSpec(
@@ -234,6 +250,7 @@ abstract final class BuiltInThemes {
     background: 0xFF2E3440,
     cursor: 0xFFD8DEE9,
     accent: 0xFF88C0D0,
+    style: ThemeStyle(density: StyleDensity.comfortable, keys: KeysStyle(cap: KeyCapStyle.outlined)),
   );
 
   static const everforest = ThemeSpec(
@@ -281,6 +298,7 @@ abstract final class BuiltInThemes {
     cursor: 0xFFE0DEF4,
     accent: 0xFFEBBCBA,
     selection: 0xFF403D52,
+    style: ThemeStyle(surface: SurfaceStyle.glass, nav: NavStyle.floating, icons: IconStyle.filled),
   );
 
   static const all = [

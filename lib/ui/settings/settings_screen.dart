@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -90,7 +91,7 @@ class _AppearanceSection extends StatelessWidget {
         // The swatches are hidden from screen readers; the tile reads as
         // "Theme: <name>" and stays tappable for them.
         ListTile(
-          leading: const Icon(Icons.palette_outlined),
+          leading: const AppIcon(AppIcons.palette),
           title: Text(theme.name, semanticsLabel: 'Theme: ${theme.name}'),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -173,14 +174,14 @@ class _KeyboardSection extends StatelessWidget {
       children: [
         const SectionHeader('Keyboard'),
         ListTile(
-          leading: const Icon(Icons.keyboard_outlined),
+          leading: const AppIcon(AppIcons.keyboard),
           title: const Text('Key bar'),
           subtitle: Text(layout.summary),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => SettingsNavigation.open(context, const KeyBarEditorScreen()),
         ),
         ListTile(
-          leading: const Icon(Icons.keyboard_alt_outlined),
+          leading: const AppIcon(AppIcons.keyboardAlt),
           title: const Text('Terminal keyboard'),
           subtitle: const Text('Built-in keyboard, layout, size and feel'),
           trailing: const Icon(Icons.chevron_right),
@@ -216,7 +217,7 @@ class _BackupSection extends StatelessWidget {
     children: [
       const SectionHeader('Backup & restore'),
       ListTile(
-        leading: const Icon(Icons.backup_outlined),
+        leading: const AppIcon(AppIcons.backup),
         title: const Text('Backup & restore'),
         subtitle: const Text('Save everything to an encrypted file, or bring a backup back'),
         trailing: const Icon(Icons.chevron_right),

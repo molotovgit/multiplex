@@ -7,7 +7,6 @@ import 'key_press_tracker.dart';
 import 'key_spec.dart';
 import 'keyboard_engine.dart';
 import 'keyboard_modifiers.dart';
-import 'keyboard_style.dart';
 
 /// One key that reacts to touch: tap, long press for alternates, swipe up,
 /// hold to repeat, and drag on the space bar to move the cursor. Uses raw
@@ -189,7 +188,7 @@ class _KeyCapState extends State<KeyCap> {
         link: _link,
         targetAnchor: Alignment.topLeft,
         followerAnchor: Alignment.bottomLeft,
-        offset: Offset(left, KeyboardMetrics.gapY),
+        offset: Offset(left, metrics.gapY),
         child: IgnorePointer(child: child),
       ),
     );

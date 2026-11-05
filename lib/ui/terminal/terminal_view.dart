@@ -7,8 +7,10 @@ import 'package:flutter/services.dart';
 import '../../app/app_scope.dart';
 import '../../app/terminal_fonts.dart';
 import '../../app/theme.dart';
+import '../../app/theme_look.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/terminal_controller.dart';
+import 'terminal_backdrop.dart';
 import 'terminal_keyboard.dart';
 import 'terminal_painter.dart';
 
@@ -39,7 +41,9 @@ class TerminalView extends StatefulWidget {
 
 class _TerminalViewState extends State<TerminalView> {
   static const _blinkInterval = Duration(milliseconds: 550);
-  static const _padding = 4.0;
+
+  /// Space around the text, from the theme's style.
+  double _padding = 4;
 
   final _cache = LineCache();
   Timer? _blink;
@@ -176,6 +180,8 @@ class _TerminalViewState extends State<TerminalView> {
         final frame = _terminal.frame;
         final theme = store.activeTheme;
         final selectionColor = Color(theme.selection ?? colors.accent.withValues(alpha: 0.35).toARGB32()).withValues(alpha: 0.45);
+        final look = AppStyleTheme.of(context).style.terminal;
+        _padding = look.padding;
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -199,27 +205,28 @@ class _TerminalViewState extends State<TerminalView> {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: ColoredBox(
-                            color: Color(frame?.background ?? theme.background),
-                            child: Padding(
-                              padding: const EdgeInsets.all(_padding),
-                              child: frame == null
-                                  ? const SizedBox.expand()
-                                  : CustomPaint(
-                                      size: Size.infinite,
-                                      painter: TerminalPainter(
-                                        frame: frame,
-                                        metrics: metrics,
-                                        cache: _cache,
-                                        styleKey: styleKey,
-                                        cursorOn: _cursorOn || !settings.cursorBlink,
-                                        focused: widget.focusNode.hasFocus,
-                                        cursorStyle: settings.cursorStyle,
-                                        selection: _selection,
-                                        selectionColor: selectionColor,
-                                      ),
+                          child: TerminalBackdrop(style: look, color: Color(frame?.background ?? theme.background)),
+                        ),
+                        Positioned.fill(
+                          child: Padding(
+                            padding: EdgeInsets.all(_padding),
+                            child: frame == null
+                                ? const SizedBox.expand()
+                                : CustomPaint(
+                                    size: Size.infinite,
+                                    painter: TerminalPainter(
+                                      frame: frame,
+                                      metrics: metrics,
+                                      cache: _cache,
+                                      styleKey: styleKey,
+                                      cursorOn: _cursorOn || !settings.cursorBlink,
+                                      focused: widget.focusNode.hasFocus,
+                                      cursorStyle: settings.cursorStyle,
+                                      selection: _selection,
+                                      selectionColor: selectionColor,
+                                      paintBackground: !look.hasImage,
                                     ),
-                            ),
+                                  ),
                           ),
                         ),
                         if (frame != null && frame.scrollOffset > 0)

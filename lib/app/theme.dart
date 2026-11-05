@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'theme_look.dart';
 import 'theme_spec.dart';
+import 'theme_style.dart';
 
 /// The colours of the app's own screens, worked out from the active
 /// [ThemeSpec] so the whole app matches the terminal theme.
@@ -88,11 +90,34 @@ abstract final class _Contrast {
 }
 
 /// Builds the Material theme for a [ThemeSpec]. Controls stay standard
-/// Material, so they behave the way the platform's users expect; only
-/// colours and shapes come from the theme.
+/// Material, so they behave the way the platform's users expect; colours,
+/// shapes, surfaces, density and font come from the theme and its style.
 abstract final class AppTheme {
+  /// Space and row height per density. Normal keeps Material's own.
+  static VisualDensity? _density(StyleDensity d) => switch (d) {
+        StyleDensity.compact => VisualDensity.compact,
+        StyleDensity.normal => null,
+        StyleDensity.comfortable => const VisualDensity(horizontal: 0, vertical: 1),
+      };
+
+  static double? _listPadding(StyleDensity d) => switch (d) {
+        StyleDensity.compact => 4,
+        StyleDensity.normal => null,
+        StyleDensity.comfortable => 12,
+      };
+
+  /// The theme's text size on top of the phone's. Material only adds the
+  /// sizes later, so they are filled in here first; at 100 % nothing
+  /// changes.
+  static TextTheme _scaled(TextTheme text, double scale) =>
+      scale == 1.0 ? text : Typography.englishLike2021.merge(text).apply(fontSizeFactor: scale);
+
   static ThemeData build(ThemeSpec spec) {
     final c = AppColors.derive(spec);
+    final style = spec.style;
+    final look = AppStyleTheme(style, c);
+    final shapes = look.shapes;
+    final surfaces = look.surfaces;
     final brightness = c.isDark ? Brightness.dark : Brightness.light;
     final scheme = ColorScheme(
       brightness: brightness,
@@ -119,7 +144,13 @@ abstract final class AppTheme {
       surfaceContainerHigh: c.raised,
       surfaceContainerHighest: c.raised,
     );
-    final material = ThemeData(colorScheme: scheme, useMaterial3: true, brightness: brightness);
+    final material = ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+      brightness: brightness,
+      fontFamily: AppFonts.family(style.appFont),
+      visualDensity: _density(style.density),
+    );
     // Two weights across the app: 400 for text, 600 for titles and the
     // labels on buttons, tabs and menus (Material would add a third, 500).
     final base = material.copyWith(
@@ -130,31 +161,35 @@ abstract final class AppTheme {
         labelMedium: material.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
     );
+    final scaled = base.copyWith(textTheme: _scaled(base.textTheme, style.textScale));
     final selectedOrMuted = WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? c.accent : c.muted);
-    return base.copyWith(
+    return scaled.copyWith(
       scaffoldBackgroundColor: c.background,
-      extensions: [AppColorsTheme(c)],
+      extensions: [AppColorsTheme(c), look],
       appBarTheme: AppBarTheme(
         backgroundColor: c.background,
         foregroundColor: c.text,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(color: c.text, fontWeight: FontWeight.w600),
+        titleTextStyle: scaled.textTheme.titleLarge?.copyWith(color: c.text, fontWeight: FontWeight.w600),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: c.surface,
+        backgroundColor: surfaces.bar,
+        elevation: surfaces.elevation,
+        shadowColor: surfaces.shadow,
+        surfaceTintColor: Colors.transparent,
         indicatorColor: c.accent.withValues(alpha: 0.2),
         iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: selectedOrMuted.resolve(s))),
         labelTextStyle: WidgetStateProperty.resolveWith(
-          (s) => base.textTheme.labelMedium?.copyWith(
+          (s) => scaled.textTheme.labelMedium?.copyWith(
             color: s.contains(WidgetState.selected) ? c.text : c.muted,
             fontWeight: s.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: c.surface,
+        backgroundColor: surfaces.bar,
         indicatorColor: c.accent.withValues(alpha: 0.2),
         selectedIconTheme: IconThemeData(color: c.accent),
         unselectedIconTheme: IconThemeData(color: c.muted),
@@ -162,27 +197,39 @@ abstract final class AppTheme {
         unselectedLabelTextStyle: TextStyle(color: c.muted),
       ),
       cardTheme: CardThemeData(
-        color: c.surface,
-        elevation: 0,
+        color: surfaces.card,
+        elevation: surfaces.elevation,
+        shadowColor: surfaces.shadow,
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.outline)),
+        shape: shapes.border(shapes.card, surfaces.side),
       ),
-      listTileTheme: ListTileThemeData(iconColor: c.muted, textColor: c.text),
+      listTileTheme: ListTileThemeData(iconColor: c.muted, textColor: c.text, minVerticalPadding: _listPadding(style.density)),
       dividerTheme: DividerThemeData(color: c.outline, thickness: 1, space: 1),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.raised,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: c.accent, width: 1.5)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(shapes.field), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(shapes.field), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(shapes.field), borderSide: BorderSide(color: c.accent, width: 1.5)),
       ),
+      filledButtonTheme: FilledButtonThemeData(style: ButtonStyle(shape: WidgetStatePropertyAll(shapes.border(shapes.button)))),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: ButtonStyle(shape: WidgetStatePropertyAll(shapes.border(shapes.button)))),
+      textButtonTheme: TextButtonThemeData(style: ButtonStyle(shape: WidgetStatePropertyAll(shapes.border(shapes.button)))),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(shape: WidgetStatePropertyAll(shapes.border(shapes.button)))),
+      segmentedButtonTheme: SegmentedButtonThemeData(style: ButtonStyle(shape: WidgetStatePropertyAll(shapes.border(shapes.button)))),
+      chipTheme: ChipThemeData(shape: shapes.border(shapes.chip)),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: c.accent,
         foregroundColor: c.onAccent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: shapes.border(shapes.fab),
       ),
-      bottomSheetTheme: BottomSheetThemeData(backgroundColor: c.surface, showDragHandle: true),
-      dialogTheme: DialogThemeData(backgroundColor: c.surface),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.surface,
+        showDragHandle: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(shapes.sheet))),
+      ),
+      dialogTheme: DialogThemeData(backgroundColor: c.surface, shape: shapes.border(shapes.dialog)),
       popupMenuTheme: PopupMenuThemeData(color: c.raised),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

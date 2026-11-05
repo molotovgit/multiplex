@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../app/terminal_fonts.dart';
 import '../../app/theme.dart';
+import '../../app/theme_look.dart';
 import '../../app/theme_spec.dart';
 import 'theme_actions.dart';
 import 'theme_preview.dart';
@@ -77,7 +78,8 @@ class ThemeCard extends StatelessWidget {
       child: Card(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          // Each card shows its theme's own corners.
+          borderRadius: BorderRadius.circular(StyleShapes.of(theme.style.shape).card),
           side: BorderSide(color: active ? colors.accent : colors.outline, width: active ? 2 : 1),
         ),
         child: InkWell(

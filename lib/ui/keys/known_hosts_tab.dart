@@ -1,3 +1,4 @@
+import '../../app/app_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -74,7 +75,7 @@ class KnownHostTile extends StatelessWidget {
     final added = MaterialLocalizations.of(context).formatShortDate(known.addedAt);
     return ListTile(
       isThreeLine: true,
-      leading: const Icon(Icons.verified_user_outlined),
+      leading: const AppIcon(AppIcons.verifiedUser),
       title: MonoText(address, maxLines: 1),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

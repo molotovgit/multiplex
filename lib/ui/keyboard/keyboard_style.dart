@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../app/theme.dart';
+import '../../app/theme_look.dart';
+import '../../app/theme_style.dart';
 import 'key_spec.dart';
 import 'keyboard_settings.dart';
 
@@ -71,7 +73,15 @@ class KeyboardPalette {
 
 /// Sizes of the keyboard for the screen it is on.
 class KeyboardMetrics {
-  const KeyboardMetrics({required this.rowHeight, required this.radius, required this.maxWidth, required this.compactWidth});
+  const KeyboardMetrics({
+    required this.rowHeight,
+    required this.radius,
+    required this.maxWidth,
+    required this.compactWidth,
+    this.gapX = defaultGapX,
+    this.gapY = defaultGapY,
+    this.cap = KeyCapStyle.raised,
+  });
 
   /// The full row, gaps included: the touch target of each key.
   final double rowHeight;
@@ -84,9 +94,16 @@ class KeyboardMetrics {
   /// True on narrow phones: labels of wide special keys switch to icons.
   final bool compactWidth;
 
-  /// Space between keys, inside each key's touch target.
-  static const gapX = 3.0;
-  static const gapY = 4.0;
+  /// Space around each key, inside its touch target. The theme's key gap
+  /// sets [gapY]; the sideways gap is three quarters of it.
+  final double gapX;
+  final double gapY;
+
+  /// Flat, outlined or raised keys, from the theme's style.
+  final KeyCapStyle cap;
+
+  static const defaultGapX = 3.0;
+  static const defaultGapY = 4.0;
 
   /// The terminal row plus five rows of keys.
   static const rows = 6;
@@ -104,15 +121,26 @@ class KeyboardMetrics {
   /// Keys never get shorter than this, even in landscape.
   static const minRowHeight = 34.0;
 
-  factory KeyboardMetrics.resolve(KeyboardSettings settings, Size screen) {
+  /// Sizes for [screen]. The key corners follow the theme's corner shape,
+  /// unless the keyboard settings ask for square keys.
+  factory KeyboardMetrics.resolve(KeyboardSettings settings, Size screen, {ThemeStyle style = const ThemeStyle()}) {
     var row = _heights[settings.keyHeight]!;
     final landscape = screen.width > screen.height;
     if (landscape) {
       row = math.max(minRowHeight, math.min(row, screen.height * landscapeShare / rows));
     }
+    final gapY = style.keys.gap;
     final visibleKey = row - gapY * 2;
-    final radius = settings.shape == KeyShape.rounded ? math.min(10.0, visibleKey * 0.24) : 2.0;
-    return KeyboardMetrics(rowHeight: row, radius: radius, maxWidth: landscape ? 840 : 600, compactWidth: screen.width < 400);
+    final radius = settings.shape == KeyShape.rounded ? StyleShapes.of(style.shape).key(visibleKey) : 2.0;
+    return KeyboardMetrics(
+      rowHeight: row,
+      radius: radius,
+      maxWidth: landscape ? 840 : 600,
+      compactWidth: screen.width < 400,
+      gapX: gapY * 0.75,
+      gapY: gapY,
+      cap: style.keys.cap,
+    );
   }
 
   double get height => rowHeight * rows;
@@ -122,13 +150,20 @@ class KeyboardMetrics {
 class KeyTextStyles {
   const KeyTextStyles({required this.character, required this.word, required this.hint});
 
-  factory KeyTextStyles.of(BuildContext context, KeyboardSettings settings, KeyboardPalette palette) {
+  /// With a [fontFamily] (the terminal font, when the theme asks for it)
+  /// the labels use that font instead of the app's.
+  factory KeyTextStyles.of(BuildContext context, KeyboardSettings settings, KeyboardPalette palette, {String? fontFamily}) {
     final text = Theme.of(context).textTheme;
     final weight = settings.boldLabels ? FontWeight.w700 : FontWeight.w400;
     return KeyTextStyles(
-      character: text.titleLarge?.copyWith(color: palette.label, fontWeight: weight, height: 1),
-      word: text.labelLarge?.copyWith(color: palette.label, fontWeight: settings.boldLabels ? FontWeight.w700 : FontWeight.w500, height: 1),
-      hint: text.labelSmall?.copyWith(color: palette.hint, fontWeight: weight, height: 1),
+      character: text.titleLarge?.copyWith(color: palette.label, fontWeight: weight, height: 1, fontFamily: fontFamily),
+      word: text.labelLarge?.copyWith(
+        color: palette.label,
+        fontWeight: settings.boldLabels ? FontWeight.w700 : FontWeight.w500,
+        height: 1,
+        fontFamily: fontFamily,
+      ),
+      hint: text.labelSmall?.copyWith(color: palette.hint, fontWeight: weight, height: 1, fontFamily: fontFamily),
     );
   }
 

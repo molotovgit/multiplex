@@ -140,6 +140,7 @@ class TerminalPainter extends CustomPainter {
     required this.cursorStyle,
     required this.selection,
     required this.selectionColor,
+    this.paintBackground = true,
   });
 
   final TerminalFrame frame;
@@ -154,10 +155,14 @@ class TerminalPainter extends CustomPainter {
   final CellSelection? selection;
   final Color selectionColor;
 
+  /// False when a picture shows behind the text: only cells with their
+  /// own colour are filled.
+  final bool paintBackground;
+
   @override
   void paint(Canvas canvas, Size size) {
     final w = metrics.width, h = metrics.height;
-    canvas.drawRect(Offset.zero & size, Paint()..color = Color(frame.background));
+    if (paintBackground) canvas.drawRect(Offset.zero & size, Paint()..color = Color(frame.background));
     cache.prepare(styleKey, frame.rows);
 
     final bg = Paint();
@@ -253,5 +258,6 @@ class TerminalPainter extends CustomPainter {
       old.cursorOn != cursorOn ||
       old.focused != focused ||
       old.selection != selection ||
-      old.cursorStyle != cursorStyle;
+      old.cursorStyle != cursorStyle ||
+      old.paintBackground != paintBackground;
 }

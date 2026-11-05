@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/app_icons.dart';
 import '../../app/app_scope.dart';
 import '../../app/screen_awake.dart';
 import '../../app/theme.dart';
+import '../../app/theme_look.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/connect_flow.dart';
 import '../../sessions/session_manager.dart';
@@ -17,6 +19,7 @@ import '../keyboard/terminal_keyboard_panel.dart';
 import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'key_bar.dart';
+import 'terminal_tab_strip.dart';
 import 'terminal_view.dart';
 
 /// A full-screen terminal with the key bar and the session's actions.
@@ -41,6 +44,18 @@ class TerminalScreen extends StatefulWidget {
     return Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TerminalScreen(session: session, controller: terminal),
+      ),
+    );
+  }
+
+  /// Shows another terminal of the same connection in place of this one,
+  /// without a page animation, like switching tabs.
+  static void switchTo(BuildContext context, LiveSession session, TerminalController terminal) {
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder<void>(
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (_, _, _) => TerminalScreen(session: session, controller: terminal),
       ),
     );
   }
@@ -183,11 +198,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
           ),
           actions: [
             if (KeyboardSettings.of(AppScope.store(context)).enabled && (_useSystem || _keyboardHidden))
-              IconButton(tooltip: 'Built-in keyboard', icon: const Icon(Icons.keyboard_outlined), onPressed: _useBuiltInKeyboard),
-            IconButton(tooltip: 'Snippets', icon: const Icon(Icons.bolt_outlined), onPressed: _pickSnippet),
+              IconButton(tooltip: 'Built-in keyboard', icon: const AppIcon(AppIcons.keyboard), onPressed: _useBuiltInKeyboard),
+            IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
-              icon: const Icon(Icons.folder_outlined),
+              icon: const AppIcon(AppIcons.folder),
               onPressed: () => _openPage(FilesScreen(session: widget.session)),
             ),
             _TerminalMenu(
@@ -205,6 +220,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
         body: Column(
           children: [
+            if (AppStyleTheme.of(context).style.terminal.showTabs)
+              TerminalTabStrip(
+                session: widget.session,
+                current: _terminal,
+                onSelect: (other) => TerminalScreen.switchTo(context, widget.session, other),
+                onNew: () => TerminalScreen.openNew(context, widget.session),
+              ),
             Expanded(
               child: TerminalView(
                 controller: _terminal,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/terminal_backgrounds.dart';
 import '../../app/theme_spec.dart';
+import '../../app/theme_style.dart';
 import '../../data/vault_store.dart';
 import '../common/widgets.dart';
 import 'theme_editor_screen.dart';
@@ -30,6 +32,26 @@ class ThemeActions {
     if (andUse || _store.settings.themeId == theme.id) {
       _apply(theme);
     }
+  }
+
+  /// Changes the look of the theme in use, saved at once. A built-in theme
+  /// never changes, so the first change saves a copy and uses that.
+  void updateStyle(ThemeStyle style) {
+    final active = _store.activeTheme;
+    if (active.style == style) return;
+    if (active.builtIn) {
+      final copy = copyOf(active).copyWith(style: style);
+      save(copy, andUse: true);
+      Toast.show(context, 'Saved a copy: ${copy.name}. Built-in themes stay as they are.');
+    } else {
+      save(active.copyWith(style: style), andUse: false);
+    }
+    forgetBackground(active.style.terminal.backgroundImage);
+  }
+
+  /// Deletes a background picture once no saved theme uses it.
+  Future<void> forgetBackground(String? name) async {
+    if (name != null) await TerminalBackgrounds.removeIfUnused(_store, name);
   }
 
   void _apply(ThemeSpec theme) {
@@ -73,6 +95,7 @@ class ThemeActions {
     if (!ok || !context.mounted) return;
     _store.deleteTheme(theme.id);
     if (inUse) AppScope.sessions(context).applyTerminalTheme();
+    forgetBackground(theme.style.terminal.backgroundImage);
     Toast.show(context, 'Deleted ${theme.name}');
   }
 
