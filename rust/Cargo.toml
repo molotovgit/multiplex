@@ -2,12 +2,43 @@
 name = "vaultterm_core"
 version = "0.1.0"
 edition = "2021"
+description = "Native core of VaultTerm: SSH, SFTP, port forwarding, terminal emulation, keys and encryption."
+publish = false
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+# cdylib/staticlib are what the Flutter app loads; rlib lets the tests in
+# tests/ use the crate like any other Rust library.
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
+anyhow = "1.0.104"
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
 flutter_rust_bridge = "=2.13.0"
+# rand 0.10 matches the random-number traits that russh and ssh-key use.
+rand = { version = "0.10", features = ["thread_rng"] }
+# "ring" instead of the default aws-lc-rs: ring cross-compiles to Android
+# with only the NDK, aws-lc-rs would also need cmake and nasm.
+russh = { version = "0.65", default-features = false, features = ["ring", "rsa", "flate2"] }
+russh-sftp = "3"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "sync", "time", "macros", "fs"] }
+tokio-util = "0.7"
+vt100 = "0.18"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.dev]
+# Line tables are enough for readable panics and keep target/ small.
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.release]
+lto = "thin"
+strip = "symbols"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
