@@ -56,20 +56,21 @@ class _SnippetsScreenState extends State<SnippetsScreen> {
                       SnippetSearchField(controller: _query),
                       Expanded(
                         child: shown.isEmpty
-                            ? Align(alignment: Alignment.topCenter, child: NoSnippetMatches(query: _query.text))
+                            ? Align(
+                                alignment: Alignment.topCenter,
+                                child: NoSnippetMatches(query: _query.text, onClear: _query.clear),
+                              )
                             : SnippetListView(
-                                children: [
-                                  for (final snippet in shown)
-                                    SnippetTile(
-                                      snippet: snippet,
-                                      onTap: () => SnippetEditorScreen.open(context, snippet: snippet),
-                                      trailing: IconButton(
-                                        tooltip: 'Run on a host',
-                                        icon: const Icon(Icons.play_arrow_outlined),
-                                        onPressed: () => SnippetRunner.run(context, name: snippet.name, command: snippet.command),
-                                      ),
-                                    ),
-                                ],
+                                snippets: shown,
+                                tileFor: (snippet) => SnippetTile(
+                                  snippet: snippet,
+                                  onTap: () => SnippetEditorScreen.open(context, snippet: snippet),
+                                  trailing: IconButton(
+                                    tooltip: 'Run on a host',
+                                    icon: const Icon(Icons.play_arrow_outlined),
+                                    onPressed: () => SnippetRunner.run(context, name: snippet.name, command: snippet.command),
+                                  ),
+                                ),
                               ),
                       ),
                     ],

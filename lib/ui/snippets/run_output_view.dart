@@ -17,10 +17,10 @@ class RemoteVerdict {
 
   /// The plain verdict for any command: exit code 0 means it worked.
   factory RemoteVerdict.fromExitCode(ExecOutput output) => switch (output.exitCode) {
-        null => const RemoteVerdict(ok: true, message: 'Finished. The server did not report an exit code.'),
-        0 => const RemoteVerdict(ok: true, message: 'Finished with exit code 0'),
-        final code => RemoteVerdict(ok: false, message: 'Finished with exit code $code'),
-      };
+    null => const RemoteVerdict(ok: true, message: 'Finished. The server did not report an exit code.'),
+    0 => const RemoteVerdict(ok: true, message: 'Finished with exit code 0'),
+    final code => RemoteVerdict(ok: false, message: 'Finished with exit code $code'),
+  };
 }
 
 /// Sizes for showing command output.
@@ -43,6 +43,7 @@ class RunOutputView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
+    final text = Theme.of(context).textTheme;
     final shown = verdict ?? RemoteVerdict.fromExitCode(output);
     final printedNothing = output.stdout.isEmpty && output.stderr.isEmpty;
     return Column(
@@ -52,7 +53,7 @@ class RunOutputView extends StatelessWidget {
         if (output.truncated)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text('The output was cut off after 1 MiB.', style: TextStyle(color: colors.muted)),
+            child: Text('The output was cut off after 1 MiB.', style: text.bodyMedium?.copyWith(color: colors.muted)),
           ),
         if (shown.showOutput) ...[
           if (output.stdout.isNotEmpty) OutputBlock(label: 'Output', text: output.stdout, copyLabel: 'Copy output'),
@@ -60,7 +61,7 @@ class RunOutputView extends StatelessWidget {
           if (printedNothing)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Text('The command printed nothing.', style: TextStyle(color: colors.muted)),
+              child: Text('The command printed nothing.', style: text.bodyMedium?.copyWith(color: colors.muted)),
             ),
         ],
       ],
@@ -83,7 +84,9 @@ class VerdictLine extends StatelessWidget {
       children: [
         Icon(ok ? Icons.check_circle_outline : Icons.error_outline, color: ok ? colors.live : colors.danger),
         const SizedBox(width: 12),
-        Expanded(child: Text(message, style: Theme.of(context).textTheme.titleSmall)),
+        Expanded(
+          child: Text(message, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+        ),
       ],
     );
   }
@@ -110,7 +113,10 @@ class OutputBlock extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.muted, fontWeight: FontWeight.w600)),
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.muted, fontWeight: FontWeight.w600),
+                ),
               ),
               IconButton(
                 tooltip: copyLabel,
@@ -126,8 +132,11 @@ class OutputBlock extends StatelessWidget {
           ),
           if (tooLong)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text('Showing the start only. Copy it to get all of it.', style: TextStyle(color: colors.muted)),
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Showing the start only. Copy it to get all of it.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted),
+              ),
             ),
         ],
       ),

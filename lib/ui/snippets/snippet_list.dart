@@ -44,7 +44,8 @@ class SnippetSearchField extends StatelessWidget {
           autocorrect: false,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: 'Search by name or command',
+            labelText: 'Search snippets',
+            hintText: 'Name or command',
             prefixIcon: const Icon(Icons.search),
             suffixIcon: controller.text.isEmpty
                 ? null
@@ -81,39 +82,53 @@ class SnippetTile extends StatelessWidget {
   }
 }
 
-/// Shown when a search finds nothing.
+/// Shown when a search finds nothing: says so and offers the way back to
+/// the full list.
 class NoSnippetMatches extends StatelessWidget {
-  const NoSnippetMatches({super.key, required this.query});
+  const NoSnippetMatches({super.key, required this.query, required this.onClear});
 
   final String query;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: Text(
-        'No snippets match "$query". Try another word, or clear the search.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: colors.muted),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'No snippets match "$query". Try another word, or show them all.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(onPressed: onClear, child: const Text('Clear search')),
+        ],
       ),
     );
   }
 }
 
-/// A list of snippet rows that keeps clear of the floating button.
+/// A lazily built list of snippet rows that keeps clear of the floating
+/// button.
 class SnippetListView extends StatelessWidget {
-  const SnippetListView({super.key, required this.children, this.shrinkWrap = false});
+  const SnippetListView({super.key, required this.snippets, required this.tileFor, this.shrinkWrap = false});
 
-  final List<Widget> children;
+  final List<Snippet> snippets;
+  final Widget Function(Snippet snippet) tileFor;
+
+  /// True inside a bottom sheet, which has no floating button.
   final bool shrinkWrap;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
+    return ListView.builder(
       shrinkWrap: shrinkWrap,
       padding: EdgeInsets.only(bottom: shrinkWrap ? 16 : PageLayout.fabClearance),
-      children: children,
+      itemCount: snippets.length,
+      itemBuilder: (context, i) => KeyedSubtree(key: ValueKey(snippets[i].id), child: tileFor(snippets[i])),
     );
   }
 }

@@ -80,6 +80,12 @@ void main() {
     await tester.enterText(find.byType(TextField), 'nothing-like-this');
     await tester.pump();
     expect(find.textContaining('No snippets match'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Clear search'));
+    await tester.pump();
+    expect(find.text('Disk usage'), findsOneWidget, reason: 'a failed search offers the way back');
+
+    await tester.enterText(find.byType(TextField), 'disk');
+    await tester.pump();
     await tester.tap(find.byTooltip('Clear search'));
     await tester.pump();
     expect(find.text('Disk usage'), findsOneWidget);
@@ -125,11 +131,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete snippet'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('cannot be undone'), findsOneWidget);
+    expect(find.textContaining('undo this'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Delete snippet'));
     await tester.pumpAndSettle();
     expect(app.store.snippets.where((s) => s.id == 'starter-disk'), isEmpty);
     expect(find.text('Disk usage'), findsNothing);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(app.store.snippets.where((s) => s.id == 'starter-disk').single.command, 'df -hT');
+    expect(find.text('Disk usage'), findsOneWidget, reason: 'Undo brings it back');
     await app.finish();
   });
 

@@ -6,6 +6,7 @@ import '../../data/models.dart';
 import '../../src/rust/api/ssh_types.dart';
 import '../common/dialog_prompter.dart';
 import '../common/widgets.dart';
+import '../keys/page_width.dart';
 import 'remote_runner.dart';
 import 'run_output_view.dart';
 
@@ -47,7 +48,7 @@ class RemoteRunSheet extends StatefulWidget {
 }
 
 class _RemoteRunSheetState extends State<RemoteRunSheet> {
-  late final RemoteRunner _runner;
+  late RemoteRunner _runner;
   bool _running = false;
   RemoteOutcome? _outcome;
 
@@ -66,9 +67,20 @@ class _RemoteRunSheetState extends State<RemoteRunSheet> {
     super.dispose();
   }
 
+  /// After a failure: start again with a fresh connection attempt.
+  void _retry() {
+    setState(() {
+      _outcome = null;
+      _running = false;
+      _runner = RemoteRunner(AppScope.sessions(context));
+    });
+    _start();
+  }
+
   Future<void> _start() async {
     if (!mounted) return;
-    final outcome = await _runner.run(
+    final runner = _runner;
+    final outcome = await runner.run(
       widget.host,
       widget.job.command,
       DialogPrompter(context),
@@ -76,7 +88,7 @@ class _RemoteRunSheetState extends State<RemoteRunSheet> {
         if (mounted) setState(() => _running = true);
       },
     );
-    if (!mounted) return;
+    if (!mounted || runner != _runner) return;
     if (outcome is RemoteCancelled) {
       _close();
       return;
@@ -100,51 +112,81 @@ class _RemoteRunSheetState extends State<RemoteRunSheet> {
     final colors = AppColorsTheme.of(context);
     final text = Theme.of(context).textTheme;
     final job = widget.job;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(job.title, style: text.titleLarge),
-                const SizedBox(height: 4),
-                Text('On ${widget.host.title} (${widget.host.target})', style: text.bodyMedium?.copyWith(color: colors.muted)),
-                if (job.showCommand) ...[
-                  const SizedBox(height: 8),
-                  MonoText(job.command, maxLines: 3, style: text.bodySmall?.copyWith(color: colors.muted)),
+    // The sheet only keeps clear of the top; this keeps the buttons clear
+    // of the gesture bar at the bottom.
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(job.title, style: text.titleLarge),
+                  const SizedBox(height: 4),
+                  Text('On ${widget.host.title} (${widget.host.target})', style: text.bodyMedium?.copyWith(color: colors.muted)),
+                  if (job.showCommand) ...[
+                    const SizedBox(height: 8),
+                    MonoText(job.command, maxLines: 3, style: text.bodySmall?.copyWith(color: colors.muted)),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: _RunBody(host: widget.host, job: job, running: _running, outcome: _outcome),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                // A short fade when progress turns into the result.
+                child: AnimatedSwitcher(
+                  duration: PageLayout.fade,
+                  child: _RunBody(key: ValueKey(_outcome?.runtimeType), host: widget.host, job: job, running: _running, outcome: _outcome),
+                ),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _outcome == null
-                  ? TextButton(onPressed: _close, child: const Text('Stop and close'))
-                  : FilledButton(onPressed: _close, child: const Text('Close')),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _RunActions(outcome: _outcome, onClose: _close, onRetry: _retry),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// The buttons under the result: stop while working, close when done,
+/// and try again after a failure.
+class _RunActions extends StatelessWidget {
+  const _RunActions({required this.outcome, required this.onClose, required this.onRetry});
+
+  final RemoteOutcome? outcome;
+  final VoidCallback onClose;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: switch (outcome) {
+        null => [TextButton(onPressed: onClose, child: const Text('Stop and close'))],
+        RemoteFailed() => [
+          TextButton(onPressed: onClose, child: const Text('Close')),
+          const SizedBox(width: 8),
+          FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Try again')),
+        ],
+        _ => [FilledButton(onPressed: onClose, child: const Text('Close'))],
+      },
     );
   }
 }
 
 /// The middle of the sheet: progress while working, then the result.
 class _RunBody extends StatelessWidget {
-  const _RunBody({required this.host, required this.job, required this.running, required this.outcome});
+  const _RunBody({super.key, required this.host, required this.job, required this.running, required this.outcome});
 
   final Host host;
   final RemoteJob job;
@@ -197,7 +239,7 @@ class RunFailure extends StatelessWidget {
         if (detail.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8, left: 36),
-            child: SelectableText(detail, style: TextStyle(color: colors.muted)),
+            child: SelectableText(detail, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted)),
           ),
       ],
     );

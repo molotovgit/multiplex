@@ -7,6 +7,7 @@ import '../../data/vault_store.dart';
 import '../common/widgets.dart';
 import '../keys/mono_style.dart';
 import '../keys/page_width.dart';
+import '../keys/undo_toast.dart';
 import 'snippet_runner.dart';
 
 /// Creates or edits a snippet. Closes with the saved snippet, or with
@@ -19,7 +20,10 @@ class SnippetEditorScreen extends StatefulWidget {
 
   static Future<Snippet?> open(BuildContext context, {Snippet? snippet}) {
     return Navigator.of(context).push<Snippet>(
-      MaterialPageRoute(fullscreenDialog: snippet == null, builder: (context) => SnippetEditorScreen(snippet: snippet)),
+      MaterialPageRoute(
+        fullscreenDialog: snippet == null,
+        builder: (context) => SnippetEditorScreen(snippet: snippet),
+      ),
     );
   }
 
@@ -58,11 +62,12 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
     final sure = await Confirm.ask(
       context,
       title: 'Delete "${snippet.name}"?',
-      message: 'The snippet is removed from VaultTerm. This cannot be undone.',
+      message: 'The snippet is removed from VaultTerm. You can undo this for a few seconds.',
       action: 'Delete snippet',
     );
     if (!sure || !mounted) return;
-    Toast.show(context, 'Deleted the snippet "${snippet.name}"');
+    // Undo puts it back (at the end of the list).
+    UndoToast.show(context, 'Deleted the snippet "${snippet.name}"', () => store.saveSnippet(snippet));
     Navigator.pop(context);
     store.deleteSnippet(snippet.id);
   }
@@ -72,74 +77,79 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
     final colors = AppColorsTheme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(_isNew ? 'New snippet' : 'Edit snippet')),
-      body: PageWidth(
-        child: Form(
-          key: _form,
-          child: ListView(
-            padding: const EdgeInsets.only(top: 8, bottom: 32),
-            children: [
-              FormRow(
-                child: TextFormField(
-                  controller: _name,
-                  textCapitalization: TextCapitalization.sentences,
-                  textInputAction: TextInputAction.next,
-                  validator: (value) => (value ?? '').trim().isEmpty ? 'Enter a name for the snippet.' : null,
-                  decoration: const InputDecoration(labelText: 'Name', hintText: 'For example: Restart the web server'),
-                ),
-              ),
-              FormRow(
-                child: TextFormField(
-                  controller: _command,
-                  minLines: 3,
-                  maxLines: 12,
-                  keyboardType: TextInputType.multiline,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  style: MonoStyle.of(context),
-                  validator: (value) => (value ?? '').trim().isEmpty ? 'Enter the command to run.' : null,
-                  decoration: const InputDecoration(
-                    labelText: 'Command',
-                    hintText: 'sudo systemctl restart nginx',
-                    alignLabelWithHint: true,
-                  ),
-                ),
-              ),
-              SwitchListTile(
-                value: _runImmediately,
-                onChanged: (value) => setState(() => _runImmediately = value),
-                title: const Text('Press Enter after inserting'),
-                subtitle: Text(_runImmediately
-                    ? 'The command runs as soon as it is inserted into a terminal.'
-                    : 'The command is typed in, and you press Enter yourself.'),
-              ),
-              FormRow(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+      body: Form(
+        key: _form,
+        child: Column(
+          children: [
+            Expanded(
+              child: PageWidth(
+                child: ListView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
                   children: [
-                    FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: const Text('Save snippet')),
-                    OutlinedButton.icon(
-                      onPressed: () => SnippetRunner.run(context, name: _name.text, command: _command.text),
-                      icon: const Icon(Icons.play_arrow_outlined),
-                      label: const Text('Run on a host'),
+                    FormRow(
+                      child: TextFormField(
+                        controller: _name,
+                        textCapitalization: TextCapitalization.sentences,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) => (value ?? '').trim().isEmpty ? 'Enter a name for the snippet.' : null,
+                        decoration: const InputDecoration(labelText: 'Name', hintText: 'For example: Restart the web server'),
+                      ),
                     ),
+                    FormRow(
+                      child: TextFormField(
+                        controller: _command,
+                        minLines: 3,
+                        maxLines: 12,
+                        keyboardType: TextInputType.multiline,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        style: MonoStyle.of(context),
+                        validator: (value) => (value ?? '').trim().isEmpty ? 'Enter the command to run.' : null,
+                        decoration: const InputDecoration(labelText: 'Command', hintText: 'sudo systemctl restart nginx', alignLabelWithHint: true),
+                      ),
+                    ),
+                    SwitchListTile(
+                      value: _runImmediately,
+                      onChanged: (value) => setState(() => _runImmediately = value),
+                      title: const Text('Press Enter after inserting'),
+                      subtitle: Text(
+                        _runImmediately
+                            ? 'The command runs as soon as it is inserted into a terminal.'
+                            : 'The command is typed in, and you press Enter yourself.',
+                      ),
+                    ),
+                    FormRow(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: () => SnippetRunner.run(context, name: _name.text, command: _command.text),
+                          icon: const Icon(Icons.play_arrow_outlined),
+                          label: const Text('Run on a host'),
+                        ),
+                      ),
+                    ),
+                    if (!_isNew) ...[
+                      const SizedBox(height: 16),
+                      FormRow(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            style: TextButton.styleFrom(foregroundColor: colors.danger),
+                            onPressed: _delete,
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('Delete snippet'),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (!_isNew)
-                FormRow(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(foregroundColor: colors.danger),
-                      onPressed: _delete,
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Delete snippet'),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            ),
+            BottomActionBar(
+              action: FilledButton.icon(onPressed: _save, icon: const Icon(Icons.save_outlined), label: const Text('Save snippet')),
+            ),
+          ],
         ),
       ),
     );

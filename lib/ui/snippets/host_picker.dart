@@ -26,31 +26,37 @@ class HostPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hosts = [...AppScope.store(context).hosts]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(title, style: Theme.of(context).textTheme.titleLarge),
-          ),
-          if (hosts.isEmpty)
-            const EmptyState(
-              icon: Icons.dns_outlined,
-              title: 'No saved hosts',
-              message: 'Add a server on the Hosts screen first, then come back here.',
-            )
-          else
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(bottom: 16),
-                children: [for (final host in hosts) HostChoiceTile(host: host)],
-              ),
+    // The sheet only keeps clear of the top; SafeArea keeps the list clear
+    // of the gesture bar at the bottom.
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(title, style: Theme.of(context).textTheme.titleLarge),
             ),
-        ],
+            if (hosts.isEmpty)
+              const EmptyState(
+                icon: Icons.dns_outlined,
+                title: 'No saved hosts',
+                message: 'Add a server on the Hosts screen first, then come back here.',
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: hosts.length,
+                  itemBuilder: (context, i) => HostChoiceTile(key: ValueKey(hosts[i].id), host: hosts[i]),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -66,7 +72,7 @@ class HostChoiceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final connected = AppScope.sessions(context).sessionFor(host.id) != null;
     return ListTile(
-      leading: StatusDot(live: connected, size: 10),
+      leading: StatusDot(live: connected, size: 12),
       title: Text(host.title),
       subtitle: MonoText(host.target, maxLines: 1),
       onTap: () => Navigator.pop(context, host),

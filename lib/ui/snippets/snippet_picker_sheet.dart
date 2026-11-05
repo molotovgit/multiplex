@@ -37,51 +37,54 @@ class _SnippetPickerSheetState extends State<SnippetPickerSheet> {
     return Padding(
       // Stay above the on-screen keyboard while searching.
       padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: media.size.height * 0.75),
-        child: ListenableBuilder(
-          listenable: Listenable.merge([store, _query]),
-          builder: (context, _) {
-            final all = store.snippets;
-            final shown = SnippetFilter.apply(all, _query.text);
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                  child: Text('Insert a snippet', style: Theme.of(context).textTheme.titleLarge),
-                ),
-                if (all.isEmpty)
-                  EmptyState(
-                    icon: Icons.bolt_outlined,
-                    title: 'No snippets yet',
-                    message: 'Snippets are commands you save once and insert with one tap.',
-                    actionLabel: 'New snippet',
-                    onAction: _create,
-                  )
-                else ...[
-                  SnippetSearchField(controller: _query),
-                  if (shown.isEmpty)
-                    NoSnippetMatches(query: _query.text)
-                  else
-                    Flexible(
-                      child: SnippetListView(
-                        shrinkWrap: true,
-                        children: [
-                          for (final snippet in shown)
-                            SnippetTile(
-                              snippet: snippet,
-                              trailing: snippet.runImmediately ? const RunsImmediatelyIcon() : null,
-                              onTap: () => Navigator.pop(context, snippet),
-                            ),
-                        ],
+      // The sheet only keeps clear of the top; this keeps the list clear of
+      // the gesture bar at the bottom.
+      child: SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: media.size.height * 0.75),
+          child: ListenableBuilder(
+            listenable: Listenable.merge([store, _query]),
+            builder: (context, _) {
+              final all = store.snippets;
+              final shown = SnippetFilter.apply(all, _query.text);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                    child: Text('Insert a snippet', style: Theme.of(context).textTheme.titleLarge),
+                  ),
+                  if (all.isEmpty)
+                    EmptyState(
+                      icon: Icons.bolt_outlined,
+                      title: 'No snippets yet',
+                      message: 'Snippets are commands you save once and insert with one tap.',
+                      actionLabel: 'New snippet',
+                      onAction: _create,
+                    )
+                  else ...[
+                    SnippetSearchField(controller: _query),
+                    if (shown.isEmpty)
+                      NoSnippetMatches(query: _query.text, onClear: _query.clear)
+                    else
+                      Flexible(
+                        child: SnippetListView(
+                          shrinkWrap: true,
+                          snippets: shown,
+                          tileFor: (snippet) => SnippetTile(
+                            snippet: snippet,
+                            trailing: snippet.runImmediately ? const RunsImmediatelyIcon() : null,
+                            onTap: () => Navigator.pop(context, snippet),
+                          ),
+                        ),
                       ),
-                    ),
+                  ],
                 ],
-              ],
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -96,7 +99,7 @@ class RunsImmediatelyIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Runs right away',
-      child: Icon(Icons.keyboard_return, size: 18, color: AppColorsTheme.of(context).muted, semanticLabel: 'Runs right away'),
+      child: Icon(Icons.keyboard_return, size: 20, color: AppColorsTheme.of(context).muted, semanticLabel: 'Runs right away'),
     );
   }
 }
