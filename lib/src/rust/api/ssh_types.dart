@@ -6,9 +6,110 @@
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
+part 'ssh_types.freezed.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ConnectError`, `ConnectOptions`, `ExecOutput`, `HostKeyInfo`, `JumpHost`, `SessionInfo`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+
+@freezed
+sealed class ConnectError with _$ConnectError implements FrbException {
+  const ConnectError._();
+
+  /// First visit: the user must check and accept the server's key.
+  const factory ConnectError.hostKeyUnknown({
+    required String host,
+    required int port,
+    required HostKeyInfo key,
+  }) = ConnectError_HostKeyUnknown;
+
+  /// The server's key is different from the one accepted before. This can
+  /// mean someone is intercepting the connection.
+  const factory ConnectError.hostKeyChanged({
+    required String host,
+    required int port,
+    required HostKeyInfo key,
+  }) = ConnectError_HostKeyChanged;
+  const factory ConnectError.authFailed({
+    required String host,
+
+    /// Methods VaultTerm tried, such as "publickey" or "password".
+    required List<String> tried,
+
+    /// Methods the server said it accepts.
+    required List<String> serverAccepts,
+  }) = ConnectError_AuthFailed;
+  const factory ConnectError.keyNeedsPassphrase() =
+      ConnectError_KeyNeedsPassphrase;
+  const factory ConnectError.keyWrongPassphrase() =
+      ConnectError_KeyWrongPassphrase;
+  const factory ConnectError.keyUnreadable({required String reason}) =
+      ConnectError_KeyUnreadable;
+  const factory ConnectError.network({
+    required String host,
+    required int port,
+    required String message,
+  }) = ConnectError_Network;
+  const factory ConnectError.timeout() = ConnectError_Timeout;
+  const factory ConnectError.protocol({required String message}) =
+      ConnectError_Protocol;
+}
+
+/// How to reach and log in to a server.
+class ConnectOptions {
+  final String host;
+  final int port;
+  final String username;
+  final Credentials credentials;
+
+  /// Host keys the user already accepted for this server, as OpenSSH
+  /// public key lines. Empty on the first connection.
+  final List<String> trustedHostKeys;
+
+  /// Send a keep-alive after this many quiet seconds (0 = never).
+  final int keepaliveSecs;
+
+  /// Give up if the server does not answer within this many seconds.
+  final int connectTimeoutSecs;
+
+  /// Optional server to hop through first (like `ssh -J`).
+  final JumpHost? jump;
+
+  const ConnectOptions({
+    required this.host,
+    required this.port,
+    required this.username,
+    required this.credentials,
+    required this.trustedHostKeys,
+    required this.keepaliveSecs,
+    required this.connectTimeoutSecs,
+    this.jump,
+  });
+
+  @override
+  int get hashCode =>
+      host.hashCode ^
+      port.hashCode ^
+      username.hashCode ^
+      credentials.hashCode ^
+      trustedHostKeys.hashCode ^
+      keepaliveSecs.hashCode ^
+      connectTimeoutSecs.hashCode ^
+      jump.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ConnectOptions &&
+          runtimeType == other.runtimeType &&
+          host == other.host &&
+          port == other.port &&
+          username == other.username &&
+          credentials == other.credentials &&
+          trustedHostKeys == other.trustedHostKeys &&
+          keepaliveSecs == other.keepaliveSecs &&
+          connectTimeoutSecs == other.connectTimeoutSecs &&
+          jump == other.jump;
+}
 
 /// What VaultTerm may try when logging in. Everything that is set is
 /// tried in order: key, password, then keyboard-interactive (answered with
@@ -37,4 +138,151 @@ class Credentials {
           password == other.password &&
           privateKey == other.privateKey &&
           keyPassphrase == other.keyPassphrase;
+}
+
+/// Result of running one command without a terminal.
+class ExecOutput {
+  final String stdout;
+  final String stderr;
+
+  /// The command's exit code, if the server reported one.
+  final int? exitCode;
+
+  /// True when the output was cut at the size limit.
+  final bool truncated;
+
+  const ExecOutput({
+    required this.stdout,
+    required this.stderr,
+    this.exitCode,
+    required this.truncated,
+  });
+
+  @override
+  int get hashCode =>
+      stdout.hashCode ^
+      stderr.hashCode ^
+      exitCode.hashCode ^
+      truncated.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ExecOutput &&
+          runtimeType == other.runtimeType &&
+          stdout == other.stdout &&
+          stderr == other.stderr &&
+          exitCode == other.exitCode &&
+          truncated == other.truncated;
+}
+
+/// A server's identity key.
+class HostKeyInfo {
+  /// Key type, for example `ssh-ed25519`.
+  final String algorithm;
+
+  /// SHA256 fingerprint, as OpenSSH shows it.
+  final String fingerprint;
+
+  /// The full public key line, to store once the user trusts it.
+  final String publicKey;
+
+  const HostKeyInfo({
+    required this.algorithm,
+    required this.fingerprint,
+    required this.publicKey,
+  });
+
+  @override
+  int get hashCode =>
+      algorithm.hashCode ^ fingerprint.hashCode ^ publicKey.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HostKeyInfo &&
+          runtimeType == other.runtimeType &&
+          algorithm == other.algorithm &&
+          fingerprint == other.fingerprint &&
+          publicKey == other.publicKey;
+}
+
+/// The server to hop through on the way to the real target.
+class JumpHost {
+  final String host;
+  final int port;
+  final String username;
+  final Credentials credentials;
+  final List<String> trustedHostKeys;
+
+  const JumpHost({
+    required this.host,
+    required this.port,
+    required this.username,
+    required this.credentials,
+    required this.trustedHostKeys,
+  });
+
+  @override
+  int get hashCode =>
+      host.hashCode ^
+      port.hashCode ^
+      username.hashCode ^
+      credentials.hashCode ^
+      trustedHostKeys.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is JumpHost &&
+          runtimeType == other.runtimeType &&
+          host == other.host &&
+          port == other.port &&
+          username == other.username &&
+          credentials == other.credentials &&
+          trustedHostKeys == other.trustedHostKeys;
+}
+
+/// Facts about an open session, for display.
+class SessionInfo {
+  final String host;
+  final int port;
+  final String username;
+
+  /// The jump host's name when the session goes through one.
+  final String? via;
+
+  /// Text the server showed before login (often a legal notice).
+  final String? banner;
+  final HostKeyInfo hostKey;
+
+  const SessionInfo({
+    required this.host,
+    required this.port,
+    required this.username,
+    this.via,
+    this.banner,
+    required this.hostKey,
+  });
+
+  @override
+  int get hashCode =>
+      host.hashCode ^
+      port.hashCode ^
+      username.hashCode ^
+      via.hashCode ^
+      banner.hashCode ^
+      hostKey.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionInfo &&
+          runtimeType == other.runtimeType &&
+          host == other.host &&
+          port == other.port &&
+          username == other.username &&
+          via == other.via &&
+          banner == other.banner &&
+          hostKey == other.hostKey;
 }

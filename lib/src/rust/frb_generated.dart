@@ -3,9 +3,15 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/app.dart';
 import 'api/keys.dart';
+import 'api/sftp.dart';
+import 'api/sftp_types.dart';
+import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/terminal.dart';
 import 'api/terminal_types.dart';
+import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
 
@@ -61,7 +67,9 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
       RustLibWire.fromExternalLibrary;
 
   @override
-  Future<void> executeRustInitializers() async {}
+  Future<void> executeRustInitializers() async {
+    await api.crateApiAppInitApp();
+  }
 
   @override
   ExternalLibraryLoaderConfig get defaultExternalLibraryLoaderConfig =>
@@ -71,7 +79,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 1108173549;
+  int get rustContentHash => 586138563;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -83,6 +91,186 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  int crateApiTunnelActiveTunnelBoundPort({required ActiveTunnel that});
+
+  bool crateApiTunnelActiveTunnelIsRunning({required ActiveTunnel that});
+
+  TunnelSpec crateApiTunnelActiveTunnelSpec({required ActiveTunnel that});
+
+  TunnelStats crateApiTunnelActiveTunnelStats({required ActiveTunnel that});
+
+  Future<void> crateApiTunnelActiveTunnelStop({required ActiveTunnel that});
+
+  void crateApiSftpFileTransferCancel({required FileTransfer that});
+
+  FileTransfer crateApiSftpFileTransferCreate();
+
+  bool crateApiSftpFileTransferIsCancelled({required FileTransfer that});
+
+  Stream<TransferProgress> crateApiSftpFileTransferWatch({
+    required FileTransfer that,
+  });
+
+  Future<String> crateApiSftpRemoteFilesCanonicalize({
+    required RemoteFiles that,
+    required String path,
+  });
+
+  Future<BigInt> crateApiSftpRemoteFilesDownload({
+    required RemoteFiles that,
+    required String remotePath,
+    required String localPath,
+    required FileTransfer transfer,
+  });
+
+  Future<String> crateApiSftpRemoteFilesHome({required RemoteFiles that});
+
+  Future<List<RemoteEntry>> crateApiSftpRemoteFilesList({
+    required RemoteFiles that,
+    required String dir,
+  });
+
+  Future<void> crateApiSftpRemoteFilesMakeDir({
+    required RemoteFiles that,
+    required String path,
+  });
+
+  Future<String> crateApiSftpRemoteFilesReadText({
+    required RemoteFiles that,
+    required String path,
+    required BigInt maxBytes,
+  });
+
+  Future<void> crateApiSftpRemoteFilesRemove({
+    required RemoteFiles that,
+    required String path,
+  });
+
+  Future<void> crateApiSftpRemoteFilesRename({
+    required RemoteFiles that,
+    required String from,
+    required String to,
+  });
+
+  Future<void> crateApiSftpRemoteFilesSetPermissions({
+    required RemoteFiles that,
+    required String path,
+    required int mode,
+  });
+
+  Future<RemoteEntry> crateApiSftpRemoteFilesStat({
+    required RemoteFiles that,
+    required String path,
+  });
+
+  Future<BigInt> crateApiSftpRemoteFilesUpload({
+    required RemoteFiles that,
+    required String localPath,
+    required String remotePath,
+    required FileTransfer transfer,
+  });
+
+  Future<void> crateApiSftpRemoteFilesWriteText({
+    required RemoteFiles that,
+    required String path,
+    required String text,
+  });
+
+  void crateApiTerminalRemoteShellClearHistory({required RemoteShell that});
+
+  bool crateApiTerminalRemoteShellClick({
+    required RemoteShell that,
+    required int row,
+    required int col,
+  });
+
+  void crateApiTerminalRemoteShellClose({required RemoteShell that});
+
+  Stream<ShellEvent> crateApiTerminalRemoteShellEvents({
+    required RemoteShell that,
+  });
+
+  TerminalFrame crateApiTerminalRemoteShellFrame({required RemoteShell that});
+
+  bool crateApiTerminalRemoteShellIsClosed({required RemoteShell that});
+
+  void crateApiTerminalRemoteShellPaste({
+    required RemoteShell that,
+    required String text,
+  });
+
+  void crateApiTerminalRemoteShellResize({
+    required RemoteShell that,
+    required int cols,
+    required int rows,
+  });
+
+  bool crateApiTerminalRemoteShellScroll({
+    required RemoteShell that,
+    required int lines,
+    required int row,
+    required int col,
+  });
+
+  void crateApiTerminalRemoteShellScrollToBottom({required RemoteShell that});
+
+  void crateApiTerminalRemoteShellSendKey({
+    required RemoteShell that,
+    required TerminalKey key,
+    required KeyModifiers mods,
+  });
+
+  void crateApiTerminalRemoteShellSendText({
+    required RemoteShell that,
+    required String text,
+    required KeyModifiers mods,
+  });
+
+  void crateApiTerminalRemoteShellSetPalette({
+    required RemoteShell that,
+    required TerminalPalette palette,
+  });
+
+  String crateApiTerminalRemoteShellTextBetween({
+    required RemoteShell that,
+    required int startRow,
+    required int startCol,
+    required int endRow,
+    required int endCol,
+  });
+
+  String crateApiTerminalRemoteShellVisibleText({required RemoteShell that});
+
+  Future<SshSession> crateApiSshSshSessionConnect({
+    required ConnectOptions options,
+  });
+
+  Future<void> crateApiSshSshSessionDisconnect({required SshSession that});
+
+  Future<ExecOutput> crateApiSshSshSessionExec({
+    required SshSession that,
+    required String command,
+    required int maxBytes,
+  });
+
+  SessionInfo crateApiSshSshSessionInfo({required SshSession that});
+
+  bool crateApiSshSshSessionIsConnected({required SshSession that});
+
+  Future<RemoteFiles> crateApiSshSshSessionOpenFiles({
+    required SshSession that,
+  });
+
+  Future<RemoteShell> crateApiSshSshSessionOpenShell({
+    required SshSession that,
+    required ShellOptions options,
+  });
+
+  Future<ActiveTunnel> crateApiSshSshSessionStartTunnel({
+    required SshSession that,
+    required TunnelSpec spec,
+  });
+
   Future<String> crateApiVaultBackupOpen({
     required String password,
     required List<int> data,
@@ -93,6 +281,8 @@ abstract class RustLibApi extends BaseApi {
     required String contents,
   });
 
+  String crateApiAppCoreVersion();
+
   Future<Credentials> crateApiSshTypesCredentialsDefault();
 
   Future<KeyPairInfo> crateApiKeysGenerateKey({
@@ -100,6 +290,8 @@ abstract class RustLibApi extends BaseApi {
     required String comment,
     String? passphrase,
   });
+
+  Future<void> crateApiAppInitApp();
 
   Future<KeyPairInfo> crateApiKeysInspectPrivateKey({
     required String pem,
@@ -111,6 +303,10 @@ abstract class RustLibApi extends BaseApi {
   bool crateApiKeysPrivateKeyIsEncrypted({required String pem});
 
   String crateApiKeysPublicKeyFingerprint({required String publicOpenssh});
+
+  String crateApiSftpRemoteJoin({required String dir, required String name});
+
+  String crateApiSftpRemoteParent({required String path});
 
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault();
 
@@ -128,6 +324,46 @@ abstract class RustLibApi extends BaseApi {
     required List<int> key,
     required String contents,
   });
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ActiveTunnel;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ActiveTunnel;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ActiveTunnelPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_FileTransfer;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_FileTransfer;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_FileTransferPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteFiles;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteFiles;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_RemoteFilesPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteShell;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteShell;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_RemoteShellPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SshSession;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SshSession;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SshSessionPtr;
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -137,6 +373,1505 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required super.generalizedFrbRustBinding,
     required super.portManager,
   });
+
+  @override
+  int crateApiTunnelActiveTunnelBoundPort({required ActiveTunnel that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_16,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTunnelActiveTunnelBoundPortConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTunnelActiveTunnelBoundPortConstMeta =>
+      const TaskConstMeta(
+        debugName: "ActiveTunnel_bound_port",
+        argNames: ["that"],
+      );
+
+  @override
+  bool crateApiTunnelActiveTunnelIsRunning({required ActiveTunnel that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTunnelActiveTunnelIsRunningConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTunnelActiveTunnelIsRunningConstMeta =>
+      const TaskConstMeta(
+        debugName: "ActiveTunnel_is_running",
+        argNames: ["that"],
+      );
+
+  @override
+  TunnelSpec crateApiTunnelActiveTunnelSpec({required ActiveTunnel that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tunnel_spec,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTunnelActiveTunnelSpecConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTunnelActiveTunnelSpecConstMeta =>
+      const TaskConstMeta(debugName: "ActiveTunnel_spec", argNames: ["that"]);
+
+  @override
+  TunnelStats crateApiTunnelActiveTunnelStats({required ActiveTunnel that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tunnel_stats,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTunnelActiveTunnelStatsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTunnelActiveTunnelStatsConstMeta =>
+      const TaskConstMeta(debugName: "ActiveTunnel_stats", argNames: ["that"]);
+
+  @override
+  Future<void> crateApiTunnelActiveTunnelStop({required ActiveTunnel that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 5,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTunnelActiveTunnelStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTunnelActiveTunnelStopConstMeta =>
+      const TaskConstMeta(debugName: "ActiveTunnel_stop", argNames: ["that"]);
+
+  @override
+  void crateApiSftpFileTransferCancel({required FileTransfer that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSftpFileTransferCancelConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpFileTransferCancelConstMeta =>
+      const TaskConstMeta(debugName: "FileTransfer_cancel", argNames: ["that"]);
+
+  @override
+  FileTransfer crateApiSftpFileTransferCreate() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSftpFileTransferCreateConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpFileTransferCreateConstMeta =>
+      const TaskConstMeta(debugName: "FileTransfer_create", argNames: []);
+
+  @override
+  bool crateApiSftpFileTransferIsCancelled({required FileTransfer that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSftpFileTransferIsCancelledConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpFileTransferIsCancelledConstMeta =>
+      const TaskConstMeta(
+        debugName: "FileTransfer_is_cancelled",
+        argNames: ["that"],
+      );
+
+  @override
+  Stream<TransferProgress> crateApiSftpFileTransferWatch({
+    required FileTransfer that,
+  }) {
+    final sink = RustStreamSink<TransferProgress>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_transfer_progress_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 9,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiSftpFileTransferWatchConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiSftpFileTransferWatchConstMeta =>
+      const TaskConstMeta(
+        debugName: "FileTransfer_watch",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  Future<String> crateApiSftpRemoteFilesCanonicalize({
+    required RemoteFiles that,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 10,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesCanonicalizeConstMeta,
+        argValues: [that, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesCanonicalizeConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_canonicalize",
+        argNames: ["that", "path"],
+      );
+
+  @override
+  Future<BigInt> crateApiSftpRemoteFilesDownload({
+    required RemoteFiles that,
+    required String remotePath,
+    required String localPath,
+    required FileTransfer transfer,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(remotePath, serializer);
+          sse_encode_String(localPath, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+            transfer,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_64,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesDownloadConstMeta,
+        argValues: [that, remotePath, localPath, transfer],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesDownloadConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_download",
+        argNames: ["that", "remotePath", "localPath", "transfer"],
+      );
+
+  @override
+  Future<String> crateApiSftpRemoteFilesHome({required RemoteFiles that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesHomeConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesHomeConstMeta =>
+      const TaskConstMeta(debugName: "RemoteFiles_home", argNames: ["that"]);
+
+  @override
+  Future<List<RemoteEntry>> crateApiSftpRemoteFilesList({
+    required RemoteFiles that,
+    required String dir,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(dir, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 13,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_remote_entry,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesListConstMeta,
+        argValues: [that, dir],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesListConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_list",
+        argNames: ["that", "dir"],
+      );
+
+  @override
+  Future<void> crateApiSftpRemoteFilesMakeDir({
+    required RemoteFiles that,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 14,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesMakeDirConstMeta,
+        argValues: [that, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesMakeDirConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_make_dir",
+        argNames: ["that", "path"],
+      );
+
+  @override
+  Future<String> crateApiSftpRemoteFilesReadText({
+    required RemoteFiles that,
+    required String path,
+    required BigInt maxBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          sse_encode_u_64(maxBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesReadTextConstMeta,
+        argValues: [that, path, maxBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesReadTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_read_text",
+        argNames: ["that", "path", "maxBytes"],
+      );
+
+  @override
+  Future<void> crateApiSftpRemoteFilesRemove({
+    required RemoteFiles that,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesRemoveConstMeta,
+        argValues: [that, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesRemoveConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_remove",
+        argNames: ["that", "path"],
+      );
+
+  @override
+  Future<void> crateApiSftpRemoteFilesRename({
+    required RemoteFiles that,
+    required String from,
+    required String to,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(from, serializer);
+          sse_encode_String(to, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 17,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesRenameConstMeta,
+        argValues: [that, from, to],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesRenameConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_rename",
+        argNames: ["that", "from", "to"],
+      );
+
+  @override
+  Future<void> crateApiSftpRemoteFilesSetPermissions({
+    required RemoteFiles that,
+    required String path,
+    required int mode,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          sse_encode_u_32(mode, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 18,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesSetPermissionsConstMeta,
+        argValues: [that, path, mode],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesSetPermissionsConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_set_permissions",
+        argNames: ["that", "path", "mode"],
+      );
+
+  @override
+  Future<RemoteEntry> crateApiSftpRemoteFilesStat({
+    required RemoteFiles that,
+    required String path,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_remote_entry,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesStatConstMeta,
+        argValues: [that, path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesStatConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_stat",
+        argNames: ["that", "path"],
+      );
+
+  @override
+  Future<BigInt> crateApiSftpRemoteFilesUpload({
+    required RemoteFiles that,
+    required String localPath,
+    required String remotePath,
+    required FileTransfer transfer,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(localPath, serializer);
+          sse_encode_String(remotePath, serializer);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+            transfer,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 20,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_64,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesUploadConstMeta,
+        argValues: [that, localPath, remotePath, transfer],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesUploadConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_upload",
+        argNames: ["that", "localPath", "remotePath", "transfer"],
+      );
+
+  @override
+  Future<void> crateApiSftpRemoteFilesWriteText({
+    required RemoteFiles that,
+    required String path,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+            that,
+            serializer,
+          );
+          sse_encode_String(path, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSftpRemoteFilesWriteTextConstMeta,
+        argValues: [that, path, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteFilesWriteTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteFiles_write_text",
+        argNames: ["that", "path", "text"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellClearHistory({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellClearHistoryConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellClearHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_clear_history",
+        argNames: ["that"],
+      );
+
+  @override
+  bool crateApiTerminalRemoteShellClick({
+    required RemoteShell that,
+    required int row,
+    required int col,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_u_16(row, serializer);
+          sse_encode_u_16(col, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellClickConstMeta,
+        argValues: [that, row, col],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellClickConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_click",
+        argNames: ["that", "row", "col"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellClose({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellCloseConstMeta =>
+      const TaskConstMeta(debugName: "RemoteShell_close", argNames: ["that"]);
+
+  @override
+  Stream<ShellEvent> crateApiTerminalRemoteShellEvents({
+    required RemoteShell that,
+  }) {
+    final sink = RustStreamSink<ShellEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_shell_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 25,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiTerminalRemoteShellEventsConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_events",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  TerminalFrame crateApiTerminalRemoteShellFrame({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 26)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_terminal_frame,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellFrameConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellFrameConstMeta =>
+      const TaskConstMeta(debugName: "RemoteShell_frame", argNames: ["that"]);
+
+  @override
+  bool crateApiTerminalRemoteShellIsClosed({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellIsClosedConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellIsClosedConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_is_closed",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellPaste({
+    required RemoteShell that,
+    required String text,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellPasteConstMeta,
+        argValues: [that, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellPasteConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_paste",
+        argNames: ["that", "text"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellResize({
+    required RemoteShell that,
+    required int cols,
+    required int rows,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_u_16(cols, serializer);
+          sse_encode_u_16(rows, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellResizeConstMeta,
+        argValues: [that, cols, rows],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellResizeConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_resize",
+        argNames: ["that", "cols", "rows"],
+      );
+
+  @override
+  bool crateApiTerminalRemoteShellScroll({
+    required RemoteShell that,
+    required int lines,
+    required int row,
+    required int col,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_i_32(lines, serializer);
+          sse_encode_u_16(row, serializer);
+          sse_encode_u_16(col, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellScrollConstMeta,
+        argValues: [that, lines, row, col],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellScrollConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_scroll",
+        argNames: ["that", "lines", "row", "col"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellScrollToBottom({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellScrollToBottomConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellScrollToBottomConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_scroll_to_bottom",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellSendKey({
+    required RemoteShell that,
+    required TerminalKey key,
+    required KeyModifiers mods,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_terminal_key(key, serializer);
+          sse_encode_box_autoadd_key_modifiers(mods, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellSendKeyConstMeta,
+        argValues: [that, key, mods],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellSendKeyConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_send_key",
+        argNames: ["that", "key", "mods"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellSendText({
+    required RemoteShell that,
+    required String text,
+    required KeyModifiers mods,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          sse_encode_box_autoadd_key_modifiers(mods, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellSendTextConstMeta,
+        argValues: [that, text, mods],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellSendTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_send_text",
+        argNames: ["that", "text", "mods"],
+      );
+
+  @override
+  void crateApiTerminalRemoteShellSetPalette({
+    required RemoteShell that,
+    required TerminalPalette palette,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_terminal_palette(palette, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellSetPaletteConstMeta,
+        argValues: [that, palette],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellSetPaletteConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_set_palette",
+        argNames: ["that", "palette"],
+      );
+
+  @override
+  String crateApiTerminalRemoteShellTextBetween({
+    required RemoteShell that,
+    required int startRow,
+    required int startCol,
+    required int endRow,
+    required int endCol,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          sse_encode_u_16(startRow, serializer);
+          sse_encode_u_16(startCol, serializer);
+          sse_encode_u_16(endRow, serializer);
+          sse_encode_u_16(endCol, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 35)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellTextBetweenConstMeta,
+        argValues: [that, startRow, startCol, endRow, endCol],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellTextBetweenConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_text_between",
+        argNames: ["that", "startRow", "startCol", "endRow", "endCol"],
+      );
+
+  @override
+  String crateApiTerminalRemoteShellVisibleText({required RemoteShell that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 36)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTerminalRemoteShellVisibleTextConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTerminalRemoteShellVisibleTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteShell_visible_text",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<SshSession> crateApiSshSshSessionConnect({
+    required ConnectOptions options,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_connect_options(options, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 37,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession,
+          decodeErrorData: sse_decode_connect_error,
+        ),
+        constMeta: kCrateApiSshSshSessionConnectConstMeta,
+        argValues: [options],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionConnectConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_connect",
+        argNames: ["options"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionDisconnect({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 38,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSshSshSessionDisconnectConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionDisconnectConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_disconnect",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<ExecOutput> crateApiSshSshSessionExec({
+    required SshSession that,
+    required String command,
+    required int maxBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(command, serializer);
+          sse_encode_u_32(maxBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 39,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_exec_output,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionExecConstMeta,
+        argValues: [that, command, maxBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionExecConstMeta => const TaskConstMeta(
+    debugName: "SshSession_exec",
+    argNames: ["that", "command", "maxBytes"],
+  );
+
+  @override
+  SessionInfo crateApiSshSshSessionInfo({required SshSession that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 40)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_session_info,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSshSshSessionInfoConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionInfoConstMeta =>
+      const TaskConstMeta(debugName: "SshSession_info", argNames: ["that"]);
+
+  @override
+  bool crateApiSshSshSessionIsConnected({required SshSession that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 41)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSshSshSessionIsConnectedConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionIsConnectedConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_is_connected",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<RemoteFiles> crateApiSshSshSessionOpenFiles({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 42,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenFilesConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenFilesConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_files",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<RemoteShell> crateApiSshSshSessionOpenShell({
+    required SshSession that,
+    required ShellOptions options,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_shell_options(options, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 43,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenShellConstMeta,
+        argValues: [that, options],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenShellConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_shell",
+        argNames: ["that", "options"],
+      );
+
+  @override
+  Future<ActiveTunnel> crateApiSshSshSessionStartTunnel({
+    required SshSession that,
+    required TunnelSpec spec,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_tunnel_spec(spec, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 44,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionStartTunnelConstMeta,
+        argValues: [that, spec],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionStartTunnelConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_start_tunnel",
+        argNames: ["that", "spec"],
+      );
 
   @override
   Future<String> crateApiVaultBackupOpen({
@@ -152,7 +1887,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 1,
+            funcId: 45,
             port: port_,
           );
         },
@@ -186,7 +1921,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 46,
             port: port_,
           );
         },
@@ -207,6 +1942,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  String crateApiAppCoreVersion() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 47)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiAppCoreVersionConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppCoreVersionConstMeta =>
+      const TaskConstMeta(debugName: "core_version", argNames: []);
+
+  @override
   Future<Credentials> crateApiSshTypesCredentialsDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -215,7 +1972,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 48,
             port: port_,
           );
         },
@@ -249,7 +2006,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 49,
             port: port_,
           );
         },
@@ -270,6 +2027,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<void> crateApiAppInitApp() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 50,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiAppInitAppConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAppInitAppConstMeta =>
+      const TaskConstMeta(debugName: "init_app", argNames: []);
+
+  @override
   Future<KeyPairInfo> crateApiKeysInspectPrivateKey({
     required String pem,
     String? passphrase,
@@ -283,7 +2067,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 51,
             port: port_,
           );
         },
@@ -313,7 +2097,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 52,
             port: port_,
           );
         },
@@ -338,7 +2122,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(pem, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -364,7 +2148,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(publicOpenssh, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 54)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -384,6 +2168,53 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  String crateApiSftpRemoteJoin({required String dir, required String name}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(dir, serializer);
+          sse_encode_String(name, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 55)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSftpRemoteJoinConstMeta,
+        argValues: [dir, name],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteJoinConstMeta =>
+      const TaskConstMeta(debugName: "remote_join", argNames: ["dir", "name"]);
+
+  @override
+  String crateApiSftpRemoteParent({required String path}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(path, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 56)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSftpRemoteParentConstMeta,
+        argValues: [path],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSftpRemoteParentConstMeta =>
+      const TaskConstMeta(debugName: "remote_parent", argNames: ["path"]);
+
+  @override
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -392,7 +2223,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 57,
             port: port_,
           );
         },
@@ -419,7 +2250,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 58,
             port: port_,
           );
         },
@@ -451,7 +2282,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 59,
             port: port_,
           );
         },
@@ -475,7 +2306,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_8_strict,
@@ -507,7 +2338,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 61,
             port: port_,
           );
         },
@@ -527,10 +2358,201 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     argNames: ["path", "key", "contents"],
   );
 
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ActiveTunnel => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ActiveTunnel => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_FileTransfer => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_FileTransfer => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteFiles => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteFiles => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteShell => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteShell => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SshSession => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SshSession => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession;
+
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return AnyhowException(raw as String);
+  }
+
+  @protected
+  ActiveTunnel
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  FileTransfer
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return FileTransferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteFiles
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteShell
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SshSession
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SshSessionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ActiveTunnel
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  FileTransfer
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return FileTransferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteFiles
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteShell
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SshSession
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SshSessionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ActiveTunnel
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  FileTransfer
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return FileTransferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteFiles
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteShell
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SshSession
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SshSessionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RustStreamSink<ShellEvent> dco_decode_StreamSink_shell_event_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<TransferProgress> dco_decode_StreamSink_transfer_progress_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
   }
 
   @protected
@@ -543,6 +2565,121 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as bool;
+  }
+
+  @protected
+  ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_connect_options(raw);
+  }
+
+  @protected
+  HostKeyInfo dco_decode_box_autoadd_host_key_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_host_key_info(raw);
+  }
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_i_64(raw);
+  }
+
+  @protected
+  JumpHost dco_decode_box_autoadd_jump_host(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_jump_host(raw);
+  }
+
+  @protected
+  KeyModifiers dco_decode_box_autoadd_key_modifiers(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_key_modifiers(raw);
+  }
+
+  @protected
+  ShellOptions dco_decode_box_autoadd_shell_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_shell_options(raw);
+  }
+
+  @protected
+  TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_terminal_palette(raw);
+  }
+
+  @protected
+  TunnelSpec dco_decode_box_autoadd_tunnel_spec(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_tunnel_spec(raw);
+  }
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  ConnectError dco_decode_connect_error(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return ConnectError_HostKeyUnknown(
+          host: dco_decode_String(raw[1]),
+          port: dco_decode_u_16(raw[2]),
+          key: dco_decode_box_autoadd_host_key_info(raw[3]),
+        );
+      case 1:
+        return ConnectError_HostKeyChanged(
+          host: dco_decode_String(raw[1]),
+          port: dco_decode_u_16(raw[2]),
+          key: dco_decode_box_autoadd_host_key_info(raw[3]),
+        );
+      case 2:
+        return ConnectError_AuthFailed(
+          host: dco_decode_String(raw[1]),
+          tried: dco_decode_list_String(raw[2]),
+          serverAccepts: dco_decode_list_String(raw[3]),
+        );
+      case 3:
+        return ConnectError_KeyNeedsPassphrase();
+      case 4:
+        return ConnectError_KeyWrongPassphrase();
+      case 5:
+        return ConnectError_KeyUnreadable(reason: dco_decode_String(raw[1]));
+      case 6:
+        return ConnectError_Network(
+          host: dco_decode_String(raw[1]),
+          port: dco_decode_u_16(raw[2]),
+          message: dco_decode_String(raw[3]),
+        );
+      case 7:
+        return ConnectError_Timeout();
+      case 8:
+        return ConnectError_Protocol(message: dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  ConnectOptions dco_decode_connect_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return ConnectOptions(
+      host: dco_decode_String(arr[0]),
+      port: dco_decode_u_16(arr[1]),
+      username: dco_decode_String(arr[2]),
+      credentials: dco_decode_credentials(arr[3]),
+      trustedHostKeys: dco_decode_list_String(arr[4]),
+      keepaliveSecs: dco_decode_u_32(arr[5]),
+      connectTimeoutSecs: dco_decode_u_32(arr[6]),
+      jump: dco_decode_opt_box_autoadd_jump_host(arr[7]),
+    );
   }
 
   @protected
@@ -559,9 +2696,81 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  CursorShape dco_decode_cursor_shape(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return CursorShape.values[raw as int];
+  }
+
+  @protected
+  EntryKind dco_decode_entry_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EntryKind.values[raw as int];
+  }
+
+  @protected
+  EnvVar dco_decode_env_var(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return EnvVar(
+      name: dco_decode_String(arr[0]),
+      value: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  ExecOutput dco_decode_exec_output(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ExecOutput(
+      stdout: dco_decode_String(arr[0]),
+      stderr: dco_decode_String(arr[1]),
+      exitCode: dco_decode_opt_box_autoadd_u_32(arr[2]),
+      truncated: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  HostKeyInfo dco_decode_host_key_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HostKeyInfo(
+      algorithm: dco_decode_String(arr[0]),
+      fingerprint: dco_decode_String(arr[1]),
+      publicKey: dco_decode_String(arr[2]),
+    );
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeI64(raw);
+  }
+
+  @protected
+  JumpHost dco_decode_jump_host(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return JumpHost(
+      host: dco_decode_String(arr[0]),
+      port: dco_decode_u_16(arr[1]),
+      username: dco_decode_String(arr[2]),
+      credentials: dco_decode_credentials(arr[3]),
+      trustedHostKeys: dco_decode_list_String(arr[4]),
+    );
   }
 
   @protected
@@ -600,6 +2809,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
+  }
+
+  @protected
+  List<EnvVar> dco_decode_list_env_var(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_env_var).toList();
+  }
+
+  @protected
   Uint32List dco_decode_list_prim_u_32_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint32List;
@@ -618,9 +2839,170 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<RemoteEntry> dco_decode_list_remote_entry(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_remote_entry).toList();
+  }
+
+  @protected
+  List<TerminalLine> dco_decode_list_terminal_line(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_terminal_line).toList();
+  }
+
+  @protected
+  List<TextRun> dco_decode_list_text_run(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_text_run).toList();
+  }
+
+  @protected
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
+  }
+
+  @protected
+  JumpHost? dco_decode_opt_box_autoadd_jump_host(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_jump_host(raw);
+  }
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_u_32(raw);
+  }
+
+  @protected
+  RemoteEntry dco_decode_remote_entry(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return RemoteEntry(
+      name: dco_decode_String(arr[0]),
+      path: dco_decode_String(arr[1]),
+      kind: dco_decode_entry_kind(arr[2]),
+      isDir: dco_decode_bool(arr[3]),
+      size: dco_decode_u_64(arr[4]),
+      permissions: dco_decode_u_32(arr[5]),
+      modified: dco_decode_opt_box_autoadd_i_64(arr[6]),
+    );
+  }
+
+  @protected
+  SessionInfo dco_decode_session_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return SessionInfo(
+      host: dco_decode_String(arr[0]),
+      port: dco_decode_u_16(arr[1]),
+      username: dco_decode_String(arr[2]),
+      via: dco_decode_opt_String(arr[3]),
+      banner: dco_decode_opt_String(arr[4]),
+      hostKey: dco_decode_host_key_info(arr[5]),
+    );
+  }
+
+  @protected
+  ShellEvent dco_decode_shell_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return ShellEvent_Changed();
+      case 1:
+        return ShellEvent_Title(dco_decode_String(raw[1]));
+      case 2:
+        return ShellEvent_Bell();
+      case 3:
+        return ShellEvent_Clipboard(dco_decode_String(raw[1]));
+      case 4:
+        return ShellEvent_Exited(code: dco_decode_opt_box_autoadd_u_32(raw[1]));
+      case 5:
+        return ShellEvent_Disconnected();
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  ShellOptions dco_decode_shell_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return ShellOptions(
+      cols: dco_decode_u_16(arr[0]),
+      rows: dco_decode_u_16(arr[1]),
+      term: dco_decode_String(arr[2]),
+      scrollbackLines: dco_decode_u_32(arr[3]),
+      env: dco_decode_list_env_var(arr[4]),
+      startupCommand: dco_decode_opt_String(arr[5]),
+      palette: dco_decode_terminal_palette(arr[6]),
+    );
+  }
+
+  @protected
+  TerminalCursor dco_decode_terminal_cursor(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return TerminalCursor(
+      row: dco_decode_u_16(arr[0]),
+      col: dco_decode_u_16(arr[1]),
+      visible: dco_decode_bool(arr[2]),
+      shape: dco_decode_cursor_shape(arr[3]),
+      color: dco_decode_u_32(arr[4]),
+    );
+  }
+
+  @protected
+  TerminalFrame dco_decode_terminal_frame(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
+    return TerminalFrame(
+      rows: dco_decode_u_16(arr[0]),
+      cols: dco_decode_u_16(arr[1]),
+      lines: dco_decode_list_terminal_line(arr[2]),
+      cursor: dco_decode_terminal_cursor(arr[3]),
+      scrollOffset: dco_decode_u_32(arr[4]),
+      scrollbackLen: dco_decode_u_32(arr[5]),
+      alternateScreen: dco_decode_bool(arr[6]),
+      mouseReporting: dco_decode_bool(arr[7]),
+      title: dco_decode_String(arr[8]),
+      background: dco_decode_u_32(arr[9]),
+      foreground: dco_decode_u_32(arr[10]),
+    );
+  }
+
+  @protected
+  TerminalKey dco_decode_terminal_key(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TerminalKey.values[raw as int];
+  }
+
+  @protected
+  TerminalLine dco_decode_terminal_line(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TerminalLine(
+      key: dco_decode_u_64(arr[0]),
+      runs: dco_decode_list_text_run(arr[1]),
+    );
   }
 
   @protected
@@ -639,6 +3021,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TextRun dco_decode_text_run(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return TextRun(
+      col: dco_decode_u_16(arr[0]),
+      width: dco_decode_u_16(arr[1]),
+      text: dco_decode_String(arr[2]),
+      fg: dco_decode_u_32(arr[3]),
+      bg: dco_decode_u_32(arr[4]),
+      style: dco_decode_u_8(arr[5]),
+    );
+  }
+
+  @protected
+  TransferProgress dco_decode_transfer_progress(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TransferProgress(
+      transferred: dco_decode_u_64(arr[0]),
+      total: dco_decode_u_64(arr[1]),
+    );
+  }
+
+  @protected
+  TunnelKind dco_decode_tunnel_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TunnelKind.values[raw as int];
+  }
+
+  @protected
+  TunnelSpec dco_decode_tunnel_spec(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return TunnelSpec(
+      kind: dco_decode_tunnel_kind(arr[0]),
+      bindHost: dco_decode_String(arr[1]),
+      bindPort: dco_decode_u_16(arr[2]),
+      targetHost: dco_decode_String(arr[3]),
+      targetPort: dco_decode_u_16(arr[4]),
+    );
+  }
+
+  @protected
   TunnelStats dco_decode_tunnel_stats(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -650,6 +3081,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bytesSent: dco_decode_u_64(arr[2]),
       bytesReceived: dco_decode_u_64(arr[3]),
     );
+  }
+
+  @protected
+  int dco_decode_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -677,10 +3114,212 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BigInt dco_decode_usize(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
+  }
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_String(deserializer);
     return AnyhowException(inner);
+  }
+
+  @protected
+  ActiveTunnel
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  FileTransfer
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return FileTransferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteFiles
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteShell
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SshSession
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SshSessionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ActiveTunnel
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  FileTransfer
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return FileTransferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteFiles
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteShell
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SshSession
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SshSessionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ActiveTunnel
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ActiveTunnelImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  FileTransfer
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return FileTransferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteFiles
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteFilesImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteShell
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteShellImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SshSession
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SshSessionImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RustStreamSink<ShellEvent> sse_decode_StreamSink_shell_event_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<TransferProgress> sse_decode_StreamSink_transfer_progress_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
   }
 
   @protected
@@ -697,6 +3336,152 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ConnectOptions sse_decode_box_autoadd_connect_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_connect_options(deserializer));
+  }
+
+  @protected
+  HostKeyInfo sse_decode_box_autoadd_host_key_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_host_key_info(deserializer));
+  }
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_64(deserializer));
+  }
+
+  @protected
+  JumpHost sse_decode_box_autoadd_jump_host(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_jump_host(deserializer));
+  }
+
+  @protected
+  KeyModifiers sse_decode_box_autoadd_key_modifiers(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_key_modifiers(deserializer));
+  }
+
+  @protected
+  ShellOptions sse_decode_box_autoadd_shell_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_shell_options(deserializer));
+  }
+
+  @protected
+  TerminalPalette sse_decode_box_autoadd_terminal_palette(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_terminal_palette(deserializer));
+  }
+
+  @protected
+  TunnelSpec sse_decode_box_autoadd_tunnel_spec(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_tunnel_spec(deserializer));
+  }
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_u_32(deserializer));
+  }
+
+  @protected
+  ConnectError sse_decode_connect_error(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_host = sse_decode_String(deserializer);
+        var var_port = sse_decode_u_16(deserializer);
+        var var_key = sse_decode_box_autoadd_host_key_info(deserializer);
+        return ConnectError_HostKeyUnknown(
+          host: var_host,
+          port: var_port,
+          key: var_key,
+        );
+      case 1:
+        var var_host = sse_decode_String(deserializer);
+        var var_port = sse_decode_u_16(deserializer);
+        var var_key = sse_decode_box_autoadd_host_key_info(deserializer);
+        return ConnectError_HostKeyChanged(
+          host: var_host,
+          port: var_port,
+          key: var_key,
+        );
+      case 2:
+        var var_host = sse_decode_String(deserializer);
+        var var_tried = sse_decode_list_String(deserializer);
+        var var_serverAccepts = sse_decode_list_String(deserializer);
+        return ConnectError_AuthFailed(
+          host: var_host,
+          tried: var_tried,
+          serverAccepts: var_serverAccepts,
+        );
+      case 3:
+        return ConnectError_KeyNeedsPassphrase();
+      case 4:
+        return ConnectError_KeyWrongPassphrase();
+      case 5:
+        var var_reason = sse_decode_String(deserializer);
+        return ConnectError_KeyUnreadable(reason: var_reason);
+      case 6:
+        var var_host = sse_decode_String(deserializer);
+        var var_port = sse_decode_u_16(deserializer);
+        var var_message = sse_decode_String(deserializer);
+        return ConnectError_Network(
+          host: var_host,
+          port: var_port,
+          message: var_message,
+        );
+      case 7:
+        return ConnectError_Timeout();
+      case 8:
+        var var_message = sse_decode_String(deserializer);
+        return ConnectError_Protocol(message: var_message);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  ConnectOptions sse_decode_connect_options(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_host = sse_decode_String(deserializer);
+    var var_port = sse_decode_u_16(deserializer);
+    var var_username = sse_decode_String(deserializer);
+    var var_credentials = sse_decode_credentials(deserializer);
+    var var_trustedHostKeys = sse_decode_list_String(deserializer);
+    var var_keepaliveSecs = sse_decode_u_32(deserializer);
+    var var_connectTimeoutSecs = sse_decode_u_32(deserializer);
+    var var_jump = sse_decode_opt_box_autoadd_jump_host(deserializer);
+    return ConnectOptions(
+      host: var_host,
+      port: var_port,
+      username: var_username,
+      credentials: var_credentials,
+      trustedHostKeys: var_trustedHostKeys,
+      keepaliveSecs: var_keepaliveSecs,
+      connectTimeoutSecs: var_connectTimeoutSecs,
+      jump: var_jump,
+    );
+  }
+
+  @protected
   Credentials sse_decode_credentials(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_password = sse_decode_opt_String(deserializer);
@@ -710,9 +3495,82 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  CursorShape sse_decode_cursor_shape(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return CursorShape.values[inner];
+  }
+
+  @protected
+  EntryKind sse_decode_entry_kind(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return EntryKind.values[inner];
+  }
+
+  @protected
+  EnvVar sse_decode_env_var(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_value = sse_decode_String(deserializer);
+    return EnvVar(name: var_name, value: var_value);
+  }
+
+  @protected
+  ExecOutput sse_decode_exec_output(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_stdout = sse_decode_String(deserializer);
+    var var_stderr = sse_decode_String(deserializer);
+    var var_exitCode = sse_decode_opt_box_autoadd_u_32(deserializer);
+    var var_truncated = sse_decode_bool(deserializer);
+    return ExecOutput(
+      stdout: var_stdout,
+      stderr: var_stderr,
+      exitCode: var_exitCode,
+      truncated: var_truncated,
+    );
+  }
+
+  @protected
+  HostKeyInfo sse_decode_host_key_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_algorithm = sse_decode_String(deserializer);
+    var var_fingerprint = sse_decode_String(deserializer);
+    var var_publicKey = sse_decode_String(deserializer);
+    return HostKeyInfo(
+      algorithm: var_algorithm,
+      fingerprint: var_fingerprint,
+      publicKey: var_publicKey,
+    );
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getPlatformInt64();
+  }
+
+  @protected
+  JumpHost sse_decode_jump_host(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_host = sse_decode_String(deserializer);
+    var var_port = sse_decode_u_16(deserializer);
+    var var_username = sse_decode_String(deserializer);
+    var var_credentials = sse_decode_credentials(deserializer);
+    var var_trustedHostKeys = sse_decode_list_String(deserializer);
+    return JumpHost(
+      host: var_host,
+      port: var_port,
+      username: var_username,
+      credentials: var_credentials,
+      trustedHostKeys: var_trustedHostKeys,
+    );
   }
 
   @protected
@@ -751,6 +3609,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <EnvVar>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_env_var(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
@@ -772,6 +3654,44 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<RemoteEntry> sse_decode_list_remote_entry(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <RemoteEntry>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_remote_entry(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<TerminalLine> sse_decode_list_terminal_line(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TerminalLine>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_terminal_line(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<TextRun> sse_decode_list_text_run(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TextRun>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_text_run(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -780,6 +3700,187 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     } else {
       return null;
     }
+  }
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_64(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  JumpHost? sse_decode_opt_box_autoadd_jump_host(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_jump_host(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_u_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  RemoteEntry sse_decode_remote_entry(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_path = sse_decode_String(deserializer);
+    var var_kind = sse_decode_entry_kind(deserializer);
+    var var_isDir = sse_decode_bool(deserializer);
+    var var_size = sse_decode_u_64(deserializer);
+    var var_permissions = sse_decode_u_32(deserializer);
+    var var_modified = sse_decode_opt_box_autoadd_i_64(deserializer);
+    return RemoteEntry(
+      name: var_name,
+      path: var_path,
+      kind: var_kind,
+      isDir: var_isDir,
+      size: var_size,
+      permissions: var_permissions,
+      modified: var_modified,
+    );
+  }
+
+  @protected
+  SessionInfo sse_decode_session_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_host = sse_decode_String(deserializer);
+    var var_port = sse_decode_u_16(deserializer);
+    var var_username = sse_decode_String(deserializer);
+    var var_via = sse_decode_opt_String(deserializer);
+    var var_banner = sse_decode_opt_String(deserializer);
+    var var_hostKey = sse_decode_host_key_info(deserializer);
+    return SessionInfo(
+      host: var_host,
+      port: var_port,
+      username: var_username,
+      via: var_via,
+      banner: var_banner,
+      hostKey: var_hostKey,
+    );
+  }
+
+  @protected
+  ShellEvent sse_decode_shell_event(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        return ShellEvent_Changed();
+      case 1:
+        var var_field0 = sse_decode_String(deserializer);
+        return ShellEvent_Title(var_field0);
+      case 2:
+        return ShellEvent_Bell();
+      case 3:
+        var var_field0 = sse_decode_String(deserializer);
+        return ShellEvent_Clipboard(var_field0);
+      case 4:
+        var var_code = sse_decode_opt_box_autoadd_u_32(deserializer);
+        return ShellEvent_Exited(code: var_code);
+      case 5:
+        return ShellEvent_Disconnected();
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  ShellOptions sse_decode_shell_options(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_cols = sse_decode_u_16(deserializer);
+    var var_rows = sse_decode_u_16(deserializer);
+    var var_term = sse_decode_String(deserializer);
+    var var_scrollbackLines = sse_decode_u_32(deserializer);
+    var var_env = sse_decode_list_env_var(deserializer);
+    var var_startupCommand = sse_decode_opt_String(deserializer);
+    var var_palette = sse_decode_terminal_palette(deserializer);
+    return ShellOptions(
+      cols: var_cols,
+      rows: var_rows,
+      term: var_term,
+      scrollbackLines: var_scrollbackLines,
+      env: var_env,
+      startupCommand: var_startupCommand,
+      palette: var_palette,
+    );
+  }
+
+  @protected
+  TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_row = sse_decode_u_16(deserializer);
+    var var_col = sse_decode_u_16(deserializer);
+    var var_visible = sse_decode_bool(deserializer);
+    var var_shape = sse_decode_cursor_shape(deserializer);
+    var var_color = sse_decode_u_32(deserializer);
+    return TerminalCursor(
+      row: var_row,
+      col: var_col,
+      visible: var_visible,
+      shape: var_shape,
+      color: var_color,
+    );
+  }
+
+  @protected
+  TerminalFrame sse_decode_terminal_frame(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_rows = sse_decode_u_16(deserializer);
+    var var_cols = sse_decode_u_16(deserializer);
+    var var_lines = sse_decode_list_terminal_line(deserializer);
+    var var_cursor = sse_decode_terminal_cursor(deserializer);
+    var var_scrollOffset = sse_decode_u_32(deserializer);
+    var var_scrollbackLen = sse_decode_u_32(deserializer);
+    var var_alternateScreen = sse_decode_bool(deserializer);
+    var var_mouseReporting = sse_decode_bool(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_background = sse_decode_u_32(deserializer);
+    var var_foreground = sse_decode_u_32(deserializer);
+    return TerminalFrame(
+      rows: var_rows,
+      cols: var_cols,
+      lines: var_lines,
+      cursor: var_cursor,
+      scrollOffset: var_scrollOffset,
+      scrollbackLen: var_scrollbackLen,
+      alternateScreen: var_alternateScreen,
+      mouseReporting: var_mouseReporting,
+      title: var_title,
+      background: var_background,
+      foreground: var_foreground,
+    );
+  }
+
+  @protected
+  TerminalKey sse_decode_terminal_key(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TerminalKey.values[inner];
+  }
+
+  @protected
+  TerminalLine sse_decode_terminal_line(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_key = sse_decode_u_64(deserializer);
+    var var_runs = sse_decode_list_text_run(deserializer);
+    return TerminalLine(key: var_key, runs: var_runs);
   }
 
   @protected
@@ -800,6 +3901,57 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TextRun sse_decode_text_run(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_col = sse_decode_u_16(deserializer);
+    var var_width = sse_decode_u_16(deserializer);
+    var var_text = sse_decode_String(deserializer);
+    var var_fg = sse_decode_u_32(deserializer);
+    var var_bg = sse_decode_u_32(deserializer);
+    var var_style = sse_decode_u_8(deserializer);
+    return TextRun(
+      col: var_col,
+      width: var_width,
+      text: var_text,
+      fg: var_fg,
+      bg: var_bg,
+      style: var_style,
+    );
+  }
+
+  @protected
+  TransferProgress sse_decode_transfer_progress(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_transferred = sse_decode_u_64(deserializer);
+    var var_total = sse_decode_u_64(deserializer);
+    return TransferProgress(transferred: var_transferred, total: var_total);
+  }
+
+  @protected
+  TunnelKind sse_decode_tunnel_kind(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TunnelKind.values[inner];
+  }
+
+  @protected
+  TunnelSpec sse_decode_tunnel_spec(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_kind = sse_decode_tunnel_kind(deserializer);
+    var var_bindHost = sse_decode_String(deserializer);
+    var var_bindPort = sse_decode_u_16(deserializer);
+    var var_targetHost = sse_decode_String(deserializer);
+    var var_targetPort = sse_decode_u_16(deserializer);
+    return TunnelSpec(
+      kind: var_kind,
+      bindHost: var_bindHost,
+      bindPort: var_bindPort,
+      targetHost: var_targetHost,
+      targetPort: var_targetPort,
+    );
+  }
+
+  @protected
   TunnelStats sse_decode_tunnel_stats(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_connectionsTotal = sse_decode_u_64(deserializer);
@@ -812,6 +3964,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bytesSent: var_bytesSent,
       bytesReceived: var_bytesReceived,
     );
+  }
+
+  @protected
+  int sse_decode_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint16();
   }
 
   @protected
@@ -838,12 +3996,247 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BigInt sse_decode_usize(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
+  }
+
+  @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.message, serializer);
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ActiveTunnelImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as FileTransferImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteFilesImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteShellImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SshSessionImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ActiveTunnelImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as FileTransferImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteFilesImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteShellImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SshSessionImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ActiveTunnelImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as FileTransferImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteFilesImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteShellImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SshSessionImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_shell_event_Sse(
+    RustStreamSink<ShellEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_shell_event,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_transfer_progress_Sse(
+    RustStreamSink<TransferProgress> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_transfer_progress,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
   }
 
   @protected
@@ -859,6 +4252,155 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_connect_options(
+    ConnectOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_connect_options(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_host_key_info(
+    HostKeyInfo self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_host_key_info(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_jump_host(
+    JumpHost self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_jump_host(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_key_modifiers(
+    KeyModifiers self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_key_modifiers(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_shell_options(
+    ShellOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_shell_options(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_terminal_palette(
+    TerminalPalette self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_terminal_palette(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_tunnel_spec(
+    TunnelSpec self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tunnel_spec(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self, serializer);
+  }
+
+  @protected
+  void sse_encode_connect_error(ConnectError self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case ConnectError_HostKeyUnknown(
+        host: final host,
+        port: final port,
+        key: final key,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(host, serializer);
+        sse_encode_u_16(port, serializer);
+        sse_encode_box_autoadd_host_key_info(key, serializer);
+      case ConnectError_HostKeyChanged(
+        host: final host,
+        port: final port,
+        key: final key,
+      ):
+        sse_encode_i_32(1, serializer);
+        sse_encode_String(host, serializer);
+        sse_encode_u_16(port, serializer);
+        sse_encode_box_autoadd_host_key_info(key, serializer);
+      case ConnectError_AuthFailed(
+        host: final host,
+        tried: final tried,
+        serverAccepts: final serverAccepts,
+      ):
+        sse_encode_i_32(2, serializer);
+        sse_encode_String(host, serializer);
+        sse_encode_list_String(tried, serializer);
+        sse_encode_list_String(serverAccepts, serializer);
+      case ConnectError_KeyNeedsPassphrase():
+        sse_encode_i_32(3, serializer);
+      case ConnectError_KeyWrongPassphrase():
+        sse_encode_i_32(4, serializer);
+      case ConnectError_KeyUnreadable(reason: final reason):
+        sse_encode_i_32(5, serializer);
+        sse_encode_String(reason, serializer);
+      case ConnectError_Network(
+        host: final host,
+        port: final port,
+        message: final message,
+      ):
+        sse_encode_i_32(6, serializer);
+        sse_encode_String(host, serializer);
+        sse_encode_u_16(port, serializer);
+        sse_encode_String(message, serializer);
+      case ConnectError_Timeout():
+        sse_encode_i_32(7, serializer);
+      case ConnectError_Protocol(message: final message):
+        sse_encode_i_32(8, serializer);
+        sse_encode_String(message, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_connect_options(
+    ConnectOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.host, serializer);
+    sse_encode_u_16(self.port, serializer);
+    sse_encode_String(self.username, serializer);
+    sse_encode_credentials(self.credentials, serializer);
+    sse_encode_list_String(self.trustedHostKeys, serializer);
+    sse_encode_u_32(self.keepaliveSecs, serializer);
+    sse_encode_u_32(self.connectTimeoutSecs, serializer);
+    sse_encode_opt_box_autoadd_jump_host(self.jump, serializer);
+  }
+
+  @protected
   void sse_encode_credentials(Credentials self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_opt_String(self.password, serializer);
@@ -867,9 +4409,61 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_cursor_shape(CursorShape self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_entry_kind(EntryKind self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_env_var(EnvVar self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.value, serializer);
+  }
+
+  @protected
+  void sse_encode_exec_output(ExecOutput self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.stdout, serializer);
+    sse_encode_String(self.stderr, serializer);
+    sse_encode_opt_box_autoadd_u_32(self.exitCode, serializer);
+    sse_encode_bool(self.truncated, serializer);
+  }
+
+  @protected
+  void sse_encode_host_key_info(HostKeyInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.algorithm, serializer);
+    sse_encode_String(self.fingerprint, serializer);
+    sse_encode_String(self.publicKey, serializer);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putPlatformInt64(self);
+  }
+
+  @protected
+  void sse_encode_jump_host(JumpHost self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.host, serializer);
+    sse_encode_u_16(self.port, serializer);
+    sse_encode_String(self.username, serializer);
+    sse_encode_credentials(self.credentials, serializer);
+    sse_encode_list_String(self.trustedHostKeys, serializer);
   }
 
   @protected
@@ -895,6 +4489,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.algorithm, serializer);
     sse_encode_String(self.comment, serializer);
     sse_encode_bool(self.encrypted, serializer);
+  }
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_env_var(item, serializer);
+    }
   }
 
   @protected
@@ -930,6 +4542,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_remote_entry(
+    List<RemoteEntry> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_remote_entry(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_terminal_line(
+    List<TerminalLine> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_terminal_line(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_text_run(List<TextRun> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_text_run(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -937,6 +4582,141 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (self != null) {
       sse_encode_String(self, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_64(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_jump_host(
+    JumpHost? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_jump_host(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_u_32(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_remote_entry(RemoteEntry self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.path, serializer);
+    sse_encode_entry_kind(self.kind, serializer);
+    sse_encode_bool(self.isDir, serializer);
+    sse_encode_u_64(self.size, serializer);
+    sse_encode_u_32(self.permissions, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.modified, serializer);
+  }
+
+  @protected
+  void sse_encode_session_info(SessionInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.host, serializer);
+    sse_encode_u_16(self.port, serializer);
+    sse_encode_String(self.username, serializer);
+    sse_encode_opt_String(self.via, serializer);
+    sse_encode_opt_String(self.banner, serializer);
+    sse_encode_host_key_info(self.hostKey, serializer);
+  }
+
+  @protected
+  void sse_encode_shell_event(ShellEvent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case ShellEvent_Changed():
+        sse_encode_i_32(0, serializer);
+      case ShellEvent_Title(field0: final field0):
+        sse_encode_i_32(1, serializer);
+        sse_encode_String(field0, serializer);
+      case ShellEvent_Bell():
+        sse_encode_i_32(2, serializer);
+      case ShellEvent_Clipboard(field0: final field0):
+        sse_encode_i_32(3, serializer);
+        sse_encode_String(field0, serializer);
+      case ShellEvent_Exited(code: final code):
+        sse_encode_i_32(4, serializer);
+        sse_encode_opt_box_autoadd_u_32(code, serializer);
+      case ShellEvent_Disconnected():
+        sse_encode_i_32(5, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_shell_options(ShellOptions self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.cols, serializer);
+    sse_encode_u_16(self.rows, serializer);
+    sse_encode_String(self.term, serializer);
+    sse_encode_u_32(self.scrollbackLines, serializer);
+    sse_encode_list_env_var(self.env, serializer);
+    sse_encode_opt_String(self.startupCommand, serializer);
+    sse_encode_terminal_palette(self.palette, serializer);
+  }
+
+  @protected
+  void sse_encode_terminal_cursor(
+    TerminalCursor self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.row, serializer);
+    sse_encode_u_16(self.col, serializer);
+    sse_encode_bool(self.visible, serializer);
+    sse_encode_cursor_shape(self.shape, serializer);
+    sse_encode_u_32(self.color, serializer);
+  }
+
+  @protected
+  void sse_encode_terminal_frame(TerminalFrame self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.rows, serializer);
+    sse_encode_u_16(self.cols, serializer);
+    sse_encode_list_terminal_line(self.lines, serializer);
+    sse_encode_terminal_cursor(self.cursor, serializer);
+    sse_encode_u_32(self.scrollOffset, serializer);
+    sse_encode_u_32(self.scrollbackLen, serializer);
+    sse_encode_bool(self.alternateScreen, serializer);
+    sse_encode_bool(self.mouseReporting, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_u_32(self.background, serializer);
+    sse_encode_u_32(self.foreground, serializer);
+  }
+
+  @protected
+  void sse_encode_terminal_key(TerminalKey self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_terminal_line(TerminalLine self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_64(self.key, serializer);
+    sse_encode_list_text_run(self.runs, serializer);
   }
 
   @protected
@@ -953,12 +4733,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_text_run(TextRun self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_16(self.col, serializer);
+    sse_encode_u_16(self.width, serializer);
+    sse_encode_String(self.text, serializer);
+    sse_encode_u_32(self.fg, serializer);
+    sse_encode_u_32(self.bg, serializer);
+    sse_encode_u_8(self.style, serializer);
+  }
+
+  @protected
+  void sse_encode_transfer_progress(
+    TransferProgress self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_64(self.transferred, serializer);
+    sse_encode_u_64(self.total, serializer);
+  }
+
+  @protected
+  void sse_encode_tunnel_kind(TunnelKind self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_tunnel_spec(TunnelSpec self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tunnel_kind(self.kind, serializer);
+    sse_encode_String(self.bindHost, serializer);
+    sse_encode_u_16(self.bindPort, serializer);
+    sse_encode_String(self.targetHost, serializer);
+    sse_encode_u_16(self.targetPort, serializer);
+  }
+
+  @protected
   void sse_encode_tunnel_stats(TunnelStats self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_64(self.connectionsTotal, serializer);
     sse_encode_u_32(self.connectionsActive, serializer);
     sse_encode_u_64(self.bytesSent, serializer);
     sse_encode_u_64(self.bytesReceived, serializer);
+  }
+
+  @protected
+  void sse_encode_u_16(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint16(self);
   }
 
   @protected
@@ -983,4 +4806,316 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_unit(void self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
   }
+
+  @protected
+  void sse_encode_usize(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
+  }
+}
+
+@sealed
+class ActiveTunnelImpl extends RustOpaque implements ActiveTunnel {
+  // Not to be used by end users
+  ActiveTunnelImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  ActiveTunnelImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_ActiveTunnel,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ActiveTunnel,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ActiveTunnelPtr,
+  );
+
+  /// The port in use (the system picks one when 0 was requested).
+  int boundPort() =>
+      RustLib.instance.api.crateApiTunnelActiveTunnelBoundPort(that: this);
+
+  bool isRunning() =>
+      RustLib.instance.api.crateApiTunnelActiveTunnelIsRunning(that: this);
+
+  TunnelSpec spec() =>
+      RustLib.instance.api.crateApiTunnelActiveTunnelSpec(that: this);
+
+  TunnelStats stats() =>
+      RustLib.instance.api.crateApiTunnelActiveTunnelStats(that: this);
+
+  Future<void> stop() =>
+      RustLib.instance.api.crateApiTunnelActiveTunnelStop(that: this);
+}
+
+@sealed
+class FileTransferImpl extends RustOpaque implements FileTransfer {
+  // Not to be used by end users
+  FileTransferImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  FileTransferImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_FileTransfer,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_FileTransfer,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_FileTransferPtr,
+  );
+
+  void cancel() =>
+      RustLib.instance.api.crateApiSftpFileTransferCancel(that: this);
+
+  bool isCancelled() =>
+      RustLib.instance.api.crateApiSftpFileTransferIsCancelled(that: this);
+
+  /// Progress updates as a stream. Listen before or after starting the
+  /// transfer; early updates are kept.
+  Stream<TransferProgress> watch() =>
+      RustLib.instance.api.crateApiSftpFileTransferWatch(that: this);
+}
+
+@sealed
+class RemoteFilesImpl extends RustOpaque implements RemoteFiles {
+  // Not to be used by end users
+  RemoteFilesImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteFilesImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteFiles,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteFiles,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteFilesPtr,
+  );
+
+  /// Resolves `..`, `.` and links into an absolute path.
+  Future<String> canonicalize({required String path}) => RustLib.instance.api
+      .crateApiSftpRemoteFilesCanonicalize(that: this, path: path);
+
+  /// Copies a file from the server to this device.
+  Future<BigInt> download({
+    required String remotePath,
+    required String localPath,
+    required FileTransfer transfer,
+  }) => RustLib.instance.api.crateApiSftpRemoteFilesDownload(
+    that: this,
+    remotePath: remotePath,
+    localPath: localPath,
+    transfer: transfer,
+  );
+
+  Future<String> home() =>
+      RustLib.instance.api.crateApiSftpRemoteFilesHome(that: this);
+
+  Future<List<RemoteEntry>> list({required String dir}) =>
+      RustLib.instance.api.crateApiSftpRemoteFilesList(that: this, dir: dir);
+
+  Future<void> makeDir({required String path}) => RustLib.instance.api
+      .crateApiSftpRemoteFilesMakeDir(that: this, path: path);
+
+  Future<String> readText({required String path, required BigInt maxBytes}) =>
+      RustLib.instance.api.crateApiSftpRemoteFilesReadText(
+        that: this,
+        path: path,
+        maxBytes: maxBytes,
+      );
+
+  /// Deletes a file, or a folder and everything in it.
+  Future<void> remove({required String path}) => RustLib.instance.api
+      .crateApiSftpRemoteFilesRemove(that: this, path: path);
+
+  Future<void> rename({required String from, required String to}) => RustLib
+      .instance
+      .api
+      .crateApiSftpRemoteFilesRename(that: this, from: from, to: to);
+
+  Future<void> setPermissions({required String path, required int mode}) =>
+      RustLib.instance.api.crateApiSftpRemoteFilesSetPermissions(
+        that: this,
+        path: path,
+        mode: mode,
+      );
+
+  Future<RemoteEntry> stat({required String path}) =>
+      RustLib.instance.api.crateApiSftpRemoteFilesStat(that: this, path: path);
+
+  /// Copies a file from this device to the server.
+  Future<BigInt> upload({
+    required String localPath,
+    required String remotePath,
+    required FileTransfer transfer,
+  }) => RustLib.instance.api.crateApiSftpRemoteFilesUpload(
+    that: this,
+    localPath: localPath,
+    remotePath: remotePath,
+    transfer: transfer,
+  );
+
+  Future<void> writeText({required String path, required String text}) =>
+      RustLib.instance.api.crateApiSftpRemoteFilesWriteText(
+        that: this,
+        path: path,
+        text: text,
+      );
+}
+
+@sealed
+class RemoteShellImpl extends RustOpaque implements RemoteShell {
+  // Not to be used by end users
+  RemoteShellImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteShellImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteShell,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteShell,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteShellPtr,
+  );
+
+  void clearHistory() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellClearHistory(that: this);
+
+  /// Tap on a cell; true if it was sent as a mouse click.
+  bool click({required int row, required int col}) => RustLib.instance.api
+      .crateApiTerminalRemoteShellClick(that: this, row: row, col: col);
+
+  void close() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellClose(that: this);
+
+  /// Screen changes, title, bell, clipboard and exit, as a stream.
+  /// Listen once per shell.
+  Stream<ShellEvent> events() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellEvents(that: this);
+
+  /// The screen as it is now, ready to paint.
+  TerminalFrame frame() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellFrame(that: this);
+
+  bool isClosed() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellIsClosed(that: this);
+
+  void paste({required String text}) => RustLib.instance.api
+      .crateApiTerminalRemoteShellPaste(that: this, text: text);
+
+  void resize({required int cols, required int rows}) => RustLib.instance.api
+      .crateApiTerminalRemoteShellResize(that: this, cols: cols, rows: rows);
+
+  /// Scroll gesture of `lines` (positive = older output) over a cell.
+  /// Returns true when the view moved and should be redrawn now.
+  bool scroll({required int lines, required int row, required int col}) =>
+      RustLib.instance.api.crateApiTerminalRemoteShellScroll(
+        that: this,
+        lines: lines,
+        row: row,
+        col: col,
+      );
+
+  void scrollToBottom() => RustLib.instance.api
+      .crateApiTerminalRemoteShellScrollToBottom(that: this);
+
+  void sendKey({required TerminalKey key, required KeyModifiers mods}) =>
+      RustLib.instance.api.crateApiTerminalRemoteShellSendKey(
+        that: this,
+        key: key,
+        mods: mods,
+      );
+
+  void sendText({required String text, required KeyModifiers mods}) => RustLib
+      .instance
+      .api
+      .crateApiTerminalRemoteShellSendText(that: this, text: text, mods: mods);
+
+  void setPalette({required TerminalPalette palette}) => RustLib.instance.api
+      .crateApiTerminalRemoteShellSetPalette(that: this, palette: palette);
+
+  /// Text between two visible cells (inclusive), for copying.
+  String textBetween({
+    required int startRow,
+    required int startCol,
+    required int endRow,
+    required int endCol,
+  }) => RustLib.instance.api.crateApiTerminalRemoteShellTextBetween(
+    that: this,
+    startRow: startRow,
+    startCol: startCol,
+    endRow: endRow,
+    endCol: endCol,
+  );
+
+  String visibleText() =>
+      RustLib.instance.api.crateApiTerminalRemoteShellVisibleText(that: this);
+}
+
+@sealed
+class SshSessionImpl extends RustOpaque implements SshSession {
+  // Not to be used by end users
+  SshSessionImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  SshSessionImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_SshSession,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SshSession,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SshSessionPtr,
+  );
+
+  /// Closes the connection (and everything running on it).
+  Future<void> disconnect() =>
+      RustLib.instance.api.crateApiSshSshSessionDisconnect(that: this);
+
+  /// Runs one command and returns its output (each stream capped at
+  /// `max_bytes`).
+  Future<ExecOutput> exec({required String command, required int maxBytes}) =>
+      RustLib.instance.api.crateApiSshSshSessionExec(
+        that: this,
+        command: command,
+        maxBytes: maxBytes,
+      );
+
+  SessionInfo info() =>
+      RustLib.instance.api.crateApiSshSshSessionInfo(that: this);
+
+  bool isConnected() =>
+      RustLib.instance.api.crateApiSshSshSessionIsConnected(that: this);
+
+  /// Opens a file browser on this connection.
+  Future<RemoteFiles> openFiles() =>
+      RustLib.instance.api.crateApiSshSshSessionOpenFiles(that: this);
+
+  /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
+  /// screen updates; events from before that are kept and delivered.
+  Future<RemoteShell> openShell({required ShellOptions options}) => RustLib
+      .instance
+      .api
+      .crateApiSshSshSessionOpenShell(that: this, options: options);
+
+  /// Starts a port forward on this connection.
+  Future<ActiveTunnel> startTunnel({required TunnelSpec spec}) => RustLib
+      .instance
+      .api
+      .crateApiSshSshSessionStartTunnel(that: this, spec: spec);
 }

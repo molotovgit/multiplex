@@ -3,9 +3,15 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/app.dart';
 import 'api/keys.dart';
+import 'api/sftp.dart';
+import 'api/sftp_types.dart';
+import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/terminal.dart';
 import 'api/terminal_types.dart';
+import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
 
@@ -25,8 +31,126 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     required super.portManager,
   });
 
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_ActiveTunnelPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_FileTransferPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteFilesPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteShellPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_SshSessionPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSessionPtr;
+
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw);
+
+  @protected
+  ActiveTunnel
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  FileTransfer
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteFiles
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteShell
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  SshSession
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  );
+
+  @protected
+  ActiveTunnel
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  FileTransfer
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteFiles
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteShell
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  SshSession
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  );
+
+  @protected
+  ActiveTunnel
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  FileTransfer
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteFiles
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteShell
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  SshSession
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<ShellEvent> dco_decode_StreamSink_shell_event_Sse(dynamic raw);
+
+  @protected
+  RustStreamSink<TransferProgress> dco_decode_StreamSink_transfer_progress_Sse(
+    dynamic raw,
+  );
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -35,10 +159,64 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw);
+
+  @protected
+  HostKeyInfo dco_decode_box_autoadd_host_key_info(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  JumpHost dco_decode_box_autoadd_jump_host(dynamic raw);
+
+  @protected
+  KeyModifiers dco_decode_box_autoadd_key_modifiers(dynamic raw);
+
+  @protected
+  ShellOptions dco_decode_box_autoadd_shell_options(dynamic raw);
+
+  @protected
+  TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw);
+
+  @protected
+  TunnelSpec dco_decode_box_autoadd_tunnel_spec(dynamic raw);
+
+  @protected
+  int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  ConnectError dco_decode_connect_error(dynamic raw);
+
+  @protected
+  ConnectOptions dco_decode_connect_options(dynamic raw);
+
+  @protected
   Credentials dco_decode_credentials(dynamic raw);
 
   @protected
+  CursorShape dco_decode_cursor_shape(dynamic raw);
+
+  @protected
+  EntryKind dco_decode_entry_kind(dynamic raw);
+
+  @protected
+  EnvVar dco_decode_env_var(dynamic raw);
+
+  @protected
+  ExecOutput dco_decode_exec_output(dynamic raw);
+
+  @protected
+  HostKeyInfo dco_decode_host_key_info(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_i_64(dynamic raw);
+
+  @protected
+  JumpHost dco_decode_jump_host(dynamic raw);
 
   @protected
   KeyKind dco_decode_key_kind(dynamic raw);
@@ -50,6 +228,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   KeyPairInfo dco_decode_key_pair_info(dynamic raw);
 
   @protected
+  List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<EnvVar> dco_decode_list_env_var(dynamic raw);
+
+  @protected
   Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
 
   @protected
@@ -59,13 +243,70 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<RemoteEntry> dco_decode_list_remote_entry(dynamic raw);
+
+  @protected
+  List<TerminalLine> dco_decode_list_terminal_line(dynamic raw);
+
+  @protected
+  List<TextRun> dco_decode_list_text_run(dynamic raw);
+
+  @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw);
+
+  @protected
+  JumpHost? dco_decode_opt_box_autoadd_jump_host(dynamic raw);
+
+  @protected
+  int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  RemoteEntry dco_decode_remote_entry(dynamic raw);
+
+  @protected
+  SessionInfo dco_decode_session_info(dynamic raw);
+
+  @protected
+  ShellEvent dco_decode_shell_event(dynamic raw);
+
+  @protected
+  ShellOptions dco_decode_shell_options(dynamic raw);
+
+  @protected
+  TerminalCursor dco_decode_terminal_cursor(dynamic raw);
+
+  @protected
+  TerminalFrame dco_decode_terminal_frame(dynamic raw);
+
+  @protected
+  TerminalKey dco_decode_terminal_key(dynamic raw);
+
+  @protected
+  TerminalLine dco_decode_terminal_line(dynamic raw);
 
   @protected
   TerminalPalette dco_decode_terminal_palette(dynamic raw);
 
   @protected
+  TextRun dco_decode_text_run(dynamic raw);
+
+  @protected
+  TransferProgress dco_decode_transfer_progress(dynamic raw);
+
+  @protected
+  TunnelKind dco_decode_tunnel_kind(dynamic raw);
+
+  @protected
+  TunnelSpec dco_decode_tunnel_spec(dynamic raw);
+
+  @protected
   TunnelStats dco_decode_tunnel_stats(dynamic raw);
+
+  @protected
+  int dco_decode_u_16(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -80,7 +321,110 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  BigInt dco_decode_usize(dynamic raw);
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+
+  @protected
+  ActiveTunnel
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FileTransfer
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteFiles
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteShell
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SshSession
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ActiveTunnel
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FileTransfer
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteFiles
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteShell
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SshSession
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ActiveTunnel
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  FileTransfer
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteFiles
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteShell
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SshSession
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<ShellEvent> sse_decode_StreamSink_shell_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<TransferProgress> sse_decode_StreamSink_transfer_progress_Sse(
+    SseDeserializer deserializer,
+  );
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
@@ -89,10 +433,74 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  ConnectOptions sse_decode_box_autoadd_connect_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HostKeyInfo sse_decode_box_autoadd_host_key_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  JumpHost sse_decode_box_autoadd_jump_host(SseDeserializer deserializer);
+
+  @protected
+  KeyModifiers sse_decode_box_autoadd_key_modifiers(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ShellOptions sse_decode_box_autoadd_shell_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TerminalPalette sse_decode_box_autoadd_terminal_palette(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  TunnelSpec sse_decode_box_autoadd_tunnel_spec(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  ConnectError sse_decode_connect_error(SseDeserializer deserializer);
+
+  @protected
+  ConnectOptions sse_decode_connect_options(SseDeserializer deserializer);
+
+  @protected
   Credentials sse_decode_credentials(SseDeserializer deserializer);
 
   @protected
+  CursorShape sse_decode_cursor_shape(SseDeserializer deserializer);
+
+  @protected
+  EntryKind sse_decode_entry_kind(SseDeserializer deserializer);
+
+  @protected
+  EnvVar sse_decode_env_var(SseDeserializer deserializer);
+
+  @protected
+  ExecOutput sse_decode_exec_output(SseDeserializer deserializer);
+
+  @protected
+  HostKeyInfo sse_decode_host_key_info(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
+
+  @protected
+  JumpHost sse_decode_jump_host(SseDeserializer deserializer);
 
   @protected
   KeyKind sse_decode_key_kind(SseDeserializer deserializer);
@@ -104,6 +512,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   KeyPairInfo sse_decode_key_pair_info(SseDeserializer deserializer);
 
   @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer);
+
+  @protected
   Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
 
   @protected
@@ -113,13 +527,72 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<RemoteEntry> sse_decode_list_remote_entry(SseDeserializer deserializer);
+
+  @protected
+  List<TerminalLine> sse_decode_list_terminal_line(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TextRun> sse_decode_list_text_run(SseDeserializer deserializer);
+
+  @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer);
+
+  @protected
+  JumpHost? sse_decode_opt_box_autoadd_jump_host(SseDeserializer deserializer);
+
+  @protected
+  int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  RemoteEntry sse_decode_remote_entry(SseDeserializer deserializer);
+
+  @protected
+  SessionInfo sse_decode_session_info(SseDeserializer deserializer);
+
+  @protected
+  ShellEvent sse_decode_shell_event(SseDeserializer deserializer);
+
+  @protected
+  ShellOptions sse_decode_shell_options(SseDeserializer deserializer);
+
+  @protected
+  TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer);
+
+  @protected
+  TerminalFrame sse_decode_terminal_frame(SseDeserializer deserializer);
+
+  @protected
+  TerminalKey sse_decode_terminal_key(SseDeserializer deserializer);
+
+  @protected
+  TerminalLine sse_decode_terminal_line(SseDeserializer deserializer);
 
   @protected
   TerminalPalette sse_decode_terminal_palette(SseDeserializer deserializer);
 
   @protected
+  TextRun sse_decode_text_run(SseDeserializer deserializer);
+
+  @protected
+  TransferProgress sse_decode_transfer_progress(SseDeserializer deserializer);
+
+  @protected
+  TunnelKind sse_decode_tunnel_kind(SseDeserializer deserializer);
+
+  @protected
+  TunnelSpec sse_decode_tunnel_spec(SseDeserializer deserializer);
+
+  @protected
   TunnelStats sse_decode_tunnel_stats(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_u_16(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -134,8 +607,128 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
+  BigInt sse_decode_usize(SseDeserializer deserializer);
+
+  @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ActiveTunnel self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    RemoteFiles self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    RemoteShell self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SshSession self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_shell_event_Sse(
+    RustStreamSink<ShellEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_transfer_progress_Sse(
+    RustStreamSink<TransferProgress> self,
     SseSerializer serializer,
   );
 
@@ -146,10 +739,91 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_connect_options(
+    ConnectOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_host_key_info(
+    HostKeyInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_i_64(
+    PlatformInt64 self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_jump_host(
+    JumpHost self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_key_modifiers(
+    KeyModifiers self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_shell_options(
+    ShellOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_terminal_palette(
+    TerminalPalette self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_tunnel_spec(
+    TunnelSpec self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_connect_error(ConnectError self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_connect_options(
+    ConnectOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_credentials(Credentials self, SseSerializer serializer);
 
   @protected
+  void sse_encode_cursor_shape(CursorShape self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_entry_kind(EntryKind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_env_var(EnvVar self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_exec_output(ExecOutput self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_host_key_info(HostKeyInfo self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_jump_host(JumpHost self, SseSerializer serializer);
 
   @protected
   void sse_encode_key_kind(KeyKind self, SseSerializer serializer);
@@ -159,6 +833,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_key_pair_info(KeyPairInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_32_strict(
@@ -176,7 +856,64 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_remote_entry(
+    List<RemoteEntry> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_terminal_line(
+    List<TerminalLine> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_text_run(List<TextRun> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_i_64(
+    PlatformInt64? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_jump_host(
+    JumpHost? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_remote_entry(RemoteEntry self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_session_info(SessionInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_shell_event(ShellEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_shell_options(ShellOptions self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_terminal_cursor(
+    TerminalCursor self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_terminal_frame(TerminalFrame self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_terminal_key(TerminalKey self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_terminal_line(TerminalLine self, SseSerializer serializer);
 
   @protected
   void sse_encode_terminal_palette(
@@ -185,7 +922,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_text_run(TextRun self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_transfer_progress(
+    TransferProgress self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tunnel_kind(TunnelKind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tunnel_spec(TunnelSpec self, SseSerializer serializer);
+
+  @protected
   void sse_encode_tunnel_stats(TunnelStats self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_16(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
@@ -198,6 +953,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_usize(BigInt self, SseSerializer serializer);
 }
 
 // Section: wire_class
@@ -213,4 +971,174 @@ class RustLibWire implements BaseWire {
   /// The symbols are looked up in [dynamicLibrary].
   RustLibWire(ffi.DynamicLibrary dynamicLibrary)
     : _lookup = dynamicLibrary.lookup;
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSessionPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSessionPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSessionPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_vaultterm_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSessionPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }

@@ -6,9 +6,31 @@
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
+part 'terminal_types.freezed.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `CursorShape`, `RunStyle`, `TerminalCursor`, `TerminalFrame`, `TerminalKey`, `TerminalLine`, `TextRun`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `RunStyle`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+
+enum CursorShape { block, underline, bar }
+
+class EnvVar {
+  final String name;
+  final String value;
+
+  const EnvVar({required this.name, required this.value});
+
+  @override
+  int get hashCode => name.hashCode ^ value.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EnvVar &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          value == other.value;
+}
 
 /// Which modifier keys are held.
 class KeyModifiers {
@@ -36,6 +58,247 @@ class KeyModifiers {
           ctrl == other.ctrl &&
           alt == other.alt &&
           shift == other.shift;
+}
+
+@freezed
+sealed class ShellEvent with _$ShellEvent {
+  const ShellEvent._();
+
+  /// The screen changed; ask for a new frame when ready to draw. Sent
+  /// once until the next frame is taken, so a flood of output never
+  /// floods the app.
+  const factory ShellEvent.changed() = ShellEvent_Changed;
+
+  /// The remote program set the window title.
+  const factory ShellEvent.title(String field0) = ShellEvent_Title;
+
+  /// The remote program rang the bell.
+  const factory ShellEvent.bell() = ShellEvent_Bell;
+
+  /// The remote program asked to copy text to the clipboard.
+  const factory ShellEvent.clipboard(String field0) = ShellEvent_Clipboard;
+
+  /// The shell ended. `code` is its exit code if the server sent one.
+  const factory ShellEvent.exited({int? code}) = ShellEvent_Exited;
+
+  /// The connection dropped.
+  const factory ShellEvent.disconnected() = ShellEvent_Disconnected;
+}
+
+/// Settings for opening an interactive shell.
+class ShellOptions {
+  final int cols;
+  final int rows;
+
+  /// Terminal type announced to the server, usually `xterm-256color`.
+  final String term;
+
+  /// Lines of history to keep.
+  final int scrollbackLines;
+
+  /// Environment variables to ask the server to set (many servers only
+  /// allow a few, such as LANG).
+  final List<EnvVar> env;
+
+  /// Command typed automatically once the shell is ready.
+  final String? startupCommand;
+  final TerminalPalette palette;
+
+  const ShellOptions({
+    required this.cols,
+    required this.rows,
+    required this.term,
+    required this.scrollbackLines,
+    required this.env,
+    this.startupCommand,
+    required this.palette,
+  });
+
+  @override
+  int get hashCode =>
+      cols.hashCode ^
+      rows.hashCode ^
+      term.hashCode ^
+      scrollbackLines.hashCode ^
+      env.hashCode ^
+      startupCommand.hashCode ^
+      palette.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ShellOptions &&
+          runtimeType == other.runtimeType &&
+          cols == other.cols &&
+          rows == other.rows &&
+          term == other.term &&
+          scrollbackLines == other.scrollbackLines &&
+          env == other.env &&
+          startupCommand == other.startupCommand &&
+          palette == other.palette;
+}
+
+/// Where the cursor is and how it looks.
+class TerminalCursor {
+  final int row;
+  final int col;
+  final bool visible;
+  final CursorShape shape;
+  final int color;
+
+  const TerminalCursor({
+    required this.row,
+    required this.col,
+    required this.visible,
+    required this.shape,
+    required this.color,
+  });
+
+  @override
+  int get hashCode =>
+      row.hashCode ^
+      col.hashCode ^
+      visible.hashCode ^
+      shape.hashCode ^
+      color.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TerminalCursor &&
+          runtimeType == other.runtimeType &&
+          row == other.row &&
+          col == other.col &&
+          visible == other.visible &&
+          shape == other.shape &&
+          color == other.color;
+}
+
+/// A ready-to-draw picture of the terminal screen.
+class TerminalFrame {
+  final int rows;
+  final int cols;
+
+  /// One entry per visible row, top to bottom.
+  final List<TerminalLine> lines;
+  final TerminalCursor cursor;
+
+  /// How many lines the view is scrolled back into history (0 = live).
+  final int scrollOffset;
+
+  /// How many lines of history exist.
+  final int scrollbackLen;
+
+  /// True while a full-screen program (vim, htop, less) is running.
+  final bool alternateScreen;
+
+  /// True when the program wants mouse clicks and wheel events.
+  final bool mouseReporting;
+
+  /// Window title set by the remote program, empty if none.
+  final String title;
+
+  /// Default background colour as 0xAARRGGBB.
+  final int background;
+
+  /// Default text colour as 0xAARRGGBB.
+  final int foreground;
+
+  const TerminalFrame({
+    required this.rows,
+    required this.cols,
+    required this.lines,
+    required this.cursor,
+    required this.scrollOffset,
+    required this.scrollbackLen,
+    required this.alternateScreen,
+    required this.mouseReporting,
+    required this.title,
+    required this.background,
+    required this.foreground,
+  });
+
+  @override
+  int get hashCode =>
+      rows.hashCode ^
+      cols.hashCode ^
+      lines.hashCode ^
+      cursor.hashCode ^
+      scrollOffset.hashCode ^
+      scrollbackLen.hashCode ^
+      alternateScreen.hashCode ^
+      mouseReporting.hashCode ^
+      title.hashCode ^
+      background.hashCode ^
+      foreground.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TerminalFrame &&
+          runtimeType == other.runtimeType &&
+          rows == other.rows &&
+          cols == other.cols &&
+          lines == other.lines &&
+          cursor == other.cursor &&
+          scrollOffset == other.scrollOffset &&
+          scrollbackLen == other.scrollbackLen &&
+          alternateScreen == other.alternateScreen &&
+          mouseReporting == other.mouseReporting &&
+          title == other.title &&
+          background == other.background &&
+          foreground == other.foreground;
+}
+
+/// Special keys that are not plain text.
+enum TerminalKey {
+  enter,
+  tab,
+  backspace,
+  escape,
+  up,
+  down,
+  left,
+  right,
+  home,
+  end,
+  pageUp,
+  pageDown,
+  insert,
+  delete,
+  f1,
+  f2,
+  f3,
+  f4,
+  f5,
+  f6,
+  f7,
+  f8,
+  f9,
+  f10,
+  f11,
+  f12,
+}
+
+/// One row of the screen, cut into pieces that share the same style.
+class TerminalLine {
+  /// Changes whenever the content of the row changes. Flutter uses it to
+  /// reuse the text it already laid out.
+  final BigInt key;
+  final List<TextRun> runs;
+
+  const TerminalLine({required this.key, required this.runs});
+
+  @override
+  int get hashCode => key.hashCode ^ runs.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TerminalLine &&
+          runtimeType == other.runtimeType &&
+          key == other.key &&
+          runs == other.runs;
 }
 
 /// Colours of a terminal theme, all as 0xAARRGGBB.
@@ -80,4 +343,54 @@ class TerminalPalette {
           background == other.background &&
           cursor == other.cursor &&
           boldIsBright == other.boldIsBright;
+}
+
+/// A piece of text with one style, placed at a column.
+class TextRun {
+  /// Column where the piece starts (0-based).
+  final int col;
+
+  /// How many cells the piece covers. Wide characters (CJK, emoji) take 2.
+  final int width;
+  final String text;
+
+  /// Text colour as 0xAARRGGBB.
+  final int fg;
+
+  /// Background colour as 0xAARRGGBB, or 0 when it is the default
+  /// background (nothing to paint).
+  final int bg;
+
+  /// Bit flags, see [`RunStyle`].
+  final int style;
+
+  const TextRun({
+    required this.col,
+    required this.width,
+    required this.text,
+    required this.fg,
+    required this.bg,
+    required this.style,
+  });
+
+  @override
+  int get hashCode =>
+      col.hashCode ^
+      width.hashCode ^
+      text.hashCode ^
+      fg.hashCode ^
+      bg.hashCode ^
+      style.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TextRun &&
+          runtimeType == other.runtimeType &&
+          col == other.col &&
+          width == other.width &&
+          text == other.text &&
+          fg == other.fg &&
+          bg == other.bg &&
+          style == other.style;
 }

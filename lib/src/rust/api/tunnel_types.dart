@@ -7,8 +7,62 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `TunnelKind`, `TunnelSpec`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`
+
+/// The three kinds of SSH port forwarding.
+enum TunnelKind {
+  /// `ssh -L`: a port on this device leads to a host the server can reach.
+  local,
+
+  /// `ssh -R`: a port on the server leads to a host this device can reach.
+  remote,
+
+  /// `ssh -D`: a SOCKS5 proxy on this device; apps choose the target.
+  dynamic_,
+}
+
+/// What to forward.
+class TunnelSpec {
+  final TunnelKind kind;
+
+  /// Address to listen on. For Local/Dynamic usually 127.0.0.1, for
+  /// Remote the address on the server (127.0.0.1 or 0.0.0.0).
+  final String bindHost;
+
+  /// Port to listen on. 0 lets the system pick a free one.
+  final int bindPort;
+
+  /// Where connections go. Not used for Dynamic.
+  final String targetHost;
+  final int targetPort;
+
+  const TunnelSpec({
+    required this.kind,
+    required this.bindHost,
+    required this.bindPort,
+    required this.targetHost,
+    required this.targetPort,
+  });
+
+  @override
+  int get hashCode =>
+      kind.hashCode ^
+      bindHost.hashCode ^
+      bindPort.hashCode ^
+      targetHost.hashCode ^
+      targetPort.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TunnelSpec &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          bindHost == other.bindHost &&
+          bindPort == other.bindPort &&
+          targetHost == other.targetHost &&
+          targetPort == other.targetPort;
+}
 
 /// Traffic numbers of a running tunnel.
 class TunnelStats {

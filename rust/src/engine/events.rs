@@ -34,3 +34,88 @@ impl<E> EventSink<E> for NullSink {
         true
     }
 }
+
+/// A sink the listener can plug in later.
+///
+/// Jobs start before the app has subscribed to their events. The relay
+/// keeps early events (up to a limit) and hands them over the moment a
+/// listener attaches, so nothing important, such as "the shell exited",
+/// is lost in between.
+pub struct EventRelay<E> {
+    state: std::sync::Mutex<RelayState<E>>,
+}
+
+struct RelayState<E> {
+    target: Option<SharedSink<E>>,
+    pending: Vec<E>,
+}
+
+impl<E> EventRelay<E> {
+    /// Early events beyond this count are dropped; the oldest go first.
+    const MAX_PENDING: usize = 256;
+
+    pub fn new() -> Self {
+        Self {
+            state: std::sync::Mutex::new(RelayState { target: None, pending: Vec::new() }),
+        }
+    }
+
+    /// Starts sending events to `sink`, beginning with the saved ones.
+    pub fn attach(&self, sink: SharedSink<E>) {
+        let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
+        for event in state.pending.drain(..) {
+            sink.emit(event);
+        }
+        state.target = Some(sink);
+    }
+}
+
+impl<E> Default for EventRelay<E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<E: Send> EventSink<E> for EventRelay<E> {
+    fn emit(&self, event: E) -> bool {
+        let mut state = self.state.lock().unwrap_or_else(|p| p.into_inner());
+        match &state.target {
+            Some(target) => target.emit(event),
+            None => {
+                if state.pending.len() >= Self::MAX_PENDING {
+                    state.pending.remove(0);
+                }
+                state.pending.push(event);
+                true
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    #[test]
+    fn relay_keeps_early_events_until_someone_listens() {
+        let relay = EventRelay::new();
+        relay.emit(1);
+        relay.emit(2);
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let seen_in_sink = seen.clone();
+        relay.attach(Arc::new(move |e| {
+            seen_in_sink.lock().unwrap().push(e);
+            true
+        }));
+        relay.emit(3);
+        assert_eq!(*seen.lock().unwrap(), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn relay_reports_a_listener_that_went_away() {
+        let relay = EventRelay::new();
+        relay.attach(Arc::new(|_: u8| false));
+        assert!(!relay.emit(1));
+    }
+}
