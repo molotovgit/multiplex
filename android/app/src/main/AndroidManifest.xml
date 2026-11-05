@@ -1,8 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- SSH, SFTP and tunnels need the network. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Fingerprint, face or PIN for the optional app lock. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <application
-        android:label="vaultterm"
+        android:label="VaultTerm"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- No cloud backup or device transfer of app data: the vault's key
+             lives in the Android Keystore and cannot travel with it, so a
+             copied vault could never be opened. Use the in-app encrypted
+             backup instead. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

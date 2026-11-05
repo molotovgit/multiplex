@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/screen_awake.dart';
 import '../../app/theme.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/connect_flow.dart';
@@ -60,12 +61,18 @@ class _TerminalScreenState extends State<TerminalScreen> {
       if (mounted) Toast.show(context, 'The server copied text to your clipboard');
     };
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+    _keepAwake = AppScope.store(context).settings.keepScreenOn;
+    if (_keepAwake) ScreenAwake.hold();
   }
+
+  /// Whether this screen asked to keep the display on (released on close).
+  bool _keepAwake = false;
 
   @override
   void dispose() {
     _terminal.onBell = null;
     _terminal.onRemoteCopy = null;
+    if (_keepAwake) ScreenAwake.release();
     _focus.dispose();
     super.dispose();
   }
