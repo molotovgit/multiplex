@@ -7,3 +7,4 @@ pub mod events;
 pub mod keys;
 pub mod runtime;
 pub mod terminal;
+pub mod vault;

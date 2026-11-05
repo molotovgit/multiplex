@@ -3,3 +3,4 @@
 
 pub mod keys;
 pub mod terminal_types;
+pub mod vault;
