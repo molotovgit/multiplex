@@ -4,5 +4,6 @@
 //! engine free of Flutter types means it can be tested with plain Rust.
 
 pub mod events;
+pub mod keys;
 pub mod runtime;
 pub mod terminal;
