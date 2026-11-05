@@ -6,6 +6,7 @@
 pub mod events;
 pub mod keys;
 pub mod runtime;
+pub mod shell;
 pub mod ssh;
 pub mod terminal;
 pub mod tunnel;

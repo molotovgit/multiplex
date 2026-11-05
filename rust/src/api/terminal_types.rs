@@ -147,3 +147,45 @@ impl Default for TerminalPalette {
         }
     }
 }
+
+/// Settings for opening an interactive shell.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellOptions {
+    pub cols: u16,
+    pub rows: u16,
+    /// Terminal type announced to the server, usually `xterm-256color`.
+    pub term: String,
+    /// Lines of history to keep.
+    pub scrollback_lines: u32,
+    /// Environment variables to ask the server to set (many servers only
+    /// allow a few, such as LANG).
+    pub env: Vec<EnvVar>,
+    /// Command typed automatically once the shell is ready.
+    pub startup_command: Option<String>,
+    pub palette: TerminalPalette,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EnvVar {
+    pub name: String,
+    pub value: String,
+}
+
+/// Things a running shell reports to the app.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ShellEvent {
+    /// The screen changed; ask for a new frame when ready to draw. Sent
+    /// once until the next frame is taken, so a flood of output never
+    /// floods the app.
+    Changed,
+    /// The remote program set the window title.
+    Title(String),
+    /// The remote program rang the bell.
+    Bell,
+    /// The remote program asked to copy text to the clipboard.
+    Clipboard(String),
+    /// The shell ended. `code` is its exit code if the server sent one.
+    Exited { code: Option<u32> },
+    /// The connection dropped.
+    Disconnected,
+}
