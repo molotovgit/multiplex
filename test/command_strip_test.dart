@@ -209,6 +209,11 @@ void main() {
       ),
     );
     expect(find.byType(CommandStrip), findsOneWidget);
+    // Folded away until something is typed that it can complete.
+    expect(tester.getSize(find.byType(CommandStrip)).height, 0);
+    target.typed = 'up';
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(CommandStrip)).height, greaterThan(0));
     await tester.tap(find.text('uptime'));
     expect(target.inserted, ['uptime']);
     await tester.tap(find.bySemanticsLabel('Command history').first);

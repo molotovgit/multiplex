@@ -153,6 +153,8 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
                           target: _commands,
                           onOpenHistory: _openHistory,
                           compact: look.metrics.rowHeight < CommandStrip.height,
+                          // The settings preview has no terminal: show it there.
+                          autoHide: _commands is! NoCommandTarget,
                         ),
                       TerminalTopRow(keyBarIds: keyBar, engine: _engine, look: look),
                       _PageKeys(

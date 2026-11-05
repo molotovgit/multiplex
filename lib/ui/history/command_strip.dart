@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 import '../../app/theme_look.dart';
 import '../../data/command_history.dart';
 import '../common/widgets.dart';
+import '../common/collapsible.dart';
 import 'command_actions.dart';
 import 'command_target.dart';
 
@@ -14,13 +15,17 @@ import 'command_target.dart';
 /// long press offers run, pin and delete. The history button on the left
 /// opens the full list.
 class CommandStrip extends StatelessWidget {
-  const CommandStrip({super.key, required this.target, required this.onOpenHistory, this.compact = false});
+  const CommandStrip({super.key, required this.target, required this.onOpenHistory, this.compact = false, this.autoHide = false});
 
   final CommandTarget target;
   final VoidCallback onOpenHistory;
 
   /// A lower row, for phones in landscape.
   final bool compact;
+
+  /// Folded away until the user types something it can complete, so it
+  /// takes no room the rest of the time.
+  final bool autoHide;
 
   static const height = 44.0;
   static const compactHeight = 36.0;
@@ -48,28 +53,32 @@ class CommandStrip extends StatelessWidget {
         } else {
           hint = null;
         }
-        return SizedBox(
-          height: rowHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _HistoryButton(onTap: onOpenHistory, size: rowHeight),
-              Expanded(
-                child: hint != null
-                    ? _StripHint(hint)
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.only(right: 8),
-                        itemCount: entries.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
-                        itemBuilder: (context, i) => _CommandChip(
-                          entry: entries[i],
-                          onTap: () => target.insert(entries[i].command),
-                          onLongPress: () => CommandActions.show(context, target: target, hostId: hostId!, entry: entries[i]),
+        final open = !autoHide || (target.typedLine.trim().isNotEmpty && entries.isNotEmpty);
+        return Collapsible(
+          open: open,
+          child: SizedBox(
+            height: rowHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HistoryButton(onTap: onOpenHistory, size: rowHeight),
+                Expanded(
+                  child: hint != null
+                      ? _StripHint(hint)
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(right: 8),
+                          itemCount: entries.length,
+                          separatorBuilder: (_, _) => const SizedBox(width: 8),
+                          itemBuilder: (context, i) => _CommandChip(
+                            entry: entries[i],
+                            onTap: () => target.insert(entries[i].command),
+                            onLongPress: () => CommandActions.show(context, target: target, hostId: hostId!, entry: entries[i]),
+                          ),
                         ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         );
       },
