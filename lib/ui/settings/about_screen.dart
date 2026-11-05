@@ -49,7 +49,7 @@ class AboutScreen extends StatelessWidget {
           children: [
             const _AppHeader(),
             ListTile(
-              leading: const Icon(Icons.memory),
+              leading: const Icon(Icons.memory_outlined),
               title: const Text('Core version'),
               subtitle: MonoText(coreVersion),
             ),
@@ -58,7 +58,7 @@ class AboutScreen extends StatelessWidget {
               title: const Text('Source code'),
               subtitle: const MonoText(AboutFacts.sourceAddress, selectable: true),
               trailing: IconButton(
-                icon: const Icon(Icons.copy),
+                icon: const Icon(Icons.content_copy_outlined),
                 tooltip: 'Copy address',
                 onPressed: () => Toast.copy(context, AboutFacts.sourceUrl, what: 'Address copied'),
               ),
@@ -103,7 +103,7 @@ class _AppHeader extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(color: colors.accent, borderRadius: BorderRadius.circular(16)),
-            child: Icon(Icons.terminal, color: colors.onAccent, size: 30),
+            child: Icon(Icons.terminal, color: colors.onAccent, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -132,6 +132,6 @@ class _ThemeCredit extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
         title: Text(theme.name),
         subtitle: Text(theme.credit ?? AboutFacts.appName),
-        trailing: SizedBox(width: 124, child: ThemeSwatches(theme: theme, size: 10)),
+        trailing: SizedBox(width: 104, child: ThemeSwatches(theme: theme, size: 8)),
       );
 }

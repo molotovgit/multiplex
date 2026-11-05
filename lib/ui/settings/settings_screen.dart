@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 import '../../data/app_settings.dart';
 import '../appearance/appearance_screen.dart';
@@ -86,17 +87,14 @@ class _AppearanceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SectionHeader('Appearance'),
-        Semantics(
-          label: 'Theme: ${theme.name}. Change the theme, font and cursor.',
-          button: true,
-          excludeSemantics: true,
-          child: ListTile(
-            leading: const Icon(Icons.palette_outlined),
-            title: Text(theme.name),
-            subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: ThemeSwatches(theme: theme)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => SettingsNavigation.open(context, const AppearanceScreen()),
-          ),
+        // The swatches are hidden from screen readers; the tile reads as
+        // "Theme: <name>" and stays tappable for them.
+        ListTile(
+          leading: const Icon(Icons.palette_outlined),
+          title: Text(theme.name, semanticsLabel: 'Theme: ${theme.name}'),
+          subtitle: Padding(padding: const EdgeInsets.only(top: 8), child: ThemeSwatches(theme: theme)),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => SettingsNavigation.open(context, const AppearanceScreen()),
         ),
       ],
     );
@@ -137,7 +135,7 @@ class _TerminalSection extends StatelessWidget {
           },
         ),
         ChoiceTile<int>(
-          icon: Icons.favorite_border,
+          icon: Icons.timer_outlined,
           title: 'Keep-alive',
           description: 'Sends a small signal when the connection is quiet, so routers and servers do not drop it. '
               'Applies to connections you open from now on.',
@@ -204,7 +202,7 @@ class _BackupSection extends StatelessWidget {
         children: [
           const SectionHeader('Backup & restore'),
           ListTile(
-            leading: const Icon(Icons.save_alt),
+            leading: const Icon(Icons.backup_outlined),
             title: const Text('Backup & restore'),
             subtitle: const Text('Save everything to an encrypted file, or bring a backup back'),
             trailing: const Icon(Icons.chevron_right),
@@ -214,11 +212,20 @@ class _BackupSection extends StatelessWidget {
       );
 }
 
-/// Shown only while connections are open: closes them all.
-class _ConnectionsSection extends StatelessWidget {
+/// Shown only while connections are open: closes them all. It is in its
+/// own section and in the danger colour, because it stops running work.
+class _ConnectionsSection extends StatefulWidget {
   const _ConnectionsSection();
 
-  Future<void> _disconnectAll(BuildContext context, int count) async {
+  @override
+  State<_ConnectionsSection> createState() => _ConnectionsSectionState();
+}
+
+class _ConnectionsSectionState extends State<_ConnectionsSection> {
+  /// True while connections are closing, which can take a moment.
+  bool _closing = false;
+
+  Future<void> _disconnectAll(int count) async {
     final sessions = AppScope.sessions(context);
     final ok = await Confirm.ask(
       context,
@@ -227,14 +234,20 @@ class _ConnectionsSection extends StatelessWidget {
           'with their terminals and tunnels. Anything running in those terminals stops.',
       action: 'Disconnect all',
     );
-    if (!ok) return;
-    await sessions.disconnectAll();
-    if (context.mounted) Toast.show(context, 'All connections are closed');
+    if (!ok || !mounted) return;
+    setState(() => _closing = true);
+    try {
+      await sessions.disconnectAll();
+    } finally {
+      if (mounted) setState(() => _closing = false);
+    }
+    if (mounted) Toast.show(context, 'All connections are closed');
   }
 
   @override
   Widget build(BuildContext context) {
     final sessions = AppScope.sessions(context);
+    final danger = AppColorsTheme.of(context).danger;
     // Only this part follows the connections, so the rest of the list
     // does not redraw on every connection check.
     return ListenableBuilder(
@@ -247,10 +260,17 @@ class _ConnectionsSection extends StatelessWidget {
           children: [
             const SectionHeader('Connections'),
             ListTile(
+              iconColor: danger,
+              textColor: danger,
               leading: const Icon(Icons.link_off),
               title: const Text('Disconnect all'),
-              subtitle: Text('${SettingsFormat.count(count, 'connection', 'connections')} open'),
-              onTap: () => _disconnectAll(context, count),
+              subtitle: Text(
+                _closing ? 'Closing connections...' : '${SettingsFormat.count(count, 'connection', 'connections')} open',
+              ),
+              trailing: _closing
+                  ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                  : null,
+              onTap: _closing ? null : () => _disconnectAll(count),
             ),
           ],
         );

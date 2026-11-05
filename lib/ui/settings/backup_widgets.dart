@@ -105,7 +105,12 @@ class BackupSummaryView extends StatelessWidget {
                   children: [
                     Icon(_icons[i], size: SettingsLayout.iconSmall, color: parts[i].$1 == 0 ? colors.muted : colors.accent),
                     const SizedBox(width: 8),
-                    Text(parts[i].$2, style: body?.copyWith(color: parts[i].$1 == 0 ? colors.muted : colors.text)),
+                    // Wraps inside the chip instead of overflowing with large text.
+                    Flexible(
+                      // Full text colour even for zero: muted text on the raised
+                      // chip would be too faint to read.
+                      child: Text(parts[i].$2, style: body?.copyWith(color: colors.text)),
+                    ),
                   ],
                 ),
               ),

@@ -316,6 +316,13 @@ void main() {
     testWidgets('removes, adds and resets keys', (tester) async {
       final app = await Fixture.pump(tester, const KeyBarEditorScreen());
 
+      // Reordering works without dragging, through the Move menu.
+      await tester.tap(find.byTooltip('Move Escape'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Move down'));
+      await tester.pumpAndSettle();
+      expect(app.store.settings.keyBar.take(2), ['tab', 'esc']);
+
       await tester.tap(find.byTooltip('Remove Escape'));
       await tester.pump();
       expect(app.store.settings.keyBar, isNot(contains('esc')));
@@ -370,6 +377,9 @@ void main() {
       files.toPick = PickedBackup('mine.vtbackup', await cipher.seal('correct horse', source.exportJson()));
       final app = await Fixture.pump(tester, BackupScreen(cipher: cipher, files: files));
 
+      await tester.tap(find.widgetWithText(Tab, 'Restore'));
+      await tester.pumpAndSettle();
+      expect(find.text('Step 1 of 3: choose the backup file'), findsOneWidget);
       await tester.tap(find.text('Choose backup file'));
       await tester.pumpAndSettle();
       final field = find.descendant(of: find.byType(RestorePanel), matching: find.byType(TextField));
@@ -377,6 +387,7 @@ void main() {
       await tester.tap(find.text('Open backup'));
       await tester.pumpAndSettle();
       expect(find.text(RestoreMessages.wrongPassword), findsOneWidget);
+      expect(tester.widget<TextField>(field).focusNode?.hasFocus, isTrue, reason: 'the cursor goes back to retype');
 
       await tester.enterText(field, 'correct horse');
       await tester.tap(find.text('Open backup'));
@@ -384,6 +395,7 @@ void main() {
       await tester.tap(find.text('Add to current data'));
       await tester.pumpAndSettle();
       expect(find.text('Restore finished'), findsOneWidget);
+      expect(find.text('Backup restored'), findsOneWidget, reason: 'a short toast confirms it');
       expect(app.store.hosts.single.id, 'a');
       await app.finish(tester);
     });
@@ -402,6 +414,46 @@ void main() {
         expect(tester.takeException(), isNull, reason: '${screen.runtimeType}');
         await app.finish(tester);
       }
+    });
+
+    testWidgets('every screen still fits with the largest system text', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final screens = <Widget>[
+        const SettingsScreen(),
+        const KeyBarEditorScreen(),
+        BackupScreen(cipher: FakeCipher(), files: FakeFiles()),
+        const AboutScreen(version: FixedVersion()),
+      ];
+      for (final screen in screens) {
+        final app = await Fixture.pump(tester, screen, size: const Size(360, 800));
+        expect(tester.takeException(), isNull, reason: '${screen.runtimeType}');
+        await app.finish(tester);
+      }
+    });
+
+    testWidgets('every tappable control is big enough and labelled', (tester) async {
+      final handle = tester.ensureSemantics();
+      final screens = <Widget>[
+        const SettingsScreen(),
+        const KeyBarEditorScreen(),
+        BackupScreen(cipher: FakeCipher(), files: FakeFiles()),
+        const AboutScreen(version: FixedVersion()),
+      ];
+      for (final screen in screens) {
+        final app = await Fixture.pump(tester, screen, size: const Size(360, 800));
+        // Flutter's own checks: 48 dp on Android, 44 pt on iOS, and a
+        // label on everything that can be tapped.
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline), reason: '${screen.runtimeType}');
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline), reason: '${screen.runtimeType}');
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline), reason: '${screen.runtimeType}');
+        await app.finish(tester);
+      }
+      // The drag handle is not a button, so check it by size.
+      final app = await Fixture.pump(tester, const KeyBarEditorScreen(), size: const Size(360, 800));
+      expect(tester.getSize(find.byType(ReorderableDragStartListener).first).shortestSide, greaterThanOrEqualTo(48));
+      await app.finish(tester);
+      handle.dispose();
     });
   });
 
