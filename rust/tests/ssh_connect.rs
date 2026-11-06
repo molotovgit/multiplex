@@ -62,13 +62,48 @@ async fn falls_back_to_keyboard_interactive() {
 }
 
 #[tokio::test]
+async fn a_two_factor_server_asks_for_the_code_and_takes_it() {
+    let logins = Logins { keyboard_interactive_only: true, one_time_code: Some("123456".into()), ..password_logins() };
+    let server = TestServer::start(logins).await;
+
+    // No code yet: the app is told what the server asked.
+    let Err(ConnectError::CodeNeeded { prompt, host }) = Connector::connect(server.options()).await else {
+        panic!("expected a code question");
+    };
+    assert_eq!(prompt, "Verification code:");
+    assert_eq!(host, "127.0.0.1");
+
+    let mut options = server.options();
+    options.credentials.one_time_code = Some(" 123456 ".into());
+    Connector::connect(options.clone()).await.expect("password and code log in");
+
+    options.credentials.one_time_code = Some("000000".into());
+    assert!(matches!(Connector::connect(options).await, Err(ConnectError::AuthFailed { .. })));
+}
+
+#[tokio::test]
+async fn a_key_then_a_code_logs_in_without_a_password() {
+    let pair = KeyFactory::generate(KeyKind::Ed25519, "test", None).unwrap();
+    let public = russh::keys::PublicKey::from_openssh(&pair.public_openssh).unwrap();
+    let logins = Logins { authorized_key: Some(public), one_time_code: Some("654321".into()), ..Default::default() };
+    let server = TestServer::start(logins).await;
+
+    let mut options = server.options();
+    options.credentials = Credentials { private_key: Some(pair.private_pem.clone()), ..Default::default() };
+    assert!(matches!(Connector::connect(options.clone()).await, Err(ConnectError::CodeNeeded { .. })));
+
+    options.credentials.one_time_code = Some("654321".into());
+    Connector::connect(options).await.expect("key and code log in");
+}
+
+#[tokio::test]
 async fn logs_in_with_a_private_key() {
     let pair = KeyFactory::generate(KeyKind::Ed25519, "test", Some("pass")).unwrap();
     let public = russh::keys::PublicKey::from_openssh(&pair.public_openssh).unwrap();
     let server = TestServer::start(Logins { authorized_key: Some(public), ..Default::default() }).await;
 
     let mut options = server.options();
-    options.credentials = Credentials { private_key: Some(pair.private_pem.clone()), key_passphrase: Some("pass".into()), password: None };
+    options.credentials = Credentials { private_key: Some(pair.private_pem.clone()), key_passphrase: Some("pass".into()), ..Default::default() };
     Connector::connect(options.clone()).await.expect("key login works");
 
     options.credentials.key_passphrase = None;

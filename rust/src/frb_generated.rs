@@ -3225,16 +3225,24 @@ impl SseDecode for crate::api::ssh_types::ConnectError {
                 };
             }
             3 => {
-                return crate::api::ssh_types::ConnectError::KeyNeedsPassphrase;
+                let mut var_host = <String>::sse_decode(deserializer);
+                let mut var_prompt = <String>::sse_decode(deserializer);
+                return crate::api::ssh_types::ConnectError::CodeNeeded {
+                    host: var_host,
+                    prompt: var_prompt,
+                };
             }
             4 => {
-                return crate::api::ssh_types::ConnectError::KeyWrongPassphrase;
+                return crate::api::ssh_types::ConnectError::KeyNeedsPassphrase;
             }
             5 => {
+                return crate::api::ssh_types::ConnectError::KeyWrongPassphrase;
+            }
+            6 => {
                 let mut var_reason = <String>::sse_decode(deserializer);
                 return crate::api::ssh_types::ConnectError::KeyUnreadable { reason: var_reason };
             }
-            6 => {
+            7 => {
                 let mut var_host = <String>::sse_decode(deserializer);
                 let mut var_port = <u16>::sse_decode(deserializer);
                 let mut var_message = <String>::sse_decode(deserializer);
@@ -3244,10 +3252,10 @@ impl SseDecode for crate::api::ssh_types::ConnectError {
                     message: var_message,
                 };
             }
-            7 => {
+            8 => {
                 return crate::api::ssh_types::ConnectError::Timeout;
             }
-            8 => {
+            9 => {
                 let mut var_message = <String>::sse_decode(deserializer);
                 return crate::api::ssh_types::ConnectError::Protocol {
                     message: var_message,
@@ -3290,10 +3298,12 @@ impl SseDecode for crate::api::ssh_types::Credentials {
         let mut var_password = <Option<String>>::sse_decode(deserializer);
         let mut var_privateKey = <Option<String>>::sse_decode(deserializer);
         let mut var_keyPassphrase = <Option<String>>::sse_decode(deserializer);
+        let mut var_oneTimeCode = <Option<String>>::sse_decode(deserializer);
         return crate::api::ssh_types::Credentials {
             password: var_password,
             private_key: var_privateKey,
             key_passphrase: var_keyPassphrase,
+            one_time_code: var_oneTimeCode,
         };
     }
 }
@@ -4170,25 +4180,31 @@ impl flutter_rust_bridge::IntoDart for crate::api::ssh_types::ConnectError {
                 server_accepts.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::api::ssh_types::ConnectError::KeyNeedsPassphrase => [3.into_dart()].into_dart(),
-            crate::api::ssh_types::ConnectError::KeyWrongPassphrase => [4.into_dart()].into_dart(),
+            crate::api::ssh_types::ConnectError::CodeNeeded { host, prompt } => [
+                3.into_dart(),
+                host.into_into_dart().into_dart(),
+                prompt.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::ssh_types::ConnectError::KeyNeedsPassphrase => [4.into_dart()].into_dart(),
+            crate::api::ssh_types::ConnectError::KeyWrongPassphrase => [5.into_dart()].into_dart(),
             crate::api::ssh_types::ConnectError::KeyUnreadable { reason } => {
-                [5.into_dart(), reason.into_into_dart().into_dart()].into_dart()
+                [6.into_dart(), reason.into_into_dart().into_dart()].into_dart()
             }
             crate::api::ssh_types::ConnectError::Network {
                 host,
                 port,
                 message,
             } => [
-                6.into_dart(),
+                7.into_dart(),
                 host.into_into_dart().into_dart(),
                 port.into_into_dart().into_dart(),
                 message.into_into_dart().into_dart(),
             ]
             .into_dart(),
-            crate::api::ssh_types::ConnectError::Timeout => [7.into_dart()].into_dart(),
+            crate::api::ssh_types::ConnectError::Timeout => [8.into_dart()].into_dart(),
             crate::api::ssh_types::ConnectError::Protocol { message } => {
-                [8.into_dart(), message.into_into_dart().into_dart()].into_dart()
+                [9.into_dart(), message.into_into_dart().into_dart()].into_dart()
             }
             _ => {
                 unimplemented!("");
@@ -4241,6 +4257,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::ssh_types::Credentials {
             self.password.into_into_dart().into_dart(),
             self.private_key.into_into_dart().into_dart(),
             self.key_passphrase.into_into_dart().into_dart(),
+            self.one_time_code.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -5010,14 +5027,19 @@ impl SseEncode for crate::api::ssh_types::ConnectError {
                 <Vec<String>>::sse_encode(tried, serializer);
                 <Vec<String>>::sse_encode(server_accepts, serializer);
             }
-            crate::api::ssh_types::ConnectError::KeyNeedsPassphrase => {
+            crate::api::ssh_types::ConnectError::CodeNeeded { host, prompt } => {
                 <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(host, serializer);
+                <String>::sse_encode(prompt, serializer);
             }
-            crate::api::ssh_types::ConnectError::KeyWrongPassphrase => {
+            crate::api::ssh_types::ConnectError::KeyNeedsPassphrase => {
                 <i32>::sse_encode(4, serializer);
             }
-            crate::api::ssh_types::ConnectError::KeyUnreadable { reason } => {
+            crate::api::ssh_types::ConnectError::KeyWrongPassphrase => {
                 <i32>::sse_encode(5, serializer);
+            }
+            crate::api::ssh_types::ConnectError::KeyUnreadable { reason } => {
+                <i32>::sse_encode(6, serializer);
                 <String>::sse_encode(reason, serializer);
             }
             crate::api::ssh_types::ConnectError::Network {
@@ -5025,16 +5047,16 @@ impl SseEncode for crate::api::ssh_types::ConnectError {
                 port,
                 message,
             } => {
-                <i32>::sse_encode(6, serializer);
+                <i32>::sse_encode(7, serializer);
                 <String>::sse_encode(host, serializer);
                 <u16>::sse_encode(port, serializer);
                 <String>::sse_encode(message, serializer);
             }
             crate::api::ssh_types::ConnectError::Timeout => {
-                <i32>::sse_encode(7, serializer);
+                <i32>::sse_encode(8, serializer);
             }
             crate::api::ssh_types::ConnectError::Protocol { message } => {
-                <i32>::sse_encode(8, serializer);
+                <i32>::sse_encode(9, serializer);
                 <String>::sse_encode(message, serializer);
             }
             _ => {
@@ -5064,6 +5086,7 @@ impl SseEncode for crate::api::ssh_types::Credentials {
         <Option<String>>::sse_encode(self.password, serializer);
         <Option<String>>::sse_encode(self.private_key, serializer);
         <Option<String>>::sse_encode(self.key_passphrase, serializer);
+        <Option<String>>::sse_encode(self.one_time_code, serializer);
     }
 }
 

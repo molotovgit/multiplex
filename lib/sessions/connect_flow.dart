@@ -1,5 +1,6 @@
 import '../app/lock_gate.dart';
 import '../data/models.dart';
+import '../data/otp_account.dart';
 import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
 import '../src/rust/api/ssh_types.dart';
@@ -26,6 +27,11 @@ abstract interface class ConnectPrompter {
   Future<SecretAnswer?> askPassword(String host, String username, {required bool wasWrong});
 
   Future<SecretAnswer?> askPassphrase(StoredKey key, {required bool wasWrong});
+
+  /// The server asks for a one-time code ([prompt] is its own question).
+  /// [linked] are the code accounts linked to this host, to offer in one
+  /// tap. Returns the code, or null to cancel.
+  Future<String?> askCode(String host, String prompt, List<OtpAccount> linked, {required bool wasWrong});
 }
 
 /// Opens the SSH connection; tests pass a stand-in.
@@ -94,9 +100,23 @@ class ConnectFlow {
         final previous = _store.knownHosts.where((k) => k.host == host && k.port == port).firstOrNull;
         if (!await _prompter.acceptChangedHost(host, port, key, previous)) throw const ConnectCancelled();
         _store.trustHostKey(host, port, key);
+      case ConnectError_CodeNeeded(host: final askingHost, :final prompt):
+        final isJump = _isJump(askingHost, host, jump);
+        final target = isJump ? jump! : host;
+        final code = await _prompter.askCode(target.address, prompt, _store.otpFor(target.id), wasWrong: secrets.codeRefused);
+        if (code == null || code.trim().isEmpty) throw const ConnectCancelled();
+        secrets.setCode(isJump: isJump, code.trim());
       case ConnectError_AuthFailed(host: final failedHost):
-        final isJump = jump != null && failedHost == jump.address && failedHost != host.address;
-        final target = isJump ? jump : host;
+        final isJump = _isJump(failedHost, host, jump);
+        final target = isJump ? jump! : host;
+        // Refused right after a code: most often the code was late or
+        // mistyped, so the first time only a new code is asked for; after
+        // that the password is asked again too.
+        if (secrets.codeFor(isJump: isJump) != null) {
+          secrets.setCode(isJump: isJump, null);
+          secrets.codeRefused = true;
+          if (++secrets.codeRefusals == 1) return;
+        }
         final hadOne = (isJump ? secrets.jumpPassword : secrets.password) != null;
         final answer = await _prompter.askPassword(target.address, target.username, wasWrong: hadOne);
         if (answer == null) throw const ConnectCancelled();
@@ -120,6 +140,8 @@ class ConnectFlow {
     }
   }
 
+  static bool _isJump(String reported, Host host, Host? jump) => jump != null && reported == jump.address && reported != host.address;
+
   /// Asks for the passphrase of whichever key still lacks one: the
   /// target's key first, then the jump host's.
   Future<void> _askPassphrase(Host host, Host? jump, _Secrets secrets, {required bool wasWrong}) async {
@@ -142,7 +164,7 @@ class ConnectFlow {
         host: host.address,
         port: host.port,
         username: host.username,
-        credentials: _credentials(host, secrets.password, secrets.passphrase),
+        credentials: _credentials(host, secrets.password, secrets.passphrase, secrets.code),
         trustedHostKeys: _store.trustedKeysFor(host.address, host.port),
         keepaliveSecs: _store.settings.keepAliveSecs,
         connectTimeoutSecs: _timeoutSecs,
@@ -152,17 +174,18 @@ class ConnectFlow {
                 host: jump.address,
                 port: jump.port,
                 username: jump.username,
-                credentials: _credentials(jump, secrets.jumpPassword, secrets.jumpPassphrase),
+                credentials: _credentials(jump, secrets.jumpPassword, secrets.jumpPassphrase, secrets.jumpCode),
                 trustedHostKeys: _store.trustedKeysFor(jump.address, jump.port),
               ),
       );
 
-  Credentials _credentials(Host host, String? password, String? passphrase) {
+  Credentials _credentials(Host host, String? password, String? passphrase, String? code) {
     final key = host.usesKey ? _store.key(host.keyId) : null;
     return Credentials(
       password: host.usesPassword || key == null ? password : null,
       privateKey: key?.privatePem,
       keyPassphrase: passphrase,
+      oneTimeCode: code,
     );
   }
 }
@@ -175,4 +198,16 @@ class _Secrets {
   String? passphrase;
   String? jumpPassword;
   String? jumpPassphrase;
+
+  /// One-time codes, kept until the server refuses the login.
+  String? code;
+  String? jumpCode;
+
+  /// Logins refused right after a code was sent.
+  int codeRefusals = 0;
+  bool codeRefused = false;
+
+  String? codeFor({required bool isJump}) => isJump ? jumpCode : code;
+
+  void setCode(String? value, {required bool isJump}) => isJump ? jumpCode = value : code = value;
 }

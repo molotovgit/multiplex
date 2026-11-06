@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use russh::keys::{Algorithm, PrivateKey, PublicKey};
 use russh::server::{self, Auth, ChannelOpenHandle, Msg, Server as _, Session, VerifiedPublicKey};
-use russh::{Channel, ChannelId};
+use russh::{Channel, ChannelId, MethodKind, MethodSet};
 use tokio::net::{TcpListener, TcpStream};
 
 use multiplex_core::api::ssh_types::{ConnectOptions, Credentials};
@@ -25,6 +25,9 @@ pub struct Logins {
     pub authorized_key: Option<PublicKey>,
     /// Accept the password only through keyboard-interactive.
     pub keyboard_interactive_only: bool,
+    /// Two-factor login: after the password or key, also ask for this code
+    /// through keyboard-interactive.
+    pub one_time_code: Option<String>,
 }
 
 /// A running in-process SSH server.
@@ -79,7 +82,7 @@ impl server::Server for ServerFactory {
     type Handler = ClientConn;
 
     fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> ClientConn {
-        ClientConn { logins: self.logins.clone(), shells: Default::default() }
+        ClientConn { logins: self.logins.clone(), shells: Default::default(), first_factor: false }
     }
 }
 
@@ -89,6 +92,8 @@ pub struct ClientConn {
     /// Channels running the echo shell. Data on other channels (tunnels)
     /// belongs to the pipe tasks and must not be echoed.
     shells: std::collections::HashSet<ChannelId>,
+    /// Two-factor login: the password or key was right, the code is next.
+    first_factor: bool,
 }
 
 impl server::Handler for ClientConn {
@@ -104,6 +109,11 @@ impl server::Handler for ClientConn {
     async fn auth_publickey(&mut self, user: &str, key: VerifiedPublicKey<'_>) -> Result<Auth, Self::Error> {
         let ok = user == USER
             && self.logins.authorized_key.as_ref().is_some_and(|k| k.key_data() == key.public_key.key_data());
+        if ok && self.logins.one_time_code.is_some() {
+            self.first_factor = true;
+            let next = MethodSet::from(&[MethodKind::KeyboardInteractive][..]);
+            return Ok(Auth::Reject { proceed_with_methods: Some(next), partial_success: true });
+        }
         Ok(if ok { Auth::Accept } else { Auth::reject() })
     }
 
@@ -113,6 +123,9 @@ impl server::Handler for ClientConn {
         _submethods: &str,
         response: Option<server::Response<'a>>,
     ) -> Result<Auth, Self::Error> {
+        if let Some(code) = self.logins.one_time_code.clone() {
+            return Ok(self.two_factor(user, &code, response));
+        }
         let Some(expected) = self.logins.password.clone() else { return Ok(Auth::reject()) };
         match response {
             None => Ok(Auth::Partial {
@@ -250,6 +263,29 @@ impl server::Handler for ClientConn {
             }
         });
         Ok(true)
+    }
+}
+
+impl ClientConn {
+    /// Keyboard-interactive with a code: asks for the password (unless the
+    /// key already passed), then, in a second round, for the code.
+    fn two_factor(&mut self, user: &str, code: &str, response: Option<server::Response<'_>>) -> Auth {
+        let ask = |prompt: &'static str| Auth::Partial { name: "".into(), instructions: "".into(), prompts: vec![(prompt.into(), false)].into() };
+        let Some(mut answers) = response else {
+            return ask(if self.first_factor { "Verification code: " } else { "Password: " });
+        };
+        let given = answers.next().map(|a| String::from_utf8_lossy(&a).into_owned());
+        if user != USER {
+            return Auth::reject();
+        }
+        if self.first_factor {
+            return if given.as_deref() == Some(code) { Auth::Accept } else { Auth::reject() };
+        }
+        if given.is_some() && given == self.logins.password {
+            self.first_factor = true;
+            return ask("Verification code: ");
+        }
+        Auth::reject()
     }
 }
 

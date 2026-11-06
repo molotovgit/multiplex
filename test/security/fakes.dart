@@ -1,6 +1,7 @@
 import 'package:local_auth/local_auth.dart';
 import 'package:multiplex/app/lock_gate.dart';
 import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/otp_account.dart';
 import 'package:multiplex/sessions/connect_flow.dart';
 import 'package:multiplex/src/rust/api/ssh.dart';
 import 'package:multiplex/src/rust/api/ssh_types.dart';
@@ -74,5 +75,16 @@ class FakePrompter implements ConnectPrompter {
   Future<SecretAnswer?> askPassphrase(StoredKey key, {required bool wasWrong}) async {
     asked.add('passphrase ${key.name}');
     return null;
+  }
+
+  /// Codes to answer with, in turn; null cancels.
+  final codes = <String?>[];
+  final offered = <List<OtpAccount>>[];
+
+  @override
+  Future<String?> askCode(String host, String prompt, List<OtpAccount> linked, {required bool wasWrong}) async {
+    asked.add('code $host "$prompt"${wasWrong ? ' wrong' : ''}');
+    offered.add(linked);
+    return codes.isEmpty ? null : codes.removeAt(0);
   }
 }

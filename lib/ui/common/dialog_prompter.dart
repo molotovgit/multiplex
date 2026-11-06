@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models.dart';
+import '../../data/otp_account.dart';
 import '../../sessions/connect_flow.dart';
 import '../../src/rust/api/ssh_types.dart';
 import '../hosts/host_key_pages.dart';
+import 'code_prompt_dialog.dart';
 
 /// Answers the connection's questions with dialogs.
 class DialogPrompter implements ConnectPrompter {
@@ -39,6 +41,10 @@ class DialogPrompter implements ConnectPrompter {
       rememberLabel: 'Save passphrase with the key',
     );
   }
+
+  @override
+  Future<String?> askCode(String host, String prompt, List<OtpAccount> linked, {required bool wasWrong}) =>
+      CodePromptDialog.show(context, host, prompt, linked, wasWrong: wasWrong);
 
   Future<SecretAnswer?> _askSecret({required String title, required String message, required String label, required String rememberLabel}) {
     if (!context.mounted) return Future.value(null);

@@ -2671,20 +2671,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           serverAccepts: dco_decode_list_String(raw[3]),
         );
       case 3:
-        return ConnectError_KeyNeedsPassphrase();
+        return ConnectError_CodeNeeded(
+          host: dco_decode_String(raw[1]),
+          prompt: dco_decode_String(raw[2]),
+        );
       case 4:
-        return ConnectError_KeyWrongPassphrase();
+        return ConnectError_KeyNeedsPassphrase();
       case 5:
-        return ConnectError_KeyUnreadable(reason: dco_decode_String(raw[1]));
+        return ConnectError_KeyWrongPassphrase();
       case 6:
+        return ConnectError_KeyUnreadable(reason: dco_decode_String(raw[1]));
+      case 7:
         return ConnectError_Network(
           host: dco_decode_String(raw[1]),
           port: dco_decode_u_16(raw[2]),
           message: dco_decode_String(raw[3]),
         );
-      case 7:
-        return ConnectError_Timeout();
       case 8:
+        return ConnectError_Timeout();
+      case 9:
         return ConnectError_Protocol(message: dco_decode_String(raw[1]));
       default:
         throw Exception("unreachable");
@@ -2713,12 +2718,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Credentials dco_decode_credentials(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 3)
-      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
     return Credentials(
       password: dco_decode_opt_String(arr[0]),
       privateKey: dco_decode_opt_String(arr[1]),
       keyPassphrase: dco_decode_opt_String(arr[2]),
+      oneTimeCode: dco_decode_opt_String(arr[3]),
     );
   }
 
@@ -3477,13 +3483,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           serverAccepts: var_serverAccepts,
         );
       case 3:
-        return ConnectError_KeyNeedsPassphrase();
+        var var_host = sse_decode_String(deserializer);
+        var var_prompt = sse_decode_String(deserializer);
+        return ConnectError_CodeNeeded(host: var_host, prompt: var_prompt);
       case 4:
-        return ConnectError_KeyWrongPassphrase();
+        return ConnectError_KeyNeedsPassphrase();
       case 5:
+        return ConnectError_KeyWrongPassphrase();
+      case 6:
         var var_reason = sse_decode_String(deserializer);
         return ConnectError_KeyUnreadable(reason: var_reason);
-      case 6:
+      case 7:
         var var_host = sse_decode_String(deserializer);
         var var_port = sse_decode_u_16(deserializer);
         var var_message = sse_decode_String(deserializer);
@@ -3492,9 +3502,9 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           port: var_port,
           message: var_message,
         );
-      case 7:
-        return ConnectError_Timeout();
       case 8:
+        return ConnectError_Timeout();
+      case 9:
         var var_message = sse_decode_String(deserializer);
         return ConnectError_Protocol(message: var_message);
       default:
@@ -3531,10 +3541,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_password = sse_decode_opt_String(deserializer);
     var var_privateKey = sse_decode_opt_String(deserializer);
     var var_keyPassphrase = sse_decode_opt_String(deserializer);
+    var var_oneTimeCode = sse_decode_opt_String(deserializer);
     return Credentials(
       password: var_password,
       privateKey: var_privateKey,
       keyPassphrase: var_keyPassphrase,
+      oneTimeCode: var_oneTimeCode,
     );
   }
 
@@ -4425,26 +4437,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_String(host, serializer);
         sse_encode_list_String(tried, serializer);
         sse_encode_list_String(serverAccepts, serializer);
-      case ConnectError_KeyNeedsPassphrase():
+      case ConnectError_CodeNeeded(host: final host, prompt: final prompt):
         sse_encode_i_32(3, serializer);
-      case ConnectError_KeyWrongPassphrase():
+        sse_encode_String(host, serializer);
+        sse_encode_String(prompt, serializer);
+      case ConnectError_KeyNeedsPassphrase():
         sse_encode_i_32(4, serializer);
-      case ConnectError_KeyUnreadable(reason: final reason):
+      case ConnectError_KeyWrongPassphrase():
         sse_encode_i_32(5, serializer);
+      case ConnectError_KeyUnreadable(reason: final reason):
+        sse_encode_i_32(6, serializer);
         sse_encode_String(reason, serializer);
       case ConnectError_Network(
         host: final host,
         port: final port,
         message: final message,
       ):
-        sse_encode_i_32(6, serializer);
+        sse_encode_i_32(7, serializer);
         sse_encode_String(host, serializer);
         sse_encode_u_16(port, serializer);
         sse_encode_String(message, serializer);
       case ConnectError_Timeout():
-        sse_encode_i_32(7, serializer);
-      case ConnectError_Protocol(message: final message):
         sse_encode_i_32(8, serializer);
+      case ConnectError_Protocol(message: final message):
+        sse_encode_i_32(9, serializer);
         sse_encode_String(message, serializer);
     }
   }
@@ -4471,6 +4487,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.password, serializer);
     sse_encode_opt_String(self.privateKey, serializer);
     sse_encode_opt_String(self.keyPassphrase, serializer);
+    sse_encode_opt_String(self.oneTimeCode, serializer);
   }
 
   @protected

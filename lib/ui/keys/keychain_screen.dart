@@ -2,24 +2,29 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
+import 'code_widgets.dart';
+import 'codes_tab.dart';
 import 'key_creator_screen.dart';
 import 'key_tools.dart';
 import 'keys_tab.dart';
 import 'known_hosts_tab.dart';
 
-/// Keys and known hosts, on two tabs.
+/// Keys, one-time codes and known hosts, on three tabs.
 class KeychainScreen extends StatefulWidget {
-  const KeychainScreen({super.key, this.tools = const NativeKeyTools()});
+  const KeychainScreen({super.key, this.tools = const NativeKeyTools(), this.clock});
 
   /// Key operations; tests pass a stand-in.
   final KeyTools tools;
+
+  /// The clock for the codes; tests pass a fixed one.
+  final CodeClock? clock;
 
   @override
   State<KeychainScreen> createState() => _KeychainScreenState();
 }
 
 class _KeychainScreenState extends State<KeychainScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+  late final TabController _tabs = TabController(length: 3, vsync: this);
 
   @override
   void dispose() {
@@ -35,19 +40,23 @@ class _KeychainScreenState extends State<KeychainScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBar(
         title: const Text('Keychain'),
-        bottom: TabBar(controller: _tabs, tabs: const [Tab(text: 'Keys'), Tab(text: 'Known hosts')]),
+        bottom: TabBar(controller: _tabs, tabs: const [Tab(text: 'Keys'), Tab(text: 'Codes'), Tab(text: 'Known hosts')]),
       ),
-      // The button belongs to the Keys tab, and is left out while the
-      // empty list already offers the same action.
+      // The button belongs to the Keys and Codes tabs, and is left out
+      // while the empty list already offers the same action.
       floatingActionButton: ListenableBuilder(
         listenable: Listenable.merge([_tabs, store]),
-        builder: (context, _) => _tabs.index == 0 && store.keys.isNotEmpty
-            ? FloatingActionButton.extended(onPressed: _newKey, icon: const Icon(Icons.add), label: const Text('New key'))
-            : const SizedBox.shrink(),
+        builder: (context, _) => switch (_tabs.index) {
+          0 when store.keys.isNotEmpty =>
+            FloatingActionButton.extended(onPressed: _newKey, icon: const Icon(Icons.add), label: const Text('New key')),
+          1 when store.otpAccounts.isNotEmpty =>
+            FloatingActionButton.extended(onPressed: () => CodesTab.add(context), icon: const Icon(Icons.add), label: const Text('Add code')),
+          _ => const SizedBox.shrink(),
+        },
       ),
       body: TabBarView(
         controller: _tabs,
-        children: [KeysTab(tools: widget.tools, onNewKey: _newKey), const KnownHostsTab()],
+        children: [KeysTab(tools: widget.tools, onNewKey: _newKey), CodesTab(clock: widget.clock), const KnownHostsTab()],
       ),
     );
   }

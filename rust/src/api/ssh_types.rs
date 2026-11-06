@@ -20,13 +20,17 @@ pub struct ConnectOptions {
 
 /// What Multiplex may try when logging in. Everything that is set is
 /// tried in order: key, password, then keyboard-interactive (answered with
-/// the password).
+/// the password, or with the one-time code when the server asks for a
+/// verification code).
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Credentials {
     pub password: Option<String>,
     /// Private key in OpenSSH or PEM text format.
     pub private_key: Option<String>,
     pub key_passphrase: Option<String>,
+    /// A one-time code (for example from an authenticator app), for
+    /// servers that ask for one after the password or key.
+    pub one_time_code: Option<String>,
 }
 
 /// The server to hop through on the way to the real target.
@@ -68,6 +72,10 @@ pub enum ConnectError {
         /// Methods the server said it accepts.
         server_accepts: Vec<String>,
     },
+    /// The server asks for a one-time code (two-factor login) and none was
+    /// given. `prompt` is the server's own question.
+    #[error("{host} asks for a verification code")]
+    CodeNeeded { host: String, prompt: String },
     #[error("the private key needs its passphrase")]
     KeyNeedsPassphrase,
     #[error("the passphrase of the private key is wrong")]

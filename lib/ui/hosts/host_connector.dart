@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
+import '../../data/otp_account.dart';
 import '../../sessions/connect_flow.dart';
 import '../../sessions/session_manager.dart';
 import '../common/dialog_prompter.dart';
@@ -92,6 +93,12 @@ class _ProgressAwarePrompter implements ConnectPrompter {
   Future<SecretAnswer?> askPassphrase(StoredKey key, {required bool wasWrong}) {
     _hideProgress();
     return _inner.askPassphrase(key, wasWrong: wasWrong);
+  }
+
+  @override
+  Future<String?> askCode(String host, String prompt, List<OtpAccount> linked, {required bool wasWrong}) {
+    _hideProgress();
+    return _inner.askCode(host, prompt, linked, wasWrong: wasWrong);
   }
 }
 

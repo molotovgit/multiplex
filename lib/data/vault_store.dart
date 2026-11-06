@@ -9,6 +9,7 @@ import '../src/rust/api/ssh_types.dart';
 import 'app_settings.dart';
 import 'command_history.dart';
 import 'models.dart';
+import 'otp_account.dart';
 import 'vault_backend.dart';
 import 'vault_document.dart';
 
@@ -47,6 +48,10 @@ class VaultStore extends ChangeNotifier {
   List<ForwardRule> get forwards => List.unmodifiable(_doc.forwards);
   AppSettings get settings => _doc.settings;
   List<ThemeSpec> get customThemes => List.unmodifiable(_doc.customThemes);
+  List<OtpAccount> get otpAccounts => List.unmodifiable(_doc.otpAccounts);
+
+  /// Code accounts linked to a host, offered when its login asks for a code.
+  List<OtpAccount> otpFor(String? hostId) => hostId == null ? const [] : _doc.otpAccounts.where((a) => a.hostId == hostId).toList();
 
   /// Recent commands of every host. Read only: change it with
   /// [recordCommand], [pinCommand], [deleteCommand] and [clearCommands].
@@ -80,6 +85,7 @@ class VaultStore extends ChangeNotifier {
     _doc.forwards.removeWhere((f) => f.hostId == id);
     _doc.commandHistory.clear(id);
     _replaceWhere(_doc.hosts, (h) => h.jumpHostId == id, (h) => h.copyWith(jumpHostId: () => null));
+    _replaceWhere(_doc.otpAccounts, (a) => a.hostId == id, (a) => a.copyWith(hostId: () => null));
     _changed();
   }
 
@@ -167,6 +173,13 @@ class VaultStore extends ChangeNotifier {
     _changed();
   }
 
+  void saveOtp(OtpAccount account) => _upsert(_doc.otpAccounts, account, (a) => a.id);
+
+  void deleteOtp(String id) {
+    _doc.otpAccounts.removeWhere((a) => a.id == id);
+    _changed();
+  }
+
   void saveForward(ForwardRule rule) => _upsert(_doc.forwards, rule, (f) => f.id);
 
   void deleteForward(String id) {
@@ -231,7 +244,8 @@ class VaultStore extends ChangeNotifier {
         ..snippets.clear()
         ..knownHosts.clear()
         ..forwards.clear()
-        ..customThemes.clear();
+        ..customThemes.clear()
+        ..otpAccounts.clear();
       _doc.settings = incoming.settings;
       _doc.commandHistory = CommandHistory();
     }

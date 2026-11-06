@@ -56,13 +56,14 @@ extension ConnectErrorPatterns on ConnectError {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ConnectError_HostKeyUnknown value)?  hostKeyUnknown,TResult Function( ConnectError_HostKeyChanged value)?  hostKeyChanged,TResult Function( ConnectError_AuthFailed value)?  authFailed,TResult Function( ConnectError_KeyNeedsPassphrase value)?  keyNeedsPassphrase,TResult Function( ConnectError_KeyWrongPassphrase value)?  keyWrongPassphrase,TResult Function( ConnectError_KeyUnreadable value)?  keyUnreadable,TResult Function( ConnectError_Network value)?  network,TResult Function( ConnectError_Timeout value)?  timeout,TResult Function( ConnectError_Protocol value)?  protocol,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ConnectError_HostKeyUnknown value)?  hostKeyUnknown,TResult Function( ConnectError_HostKeyChanged value)?  hostKeyChanged,TResult Function( ConnectError_AuthFailed value)?  authFailed,TResult Function( ConnectError_CodeNeeded value)?  codeNeeded,TResult Function( ConnectError_KeyNeedsPassphrase value)?  keyNeedsPassphrase,TResult Function( ConnectError_KeyWrongPassphrase value)?  keyWrongPassphrase,TResult Function( ConnectError_KeyUnreadable value)?  keyUnreadable,TResult Function( ConnectError_Network value)?  network,TResult Function( ConnectError_Timeout value)?  timeout,TResult Function( ConnectError_Protocol value)?  protocol,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown() when hostKeyUnknown != null:
 return hostKeyUnknown(_that);case ConnectError_HostKeyChanged() when hostKeyChanged != null:
 return hostKeyChanged(_that);case ConnectError_AuthFailed() when authFailed != null:
-return authFailed(_that);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
+return authFailed(_that);case ConnectError_CodeNeeded() when codeNeeded != null:
+return codeNeeded(_that);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
 return keyNeedsPassphrase(_that);case ConnectError_KeyWrongPassphrase() when keyWrongPassphrase != null:
 return keyWrongPassphrase(_that);case ConnectError_KeyUnreadable() when keyUnreadable != null:
 return keyUnreadable(_that);case ConnectError_Network() when network != null:
@@ -86,13 +87,14 @@ return protocol(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ConnectError_HostKeyUnknown value)  hostKeyUnknown,required TResult Function( ConnectError_HostKeyChanged value)  hostKeyChanged,required TResult Function( ConnectError_AuthFailed value)  authFailed,required TResult Function( ConnectError_KeyNeedsPassphrase value)  keyNeedsPassphrase,required TResult Function( ConnectError_KeyWrongPassphrase value)  keyWrongPassphrase,required TResult Function( ConnectError_KeyUnreadable value)  keyUnreadable,required TResult Function( ConnectError_Network value)  network,required TResult Function( ConnectError_Timeout value)  timeout,required TResult Function( ConnectError_Protocol value)  protocol,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ConnectError_HostKeyUnknown value)  hostKeyUnknown,required TResult Function( ConnectError_HostKeyChanged value)  hostKeyChanged,required TResult Function( ConnectError_AuthFailed value)  authFailed,required TResult Function( ConnectError_CodeNeeded value)  codeNeeded,required TResult Function( ConnectError_KeyNeedsPassphrase value)  keyNeedsPassphrase,required TResult Function( ConnectError_KeyWrongPassphrase value)  keyWrongPassphrase,required TResult Function( ConnectError_KeyUnreadable value)  keyUnreadable,required TResult Function( ConnectError_Network value)  network,required TResult Function( ConnectError_Timeout value)  timeout,required TResult Function( ConnectError_Protocol value)  protocol,}){
 final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown():
 return hostKeyUnknown(_that);case ConnectError_HostKeyChanged():
 return hostKeyChanged(_that);case ConnectError_AuthFailed():
-return authFailed(_that);case ConnectError_KeyNeedsPassphrase():
+return authFailed(_that);case ConnectError_CodeNeeded():
+return codeNeeded(_that);case ConnectError_KeyNeedsPassphrase():
 return keyNeedsPassphrase(_that);case ConnectError_KeyWrongPassphrase():
 return keyWrongPassphrase(_that);case ConnectError_KeyUnreadable():
 return keyUnreadable(_that);case ConnectError_Network():
@@ -112,13 +114,14 @@ return protocol(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ConnectError_HostKeyUnknown value)?  hostKeyUnknown,TResult? Function( ConnectError_HostKeyChanged value)?  hostKeyChanged,TResult? Function( ConnectError_AuthFailed value)?  authFailed,TResult? Function( ConnectError_KeyNeedsPassphrase value)?  keyNeedsPassphrase,TResult? Function( ConnectError_KeyWrongPassphrase value)?  keyWrongPassphrase,TResult? Function( ConnectError_KeyUnreadable value)?  keyUnreadable,TResult? Function( ConnectError_Network value)?  network,TResult? Function( ConnectError_Timeout value)?  timeout,TResult? Function( ConnectError_Protocol value)?  protocol,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ConnectError_HostKeyUnknown value)?  hostKeyUnknown,TResult? Function( ConnectError_HostKeyChanged value)?  hostKeyChanged,TResult? Function( ConnectError_AuthFailed value)?  authFailed,TResult? Function( ConnectError_CodeNeeded value)?  codeNeeded,TResult? Function( ConnectError_KeyNeedsPassphrase value)?  keyNeedsPassphrase,TResult? Function( ConnectError_KeyWrongPassphrase value)?  keyWrongPassphrase,TResult? Function( ConnectError_KeyUnreadable value)?  keyUnreadable,TResult? Function( ConnectError_Network value)?  network,TResult? Function( ConnectError_Timeout value)?  timeout,TResult? Function( ConnectError_Protocol value)?  protocol,}){
 final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown() when hostKeyUnknown != null:
 return hostKeyUnknown(_that);case ConnectError_HostKeyChanged() when hostKeyChanged != null:
 return hostKeyChanged(_that);case ConnectError_AuthFailed() when authFailed != null:
-return authFailed(_that);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
+return authFailed(_that);case ConnectError_CodeNeeded() when codeNeeded != null:
+return codeNeeded(_that);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
 return keyNeedsPassphrase(_that);case ConnectError_KeyWrongPassphrase() when keyWrongPassphrase != null:
 return keyWrongPassphrase(_that);case ConnectError_KeyUnreadable() when keyUnreadable != null:
 return keyUnreadable(_that);case ConnectError_Network() when network != null:
@@ -141,12 +144,13 @@ return protocol(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String host,  int port,  HostKeyInfo key)?  hostKeyUnknown,TResult Function( String host,  int port,  HostKeyInfo key)?  hostKeyChanged,TResult Function( String host,  List<String> tried,  List<String> serverAccepts)?  authFailed,TResult Function()?  keyNeedsPassphrase,TResult Function()?  keyWrongPassphrase,TResult Function( String reason)?  keyUnreadable,TResult Function( String host,  int port,  String message)?  network,TResult Function()?  timeout,TResult Function( String message)?  protocol,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String host,  int port,  HostKeyInfo key)?  hostKeyUnknown,TResult Function( String host,  int port,  HostKeyInfo key)?  hostKeyChanged,TResult Function( String host,  List<String> tried,  List<String> serverAccepts)?  authFailed,TResult Function( String host,  String prompt)?  codeNeeded,TResult Function()?  keyNeedsPassphrase,TResult Function()?  keyWrongPassphrase,TResult Function( String reason)?  keyUnreadable,TResult Function( String host,  int port,  String message)?  network,TResult Function()?  timeout,TResult Function( String message)?  protocol,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown() when hostKeyUnknown != null:
 return hostKeyUnknown(_that.host,_that.port,_that.key);case ConnectError_HostKeyChanged() when hostKeyChanged != null:
 return hostKeyChanged(_that.host,_that.port,_that.key);case ConnectError_AuthFailed() when authFailed != null:
-return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
+return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_CodeNeeded() when codeNeeded != null:
+return codeNeeded(_that.host,_that.prompt);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
 return keyNeedsPassphrase();case ConnectError_KeyWrongPassphrase() when keyWrongPassphrase != null:
 return keyWrongPassphrase();case ConnectError_KeyUnreadable() when keyUnreadable != null:
 return keyUnreadable(_that.reason);case ConnectError_Network() when network != null:
@@ -170,12 +174,13 @@ return protocol(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String host,  int port,  HostKeyInfo key)  hostKeyUnknown,required TResult Function( String host,  int port,  HostKeyInfo key)  hostKeyChanged,required TResult Function( String host,  List<String> tried,  List<String> serverAccepts)  authFailed,required TResult Function()  keyNeedsPassphrase,required TResult Function()  keyWrongPassphrase,required TResult Function( String reason)  keyUnreadable,required TResult Function( String host,  int port,  String message)  network,required TResult Function()  timeout,required TResult Function( String message)  protocol,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String host,  int port,  HostKeyInfo key)  hostKeyUnknown,required TResult Function( String host,  int port,  HostKeyInfo key)  hostKeyChanged,required TResult Function( String host,  List<String> tried,  List<String> serverAccepts)  authFailed,required TResult Function( String host,  String prompt)  codeNeeded,required TResult Function()  keyNeedsPassphrase,required TResult Function()  keyWrongPassphrase,required TResult Function( String reason)  keyUnreadable,required TResult Function( String host,  int port,  String message)  network,required TResult Function()  timeout,required TResult Function( String message)  protocol,}) {final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown():
 return hostKeyUnknown(_that.host,_that.port,_that.key);case ConnectError_HostKeyChanged():
 return hostKeyChanged(_that.host,_that.port,_that.key);case ConnectError_AuthFailed():
-return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_KeyNeedsPassphrase():
+return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_CodeNeeded():
+return codeNeeded(_that.host,_that.prompt);case ConnectError_KeyNeedsPassphrase():
 return keyNeedsPassphrase();case ConnectError_KeyWrongPassphrase():
 return keyWrongPassphrase();case ConnectError_KeyUnreadable():
 return keyUnreadable(_that.reason);case ConnectError_Network():
@@ -195,12 +200,13 @@ return protocol(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String host,  int port,  HostKeyInfo key)?  hostKeyUnknown,TResult? Function( String host,  int port,  HostKeyInfo key)?  hostKeyChanged,TResult? Function( String host,  List<String> tried,  List<String> serverAccepts)?  authFailed,TResult? Function()?  keyNeedsPassphrase,TResult? Function()?  keyWrongPassphrase,TResult? Function( String reason)?  keyUnreadable,TResult? Function( String host,  int port,  String message)?  network,TResult? Function()?  timeout,TResult? Function( String message)?  protocol,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String host,  int port,  HostKeyInfo key)?  hostKeyUnknown,TResult? Function( String host,  int port,  HostKeyInfo key)?  hostKeyChanged,TResult? Function( String host,  List<String> tried,  List<String> serverAccepts)?  authFailed,TResult? Function( String host,  String prompt)?  codeNeeded,TResult? Function()?  keyNeedsPassphrase,TResult? Function()?  keyWrongPassphrase,TResult? Function( String reason)?  keyUnreadable,TResult? Function( String host,  int port,  String message)?  network,TResult? Function()?  timeout,TResult? Function( String message)?  protocol,}) {final _that = this;
 switch (_that) {
 case ConnectError_HostKeyUnknown() when hostKeyUnknown != null:
 return hostKeyUnknown(_that.host,_that.port,_that.key);case ConnectError_HostKeyChanged() when hostKeyChanged != null:
 return hostKeyChanged(_that.host,_that.port,_that.key);case ConnectError_AuthFailed() when authFailed != null:
-return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
+return authFailed(_that.host,_that.tried,_that.serverAccepts);case ConnectError_CodeNeeded() when codeNeeded != null:
+return codeNeeded(_that.host,_that.prompt);case ConnectError_KeyNeedsPassphrase() when keyNeedsPassphrase != null:
 return keyNeedsPassphrase();case ConnectError_KeyWrongPassphrase() when keyWrongPassphrase != null:
 return keyWrongPassphrase();case ConnectError_KeyUnreadable() when keyUnreadable != null:
 return keyUnreadable(_that.reason);case ConnectError_Network() when network != null:
@@ -440,6 +446,76 @@ host: null == host ? _self.host : host // ignore: cast_nullable_to_non_nullable
 as String,tried: null == tried ? _self._tried : tried // ignore: cast_nullable_to_non_nullable
 as List<String>,serverAccepts: null == serverAccepts ? _self._serverAccepts : serverAccepts // ignore: cast_nullable_to_non_nullable
 as List<String>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ConnectError_CodeNeeded extends ConnectError {
+  const ConnectError_CodeNeeded({required this.host, required this.prompt}): super._();
+  
+
+ final  String host;
+ final  String prompt;
+
+/// Create a copy of ConnectError
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ConnectError_CodeNeededCopyWith<ConnectError_CodeNeeded> get copyWith => _$ConnectError_CodeNeededCopyWithImpl<ConnectError_CodeNeeded>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ConnectError_CodeNeeded&&(identical(other.host, host) || other.host == host)&&(identical(other.prompt, prompt) || other.prompt == prompt));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,host,prompt);
+}
+
+@override
+String toString() {
+    return 'ConnectError.codeNeeded(host: $host, prompt: $prompt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ConnectError_CodeNeededCopyWith<$Res> implements $ConnectErrorCopyWith<$Res> {
+  factory $ConnectError_CodeNeededCopyWith(ConnectError_CodeNeeded value, $Res Function(ConnectError_CodeNeeded) _then) = _$ConnectError_CodeNeededCopyWithImpl;
+@useResult
+$Res call({
+ String host, String prompt
+});
+
+
+
+
+}
+/// @nodoc
+class _$ConnectError_CodeNeededCopyWithImpl<$Res>
+    implements $ConnectError_CodeNeededCopyWith<$Res> {
+  _$ConnectError_CodeNeededCopyWithImpl(this._self, this._then);
+
+  final ConnectError_CodeNeeded _self;
+  final $Res Function(ConnectError_CodeNeeded) _then;
+
+/// Create a copy of ConnectError
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? host = null,Object? prompt = null,}) {
+  return _then(ConnectError_CodeNeeded(
+host: null == host ? _self.host : host // ignore: cast_nullable_to_non_nullable
+as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

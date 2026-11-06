@@ -2,7 +2,8 @@
 //!
 //! We try what the user gave us, strongest first: the private key, then
 //! the password, then "keyboard-interactive" (many servers that turn off
-//! plain password login still ask for the password this way).
+//! plain password login still ask for the password this way, and servers
+//! with two-factor login ask for a one-time code there).
 
 use russh::client::{Handle, KeyboardInteractiveAuthResponse};
 use russh::keys::PrivateKeyWithHashAlg;
@@ -71,6 +72,7 @@ impl<'a> Authenticator<'a> {
             }
         }
 
+        let code = credentials.one_time_code.as_deref().map(str::trim).filter(|c| !c.is_empty());
         if let Some(password) = password {
             if self.server_allows("password") {
                 let result = self
@@ -82,9 +84,15 @@ impl<'a> Authenticator<'a> {
                     return Ok(());
                 }
             }
-            if self.server_allows("keyboard-interactive") && self.keyboard_interactive(password).await? {
-                return Ok(());
-            }
+        }
+        // Also when there is no password: after a key the server may still
+        // want a one-time code, which it asks for this way.
+        let asked_for = self.server_accepts.iter().any(|m| m == "keyboard-interactive");
+        if (password.is_some() || code.is_some() || asked_for)
+            && self.server_allows("keyboard-interactive")
+            && self.keyboard_interactive(password, code).await?
+        {
+            return Ok(());
         }
 
         Err(ConnectError::AuthFailed {
@@ -94,8 +102,10 @@ impl<'a> Authenticator<'a> {
         })
     }
 
-    /// Answers every question the server asks with the password.
-    async fn keyboard_interactive(&mut self, password: &str) -> Result<bool, ConnectError> {
+    /// Answers the server's questions: a question about a code gets the
+    /// one-time code, any other the password. A code question with no code
+    /// stops with [`ConnectError::CodeNeeded`] so the app can ask for one.
+    async fn keyboard_interactive(&mut self, password: Option<&str>, code: Option<&str>) -> Result<bool, ConnectError> {
         let mut response = self
             .handle
             .authenticate_keyboard_interactive_start(self.username, None::<String>)
@@ -112,7 +122,22 @@ impl<'a> Authenticator<'a> {
                     return Ok(false);
                 }
                 KeyboardInteractiveAuthResponse::InfoRequest { ref prompts, .. } => {
-                    let answers = prompts.iter().map(|_| password.to_owned()).collect();
+                    let mut answers = Vec::with_capacity(prompts.len());
+                    for prompt in prompts {
+                        let answer = if is_code_prompt(&prompt.prompt) { code } else { password };
+                        match answer {
+                            Some(answer) => answers.push(answer.to_owned()),
+                            None if is_code_prompt(&prompt.prompt) => {
+                                return Err(ConnectError::CodeNeeded { host: self.host.to_owned(), prompt: prompt.prompt.trim().to_owned() })
+                            }
+                            // A password question and no password: the
+                            // login fails and the app asks for one.
+                            None => {
+                                self.tried.push("keyboard-interactive".into());
+                                return Ok(false);
+                            }
+                        }
+                    }
                     response = self
                         .handle
                         .authenticate_keyboard_interactive_respond(answers)
@@ -152,5 +177,41 @@ impl<'a> Authenticator<'a> {
 
     fn protocol(err: russh::Error) -> ConnectError {
         ConnectError::Protocol { message: err.to_string() }
+    }
+}
+
+/// Whether a keyboard-interactive question asks for a one-time code rather
+/// than the password ("Verification code:", "OTP:", "Duo passcode", ...).
+pub fn is_code_prompt(prompt: &str) -> bool {
+    let prompt = prompt.to_lowercase();
+    let has = |words: &[&str]| words.iter().any(|w| prompt.contains(w));
+    // "One-time password" is a code, though it says password.
+    if has(&["one-time", "one time", "otp", "oath"]) {
+        return true;
+    }
+    if has(&["password", "passphrase"]) {
+        return false;
+    }
+    has(&["code", "token", "two-factor", "2fa", "authenticator", "verification"])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_code_prompt;
+
+    #[test]
+    fn code_questions_are_told_apart_from_password_questions() {
+        for prompt in [
+            "Verification code: ",
+            "OTP: ",
+            "Enter your 2FA token:",
+            "Passcode or option (1-3): ",
+            "One-time password (OATH) for `alice': ",
+        ] {
+            assert!(is_code_prompt(prompt), "{prompt}");
+        }
+        for prompt in ["Password: ", "alice@host's password: ", "Enter passphrase:"] {
+            assert!(!is_code_prompt(prompt), "{prompt}");
+        }
     }
 }

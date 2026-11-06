@@ -38,6 +38,13 @@ sealed class ConnectError with _$ConnectError implements FrbException {
     /// Methods the server said it accepts.
     required List<String> serverAccepts,
   }) = ConnectError_AuthFailed;
+
+  /// The server asks for a one-time code (two-factor login) and none was
+  /// given. `prompt` is the server's own question.
+  const factory ConnectError.codeNeeded({
+    required String host,
+    required String prompt,
+  }) = ConnectError_CodeNeeded;
   const factory ConnectError.keyNeedsPassphrase() =
       ConnectError_KeyNeedsPassphrase;
   const factory ConnectError.keyWrongPassphrase() =
@@ -113,7 +120,8 @@ class ConnectOptions {
 
 /// What Multiplex may try when logging in. Everything that is set is
 /// tried in order: key, password, then keyboard-interactive (answered with
-/// the password).
+/// the password, or with the one-time code when the server asks for a
+/// verification code).
 class Credentials {
   final String? password;
 
@@ -121,14 +129,26 @@ class Credentials {
   final String? privateKey;
   final String? keyPassphrase;
 
-  const Credentials({this.password, this.privateKey, this.keyPassphrase});
+  /// A one-time code (for example from an authenticator app), for
+  /// servers that ask for one after the password or key.
+  final String? oneTimeCode;
+
+  const Credentials({
+    this.password,
+    this.privateKey,
+    this.keyPassphrase,
+    this.oneTimeCode,
+  });
 
   static Future<Credentials> default_() =>
       RustLib.instance.api.crateApiSshTypesCredentialsDefault();
 
   @override
   int get hashCode =>
-      password.hashCode ^ privateKey.hashCode ^ keyPassphrase.hashCode;
+      password.hashCode ^
+      privateKey.hashCode ^
+      keyPassphrase.hashCode ^
+      oneTimeCode.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -137,7 +157,8 @@ class Credentials {
           runtimeType == other.runtimeType &&
           password == other.password &&
           privateKey == other.privateKey &&
-          keyPassphrase == other.keyPassphrase;
+          keyPassphrase == other.keyPassphrase &&
+          oneTimeCode == other.oneTimeCode;
 }
 
 /// Result of running one command without a terminal.
