@@ -89,6 +89,7 @@ class _KeyCapState extends State<KeyCap> {
         swipe: _engine.settings.swipeForSymbols,
         swipeDistance: widget.look.metrics.rowHeight * 0.45,
         inScrollingRow: widget.inScrollingRow,
+        cursorStep: _engine.cursorStep,
       ),
       geometry: _geometry(),
     );

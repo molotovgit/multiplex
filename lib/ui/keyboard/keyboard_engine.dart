@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../../src/rust/api/terminal_types.dart';
+import 'key_press_tracker.dart';
 import 'key_sink.dart';
 import 'key_spec.dart';
 import 'keyboard_modifiers.dart';
@@ -22,6 +23,10 @@ class KeyboardEngine extends ChangeNotifier {
 
   /// Set by the panel on every build.
   KeyboardSettings settings = const KeyboardSettings();
+
+  /// How far a finger moves along the space bar for one cursor step: the
+  /// width of a terminal cell. Set by the panel.
+  double cursorStep = KeyPressTracker.stepX;
 
   VoidCallback? onSnippets;
   VoidCallback? onHistory;
@@ -60,8 +65,12 @@ class KeyboardEngine extends ChangeNotifier {
     }
   }
 
-  /// A step of the space-bar trackpad.
-  void moveCursor(TerminalKey arrow) => _sendKey(arrow);
+  /// A step of the space-bar trackpad, with a light tick per step so the
+  /// finger feels each cell go by.
+  void moveCursor(TerminalKey arrow) {
+    if (settings.haptics) HapticFeedback.selectionClick();
+    _sendKey(arrow);
+  }
 
   /// A tap of haptics and sound, as the user chose. Called on touch down
   /// so it matches the finger, not the release.

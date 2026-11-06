@@ -47,7 +47,7 @@ class ChoiceGeometry {
 
 /// How a key reacts to movement; set by the widget from the settings.
 class PressOptions {
-  const PressOptions({this.swipe = true, this.swipeDistance = 24, this.inScrollingRow = false});
+  const PressOptions({this.swipe = true, this.swipeDistance = 24, this.inScrollingRow = false, this.cursorStep = KeyPressTracker.stepX});
 
   /// Swiping up types the first alternate.
   final bool swipe;
@@ -55,6 +55,11 @@ class PressOptions {
 
   /// The key sits in a row that scrolls sideways: moving cancels it.
   final bool inScrollingRow;
+
+  /// Space bar trackpad: one Left or Right per this much sideways
+  /// movement. The keyboard sets it to the width of a terminal cell, so
+  /// the cursor keeps up with the finger.
+  final double cursorStep;
 }
 
 /// Follows one finger on one key and decides what to send: a tap, an
@@ -69,9 +74,13 @@ class KeyPressTracker extends ChangeNotifier {
   /// Movement smaller than this is still a tap.
   static const slop = 10.0;
 
-  /// Space bar trackpad: one arrow per this much movement. Up and down
-  /// need more, so a sideways drag does not jump through history.
+  /// Space bar trackpad: one arrow per this much movement (sideways, when
+  /// the keyboard does not say otherwise). Up and down need more, so a
+  /// sideways drag does not jump through history.
   static const stepX = 14.0;
+
+  /// A smaller sideways step makes the cursor jitter under a still finger.
+  static const minStepX = 6.0;
   static const stepY = 28.0;
 
   final ValueChanged<KeySpec> onSend;
@@ -190,6 +199,7 @@ class KeyPressTracker extends ChangeNotifier {
 
   /// Sends one arrow for each full step the finger moved since the last.
   void _track(Offset position) {
+    final stepX = _options.cursorStep < minStepX ? minStepX : _options.cursorStep;
     while (position.dx - _anchor.dx >= stepX) {
       _anchor = _anchor.translate(stepX, 0);
       onCursor(TerminalKey.right);

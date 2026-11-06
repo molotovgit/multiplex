@@ -8,6 +8,7 @@ import '../../sessions/terminal_controller.dart';
 import '../history/command_history_sheet.dart';
 import '../history/command_strip.dart';
 import '../history/command_target.dart';
+import '../terminal/terminal_painter.dart';
 import 'key_face.dart';
 import 'key_sink.dart';
 import 'key_spec.dart';
@@ -121,6 +122,8 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
     final palette = KeyboardPalette.of(context);
     final style = AppStyleTheme.of(context).style;
     final terminalFont = TerminalFonts.byId(store.settings, store.settings.terminalFontId).family;
+    // One cursor step per terminal cell of finger movement on the space bar.
+    _engine.cursorStep = CellMetrics.measure(family: terminalFont, fontSize: store.settings.fontSize, lineHeight: store.settings.lineHeight).width;
     final look = KeyLook(
       palette: palette,
       metrics: KeyboardMetrics.resolve(settings, MediaQuery.sizeOf(context), style: style),
