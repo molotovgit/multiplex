@@ -41,7 +41,7 @@ impl RemotePath {
 
 /// Sends progress events at a calm pace so a fast transfer does not flood
 /// the app with updates.
-struct ProgressReporter {
+pub(crate) struct ProgressReporter {
     sink: SharedSink<TransferProgress>,
     total: u64,
     last: Instant,
@@ -50,20 +50,20 @@ struct ProgressReporter {
 impl ProgressReporter {
     const INTERVAL: Duration = Duration::from_millis(120);
 
-    fn new(sink: SharedSink<TransferProgress>, total: u64) -> Self {
+    pub(crate) fn new(sink: SharedSink<TransferProgress>, total: u64) -> Self {
         let reporter = Self { sink, total, last: Instant::now() };
         reporter.sink.emit(TransferProgress { transferred: 0, total });
         reporter
     }
 
-    fn update(&mut self, transferred: u64) {
+    pub(crate) fn update(&mut self, transferred: u64) {
         if self.last.elapsed() >= Self::INTERVAL {
             self.last = Instant::now();
             self.sink.emit(TransferProgress { transferred, total: self.total });
         }
     }
 
-    fn finish(&self, transferred: u64) {
+    pub(crate) fn finish(&self, transferred: u64) {
         self.sink.emit(TransferProgress { transferred, total: self.total.max(transferred) });
     }
 }
@@ -81,6 +81,11 @@ impl SftpBrowser {
         channel.request_subsystem(true, "sftp").await?;
         let sftp = SftpSession::new(channel.into_stream()).await?;
         Ok(Self { sftp })
+    }
+
+    /// The SFTP session itself, for file stores that need lower-level calls.
+    pub(crate) fn session(&self) -> &SftpSession {
+        &self.sftp
     }
 
     /// The folder the server starts in, usually the user's home.

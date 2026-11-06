@@ -14,6 +14,8 @@ pub mod terminal;
 pub mod terminal_types;
 pub mod theme;
 pub mod theme_types;
+pub mod transfer;
+pub mod transfer_types;
 pub mod tunnel;
 pub mod tunnel_types;
 pub mod vault;

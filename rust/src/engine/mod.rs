@@ -4,6 +4,7 @@
 //! engine free of Flutter types means it can be tested with plain Rust.
 
 pub mod events;
+pub mod file_store;
 pub mod keys;
 pub mod runtime;
 pub mod sftp;
@@ -11,5 +12,6 @@ pub mod shell;
 pub mod ssh;
 pub mod terminal;
 pub mod theme_import;
+pub mod tree_copy;
 pub mod tunnel;
 pub mod vault;

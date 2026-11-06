@@ -15,14 +15,14 @@ use crate::frb_generated::StreamSink;
 /// An SFTP session on a connection.
 #[frb(opaque)]
 pub struct RemoteFiles {
-    inner: Arc<SftpBrowser>,
+    pub(crate) inner: Arc<SftpBrowser>,
 }
 
 /// One upload or download: watch its progress and cancel it.
 #[frb(opaque)]
 pub struct FileTransfer {
-    cancel: CancellationToken,
-    progress: Arc<EventRelay<TransferProgress>>,
+    pub(crate) cancel: CancellationToken,
+    pub(crate) progress: Arc<EventRelay<TransferProgress>>,
 }
 
 impl FileTransfer {

@@ -21,7 +21,10 @@ use tokio_util::sync::CancellationToken;
 use multiplex_core::api::ssh_types::{ConnectError, ConnectOptions, Credentials};
 use multiplex_core::api::terminal_types::{KeyModifiers, ShellEvent, ShellOptions, TerminalPalette};
 use multiplex_core::api::tunnel_types::{TunnelKind, TunnelSpec};
+use multiplex_core::api::transfer_types::ConflictPolicy;
+use multiplex_core::engine::file_store::FileStore;
 use multiplex_core::engine::sftp::{RemotePath, SftpBrowser};
+use multiplex_core::engine::tree_copy;
 use multiplex_core::engine::shell::ShellSession;
 use multiplex_core::engine::ssh::{Connection, Connector};
 use multiplex_core::engine::tunnel::Tunnel;
@@ -161,6 +164,42 @@ async fn live_sftp_round_trip() {
 
     sftp.remove(&dir).await.unwrap();
     assert!(sftp.stat(&dir).await.is_err(), "test folder was not removed");
+}
+
+/// Folder copies phone to server, server to server (two sessions, the
+/// data flowing through this machine) and back, with times kept.
+#[tokio::test]
+async fn live_copy_between_places() {
+    let Some(conn) = live_connect().await else { return };
+    let first = FileStore::Remote(Arc::new(SftpBrowser::open(&conn).await.unwrap()));
+    let second = FileStore::Remote(Arc::new(SftpBrowser::open(&conn).await.unwrap()));
+    let dir = unique_dir();
+    first.make_dir(&dir).await.unwrap();
+    let local = tempfile::tempdir().unwrap();
+    let tree = local.path().join("tree");
+    std::fs::create_dir_all(tree.join("sub")).unwrap();
+    std::fs::write(tree.join("a.txt"), "alpha").unwrap();
+    std::fs::write(tree.join("sub/b.txt"), "beta").unwrap();
+    let tree = tree.to_string_lossy().into_owned();
+    let copy = |from, src: String, to, dest: String| async move {
+        tree_copy::copy_item(from, &src, to, &dest, ConflictPolicy::Replace, Arc::new(|_| true), CancellationToken::new()).await.unwrap()
+    };
+
+    let up = copy(&FileStore::Local, tree.clone(), &first, dir.clone()).await;
+    assert_eq!(up.copied, 2);
+    let across_dir = RemotePath::join(&dir, "across");
+    second.make_dir(&across_dir).await.unwrap();
+    let across = copy(&first, up.target.clone(), &second, across_dir).await;
+    assert_eq!(across.bytes, 9);
+    let back_dir = local.path().join("back").to_string_lossy().into_owned();
+    std::fs::create_dir_all(&back_dir).unwrap();
+    let back = copy(&second, across.target.clone(), &FileStore::Local, back_dir).await;
+    assert_eq!(std::fs::read_to_string(std::path::Path::new(&back.target).join("sub/b.txt")).unwrap(), "beta");
+    let original = FileStore::Local.stat(&format!("{tree}/a.txt")).await.unwrap().unwrap();
+    let returned = FileStore::Local.stat(&format!("{}/a.txt", back.target)).await.unwrap().unwrap();
+    assert_eq!(original.modified, returned.modified, "the time survives both trips");
+
+    first.remove(&dir).await.unwrap();
 }
 
 #[tokio::test]
