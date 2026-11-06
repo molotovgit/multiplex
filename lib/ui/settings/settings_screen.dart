@@ -59,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
               _AppearanceSection(theme: store.activeTheme),
               _TerminalSection(settings: store.settings),
               _KeyboardSection(layout: KeyBarLayout(store.settings.keyBar)),
-              _SecuritySection(unlock: unlock, on: store.settings.appLock),
+              _SecuritySection(unlock: unlock, on: store.settings.appLock, hideScreens: store.settings.hideScreens),
               const _BackupSection(),
               const _ConnectionsSection(),
               const _AboutSection(),
@@ -193,10 +193,11 @@ class _KeyboardSection extends StatelessWidget {
 }
 
 class _SecuritySection extends StatelessWidget {
-  const _SecuritySection({required this.unlock, required this.on});
+  const _SecuritySection({required this.unlock, required this.on, required this.hideScreens});
 
   final DeviceUnlock unlock;
   final bool on;
+  final bool hideScreens;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -204,6 +205,16 @@ class _SecuritySection extends StatelessWidget {
     children: [
       const SectionHeader('Security'),
       AppLockSwitch(unlock: unlock, on: on),
+      SwitchListTile(
+        secondary: const Icon(Icons.screenshot_monitor_outlined),
+        title: const Text('Hide terminals from screenshots'),
+        subtitle: const Text('Terminals, keys and codes stay out of screenshots, screen recordings and the recent apps view'),
+        value: hideScreens,
+        onChanged: (v) {
+          final store = AppScope.store(context);
+          store.updateSettings(store.settings.copyWith(hideScreens: v));
+        },
+      ),
     ],
   );
 }

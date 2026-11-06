@@ -9,8 +9,10 @@ import io.flutter.plugin.common.MethodChannel
  * The app's only screen. It is a FragmentActivity because the fingerprint
  * prompt (local_auth) needs one.
  *
- * It also answers one small native call from Flutter: keep the screen on
- * while a terminal is open, so long-running commands stay visible.
+ * It also answers small native calls from Flutter: keep the screen on
+ * while a terminal is open, so long-running commands stay visible, and
+ * hide the window from screenshots and the recent-apps preview while a
+ * terminal or the keychain is shown (FLAG_SECURE).
  */
 class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -23,6 +25,20 @@ class MainActivity : FlutterFragmentActivity() {
                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     } else {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PRIVACY_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setSecure" -> {
+                    val on = call.argument<Boolean>("on") ?: false
+                    if (on) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
                     }
                     result.success(null)
                 }
@@ -61,5 +77,6 @@ class MainActivity : FlutterFragmentActivity() {
     private companion object {
         const val SCREEN_CHANNEL = "multiplex/screen"
         const val SESSIONS_CHANNEL = "multiplex/sessions"
+        const val PRIVACY_CHANNEL = "multiplex/privacy"
     }
 }

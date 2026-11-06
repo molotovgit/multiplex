@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../app/app_icons.dart';
 import '../../app/app_scope.dart';
 import '../../app/screen_awake.dart';
+import '../../app/screen_privacy.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
 import '../../data/app_settings.dart';
@@ -218,7 +219,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final colors = AppColorsTheme.of(context);
     final builtIn = KeyboardSettings.of(AppScope.watch(context)).enabled && !_useSystem;
     final tabsByStyle = AppStyleTheme.of(context).style.terminal.showTabs;
-    return ListenableBuilder(
+    return PrivateScreen(child: ListenableBuilder(
       listenable: Listenable.merge([_terminal, AppScope.sessions(context)]),
       builder: (context, _) {
         // A theme can hide the tabs, but never once there are two terminals
@@ -314,7 +315,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
       );
       },
-    );
+    ));
   }
 }
 

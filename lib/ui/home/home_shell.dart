@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../app/app_icons.dart';
 import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
+import '../../app/screen_privacy.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
 import '../../app/theme_slides.dart';
@@ -62,6 +63,10 @@ class _HomeShellState extends State<HomeShell> {
 
   static const _pages = <Widget>[HostsScreen(), SessionsScreen(), SnippetsScreen(), KeychainScreen(), SettingsScreen()];
 
+  /// Where the Keychain is: it shows keys and codes, so it is kept out of
+  /// screenshots while open.
+  static const _keychainIndex = 3;
+
   /// Where Settings is in [_destinations].
   static const _settingsIndex = 4;
 
@@ -113,7 +118,10 @@ class _HomeShellState extends State<HomeShell> {
       key: _pagesKey,
       controller: _pager,
       onPageChanged: _paged,
-      children: [for (final page in _pages) _KeepAlive(child: page)],
+      children: [
+        for (final (i, page) in _pages.indexed)
+          _KeepAlive(child: i == _keychainIndex ? PrivateScreen(active: _index == i, child: page) : page),
+      ],
     );
     final slide = look.style.backdrop.onScreens ? ActiveSlide.of(theme, store.settings) : null;
     final body = slide != null ? _ScreensBackdrop(theme: theme, slide: slide, child: pages) : pages;

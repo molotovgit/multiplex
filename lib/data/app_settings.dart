@@ -52,6 +52,7 @@ class AppSettings {
     this.keyboard = const {},
     this.motion = MotionSpeed.normal,
     this.backdropPicks = const {},
+    this.hideScreens = true,
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -94,6 +95,10 @@ class AppSettings {
   /// Built-in themes cannot be saved, so their choice is kept here.
   final Map<String, int> backdropPicks;
 
+  /// Keep terminals and the keychain out of screenshots, screen recordings
+  /// and the recent-apps preview.
+  final bool hideScreens;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -121,6 +126,7 @@ class AppSettings {
     Map<String, dynamic>? keyboard,
     MotionSpeed? motion,
     Map<String, int>? backdropPicks,
+    bool? hideScreens,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -139,6 +145,7 @@ class AppSettings {
         keyboard: keyboard ?? this.keyboard,
         motion: motion ?? this.motion,
         backdropPicks: backdropPicks ?? this.backdropPicks,
+        hideScreens: hideScreens ?? this.hideScreens,
       );
 
   Map<String, dynamic> toJson() => {
@@ -158,6 +165,7 @@ class AppSettings {
         'keyboard': keyboard,
         'motion': motion.name,
         'backdropPicks': backdropPicks,
+        'hideScreens': hideScreens,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -183,6 +191,7 @@ class AppSettings {
           for (final e in (j['backdropPicks'] as Map).entries)
             if (e.key is String && e.value is int) e.key as String: e.value as int,
       },
+      hideScreens: Json.boolean(j, 'hideScreens', true),
     );
   }
 }
