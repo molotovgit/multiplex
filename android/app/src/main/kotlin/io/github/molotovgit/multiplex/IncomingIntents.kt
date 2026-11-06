@@ -10,7 +10,8 @@ import java.io.File
 /**
  * Things other parts of Android ask Multiplex to do, queued until the
  * Flutter side collects them ("take"):
- * - a tap on a host in the home-screen widget (connect to it);
+ * - a tap on a host in the home-screen widget (connect to it), accepted
+ *   only with this install's [ConnectToken];
  * - files shared from another app (upload them to a server).
  *
  * Shared files arrive as content links that only this activity may read,
@@ -39,6 +40,8 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
     }
 
     private fun readConnect(intent: Intent): Boolean {
+        // Only our own widget may ask for a connection (see ConnectToken).
+        if (!ConnectToken.matches(context, intent.getStringExtra(ConnectToken.EXTRA))) return false
         val data = intent.data ?: return false
         if (data.scheme != "multiplex" || data.host != "connect") return false
         val hostId = data.lastPathSegment ?: return false

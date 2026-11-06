@@ -89,6 +89,7 @@ class FavouritesWidget : AppWidgetProvider() {
             val intent = Intent(context, MainActivity::class.java)
                 .setAction(IncomingIntents.ACTION_CONNECT)
                 .setData(Uri.parse("multiplex://connect/" + Uri.encode(hostId)))
+                .putExtra(ConnectToken.EXTRA, ConnectToken.get(context))
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             return PendingIntent.getActivity(context, row, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         }
