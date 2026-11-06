@@ -10,6 +10,7 @@ import '../terminal/terminal_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'broadcast_sheet.dart';
 import 'recordings_screen.dart';
+import 'terminal_thumbnail.dart';
 
 /// Everything that is open right now: connections with their terminals
 /// and tunnels.
@@ -128,13 +129,37 @@ class _SessionCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             for (final terminal in session.terminals)
-              ListTile(
-                dense: true,
-                contentPadding: const EdgeInsets.only(left: 20),
-                leading: Icon(Icons.terminal, color: terminal.ended ? colors.muted : colors.accent),
-                title: Text(terminal.title),
-                subtitle: terminal.ended ? Text(terminal.endReason ?? '') : null,
-                onTap: () => TerminalScreen.open(context, session, terminal),
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 8),
+                child: Semantics(
+                  button: true,
+                  label: 'Open terminal ${terminal.title}',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => TerminalScreen.open(context, session, terminal),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // A live picture of the screen, like a window preview.
+                        ExcludeSemantics(child: TerminalThumbnail(controller: terminal)),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
+                          child: Row(
+                            children: [
+                              Icon(Icons.terminal, size: 18, color: terminal.ended ? colors.muted : colors.accent),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(terminal.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodyMedium)),
+                              if (terminal.ended)
+                                Flexible(
+                                  child: Text(terminal.endReason ?? 'Ended', maxLines: 1, overflow: TextOverflow.ellipsis, style: text.bodySmall?.copyWith(color: colors.muted)),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             if (session.tunnels.isNotEmpty)
               ListTile(

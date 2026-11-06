@@ -66,6 +66,7 @@ class _HomeShellState extends State<HomeShell> {
   /// Where the Keychain is: it shows keys and codes, so it is kept out of
   /// screenshots while open.
   static const _keychainIndex = 3;
+  static const _sessionsIndex = 1;
 
   /// Where Settings is in [_destinations].
   static const _settingsIndex = 4;
@@ -120,7 +121,9 @@ class _HomeShellState extends State<HomeShell> {
       onPageChanged: _paged,
       children: [
         for (final (i, page) in _pages.indexed)
-          _KeepAlive(child: i == _keychainIndex ? PrivateScreen(active: _index == i, child: page) : page),
+          // Sessions shows live terminal previews, so it is kept out of
+          // screenshots like the terminal and the keychain.
+          _KeepAlive(child: i == _keychainIndex || i == _sessionsIndex ? PrivateScreen(active: _index == i, child: page) : page),
       ],
     );
     final slide = look.style.backdrop.onScreens ? ActiveSlide.of(theme, store.settings) : null;
