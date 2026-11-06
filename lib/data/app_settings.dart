@@ -49,6 +49,7 @@ class AppSettings {
     this.boldIsBright = false,
     this.appLock = false,
     this.keepScreenOn = true,
+    this.notifyWhenDone = true,
     this.keyboard = const {},
     this.motion = MotionSpeed.normal,
     this.backdropPicks = const {},
@@ -81,6 +82,10 @@ class AppSettings {
   /// Ask for fingerprint, face or device PIN when the app opens.
   final bool appLock;
   final bool keepScreenOn;
+
+  /// A notification when a long command ends while its terminal is not
+  /// on screen.
+  final bool notifyWhenDone;
 
   /// Settings of the built-in terminal keyboard (on or off, layout, size,
   /// sound and so on). Kept as plain JSON owned by the keyboard's own
@@ -123,6 +128,7 @@ class AppSettings {
     bool? boldIsBright,
     bool? appLock,
     bool? keepScreenOn,
+    bool? notifyWhenDone,
     Map<String, dynamic>? keyboard,
     MotionSpeed? motion,
     Map<String, int>? backdropPicks,
@@ -142,6 +148,7 @@ class AppSettings {
         boldIsBright: boldIsBright ?? this.boldIsBright,
         appLock: appLock ?? this.appLock,
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
+        notifyWhenDone: notifyWhenDone ?? this.notifyWhenDone,
         keyboard: keyboard ?? this.keyboard,
         motion: motion ?? this.motion,
         backdropPicks: backdropPicks ?? this.backdropPicks,
@@ -162,6 +169,7 @@ class AppSettings {
         'boldIsBright': boldIsBright,
         'appLock': appLock,
         'keepScreenOn': keepScreenOn,
+        'notifyWhenDone': notifyWhenDone,
         'keyboard': keyboard,
         'motion': motion.name,
         'backdropPicks': backdropPicks,
@@ -184,6 +192,7 @@ class AppSettings {
       boldIsBright: Json.boolean(j, 'boldIsBright', false),
       appLock: Json.boolean(j, 'appLock', false),
       keepScreenOn: Json.boolean(j, 'keepScreenOn', true),
+      notifyWhenDone: Json.boolean(j, 'notifyWhenDone', true),
       keyboard: j['keyboard'] is Map ? (j['keyboard'] as Map).cast<String, dynamic>() : const {},
       motion: MotionSpeed.values.asNameMap()[j['motion']] ?? MotionSpeed.normal,
       backdropPicks: {

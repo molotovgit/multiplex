@@ -3720,6 +3720,17 @@ impl SseDecode for Option<String> {
     }
 }
 
+impl SseDecode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i32>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<i64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -3820,6 +3831,15 @@ impl SseDecode for crate::api::terminal_types::ShellEvent {
             }
             5 => {
                 return crate::api::terminal_types::ShellEvent::Disconnected;
+            }
+            6 => {
+                return crate::api::terminal_types::ShellEvent::CommandStarted;
+            }
+            7 => {
+                let mut var_exitCode = <Option<i32>>::sse_decode(deserializer);
+                return crate::api::terminal_types::ShellEvent::CommandFinished {
+                    exit_code: var_exitCode,
+                };
             }
             _ => {
                 unimplemented!("");
@@ -4707,6 +4727,10 @@ impl flutter_rust_bridge::IntoDart for crate::api::terminal_types::ShellEvent {
                 [4.into_dart(), code.into_into_dart().into_dart()].into_dart()
             }
             crate::api::terminal_types::ShellEvent::Disconnected => [5.into_dart()].into_dart(),
+            crate::api::terminal_types::ShellEvent::CommandStarted => [6.into_dart()].into_dart(),
+            crate::api::terminal_types::ShellEvent::CommandFinished { exit_code } => {
+                [7.into_dart(), exit_code.into_into_dart().into_dart()].into_dart()
+            }
             _ => {
                 unimplemented!("");
             }
@@ -5454,6 +5478,16 @@ impl SseEncode for Option<String> {
     }
 }
 
+impl SseEncode for Option<i32> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i32>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<i64> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -5533,6 +5567,13 @@ impl SseEncode for crate::api::terminal_types::ShellEvent {
             }
             crate::api::terminal_types::ShellEvent::Disconnected => {
                 <i32>::sse_encode(5, serializer);
+            }
+            crate::api::terminal_types::ShellEvent::CommandStarted => {
+                <i32>::sse_encode(6, serializer);
+            }
+            crate::api::terminal_types::ShellEvent::CommandFinished { exit_code } => {
+                <i32>::sse_encode(7, serializer);
+                <Option<i32>>::sse_encode(exit_code, serializer);
             }
             _ => {
                 unimplemented!("");

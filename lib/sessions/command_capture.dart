@@ -118,7 +118,7 @@ class _Pending {
 /// that never echoed (password prompts), from empty lines, or from lines
 /// that start with a space (shells keep those out of history too).
 class CommandCapture {
-  CommandCapture({required this.onCommand});
+  CommandCapture({required this.onCommand, this.onRun});
 
   /// How far up the prompt is looked for, when the screen scrolled.
   static const searchRows = 30;
@@ -128,6 +128,10 @@ class CommandCapture {
   static const settleFrames = 20;
 
   final void Function(String command) onCommand;
+
+  /// Also told each command, with the prompt in front of it and the
+  /// column where the prompt ends, so the prompt's return can be spotted.
+  final void Function(String command, String prompt, int promptCol)? onRun;
 
   _Line? _line;
   _Pending? _pending;
@@ -211,6 +215,7 @@ class CommandCapture {
     if (reread != null && reread.isNotEmpty && (!pending.echoed || reread.startsWith(atEnter) || atEnter.startsWith(reread))) command = reread;
     if (command.trim().isEmpty || command.startsWith(' ') || _masked.hasMatch(command)) return;
     onCommand(command.trim());
+    onRun?.call(command.trim(), pending.line.prompt, pending.line.col);
   }
 
   /// Only stars or dots: a password prompt that echoes a mask.

@@ -190,4 +190,8 @@ pub enum ShellEvent {
     Exited { code: Option<u32> },
     /// The connection dropped.
     Disconnected,
+    /// Shell integration (OSC 133): a command started running.
+    CommandStarted,
+    /// Shell integration (OSC 133): the command ended.
+    CommandFinished { exit_code: Option<i32> },
 }

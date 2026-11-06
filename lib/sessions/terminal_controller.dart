@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../src/rust/api/terminal.dart';
 import '../src/rust/api/terminal_types.dart';
 import 'command_capture.dart';
+import 'command_timer.dart';
 
 /// Drives one terminal on screen: listens to the native shell, pulls a new
 /// frame at most once per display frame, and forwards input.
@@ -22,6 +23,7 @@ class TerminalController extends ChangeNotifier {
     this.hostId,
     this.onCommand,
     this.onConnectionLost,
+    this.onCommandDone,
     // The title is private and changes later, so it cannot be a named "this." parameter.
     // ignore: prefer_initializing_formals
   }) : _title = title {
@@ -48,7 +50,21 @@ class TerminalController extends ChangeNotifier {
   /// Called when the connection drops, instead of ending the terminal;
   /// the session then tries to reconnect. Null: the terminal just ends.
   final VoidCallback? onConnectionLost;
-  late final _capture = CommandCapture(onCommand: (command) => onCommand?.call(command));
+
+  /// Told each command that finished, with how long it ran.
+  final void Function(FinishedCommand done)? onCommandDone;
+
+  /// How many screens show this terminal right now.
+  int _views = 0;
+
+  /// A terminal screen shows this terminal (for "done" notifications).
+  bool get onScreen => _views > 0;
+
+  void shownOnScreen() => _views++;
+
+  void leftScreen() => _views = (_views - 1).clamp(0, 1 << 20);
+  late final _timer = CommandTimer(onFinished: (done) => onCommandDone?.call(done));
+  late final _capture = CommandCapture(onCommand: (command) => onCommand?.call(command), onRun: _timer.ran);
   late final StreamSubscription<ShellEvent> _events;
 
   TerminalFrame? _frame;
@@ -91,7 +107,9 @@ class TerminalController extends ChangeNotifier {
   void pull() {
     _frame = shell.frame();
     if (_frame!.title.isNotEmpty) _title = _frame!.title;
-    _capture.onFrame(FrameScreenText(_frame!, shell));
+    final screen = FrameScreenText(_frame!, shell);
+    _capture.onFrame(screen);
+    _timer.onFrame(screen);
     notifyListeners();
   }
 
@@ -255,7 +273,12 @@ class TerminalController extends ChangeNotifier {
         onRemoteCopy?.call(field0);
       case ShellEvent_Exited(:final code):
         _end(code == null ? 'The shell ended.' : 'The shell ended with exit code $code.');
+      case ShellEvent_CommandStarted():
+        _timer.markStarted();
+      case ShellEvent_CommandFinished(:final exitCode):
+        _timer.markFinished(exitCode);
       case ShellEvent_Disconnected():
+        _timer.reset();
         final lost = onConnectionLost;
         if (lost == null) {
           _end('The connection was lost.');

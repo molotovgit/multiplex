@@ -128,3 +128,24 @@ async fn coalesces_change_events_until_a_frame_is_taken() {
     // Without a frame being taken, only one Changed may be sent.
     assert_eq!(changed, 1);
 }
+
+#[tokio::test]
+async fn passes_on_shell_integration_marks() {
+    let (shell, mut events) = open_shell(options()).await;
+    wait_for_text(&shell, &mut events, "welcome").await;
+    // The echo shell sends the marks straight back, as a set-up shell would.
+    shell.send_text("\x1b]133;C\x07\x1b]133;D;7\x07", KeyModifiers::default());
+    let mut seen = Vec::new();
+    let _ = tokio::time::timeout(Duration::from_secs(5), async {
+        while let Some(event) = events.recv().await {
+            if matches!(event, ShellEvent::CommandStarted | ShellEvent::CommandFinished { .. }) {
+                seen.push(event);
+                if seen.len() == 2 {
+                    break;
+                }
+            }
+        }
+    })
+    .await;
+    assert_eq!(seen, vec![ShellEvent::CommandStarted, ShellEvent::CommandFinished { exit_code: Some(7) }]);
+}

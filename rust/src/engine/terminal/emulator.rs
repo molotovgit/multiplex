@@ -20,6 +20,17 @@ pub struct EmulatorSignals {
     pub bell: bool,
     /// The program asked to copy this text to the clipboard (OSC 52).
     pub clipboard: Option<String>,
+    /// Shell integration marks (OSC 133), in the order they came.
+    pub marks: Vec<ShellMark>,
+}
+
+/// What a shell set up for "shell integration" reports with OSC 133.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShellMark {
+    /// "C": the command line was accepted and the command runs now.
+    CommandStarted,
+    /// "D": the command ended, with its exit code when the shell sent one.
+    CommandFinished(Option<i32>),
 }
 
 /// Receives callbacks from the vt100 parser and collects [`EmulatorSignals`].
@@ -41,6 +52,20 @@ impl vt100::Callbacks for SignalCollector {
         // OSC 52 sends the text base64-encoded.
         if let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(data) {
             self.signals.clipboard = Some(String::from_utf8_lossy(&bytes).into_owned());
+        }
+    }
+
+    fn unhandled_osc(&mut self, _: &mut vt100::Screen, params: &[&[u8]]) {
+        if params.first() != Some(&&b"133"[..]) {
+            return;
+        }
+        match params.get(1).copied() {
+            Some(b"C") => self.signals.marks.push(ShellMark::CommandStarted),
+            Some(b"D") => {
+                let code = params.get(2).and_then(|c| std::str::from_utf8(c).ok()).and_then(|c| c.parse().ok());
+                self.signals.marks.push(ShellMark::CommandFinished(code));
+            }
+            _ => {}
         }
     }
 
@@ -200,6 +225,17 @@ mod tests {
         // "aGk=" is base64 for "hi".
         let signals = term.process(b"\x1b]52;c;aGk=\x07");
         assert_eq!(signals.clipboard.as_deref(), Some("hi"));
+    }
+
+    #[test]
+    fn reports_shell_integration_marks() {
+        let mut term = TerminalEmulator::new(5, 20, 100);
+        let signals = term.process(b"]133;A$ ]133;B");
+        assert!(signals.marks.is_empty());
+        let signals = term.process(b"]133;Coutput
+]133;D;2]133;D");
+        assert_eq!(signals.marks, vec![ShellMark::CommandStarted, ShellMark::CommandFinished(Some(2)), ShellMark::CommandFinished(None)]);
+        assert!(term.screen().contents().contains("output"));
     }
 
     #[test]

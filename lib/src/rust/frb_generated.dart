@@ -2699,6 +2699,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int dco_decode_box_autoadd_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_i_64(raw);
@@ -3005,6 +3011,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int? dco_decode_opt_box_autoadd_i_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_i_32(raw);
+  }
+
+  @protected
   PlatformInt64? dco_decode_opt_box_autoadd_i_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_i_64(raw);
@@ -3071,6 +3083,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return ShellEvent_Exited(code: dco_decode_opt_box_autoadd_u_32(raw[1]));
       case 5:
         return ShellEvent_Disconnected();
+      case 6:
+        return ShellEvent_CommandStarted();
+      case 7:
+        return ShellEvent_CommandFinished(
+          exitCode: dco_decode_opt_box_autoadd_i_32(raw[1]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -3495,6 +3513,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int sse_decode_box_autoadd_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_i_32(deserializer));
+  }
+
+  @protected
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_i_64(deserializer));
@@ -3873,6 +3897,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_i_32(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   PlatformInt64? sse_decode_opt_box_autoadd_i_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -3966,6 +4001,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return ShellEvent_Exited(code: var_code);
       case 5:
         return ShellEvent_Disconnected();
+      case 6:
+        return ShellEvent_CommandStarted();
+      case 7:
+        var var_exitCode = sse_decode_opt_box_autoadd_i_32(deserializer);
+        return ShellEvent_CommandFinished(exitCode: var_exitCode);
       default:
         throw UnimplementedError('');
     }
@@ -4442,6 +4482,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_i_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_i_64(
     PlatformInt64 self,
     SseSerializer serializer,
@@ -4774,6 +4820,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_i_32(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_i_64(
     PlatformInt64? self,
     SseSerializer serializer,
@@ -4851,6 +4907,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_opt_box_autoadd_u_32(code, serializer);
       case ShellEvent_Disconnected():
         sse_encode_i_32(5, serializer);
+      case ShellEvent_CommandStarted():
+        sse_encode_i_32(6, serializer);
+      case ShellEvent_CommandFinished(exitCode: final exitCode):
+        sse_encode_i_32(7, serializer);
+        sse_encode_opt_box_autoadd_i_32(exitCode, serializer);
     }
   }
 

@@ -83,6 +83,13 @@ sealed class ShellEvent with _$ShellEvent {
 
   /// The connection dropped.
   const factory ShellEvent.disconnected() = ShellEvent_Disconnected;
+
+  /// Shell integration (OSC 133): a command started running.
+  const factory ShellEvent.commandStarted() = ShellEvent_CommandStarted;
+
+  /// Shell integration (OSC 133): the command ended.
+  const factory ShellEvent.commandFinished({int? exitCode}) =
+      ShellEvent_CommandFinished;
 }
 
 /// Settings for opening an interactive shell.

@@ -156,6 +156,13 @@ class _TerminalSection extends StatelessWidget {
           value: settings.keepScreenOn,
           onChanged: (on) => save(settings.copyWith(keepScreenOn: on)),
         ),
+        SwitchListTile(
+          secondary: const Icon(Icons.notifications_outlined),
+          title: const Text('Tell me when a long command is done'),
+          subtitle: const Text('A notification when a command that ran 10 seconds or more ends while you are elsewhere'),
+          value: settings.notifyWhenDone,
+          onChanged: (on) => save(settings.copyWith(notifyWhenDone: on)),
+        ),
       ],
     );
   }

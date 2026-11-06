@@ -8,6 +8,7 @@ import '../src/rust/api/ssh.dart';
 import '../src/rust/api/terminal_types.dart';
 import '../src/rust/api/tunnel.dart';
 import 'connect_flow.dart';
+import 'done_notifier.dart';
 import 'reconnector.dart';
 import 'session_restore.dart';
 import 'shell_launch.dart';
@@ -51,13 +52,14 @@ class LiveSession {
 /// Keeps track of all open connections, terminals and tunnels, so they
 /// survive moving between screens.
 class SessionManager extends ChangeNotifier {
-  SessionManager(this._store) {
+  SessionManager(this._store, {DoneNotifier? done}) : _done = done ?? DoneNotifier(_store) {
     // Connections can drop at any time; check regularly so the UI shows it
     // and tunnel counters stay fresh.
     _ticker = Timer.periodic(const Duration(seconds: 2), (_) => notifyListeners());
   }
 
   final VaultStore _store;
+  final DoneNotifier _done;
   final List<LiveSession> _sessions = [];
   late final Timer _ticker;
 
@@ -92,7 +94,8 @@ class SessionManager extends ChangeNotifier {
     final hostId = session.host.id;
     // Only saved hosts keep a history; a quick connection leaves none.
     final saved = _store.host(hostId) != null;
-    final controller = TerminalController(
+    late final TerminalController controller;
+    controller = TerminalController(
       shell: shell,
       title: title,
       sessionId: session.id,
@@ -100,6 +103,7 @@ class SessionManager extends ChangeNotifier {
       hostId: saved ? hostId : null,
       onCommand: saved ? (command) => _store.recordCommand(hostId, command) : null,
       onConnectionLost: () => connectionLost(session),
+      onCommandDone: (done) => _done.finished(session.host.title, done, terminalOnScreen: controller.onScreen),
     );
     session.terminals.add(controller);
     notifyListeners();

@@ -56,7 +56,7 @@ extension ShellEventPatterns on ShellEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShellEvent_Changed value)?  changed,TResult Function( ShellEvent_Title value)?  title,TResult Function( ShellEvent_Bell value)?  bell,TResult Function( ShellEvent_Clipboard value)?  clipboard,TResult Function( ShellEvent_Exited value)?  exited,TResult Function( ShellEvent_Disconnected value)?  disconnected,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShellEvent_Changed value)?  changed,TResult Function( ShellEvent_Title value)?  title,TResult Function( ShellEvent_Bell value)?  bell,TResult Function( ShellEvent_Clipboard value)?  clipboard,TResult Function( ShellEvent_Exited value)?  exited,TResult Function( ShellEvent_Disconnected value)?  disconnected,TResult Function( ShellEvent_CommandStarted value)?  commandStarted,TResult Function( ShellEvent_CommandFinished value)?  commandFinished,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ShellEvent_Changed() when changed != null:
@@ -65,7 +65,9 @@ return title(_that);case ShellEvent_Bell() when bell != null:
 return bell(_that);case ShellEvent_Clipboard() when clipboard != null:
 return clipboard(_that);case ShellEvent_Exited() when exited != null:
 return exited(_that);case ShellEvent_Disconnected() when disconnected != null:
-return disconnected(_that);case _:
+return disconnected(_that);case ShellEvent_CommandStarted() when commandStarted != null:
+return commandStarted(_that);case ShellEvent_CommandFinished() when commandFinished != null:
+return commandFinished(_that);case _:
   return orElse();
 
 }
@@ -83,7 +85,7 @@ return disconnected(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShellEvent_Changed value)  changed,required TResult Function( ShellEvent_Title value)  title,required TResult Function( ShellEvent_Bell value)  bell,required TResult Function( ShellEvent_Clipboard value)  clipboard,required TResult Function( ShellEvent_Exited value)  exited,required TResult Function( ShellEvent_Disconnected value)  disconnected,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShellEvent_Changed value)  changed,required TResult Function( ShellEvent_Title value)  title,required TResult Function( ShellEvent_Bell value)  bell,required TResult Function( ShellEvent_Clipboard value)  clipboard,required TResult Function( ShellEvent_Exited value)  exited,required TResult Function( ShellEvent_Disconnected value)  disconnected,required TResult Function( ShellEvent_CommandStarted value)  commandStarted,required TResult Function( ShellEvent_CommandFinished value)  commandFinished,}){
 final _that = this;
 switch (_that) {
 case ShellEvent_Changed():
@@ -92,7 +94,9 @@ return title(_that);case ShellEvent_Bell():
 return bell(_that);case ShellEvent_Clipboard():
 return clipboard(_that);case ShellEvent_Exited():
 return exited(_that);case ShellEvent_Disconnected():
-return disconnected(_that);}
+return disconnected(_that);case ShellEvent_CommandStarted():
+return commandStarted(_that);case ShellEvent_CommandFinished():
+return commandFinished(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -106,7 +110,7 @@ return disconnected(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShellEvent_Changed value)?  changed,TResult? Function( ShellEvent_Title value)?  title,TResult? Function( ShellEvent_Bell value)?  bell,TResult? Function( ShellEvent_Clipboard value)?  clipboard,TResult? Function( ShellEvent_Exited value)?  exited,TResult? Function( ShellEvent_Disconnected value)?  disconnected,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShellEvent_Changed value)?  changed,TResult? Function( ShellEvent_Title value)?  title,TResult? Function( ShellEvent_Bell value)?  bell,TResult? Function( ShellEvent_Clipboard value)?  clipboard,TResult? Function( ShellEvent_Exited value)?  exited,TResult? Function( ShellEvent_Disconnected value)?  disconnected,TResult? Function( ShellEvent_CommandStarted value)?  commandStarted,TResult? Function( ShellEvent_CommandFinished value)?  commandFinished,}){
 final _that = this;
 switch (_that) {
 case ShellEvent_Changed() when changed != null:
@@ -115,7 +119,9 @@ return title(_that);case ShellEvent_Bell() when bell != null:
 return bell(_that);case ShellEvent_Clipboard() when clipboard != null:
 return clipboard(_that);case ShellEvent_Exited() when exited != null:
 return exited(_that);case ShellEvent_Disconnected() when disconnected != null:
-return disconnected(_that);case _:
+return disconnected(_that);case ShellEvent_CommandStarted() when commandStarted != null:
+return commandStarted(_that);case ShellEvent_CommandFinished() when commandFinished != null:
+return commandFinished(_that);case _:
   return null;
 
 }
@@ -132,7 +138,7 @@ return disconnected(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  changed,TResult Function( String field0)?  title,TResult Function()?  bell,TResult Function( String field0)?  clipboard,TResult Function( int? code)?  exited,TResult Function()?  disconnected,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  changed,TResult Function( String field0)?  title,TResult Function()?  bell,TResult Function( String field0)?  clipboard,TResult Function( int? code)?  exited,TResult Function()?  disconnected,TResult Function()?  commandStarted,TResult Function( int? exitCode)?  commandFinished,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ShellEvent_Changed() when changed != null:
 return changed();case ShellEvent_Title() when title != null:
@@ -140,7 +146,9 @@ return title(_that.field0);case ShellEvent_Bell() when bell != null:
 return bell();case ShellEvent_Clipboard() when clipboard != null:
 return clipboard(_that.field0);case ShellEvent_Exited() when exited != null:
 return exited(_that.code);case ShellEvent_Disconnected() when disconnected != null:
-return disconnected();case _:
+return disconnected();case ShellEvent_CommandStarted() when commandStarted != null:
+return commandStarted();case ShellEvent_CommandFinished() when commandFinished != null:
+return commandFinished(_that.exitCode);case _:
   return orElse();
 
 }
@@ -158,7 +166,7 @@ return disconnected();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  changed,required TResult Function( String field0)  title,required TResult Function()  bell,required TResult Function( String field0)  clipboard,required TResult Function( int? code)  exited,required TResult Function()  disconnected,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  changed,required TResult Function( String field0)  title,required TResult Function()  bell,required TResult Function( String field0)  clipboard,required TResult Function( int? code)  exited,required TResult Function()  disconnected,required TResult Function()  commandStarted,required TResult Function( int? exitCode)  commandFinished,}) {final _that = this;
 switch (_that) {
 case ShellEvent_Changed():
 return changed();case ShellEvent_Title():
@@ -166,7 +174,9 @@ return title(_that.field0);case ShellEvent_Bell():
 return bell();case ShellEvent_Clipboard():
 return clipboard(_that.field0);case ShellEvent_Exited():
 return exited(_that.code);case ShellEvent_Disconnected():
-return disconnected();}
+return disconnected();case ShellEvent_CommandStarted():
+return commandStarted();case ShellEvent_CommandFinished():
+return commandFinished(_that.exitCode);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -180,7 +190,7 @@ return disconnected();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  changed,TResult? Function( String field0)?  title,TResult? Function()?  bell,TResult? Function( String field0)?  clipboard,TResult? Function( int? code)?  exited,TResult? Function()?  disconnected,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  changed,TResult? Function( String field0)?  title,TResult? Function()?  bell,TResult? Function( String field0)?  clipboard,TResult? Function( int? code)?  exited,TResult? Function()?  disconnected,TResult? Function()?  commandStarted,TResult? Function( int? exitCode)?  commandFinished,}) {final _that = this;
 switch (_that) {
 case ShellEvent_Changed() when changed != null:
 return changed();case ShellEvent_Title() when title != null:
@@ -188,7 +198,9 @@ return title(_that.field0);case ShellEvent_Bell() when bell != null:
 return bell();case ShellEvent_Clipboard() when clipboard != null:
 return clipboard(_that.field0);case ShellEvent_Exited() when exited != null:
 return exited(_that.code);case ShellEvent_Disconnected() when disconnected != null:
-return disconnected();case _:
+return disconnected();case ShellEvent_CommandStarted() when commandStarted != null:
+return commandStarted();case ShellEvent_CommandFinished() when commandFinished != null:
+return commandFinished(_that.exitCode);case _:
   return null;
 
 }
@@ -495,5 +507,105 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class ShellEvent_CommandStarted extends ShellEvent {
+  const ShellEvent_CommandStarted(): super._();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShellEvent_CommandStarted);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'ShellEvent.commandStarted()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class ShellEvent_CommandFinished extends ShellEvent {
+  const ShellEvent_CommandFinished({this.exitCode}): super._();
+  
+
+ final  int? exitCode;
+
+/// Create a copy of ShellEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ShellEvent_CommandFinishedCopyWith<ShellEvent_CommandFinished> get copyWith => _$ShellEvent_CommandFinishedCopyWithImpl<ShellEvent_CommandFinished>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShellEvent_CommandFinished&&(identical(other.exitCode, exitCode) || other.exitCode == exitCode));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,exitCode);
+}
+
+@override
+String toString() {
+    return 'ShellEvent.commandFinished(exitCode: $exitCode)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ShellEvent_CommandFinishedCopyWith<$Res> implements $ShellEventCopyWith<$Res> {
+  factory $ShellEvent_CommandFinishedCopyWith(ShellEvent_CommandFinished value, $Res Function(ShellEvent_CommandFinished) _then) = _$ShellEvent_CommandFinishedCopyWithImpl;
+@useResult
+$Res call({
+ int? exitCode
+});
+
+
+
+
+}
+/// @nodoc
+class _$ShellEvent_CommandFinishedCopyWithImpl<$Res>
+    implements $ShellEvent_CommandFinishedCopyWith<$Res> {
+  _$ShellEvent_CommandFinishedCopyWithImpl(this._self, this._then);
+
+  final ShellEvent_CommandFinished _self;
+  final $Res Function(ShellEvent_CommandFinished) _then;
+
+/// Create a copy of ShellEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? exitCode = freezed,}) {
+  return _then(ShellEvent_CommandFinished(
+exitCode: freezed == exitCode ? _self.exitCode : exitCode // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
 
 // dart format on

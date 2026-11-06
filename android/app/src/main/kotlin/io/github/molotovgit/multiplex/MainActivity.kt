@@ -94,6 +94,10 @@ class MainActivity : FlutterFragmentActivity() {
                     SessionService.update(this, count, summary)
                     result.success(null)
                 }
+                "notifyDone" -> {
+                    SessionService.notifyDone(this, call.argument<String>("title") ?: "", call.argument<String>("body") ?: "")
+                    result.success(null)
+                }
                 else -> result.notImplemented()
             }
         }

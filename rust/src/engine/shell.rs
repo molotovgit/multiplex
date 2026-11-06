@@ -26,7 +26,7 @@ use crate::api::terminal_types::{
 use crate::engine::events::SharedSink;
 use crate::engine::runtime::AsyncRuntime;
 use crate::engine::ssh::Connection;
-use crate::engine::terminal::{ColorResolver, FrameBuilder, InputModes, KeyEncoder, TerminalEmulator};
+use crate::engine::terminal::{ColorResolver, FrameBuilder, InputModes, KeyEncoder, ShellMark, TerminalEmulator};
 
 /// Work for the writer task.
 enum Outgoing {
@@ -331,6 +331,12 @@ impl ShellSession {
             }
             if let Some(text) = signals.clipboard {
                 events.emit(ShellEvent::Clipboard(text));
+            }
+            for mark in signals.marks {
+                events.emit(match mark {
+                    ShellMark::CommandStarted => ShellEvent::CommandStarted,
+                    ShellMark::CommandFinished(exit_code) => ShellEvent::CommandFinished { exit_code },
+                });
             }
             if !shared.dirty.swap(true, Ordering::SeqCst) && !events.emit(ShellEvent::Changed) {
                 // Nobody is listening any more: the app closed this shell.

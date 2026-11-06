@@ -292,6 +292,17 @@ void main() {
       await app.finish(tester);
     });
 
+    testWidgets('the long command notification can be turned off', (tester) async {
+      final app = await Fixture.pump(tester, const SettingsScreen());
+      expect(app.store.settings.notifyWhenDone, isTrue);
+      final tile = find.text('Tell me when a long command is done');
+      await tester.scrollUntilVisible(tile, 200, scrollable: find.byType(Scrollable).first);
+      await tester.tap(tile);
+      await tester.pump();
+      expect(app.store.settings.notifyWhenDone, isFalse);
+      await app.finish(tester);
+    });
+
     testWidgets('app lock stays off and explains when the device has no lock', (tester) async {
       final unlock = FakeUnlock(UnlockResult.noScreenLock);
       final app = await Fixture.pump(tester, SettingsScreen(unlock: unlock));

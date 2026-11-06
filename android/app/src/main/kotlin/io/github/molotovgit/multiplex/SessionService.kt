@@ -65,9 +65,49 @@ class SessionService : Service() {
 
     companion object {
         private const val CHANNEL_ID = "connections"
+        private const val DONE_CHANNEL_ID = "done"
         private const val NOTIFICATION_ID = 1
+
+        /** Each "done" notification gets its own id, so several can show. */
+        private var nextDoneId = 100
         private const val EXTRA_COUNT = "count"
         private const val EXTRA_SUMMARY = "summary"
+
+        /**
+         * "Done on web: npm run build (1m 12s)": a long command finished
+         * while its terminal was not on screen. A tap opens the app.
+         */
+        fun notifyDone(context: Context, title: String, body: String) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(DONE_CHANNEL_ID, "Finished commands", NotificationManager.IMPORTANCE_DEFAULT)
+                channel.description = "When a long command ends while you are elsewhere."
+                manager.createNotificationChannel(channel)
+            }
+            val open = PendingIntent.getActivity(
+                context, 0,
+                Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Notification.Builder(context, DONE_CHANNEL_ID)
+            } else {
+                Notification.Builder(context)
+            }
+            val notification = builder
+                .setSmallIcon(R.drawable.ic_stat_connected)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(Notification.BigTextStyle().bigText(body))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build()
+            try {
+                manager.notify(nextDoneId++, notification)
+            } catch (e: SecurityException) {
+                // Notifications are turned off for the app.
+            }
+        }
 
         /** Starts, updates or (with count 0) stops the service. */
         fun update(context: Context, count: Int, summary: String) {

@@ -120,6 +120,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
   @override
   void initState() {
     super.initState();
+    _terminal.shownOnScreen();
     _terminal.onBell = () => HapticFeedback.mediumImpact();
     _terminal.onRemoteCopy = (text) {
       Clipboard.setData(ClipboardData(text: text));
@@ -137,6 +138,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
   @override
   void dispose() {
     _tabsTimer?.cancel();
+    _terminal.leftScreen();
     _terminal.onBell = null;
     _terminal.onRemoteCopy = null;
     if (_keepAwake) ScreenAwake.release();
