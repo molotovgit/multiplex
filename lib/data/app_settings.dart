@@ -55,6 +55,9 @@ class AppSettings {
     this.backdropPicks = const {},
     this.hideScreens = true,
     this.confirmRiskyPaste = true,
+    this.autoCheckUpdates = true,
+    this.lastUpdateCheckMs = 0,
+    this.skippedUpdateVersion = '',
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -109,6 +112,17 @@ class AppSettings {
   /// rm -rf, before it goes to the shell.
   final bool confirmRiskyPaste;
 
+  /// Look for a new version on GitHub when the app starts, at most once
+  /// a day.
+  final bool autoCheckUpdates;
+
+  /// When the app last asked GitHub for a new version (milliseconds since
+  /// 1970, 0 = never).
+  final int lastUpdateCheckMs;
+
+  /// A version the user chose to skip: no banner is shown for it.
+  final String skippedUpdateVersion;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -139,6 +153,9 @@ class AppSettings {
     Map<String, int>? backdropPicks,
     bool? hideScreens,
     bool? confirmRiskyPaste,
+    bool? autoCheckUpdates,
+    int? lastUpdateCheckMs,
+    String? skippedUpdateVersion,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -160,6 +177,9 @@ class AppSettings {
         backdropPicks: backdropPicks ?? this.backdropPicks,
         hideScreens: hideScreens ?? this.hideScreens,
         confirmRiskyPaste: confirmRiskyPaste ?? this.confirmRiskyPaste,
+        autoCheckUpdates: autoCheckUpdates ?? this.autoCheckUpdates,
+        lastUpdateCheckMs: lastUpdateCheckMs ?? this.lastUpdateCheckMs,
+        skippedUpdateVersion: skippedUpdateVersion ?? this.skippedUpdateVersion,
       );
 
   Map<String, dynamic> toJson() => {
@@ -182,6 +202,9 @@ class AppSettings {
         'backdropPicks': backdropPicks,
         'hideScreens': hideScreens,
         'confirmRiskyPaste': confirmRiskyPaste,
+        'autoCheckUpdates': autoCheckUpdates,
+        'lastUpdateCheckMs': lastUpdateCheckMs,
+        'skippedUpdateVersion': skippedUpdateVersion,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -210,6 +233,9 @@ class AppSettings {
       },
       hideScreens: Json.boolean(j, 'hideScreens', true),
       confirmRiskyPaste: Json.boolean(j, 'confirmRiskyPaste', true),
+      autoCheckUpdates: Json.boolean(j, 'autoCheckUpdates', true),
+      lastUpdateCheckMs: Json.integer(j, 'lastUpdateCheckMs', 0),
+      skippedUpdateVersion: Json.str(j, 'skippedUpdateVersion'),
     );
   }
 }
