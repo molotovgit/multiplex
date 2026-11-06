@@ -9,9 +9,14 @@ import '../common/widgets.dart';
 import 'file_format.dart';
 import 'files_widgets.dart';
 import 'folder_browser.dart';
+import 'syntax/code_editor_view.dart';
+import 'syntax/syntax_controller.dart';
+import 'syntax/syntax_language.dart';
+import 'syntax/syntax_palette.dart';
 
 /// Opens a small text file from the server, lets the user change it, and
-/// writes it back. Warns before leaving with unsaved changes.
+/// writes it back. Warns before leaving with unsaved changes. Code and
+/// settings files are coloured in the terminal theme's colours.
 class FileEditorScreen extends StatefulWidget {
   const FileEditorScreen({super.key, required this.session, required this.files, required this.path, required this.name});
 
@@ -28,8 +33,11 @@ class FileEditorScreen extends StatefulWidget {
 }
 
 class _FileEditorScreenState extends State<FileEditorScreen> {
-  final _text = TextEditingController();
+  final _text = SyntaxEditingController();
   ConnectionWatch? _connection;
+
+  /// Long lines wrap instead of scrolling sideways.
+  bool _wrap = false;
 
   /// The text as it is on the server, to tell whether anything changed.
   String _saved = '';
@@ -53,6 +61,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _connection ??= ConnectionWatch(widget.session, AppScope.sessions(context));
+    _text.palette = SyntaxPalette.fromTheme(AppScope.store(context).activeTheme);
   }
 
   @override
@@ -78,7 +87,12 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
       if (!mounted) return;
       _saved = text;
       _readOnly = TextCheck.looksBinary(text);
+      final newline = text.indexOf('\n');
+      _text.language = _readOnly ? SyntaxLanguage.plain : SyntaxDetect.forFile(widget.path, firstLine: newline < 0 ? text : text.substring(0, newline));
       _text.text = text;
+      // A file with very long lines (minified code, one-line JSON) reads
+      // better wrapped.
+      _wrap = _text.lines.longest > 1000;
       setState(() => _loading = false);
     } catch (error) {
       _connection?.check();
@@ -140,6 +154,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
             bindings: {const SingleActivator(LogicalKeyboardKey.keyS, control: true): _save, const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _save},
             child: Scaffold(
               appBar: AppBar(
+                actions: [if (!_loading && _loadError == null) _EditorMenu(controller: _text, wrap: _wrap, onWrap: () => setState(() => _wrap = !_wrap))],
                 title: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -177,6 +192,7 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
                           error: _loadError,
                           name: widget.name,
                           controller: _text,
+                          wrap: _wrap,
                           readOnly: _readOnly || !connected,
                           onRetry: connected ? _load : null,
                         ),
@@ -195,12 +211,13 @@ class _FileEditorScreenState extends State<FileEditorScreen> {
 
 /// The text area, or a spinner or error while there is no text yet.
 class _EditorBody extends StatelessWidget {
-  const _EditorBody({required this.loading, required this.error, required this.name, required this.controller, required this.readOnly, this.onRetry});
+  const _EditorBody({required this.loading, required this.error, required this.name, required this.controller, required this.wrap, required this.readOnly, this.onRetry});
 
   final bool loading;
   final String? error;
   final String name;
-  final TextEditingController controller;
+  final SyntaxEditingController controller;
+  final bool wrap;
   final bool readOnly;
   final VoidCallback? onRetry;
 
@@ -217,31 +234,55 @@ class _EditorBody extends StatelessWidget {
         onAction: onRetry,
       );
     }
-    return Semantics(
-      label: 'Contents of $name',
-      child: TextField(
-        controller: controller,
-        readOnly: readOnly,
-        expands: true,
-        maxLines: null,
-        minLines: null,
-        keyboardType: TextInputType.multiline,
-        textAlignVertical: TextAlignVertical.top,
-        autocorrect: false,
-        enableSuggestions: false,
-        smartDashesType: SmartDashesType.disabled,
-        smartQuotesType: SmartQuotesType.disabled,
-        style: MonoStyle.of(context),
-        decoration: const InputDecoration(
-          filled: false,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          // Extra room at the bottom so the Save button never hides the last lines.
-          contentPadding: EdgeInsets.fromLTRB(16, 16, 16, FilesLayout.listBottomPadding),
-          hintText: 'This file is empty. Type to add text.',
-        ),
+    return CodeEditorView(
+      controller: controller,
+      style: MonoStyle.of(context) ?? const TextStyle(fontSize: 14),
+      readOnly: readOnly,
+      wrap: wrap,
+      semanticLabel: 'Contents of $name',
+      hint: 'This file is empty. Type to add text.',
+      // Extra room at the bottom so the Save button never hides the last lines.
+      padding: const EdgeInsets.fromLTRB(12, 16, 16, FilesLayout.listBottomPadding),
+    );
+  }
+}
+
+/// The editor's menu: wrap long lines, and which colours to use.
+class _EditorMenu extends StatelessWidget {
+  const _EditorMenu({required this.controller, required this.wrap, required this.onWrap});
+
+  final SyntaxEditingController controller;
+  final bool wrap;
+  final VoidCallback onWrap;
+
+  Future<void> _pickLanguage(BuildContext context) async {
+    final picked = await showDialog<SyntaxLanguage>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Colour as'),
+        children: [
+          for (final language in SyntaxLanguage.values)
+            ListTile(
+              leading: Icon(language == controller.language ? Icons.check : null),
+              title: Text(language.label),
+              selected: language == controller.language,
+              onTap: () => Navigator.pop(context, language),
+            ),
+        ],
       ),
+    );
+    if (picked != null) controller.language = picked;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<int>(
+      tooltip: 'Editor options',
+      onSelected: (item) => item == 0 ? onWrap() : _pickLanguage(context),
+      itemBuilder: (context) => [
+        CheckedPopupMenuItem(value: 0, checked: wrap, child: const Text('Wrap long lines')),
+        PopupMenuItem(value: 1, child: Text('Colours: ${controller.language.label}')),
+      ],
     );
   }
 }
