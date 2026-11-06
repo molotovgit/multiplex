@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../../sessions/connect_flow.dart';
 import '../../src/rust/api/ssh_types.dart';
-import 'widgets.dart';
+import '../hosts/host_key_pages.dart';
 
 /// Answers the connection's questions with dialogs.
 class DialogPrompter implements ConnectPrompter {
@@ -12,41 +11,14 @@ class DialogPrompter implements ConnectPrompter {
 
   final BuildContext context;
 
+  /// A full page, not a small dialog, so the fingerprint is easy to read.
   @override
-  Future<bool> trustNewHost(String host, int port, HostKeyInfo key) async {
-    if (!context.mounted) return false;
-    final answer = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _HostKeyDialog(
-        title: 'New server',
-        message: 'This is the first connection to $host${port == 22 ? '' : ':$port'}. '
-            'Check that this fingerprint matches the server before you trust it.',
-        key_: key,
-        actionLabel: 'Trust and connect',
-      ),
-    );
-    return answer ?? false;
-  }
+  Future<bool> trustNewHost(String host, int port, HostKeyInfo key) => HostKeyPages.trustNew(context, host, port, key);
 
+  /// A full warning page: what changed, what it can mean, how to check.
   @override
-  Future<bool> acceptChangedHost(String host, int port, HostKeyInfo key, KnownHost? previous) async {
-    if (!context.mounted) return false;
-    final answer = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _HostKeyDialog(
-        title: 'Server identity changed',
-        message: 'The key of $host is not the one you trusted before. Someone may be intercepting the connection. '
-            'Only continue if you know the server was reinstalled or its key was replaced.',
-        key_: key,
-        previous: previous,
-        actionLabel: 'Replace key and connect',
-        warning: true,
-      ),
-    );
-    return answer ?? false;
-  }
+  Future<bool> acceptChangedHost(String host, int port, HostKeyInfo key, KnownHost? previous) =>
+      HostKeyPages.acceptChanged(context, host, port, key, previous);
 
   @override
   Future<SecretAnswer?> askPassword(String host, String username, {required bool wasWrong}) {
@@ -73,61 +45,6 @@ class DialogPrompter implements ConnectPrompter {
     return showDialog<SecretAnswer>(
       context: context,
       builder: (context) => _SecretDialog(title: title, message: message, label: label, rememberLabel: rememberLabel),
-    );
-  }
-}
-
-class _HostKeyDialog extends StatelessWidget {
-  const _HostKeyDialog({
-    required this.title,
-    required this.message,
-    required this.key_,
-    required this.actionLabel,
-    this.previous,
-    this.warning = false,
-  });
-
-  final String title;
-  final String message;
-  final HostKeyInfo key_;
-  final KnownHost? previous;
-  final String actionLabel;
-  final bool warning;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColorsTheme.of(context);
-    final text = Theme.of(context).textTheme;
-    return AlertDialog(
-      icon: Icon(warning ? Icons.gpp_bad_outlined : Icons.fingerprint, color: warning ? colors.danger : colors.accent),
-      title: Text(title),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(message),
-            const SizedBox(height: 16),
-            Text(previous == null ? key_.algorithm : 'New key (${key_.algorithm})', style: text.labelMedium?.copyWith(color: colors.muted)),
-            const SizedBox(height: 4),
-            MonoText(key_.fingerprint, selectable: true),
-            if (previous != null) ...[
-              const SizedBox(height: 12),
-              Text('Trusted before (${previous!.algorithm})', style: text.labelMedium?.copyWith(color: colors.muted)),
-              const SizedBox(height: 4),
-              MonoText(previous!.fingerprint, selectable: true),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-        FilledButton(
-          style: warning ? FilledButton.styleFrom(backgroundColor: colors.danger, foregroundColor: Colors.white) : null,
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(actionLabel),
-        ),
-      ],
     );
   }
 }
