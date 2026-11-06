@@ -291,39 +291,5 @@ abstract final class OriginalThemes {
     backdrops: [BackdropPattern.mesh, BackdropPattern.facets],
   );
 
-  /// Early-2000s desktop: a beige window with near-white panes, a blue
-  /// banded title bar and taskbar, shaded buttons and keys with an orange
-  /// glow when pressed, a green start-style main button, and hills under
-  /// a blue sky. The look is drawn in code; no logos, photos or fonts of
-  /// that era's software are used.
-  static const millennium = ThemeSpec(
-    id: 'millennium',
-    name: 'Millennium',
-    builtIn: true,
-    credit: 'Window colours from XP.css by Adam Hammad (MIT); console colours from the classic VGA palette',
-    ansi: [
-      0xFF000000, 0xFFA80000, 0xFF00A800, 0xFFA85400, 0xFF0000A8, 0xFFA800A8, 0xFF00A8A8, 0xFFA8A8A8, //
-      0xFF545454, 0xFFFC5454, 0xFF54FC54, 0xFFFCFC54, 0xFF5454FC, 0xFFFC54FC, 0xFF54FCFC, 0xFFFFFFFF,
-    ],
-    foreground: 0xFF000000,
-    background: 0xFFECE9D8,
-    cursor: 0xFF000000,
-    accent: 0xFF0053EE,
-    selection: 0xFF2267CB,
-    style: ThemeStyle(
-      shape: CornerShape.soft,
-      surface: SurfaceStyle.glossy,
-      density: StyleDensity.normal,
-      appFont: 'system',
-      textScale: 1.0,
-      nav: NavStyle.labelled,
-      icons: IconStyle.filled,
-      terminal: TerminalStyle(padding: 6, showTabs: true),
-      backdrop: BackdropStyle(dim: 0.3, blur: 0),
-      keys: KeysStyle(cap: KeyCapStyle.glossy, gap: 4, labelFont: KeyLabelFont.app),
-    ),
-    backdrops: [BackdropPattern.hills, BackdropPattern.dots],
-  );
-
-  static const all = [matteBlack, iceberg, oxocarbon, hackerman, ristretto, synthwave84, vesper, githubHighContrast, flexokiLight, rosePineDawn, millennium];
+  static const all = [matteBlack, iceberg, oxocarbon, hackerman, ristretto, synthwave84, vesper, githubHighContrast, flexokiLight, rosePineDawn];
 }
