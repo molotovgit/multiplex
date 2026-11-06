@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'terminal_types.freezed.dart';
 
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `RunStyle`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 enum CursorShape { block, underline, bar }
 
@@ -58,6 +58,35 @@ class KeyModifiers {
           ctrl == other.ctrl &&
           alt == other.alt &&
           shift == other.shift;
+}
+
+/// Where a search found the text. Lines count from the oldest line of
+/// history (0) down to the last row of the live screen, so the row on
+/// screen is `line - (scrollback_len - scroll_offset)` of a frame.
+class SearchMatch {
+  final int line;
+  final int col;
+
+  /// How many cells the match covers.
+  final int width;
+
+  const SearchMatch({
+    required this.line,
+    required this.col,
+    required this.width,
+  });
+
+  @override
+  int get hashCode => line.hashCode ^ col.hashCode ^ width.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SearchMatch &&
+          runtimeType == other.runtimeType &&
+          line == other.line &&
+          col == other.col &&
+          width == other.width;
 }
 
 @freezed

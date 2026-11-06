@@ -21,13 +21,13 @@ use russh::{ChannelMsg, ChannelReadHalf, ChannelWriteHalf};
 use tokio::sync::mpsc;
 
 use crate::api::terminal_types::{
-    KeyModifiers, ShellEvent, ShellOptions, TerminalFrame, TerminalKey, TerminalPalette,
+    KeyModifiers, SearchMatch, ShellEvent, ShellOptions, TerminalFrame, TerminalKey, TerminalPalette,
 };
 use crate::engine::events::SharedSink;
 use crate::engine::runtime::AsyncRuntime;
 use crate::engine::ssh::Connection;
 use crate::engine::terminal::cast::CastRecorder;
-use crate::engine::terminal::{ColorResolver, FrameBuilder, InputModes, KeyEncoder, ShellMark, TerminalEmulator};
+use crate::engine::terminal::{ColorResolver, FrameBuilder, InputModes, KeyEncoder, ShellMark, TerminalEmulator, TextSearch};
 
 mod playback;
 
@@ -245,6 +245,16 @@ impl ShellSession {
     /// Text between two visible cells, for copying.
     pub fn text_between(&self, start: (u16, u16), end: (u16, u16)) -> String {
         self.shared.screen().emulator.text_between(start, end)
+    }
+
+    /// Every place `query` appears on the screen and in the scrollback.
+    pub fn find(&self, query: &str, case_sensitive: bool) -> Vec<SearchMatch> {
+        TextSearch::new(query, case_sensitive).find_all(&mut self.shared.screen().emulator)
+    }
+
+    /// Scrolls so a line (as numbered by [`Self::find`]) is in view.
+    pub fn reveal_line(&self, line: u32) {
+        self.shared.screen().emulator.reveal_line(line as usize);
     }
 
     /// Everything on the visible screen as plain text.

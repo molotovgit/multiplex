@@ -12,7 +12,10 @@ import '../../app/theme_slides.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/terminal_controller.dart';
 import '../common/theme_backdrop.dart';
+import 'search/terminal_search.dart';
 import 'terminal_keyboard.dart';
+import 'terminal_marks.dart';
+import 'terminal_overlays.dart';
 import 'terminal_painter.dart';
 
 /// Shows one terminal and turns touch, mouse and keyboard into terminal
@@ -24,7 +27,15 @@ import 'terminal_painter.dart';
 /// - Pinch: changes the font size.
 /// - Long press and drag: selects text; a Copy button appears.
 class TerminalView extends StatefulWidget {
-  const TerminalView({super.key, required this.controller, required this.focusNode, this.systemKeyboard = true, this.onWantsKeyboard});
+  const TerminalView({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    this.systemKeyboard = true,
+    this.onWantsKeyboard,
+    this.search,
+    this.onFind,
+  });
 
   final TerminalController controller;
   final FocusNode focusNode;
@@ -35,6 +46,12 @@ class TerminalView extends StatefulWidget {
   /// Called when a tap asks for a keyboard, so a hidden built-in keyboard
   /// can come back.
   final VoidCallback? onWantsKeyboard;
+
+  /// Find in terminal; its matches are highlighted.
+  final TerminalSearch? search;
+
+  /// Ctrl+Shift+F on a hardware keyboard.
+  final VoidCallback? onFind;
 
   @override
   State<TerminalView> createState() => _TerminalViewState();
@@ -171,7 +188,7 @@ class _TerminalViewState extends State<TerminalView> {
   Widget build(BuildContext context) {
     final store = AppScope.store(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([store, _terminal]),
+      listenable: Listenable.merge([store, _terminal, ?widget.search]),
       builder: (context, _) {
         final settings = store.settings;
         final family = TerminalFonts.byId(settings, settings.terminalFontId).family;
@@ -184,6 +201,10 @@ class _TerminalViewState extends State<TerminalView> {
         final backdrop = style.backdrop;
         final slide = ActiveSlide.of(theme, settings);
         _padding = style.terminal.padding;
+        final search = widget.search;
+        final marks = frame == null || search == null || !search.isOpen
+            ? TerminalMarks.none
+            : TerminalMarks(matches: search.visibleIn(frame), current: search.currentIn(frame), accent: Color(theme.accent));
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -192,6 +213,7 @@ class _TerminalViewState extends State<TerminalView> {
               controller: _terminal,
               focusNode: widget.focusNode,
               systemKeyboard: widget.systemKeyboard,
+              onFind: widget.onFind,
               child: Semantics(
                 label: 'Terminal',
                 hint: 'Tap to type. Drag to scroll. Long press to select text.',
@@ -233,13 +255,14 @@ class _TerminalViewState extends State<TerminalView> {
                                       selection: _selection,
                                       selectionLook: selectionLook,
                                       paintBackground: slide == null,
+                                      marks: marks,
                                     ),
                                   ),
                           ),
                         ),
                         if (frame != null && frame.scrollOffset > 0)
-                          _JumpToLiveButton(lines: frame.scrollOffset, onPressed: _terminal.scrollToBottom),
-                        if (_selection != null) _CopyBar(onCopy: _copySelection, onCancel: () => setState(() => _selection = null)),
+                          JumpToLiveButton(lines: frame.scrollOffset, onPressed: _terminal.scrollToBottom),
+                        if (_selection != null) CopyBar(onCopy: _copySelection, onCancel: () => setState(() => _selection = null)),
                       ],
                     ),
                   ),
@@ -249,59 +272,6 @@ class _TerminalViewState extends State<TerminalView> {
           },
         );
       },
-    );
-  }
-}
-
-/// Shown while scrolled back: how far back, and a way back to live output.
-class _JumpToLiveButton extends StatelessWidget {
-  const _JumpToLiveButton({required this.lines, required this.onPressed});
-
-  final int lines;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      right: 12,
-      bottom: 12,
-      child: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: onPressed,
-        icon: const Icon(Icons.vertical_align_bottom),
-        label: Text('$lines lines up'),
-      ),
-    );
-  }
-}
-
-/// Actions for the current selection.
-class _CopyBar extends StatelessWidget {
-  const _CopyBar({required this.onCopy, required this.onCancel});
-
-  final VoidCallback onCopy;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: 8,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(24),
-          color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextButton.icon(onPressed: onCopy, icon: const Icon(Icons.copy), label: const Text('Copy')),
-              IconButton(tooltip: 'Clear selection', onPressed: onCancel, icon: const Icon(Icons.close)),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

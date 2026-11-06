@@ -257,6 +257,15 @@ class TerminalController extends ChangeNotifier {
   String textBetween(int startRow, int startCol, int endRow, int endCol) =>
       shell.textBetween(startRow: startRow, startCol: startCol, endRow: endRow, endCol: endCol);
 
+  /// Every place `query` appears on the screen and in the scrollback.
+  List<SearchMatch> find(String query, {required bool caseSensitive}) => shell.find(query: query, caseSensitive: caseSensitive);
+
+  /// Scrolls so a line found by [find] shows, and redraws.
+  void revealLine(int line) {
+    shell.revealLine(line: line);
+    pull();
+  }
+
   void setPalette(TerminalPalette palette) {
     shell.setPalette(palette: palette);
     pull();

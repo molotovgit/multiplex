@@ -15,7 +15,7 @@ import '../../src/rust/api/terminal_types.dart';
 /// Hardware keys that are not text (arrows, Ctrl+C, F-keys) are caught
 /// before the text field sees them.
 class TerminalKeyboard extends StatefulWidget {
-  const TerminalKeyboard({super.key, required this.controller, required this.focusNode, required this.child, this.systemKeyboard = true});
+  const TerminalKeyboard({super.key, required this.controller, required this.focusNode, required this.child, this.systemKeyboard = true, this.onFind});
 
   final TerminalController controller;
   final FocusNode focusNode;
@@ -24,6 +24,9 @@ class TerminalKeyboard extends StatefulWidget {
   /// False while the built-in keyboard is in use: the field keeps focus
   /// (hardware keys still work) but the phone's keyboard stays closed.
   final bool systemKeyboard;
+
+  /// Ctrl+Shift+F: find in the terminal.
+  final VoidCallback? onFind;
 
   @override
   State<TerminalKeyboard> createState() => _TerminalKeyboardState();
@@ -103,6 +106,10 @@ class _TerminalKeyboardState extends State<TerminalKeyboard> {
       // Ctrl+Shift+C / V copy and paste, like desktop terminals.
       if (mods.ctrl && mods.shift && event.logicalKey == LogicalKeyboardKey.keyV) {
         widget.controller.pasteClipboard();
+        return KeyEventResult.handled;
+      }
+      if (mods.ctrl && mods.shift && event.logicalKey == LogicalKeyboardKey.keyF && widget.onFind != null) {
+        widget.onFind!();
         return KeyEventResult.handled;
       }
       widget.controller.textWith(char.toLowerCase(), KeyModifiers(ctrl: mods.ctrl, alt: mods.alt, shift: false));

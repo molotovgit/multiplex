@@ -6,6 +6,7 @@ import '../../app/selection_look.dart';
 
 import '../../data/app_settings.dart';
 import '../../src/rust/api/terminal_types.dart';
+import 'terminal_marks.dart';
 
 /// The size of one character cell, measured from the terminal font.
 class CellMetrics {
@@ -145,6 +146,7 @@ class TerminalPainter extends CustomPainter {
     required this.selection,
     required this.selectionLook,
     this.paintBackground = true,
+    this.marks = TerminalMarks.none,
   });
 
   final TerminalFrame frame;
@@ -163,6 +165,9 @@ class TerminalPainter extends CustomPainter {
   /// own colour are filled.
   final bool paintBackground;
 
+  /// Search matches.
+  final TerminalMarks marks;
+
   @override
   void paint(Canvas canvas, Size size) {
     final w = metrics.width, h = metrics.height;
@@ -179,6 +184,7 @@ class TerminalPainter extends CustomPainter {
           canvas.drawRect(Rect.fromLTWH(laid.run.col * w, y, laid.run.width * w, h), bg);
         }
       }
+      marks.paintBehind(canvas, row, w, h);
       final selected = _selectedCells(row);
       if (selected == null) {
         for (final laid in runs) {
@@ -297,5 +303,6 @@ class TerminalPainter extends CustomPainter {
       old.selection != selection ||
       old.selectionLook != selectionLook ||
       old.cursorStyle != cursorStyle ||
-      old.paintBackground != paintBackground;
+      old.paintBackground != paintBackground ||
+      old.marks != marks;
 }

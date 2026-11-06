@@ -27,6 +27,10 @@ abstract class RemoteShell implements RustOpaqueInterface {
   /// Shows text as if the server had sent it (playback).
   void feed({required String text});
 
+  /// Every place `query` appears on the screen and in the scrollback,
+  /// oldest first (at most a few thousand).
+  List<SearchMatch> find({required String query, required bool caseSensitive});
+
   /// The screen as it is now, ready to paint.
   TerminalFrame frame();
 
@@ -52,6 +56,9 @@ abstract class RemoteShell implements RustOpaqueInterface {
   void resetScreen();
 
   void resize({required int cols, required int rows});
+
+  /// Scrolls so a line found by `find` is in view. Take a new frame after.
+  void revealLine({required int line});
 
   /// Scroll gesture of `lines` (positive = older output) over a cell.
   /// Returns true when the view moved and should be redrawn now.

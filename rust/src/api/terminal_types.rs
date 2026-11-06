@@ -62,6 +62,17 @@ impl RunStyle {
     pub const WIDE: u8 = 8;
 }
 
+/// Where a search found the text. Lines count from the oldest line of
+/// history (0) down to the last row of the live screen, so the row on
+/// screen is `line - (scrollback_len - scroll_offset)` of a frame.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SearchMatch {
+    pub line: u32,
+    pub col: u16,
+    /// How many cells the match covers.
+    pub width: u16,
+}
+
 /// Where the cursor is and how it looks.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TerminalCursor {

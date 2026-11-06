@@ -138,6 +138,10 @@ impl TerminalEmulator {
         self.parser.screen()
     }
 
+    pub fn screen_mut(&mut self) -> &mut vt100::Screen {
+        self.parser.screen_mut()
+    }
+
     pub fn title(&self) -> &str {
         &self.title
     }
@@ -155,6 +159,21 @@ impl TerminalEmulator {
         let current = screen.scrollback() as i64;
         let wanted = (current + i64::from(lines)).max(0) as usize;
         screen.set_scrollback(wanted);
+        screen.scrollback()
+    }
+
+    /// Scrolls so `line` is in view, near the middle, when it is not
+    /// already. Lines count from the oldest line of history (0) down to
+    /// the last row of the live screen. Returns the new offset.
+    pub fn reveal_line(&mut self, line: usize) -> usize {
+        let history = self.history_len();
+        let rows = usize::from(self.size().0);
+        let screen = self.parser.screen_mut();
+        let top = history - screen.scrollback().min(history);
+        if line < top || line >= top + rows {
+            let wanted_top = line.saturating_sub(rows / 2).min(history);
+            screen.set_scrollback(history - wanted_top);
+        }
         screen.scrollback()
     }
 
@@ -249,6 +268,23 @@ mod tests {
         assert!(term.screen().contents().starts_with("line6"));
         assert_eq!(term.scroll_by(100), 8);
         assert_eq!(term.scroll_by(-100), 0);
+    }
+
+    #[test]
+    fn reveals_a_line_by_scrolling_only_when_needed() {
+        let mut term = TerminalEmulator::new(4, 10, 100);
+        for i in 0..20 {
+            term.process(format!("l{i}\r\n").as_bytes());
+        }
+        // 21 lines in all (the last one empty), 17 of them history.
+        assert_eq!(term.history_len(), 17);
+        // Already on the live screen: nothing moves.
+        assert_eq!(term.reveal_line(18), 0);
+        // Line 2 ends up near the middle of the view.
+        assert_eq!(term.reveal_line(2), 17);
+        assert!(term.screen().contents().starts_with("l0\nl1\nl2"));
+        assert_eq!(term.reveal_line(10), 9);
+        assert!(term.screen().contents().starts_with("l8\nl9\nl10"));
     }
 
     #[test]

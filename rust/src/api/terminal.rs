@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use flutter_rust_bridge::frb;
 
-use crate::api::terminal_types::{KeyModifiers, ShellEvent, TerminalFrame, TerminalKey, TerminalPalette};
+use crate::api::terminal_types::{KeyModifiers, SearchMatch, ShellEvent, TerminalFrame, TerminalKey, TerminalPalette};
 use crate::engine::events::EventRelay;
 use crate::engine::shell::ShellSession;
 use crate::frb_generated::StreamSink;
@@ -128,6 +128,19 @@ impl RemoteShell {
     #[frb(sync)]
     pub fn text_between(&self, start_row: u16, start_col: u16, end_row: u16, end_col: u16) -> String {
         self.inner.text_between((start_row, start_col), (end_row, end_col))
+    }
+
+    /// Every place `query` appears on the screen and in the scrollback,
+    /// oldest first (at most a few thousand).
+    #[frb(sync)]
+    pub fn find(&self, query: String, case_sensitive: bool) -> Vec<SearchMatch> {
+        self.inner.find(&query, case_sensitive)
+    }
+
+    /// Scrolls so a line found by `find` is in view. Take a new frame after.
+    #[frb(sync)]
+    pub fn reveal_line(&self, line: u32) {
+        self.inner.reveal_line(line);
     }
 
     #[frb(sync)]
