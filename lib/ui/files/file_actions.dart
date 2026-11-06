@@ -10,6 +10,8 @@ import 'file_format.dart';
 import 'files_widgets.dart';
 import 'folder_browser.dart';
 import 'permissions_dialog.dart';
+import 'preview/preview_files.dart';
+import 'preview/preview_screen.dart';
 import 'remote_paths.dart';
 import 'text_prompt_dialog.dart';
 import 'transfer_queue.dart';
@@ -86,8 +88,8 @@ class FileActions {
     await _report(context, 'Could not open $typed', browser.goTo(typed));
   }
 
-  /// Opens a folder, or a file in the editor. Files over the editor's
-  /// limit get an offer to download them instead.
+  /// Opens a folder, a picture or PDF in the preview, or any other file
+  /// in the editor. Files over the limits get an offer to download them.
   Future<void> open(BuildContext context, RemoteEntry entry) async {
     if (entry.isDir) return openFolder(context, entry.path);
     if (entry.kind == EntryKind.other) {
@@ -102,6 +104,8 @@ class FileActions {
       });
       if (!found || !context.mounted) return;
     }
+    final preview = PreviewKind.of(entry.name);
+    if (preview != null) return _preview(context, entry, target, preview);
     if (target.size > BigInt.from(FileEditorScreen.maxBytes)) {
       final download = await Confirm.ask(
         context,
@@ -120,6 +124,28 @@ class FileActions {
     );
     // Shows the new size and date if the file was saved.
     await browser.refresh();
+  }
+
+  /// Shows a picture or PDF without saving it. Very big ones are offered
+  /// as a download instead.
+  Future<void> _preview(BuildContext context, RemoteEntry entry, RemoteEntry target, PreviewKind kind) async {
+    if (target.size > BigInt.from(kind.maxBytes)) {
+      final download = await Confirm.ask(
+        context,
+        title: 'Too big to preview',
+        message: '"${entry.name}" is ${FileSizes.human(target.size)}, too big to show here. Download it to open it on this device instead.',
+        action: 'Download file',
+        destructive: false,
+      );
+      if (download && context.mounted) this.download(context, entry);
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => PreviewScreen(files: browser.files, entry: entry, kind: kind, onDownload: () => download(context, entry)),
+      ),
+    );
   }
 
   /// Runs what the user picked in an entry's menu.

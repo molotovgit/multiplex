@@ -57,6 +57,7 @@ class MainActivity : FlutterFragmentActivity() {
                 result.notImplemented()
             }
         }
+        PdfChannel.register(flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "setKeepScreenOn" -> {

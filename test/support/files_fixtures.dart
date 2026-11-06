@@ -1,6 +1,7 @@
 // Fakes and sample data shared by the file screen tests.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
@@ -50,7 +51,20 @@ class FakeFiles implements RemoteFiles {
   @override
   Future<void> writeText({required String path, required String text}) async => texts[path] = text;
 
-  /// Uploads and downloads are covered by the queue tests' fake tasks.
+  /// File contents for [download], by server path.
+  final Map<String, List<int>> blobs = {};
+
+  /// Writes the blob to [localPath], or fails like the core when there is none.
+  @override
+  Future<BigInt> download({required String remotePath, required String localPath, required FileTransfer transfer}) async {
+    calls.add('download $remotePath');
+    final bytes = blobs[remotePath];
+    if (bytes == null) throw AnyhowException('no such file');
+    await File(localPath).writeAsBytes(bytes);
+    return BigInt.from(bytes.length);
+  }
+
+  /// Uploads are covered by the queue tests' fake tasks.
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
