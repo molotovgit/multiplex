@@ -15,6 +15,7 @@ import '../common/theme_backdrop.dart';
 import 'links/link_sheet.dart';
 import 'links/screen_links.dart';
 import 'search/terminal_search.dart';
+import 'terminal_gestures.dart';
 import 'terminal_keyboard.dart';
 import 'terminal_marks.dart';
 import 'terminal_overlays.dart';
@@ -26,7 +27,9 @@ import 'terminal_painter.dart';
 /// - Tap: shows the keyboard (or clicks, in programs that use the mouse).
 /// - Drag up and down: scrolls through history, or scrolls inside
 ///   full-screen programs such as less and vim.
-/// - Pinch: changes the font size.
+/// - Two fingers up and down: scroll too.
+/// - Pinch: changes the font size live; it is saved when the fingers lift.
+/// - Tap an underlined link or path: a sheet to open or copy it.
 /// - Long press and drag: selects text; a Copy button appears.
 class TerminalView extends StatefulWidget {
   const TerminalView({
@@ -78,7 +81,10 @@ class _TerminalViewState extends State<TerminalView> {
   bool _cursorOn = true;
   CellSelection? _selection;
   double _scrollRemainder = 0;
-  double? _pinchStartSize;
+  final _gesture = TerminalGestureTracker(minSize: AppSettings.minFontSize, maxSize: AppSettings.maxFontSize);
+
+  /// The font size while a pinch is going on; saved when it ends.
+  double? _pinchSize;
   (int, int)? _lastGrid;
 
   TerminalController get _terminal => widget.controller;
@@ -152,17 +158,29 @@ class _TerminalViewState extends State<TerminalView> {
 
   void _onScaleStart(ScaleStartDetails details, AppSettings settings) {
     _scrollRemainder = 0;
-    _pinchStartSize = details.pointerCount > 1 ? settings.fontSize : null;
+    _gesture.start(pointers: details.pointerCount, fontSize: _pinchSize ?? settings.fontSize);
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details, CellMetrics m) {
-    if (details.pointerCount > 1 && _pinchStartSize != null) {
-      final store = AppScope.store(context);
-      final size = (_pinchStartSize! * details.scale).roundToDouble();
-      if (size != store.settings.fontSize) store.updateSettings(store.settings.copyWith(fontSize: size));
-      return;
+    switch (_gesture.update(scale: details.scale, dy: details.focalPointDelta.dy)) {
+      case FontStep(:final size):
+        setState(() => _pinchSize = size);
+      case ScrollStep(:final pixels):
+        _scrollBy(pixels, details.localFocalPoint, m);
+      case NoStep():
+        break;
     }
-    _scrollBy(details.focalPointDelta.dy, details.localFocalPoint, m);
+  }
+
+  /// Saves the pinched size once, when the fingers lift, instead of on
+  /// every step of the pinch.
+  void _onScaleEnd() {
+    final size = _gesture.end();
+    if (size != null) {
+      final store = AppScope.store(context);
+      store.updateSettings(store.settings.copyWith(fontSize: size));
+    }
+    if (_pinchSize != null) setState(() => _pinchSize = null);
   }
 
   void _onPointerSignal(PointerSignalEvent event, CellMetrics m) {
@@ -209,8 +227,9 @@ class _TerminalViewState extends State<TerminalView> {
       builder: (context, _) {
         final settings = store.settings;
         final family = TerminalFonts.byId(settings, settings.terminalFontId).family;
-        final metrics = CellMetrics.measure(family: family, fontSize: settings.fontSize, lineHeight: settings.lineHeight);
-        final styleKey = (family, settings.fontSize, settings.lineHeight);
+        final fontSize = _pinchSize ?? settings.fontSize;
+        final metrics = CellMetrics.measure(family: family, fontSize: fontSize, lineHeight: settings.lineHeight);
+        final styleKey = (family, fontSize, settings.lineHeight);
         final frame = _terminal.frame;
         final theme = store.activeTheme;
         final selectionLook = SelectionLook.of(theme);
@@ -238,7 +257,7 @@ class _TerminalViewState extends State<TerminalView> {
               onFind: widget.onFind,
               child: Semantics(
                 label: 'Terminal',
-                hint: 'Tap to type. Tap an underlined link for its actions. Drag to scroll. Long press to select text.',
+                hint: 'Tap to type. Tap an underlined link for its actions. Drag to scroll. Pinch to change the text size. Long press to select text.',
                 child: Listener(
                   onPointerSignal: (e) => _onPointerSignal(e, metrics),
                   child: GestureDetector(
@@ -246,6 +265,7 @@ class _TerminalViewState extends State<TerminalView> {
                     onTapUp: (d) => _onTapUp(d, metrics),
                     onScaleStart: (d) => _onScaleStart(d, settings),
                     onScaleUpdate: (d) => _onScaleUpdate(d, metrics),
+                    onScaleEnd: (_) => _onScaleEnd(),
                     onLongPressStart: (d) => _startSelection(d, metrics),
                     onLongPressMoveUpdate: (d) => _extendSelection(d, metrics),
                     child: Stack(
