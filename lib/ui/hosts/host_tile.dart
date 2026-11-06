@@ -9,6 +9,7 @@ import '../files/files_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'host_connector.dart';
 import 'host_editor_screen.dart';
+import 'server_status_screen.dart';
 
 /// One saved host in the list. Tap connects; the menu has the rest.
 class HostTile extends StatelessWidget {
@@ -102,6 +103,7 @@ class HostTile extends StatelessWidget {
           0 => HostConnector.openTerminal(context, host),
           1 => _openFiles(context),
           2 => _open(context, TunnelsScreen(host: host)),
+          8 => ServerStatusScreen.open(context, host),
           3 => _open(context, HostEditorScreen(host: host)),
           4 => _duplicate(context),
           6 => AppScope.store(context).moveHost(host.id, -1),
@@ -131,6 +133,10 @@ class HostTile extends StatelessWidget {
           PopupMenuItem(
             value: 2,
             child: ListTile(leading: Icon(Icons.swap_horiz), title: Text('Tunnels')),
+          ),
+          PopupMenuItem(
+            value: 8,
+            child: ListTile(leading: Icon(Icons.monitor_heart_outlined), title: Text('Server status')),
           ),
           PopupMenuDivider(),
           PopupMenuItem(
