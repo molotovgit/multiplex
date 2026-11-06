@@ -36,6 +36,7 @@ import 'split_picker.dart';
 import 'reconnect_banner.dart';
 import 'recording_actions.dart';
 import 'search/pane_searches.dart';
+import 'paste_confirm_dialog.dart';
 import 'search/terminal_search.dart';
 import 'search/terminal_search_bar.dart';
 import 'terminal_menu.dart';
@@ -138,6 +139,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
       Clipboard.setData(ClipboardData(text: text));
       if (mounted) Toast.show(context, 'The server copied text to your clipboard');
     };
+    _guardPastes(_terminal);
     WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
     _keepAwake = AppScope.store(context).settings.keepScreenOn;
     if (_keepAwake) ScreenAwake.hold();
@@ -154,6 +156,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
     _searches.dispose();
     _terminal.onBell = null;
     _terminal.onRemoteCopy = null;
+    for (final terminal in _guarded) {
+      if (terminal.confirmPaste == _confirmPaste) terminal.confirmPaste = null;
+    }
     if (_keepAwake) ScreenAwake.release();
     _split.dispose();
     _focus.dispose();
@@ -163,6 +168,24 @@ class _TerminalScreenState extends State<TerminalScreen> {
   void _keepFocus() {
     final focus = _split.focusNode(shown: SplitLayout.of(context));
     if (!focus.hasFocus) focus.requestFocus();
+  }
+
+  /// Terminals on this screen whose pastes [_confirmPaste] checks: this
+  /// one and any terminal shown in the second pane.
+  final _guarded = <TerminalController>{};
+
+  void _guardPastes(TerminalController terminal) {
+    terminal.confirmPaste = _confirmPaste;
+    _guarded.add(terminal);
+  }
+
+  /// Shows a risky paste first, unless the user turned that off.
+  Future<bool> _confirmPaste(String text, List<String> reasons) async {
+    if (!mounted) return false;
+    if (!AppScope.store(context).settings.confirmRiskyPaste) return true;
+    final ok = await PasteConfirmDialog.ask(context, text, reasons);
+    _keepFocus();
+    return ok;
   }
 
   /// Picks a terminal for the second pane, or goes back to one pane.
@@ -368,18 +391,22 @@ class _TerminalScreenState extends State<TerminalScreen> {
               child: SplitPanes(
                 split: _split,
                 shown: SplitLayout.of(context),
-                paneFor: (terminal, focus) => TerminalView(
-                  key: ObjectKey(terminal),
-                  controller: terminal,
-                  focusNode: focus,
-                  search: _searches.of(terminal),
-                  onFind: () => _openSearch(terminal),
-                  onOpenPath: (path) => _openPath(terminal, path),
-                  systemKeyboard: !builtIn,
-                  onWantsKeyboard: () {
-                    if (_keyboardHidden) setState(() => _keyboardHidden = false);
-                  },
-                ),
+                paneFor: (terminal, focus) {
+                  // The second pane's terminal pastes through the same check.
+                  _guardPastes(terminal);
+                  return TerminalView(
+                    key: ObjectKey(terminal),
+                    controller: terminal,
+                    focusNode: focus,
+                    search: _searches.of(terminal),
+                    onFind: () => _openSearch(terminal),
+                    onOpenPath: (path) => _openPath(terminal, path),
+                    systemKeyboard: !builtIn,
+                    onWantsKeyboard: () {
+                      if (_keyboardHidden) setState(() => _keyboardHidden = false);
+                    },
+                  );
+                },
               ),
             ),
             if (lost != null && lostSession != null)

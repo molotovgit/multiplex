@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_shortcuts.dart';
+import '../../sessions/paste_guard.dart';
 import '../../sessions/terminal_controller.dart';
 import '../../src/rust/api/terminal_types.dart';
 
@@ -75,7 +76,14 @@ class _TerminalKeyboardState extends State<TerminalKeyboard> {
     for (var i = 0; i < deleted; i++) {
       widget.controller.key(TerminalKey.backspace);
     }
-    _sendTyped(inserted);
+    // The phone keyboard's own clipboard pastes into the field like
+    // typing. Several lines or a risky command at once is a paste, and is
+    // checked like one.
+    if (inserted.length > 1 && PasteGuard.needsConfirm(inserted)) {
+      widget.controller.pasteChecked(inserted);
+    } else {
+      _sendTyped(inserted);
+    }
     _reset();
   }
 

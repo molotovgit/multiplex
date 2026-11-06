@@ -8,6 +8,7 @@ import '../src/rust/api/terminal.dart';
 import '../src/rust/api/terminal_types.dart';
 import 'command_capture.dart';
 import 'command_timer.dart';
+import 'paste_guard.dart';
 
 /// Drives one terminal on screen: listens to the native shell, pulls a new
 /// frame at most once per display frame, and forwards input.
@@ -89,6 +90,10 @@ class TerminalController extends ChangeNotifier {
 
   /// Called when the remote program copied text (OSC 52).
   void Function(String text)? onRemoteCopy;
+
+  /// Asks the user about a paste that [PasteGuard] stopped; true pastes
+  /// it. Without one, every paste goes straight through.
+  Future<bool> Function(String text, List<String> reasons)? confirmPaste;
 
   TerminalFrame? get frame => _frame;
   String get title => _title;
@@ -219,9 +224,21 @@ class TerminalController extends ChangeNotifier {
     }
   }
 
+  /// Pastes what the user brought from elsewhere (the clipboard, the
+  /// phone keyboard's clipboard): several lines or a risky command are
+  /// shown to the user first. Text the app itself puts in, such as a
+  /// recent command, uses [paste] directly.
+  Future<void> pasteChecked(String text) async {
+    if (_inputOff || text.isEmpty) return;
+    final reasons = PasteGuard.reasons(text);
+    final ask = confirmPaste;
+    if (reasons.isNotEmpty && ask != null && !await ask(text, reasons)) return;
+    paste(text);
+  }
+
   Future<void> pasteClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    paste(data?.text ?? '');
+    await pasteChecked(data?.text ?? '');
   }
 
   void toggleCtrl() {

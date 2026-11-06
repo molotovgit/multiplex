@@ -54,6 +54,7 @@ class AppSettings {
     this.motion = MotionSpeed.normal,
     this.backdropPicks = const {},
     this.hideScreens = true,
+    this.confirmRiskyPaste = true,
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -104,6 +105,10 @@ class AppSettings {
   /// and the recent-apps preview.
   final bool hideScreens;
 
+  /// Show a paste of several lines, or with a command such as sudo or
+  /// rm -rf, before it goes to the shell.
+  final bool confirmRiskyPaste;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -133,6 +138,7 @@ class AppSettings {
     MotionSpeed? motion,
     Map<String, int>? backdropPicks,
     bool? hideScreens,
+    bool? confirmRiskyPaste,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -153,6 +159,7 @@ class AppSettings {
         motion: motion ?? this.motion,
         backdropPicks: backdropPicks ?? this.backdropPicks,
         hideScreens: hideScreens ?? this.hideScreens,
+        confirmRiskyPaste: confirmRiskyPaste ?? this.confirmRiskyPaste,
       );
 
   Map<String, dynamic> toJson() => {
@@ -174,6 +181,7 @@ class AppSettings {
         'motion': motion.name,
         'backdropPicks': backdropPicks,
         'hideScreens': hideScreens,
+        'confirmRiskyPaste': confirmRiskyPaste,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -201,6 +209,7 @@ class AppSettings {
             if (e.key is String && e.value is int) e.key as String: e.value as int,
       },
       hideScreens: Json.boolean(j, 'hideScreens', true),
+      confirmRiskyPaste: Json.boolean(j, 'confirmRiskyPaste', true),
     );
   }
 }

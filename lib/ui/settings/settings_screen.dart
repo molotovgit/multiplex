@@ -150,6 +150,13 @@ class _TerminalSection extends StatelessWidget {
           onChanged: (secs) => save(settings.copyWith(keepAliveSecs: secs)),
         ),
         SwitchListTile(
+          secondary: const Icon(Icons.content_paste_search),
+          title: const Text('Check pastes first'),
+          subtitle: const Text('Shows a paste of several lines, or with sudo, rm -rf and the like, before it runs'),
+          value: settings.confirmRiskyPaste,
+          onChanged: (on) => save(settings.copyWith(confirmRiskyPaste: on)),
+        ),
+        SwitchListTile(
           secondary: const Icon(Icons.light_mode_outlined),
           title: const Text('Keep the screen on'),
           subtitle: const Text('While a terminal is open'),
