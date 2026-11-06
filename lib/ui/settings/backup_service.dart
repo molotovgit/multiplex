@@ -81,8 +81,12 @@ class PickerBackupFiles implements BackupFiles {
 /// this too; checking here as well lets us say "not a backup" before
 /// asking for a password.
 abstract final class BackupFormat {
-  /// Backups start with the letters "MPB1".
-  static const magic = [0x56, 0x54, 0x42, 0x31];
+  /// Backups start with the letters "MPB1" (what the core writes).
+  static const magic = [0x4D, 0x50, 0x42, 0x31];
+
+  /// Backups from before the rename to Multiplex start with "VTB1"; they
+  /// are still let through here and the core decides.
+  static const oldMagic = [0x56, 0x54, 0x42, 0x31];
 
   /// Magic, three numbers for the key settings, salt, then the nonce.
   static const minBytes = 4 + 12 + 16 + 24;
@@ -94,10 +98,14 @@ abstract final class BackupFormat {
 
   static bool looksLikeBackup(List<int> bytes) {
     if (bytes.length < minBytes) return false;
-    for (var i = 0; i < magic.length; i++) {
-      if (bytes[i] != magic[i]) return false;
+    bool startsWith(List<int> sign) {
+      for (var i = 0; i < sign.length; i++) {
+        if (bytes[i] != sign[i]) return false;
+      }
+      return true;
     }
-    return true;
+
+    return startsWith(magic) || startsWith(oldMagic);
   }
 
   /// "multiplex-backup-2026-11-05.mpbackup", using the local date.

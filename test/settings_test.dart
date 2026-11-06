@@ -151,6 +151,10 @@ void main() {
       expect(BackupFormat.looksLikeBackup(utf8.encode('{"hosts": []}')), isFalse);
       expect(BackupFormat.looksLikeBackup([...BackupFormat.magic]), isFalse, reason: 'too short');
       expect(BackupFormat.looksLikeBackup([...BackupFormat.magic, ...List.filled(60, 0)]), isTrue);
+      // The letters the core really writes: a backup saved by the app
+      // must be recognised (the check once still expected the old name).
+      expect(BackupFormat.looksLikeBackup([...'MPB1'.codeUnits, ...List.filled(60, 0)]), isTrue);
+      expect(BackupFormat.looksLikeBackup([...'ZZZ1'.codeUnits, ...List.filled(60, 0)]), isFalse);
     });
 
     test('backup passwords need 8 characters and must match', () {
