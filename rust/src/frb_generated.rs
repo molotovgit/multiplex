@@ -3754,6 +3754,7 @@ impl SseDecode for crate::api::ssh_types::ConnectOptions {
         let mut var_keepaliveSecs = <u32>::sse_decode(deserializer);
         let mut var_connectTimeoutSecs = <u32>::sse_decode(deserializer);
         let mut var_jump = <Option<crate::api::ssh_types::JumpHost>>::sse_decode(deserializer);
+        let mut var_forwardAgent = <bool>::sse_decode(deserializer);
         return crate::api::ssh_types::ConnectOptions {
             host: var_host,
             port: var_port,
@@ -3763,6 +3764,7 @@ impl SseDecode for crate::api::ssh_types::ConnectOptions {
             keepalive_secs: var_keepaliveSecs,
             connect_timeout_secs: var_connectTimeoutSecs,
             jump: var_jump,
+            forward_agent: var_forwardAgent,
         };
     }
 }
@@ -4757,6 +4759,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::ssh_types::ConnectOptions {
             self.keepalive_secs.into_into_dart().into_dart(),
             self.connect_timeout_secs.into_into_dart().into_dart(),
             self.jump.into_into_dart().into_dart(),
+            self.forward_agent.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -5604,6 +5607,7 @@ impl SseEncode for crate::api::ssh_types::ConnectOptions {
         <u32>::sse_encode(self.keepalive_secs, serializer);
         <u32>::sse_encode(self.connect_timeout_secs, serializer);
         <Option<crate::api::ssh_types::JumpHost>>::sse_encode(self.jump, serializer);
+        <bool>::sse_encode(self.forward_agent, serializer);
     }
 }
 

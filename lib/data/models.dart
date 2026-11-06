@@ -44,6 +44,7 @@ class Host {
     this.jumpHostId,
     this.startupCommand,
     this.keepWithTmux = false,
+    this.forwardAgent = false,
     this.colorTag = 0,
     this.lastConnectedAt,
     this.askUnlock = false,
@@ -72,6 +73,10 @@ class Host {
   /// Run each terminal in a tmux session, so a reconnect lands on the
   /// same screen.
   final bool keepWithTmux;
+
+  /// Let git and ssh on the server use this host's key while connected
+  /// (agent forwarding, like `ssh -A`).
+  final bool forwardAgent;
 
   /// Index into the tag colours, 0 = none.
   final int colorTag;
@@ -107,6 +112,7 @@ class Host {
     String? Function()? jumpHostId,
     String? Function()? startupCommand,
     bool? keepWithTmux,
+    bool? forwardAgent,
     int? colorTag,
     DateTime? lastConnectedAt,
     bool? askUnlock,
@@ -126,6 +132,7 @@ class Host {
         jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
+        forwardAgent: forwardAgent ?? this.forwardAgent,
         colorTag: colorTag ?? this.colorTag,
         lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
         askUnlock: askUnlock ?? this.askUnlock,
@@ -146,6 +153,7 @@ class Host {
         'jumpHostId': jumpHostId,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
+        'forwardAgent': forwardAgent,
         'colorTag': colorTag,
         'lastConnectedAt': lastConnectedAt?.toIso8601String(),
         'askUnlock': askUnlock,
@@ -166,6 +174,7 @@ class Host {
         jumpHostId: Json.strOrNull(j, 'jumpHostId'),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
+        forwardAgent: Json.boolean(j, 'forwardAgent', false),
         colorTag: Json.integer(j, 'colorTag', 0),
         lastConnectedAt: Json.time(j, 'lastConnectedAt'),
         askUnlock: Json.boolean(j, 'askUnlock', false),

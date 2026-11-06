@@ -134,6 +134,10 @@ impl ShellSession {
             // Servers often refuse custom variables; that is not fatal.
             let _ = channel.set_env(false, var.name.clone(), var.value.clone()).await;
         }
+        if conn.forwards_agent() {
+            // Lets git and ssh in this shell use the phone's key.
+            let _ = channel.agent_forward(false).await;
+        }
         match options.command.as_deref().filter(|c| !c.trim().is_empty()) {
             Some(command) => channel.exec(true, command).await?,
             None => channel.request_shell(true).await?,

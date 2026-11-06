@@ -272,6 +272,9 @@ class AdvancedFields extends StatelessWidget {
     required this.startup,
     required this.tmux,
     required this.onTmux,
+    required this.forwardAgent,
+    required this.onForwardAgent,
+    required this.usesKey,
   });
 
   final List<Host> jumpHosts;
@@ -280,6 +283,11 @@ class AdvancedFields extends StatelessWidget {
   final TextEditingController startup;
   final bool tmux;
   final ValueChanged<bool> onTmux;
+  final bool forwardAgent;
+  final ValueChanged<bool> onForwardAgent;
+
+  /// Agent forwarding needs a key to forward.
+  final bool usesKey;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +311,17 @@ class AdvancedFields extends StatelessWidget {
           subtitle: const Text('Each terminal runs in tmux on the server, so after a reconnect you are back on the same screen'),
           value: tmux,
           onChanged: onTmux,
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Forward my key (agent forwarding)'),
+          subtitle: Text(
+            usesKey
+                ? 'git and ssh on the server can use your key. While you are connected, the server\'s admin could use it too.'
+                : 'Needs a key login: choose a key under Login first.',
+          ),
+          value: forwardAgent && usesKey,
+          onChanged: usesKey ? onForwardAgent : null,
         ),
         if (!tmux)
           TextFormField(

@@ -28,6 +28,9 @@ pub struct Logins {
     /// Two-factor login: after the password or key, also ask for this code
     /// through keyboard-interactive.
     pub one_time_code: Option<String>,
+    /// When a shell starts, try the client's agent even if it did not
+    /// offer one (a server that tries to grab the key).
+    pub probe_agent: bool,
 }
 
 /// A running in-process SSH server.
@@ -70,6 +73,7 @@ impl TestServer {
             keepalive_secs: 0,
             connect_timeout_secs: 10,
             jump: None,
+            forward_agent: false,
         }
     }
 }
@@ -82,7 +86,7 @@ impl server::Server for ServerFactory {
     type Handler = ClientConn;
 
     fn new_client(&mut self, _: Option<std::net::SocketAddr>) -> ClientConn {
-        ClientConn { logins: self.logins.clone(), shells: Default::default(), first_factor: false }
+        ClientConn { logins: self.logins.clone(), shells: Default::default(), first_factor: false, agent_offered: false }
     }
 }
 
@@ -94,6 +98,41 @@ pub struct ClientConn {
     shells: std::collections::HashSet<ChannelId>,
     /// Two-factor login: the password or key was right, the code is next.
     first_factor: bool,
+    /// The client asked for agent forwarding.
+    agent_offered: bool,
+}
+
+impl ClientConn {
+    /// Uses the client's forwarded agent like `git` would: lists the keys
+    /// and asks for a signature. Also tries to add a key, which must be
+    /// refused. Prints what happened in the shell.
+    fn probe_agent(channel: ChannelId, session: &mut Session) {
+        let handle = session.handle();
+        tokio::spawn(async move {
+            let text = match handle.channel_open_agent().await {
+                Err(_) => "agent: refused".to_owned(),
+                Ok(agent) => {
+                    let mut client = russh::keys::agent::client::AgentClient::connect(agent.into_stream());
+                    match client.request_identities().await {
+                        Err(e) => format!("agent: error {e}"),
+                        Ok(ids) => {
+                            let mut text = format!("agent: {} key", ids.len());
+                            if let Some(russh::keys::agent::AgentIdentity::PublicKey { key, .. }) = ids.first() {
+                                let fingerprint = key.fingerprint(russh::keys::HashAlg::Sha256);
+                                let signed = client.sign_request_signature(key, None, b"proof").await.is_ok();
+                                text.push_str(&format!(" {fingerprint} signed={signed}"));
+                            }
+                            let extra = PrivateKey::random(&mut rand::rng(), Algorithm::Ed25519).unwrap();
+                            let added = client.add_identity(&extra, &[]).await.is_ok();
+                            text.push_str(&format!(" add={added}"));
+                            text
+                        }
+                    }
+                }
+            };
+            let _ = handle.data(channel, format!("{text}\r\n").into_bytes()).await;
+        });
+    }
 }
 
 impl server::Handler for ClientConn {
@@ -166,7 +205,15 @@ impl server::Handler for ClientConn {
         session.channel_success(channel)?;
         self.shells.insert(channel);
         session.data(channel, b"welcome\r\n$ ".to_vec())?;
+        if self.agent_offered || self.logins.probe_agent {
+            Self::probe_agent(channel, session);
+        }
         Ok(())
+    }
+
+    async fn agent_request(&mut self, _channel: ChannelId, _session: &mut Session) -> Result<bool, Self::Error> {
+        self.agent_offered = true;
+        Ok(true)
     }
 
     /// The "shell" echoes what it gets. Ctrl+D (byte 4) ends it with exit 0.

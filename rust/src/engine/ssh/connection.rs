@@ -7,10 +7,12 @@ use std::time::Duration;
 use russh::client::{self, Handle};
 use russh::{ChannelMsg, Disconnect, SshId};
 
+use super::agent::ForwardedAgent;
 use super::auth::Authenticator;
 use super::handler::ClientHandler;
 use super::host_key::{HostKeyGuard, HostKeyProblem};
 use crate::api::ssh_types::{ConnectError, ConnectOptions, Credentials, ExecOutput, SessionInfo};
+use crate::engine::keys::KeyFactory;
 use crate::engine::tunnel::remote::RemoteForwardRouter;
 
 /// An open, logged-in SSH connection.
@@ -20,9 +22,15 @@ pub struct Connection {
     jump: Option<Handle<ClientHandler>>,
     forwards: Arc<RemoteForwardRouter>,
     info: SessionInfo,
+    forward_agent: bool,
 }
 
 impl Connection {
+    /// Programs on the server may use our key (agent forwarding is on).
+    pub fn forwards_agent(&self) -> bool {
+        self.forward_agent
+    }
+
     pub fn handle(&self) -> &Handle<ClientHandler> {
         &self.handle
     }
@@ -94,6 +102,8 @@ struct Hop<'a> {
     username: &'a str,
     credentials: &'a Credentials,
     trusted: &'a [String],
+    /// The agent this hop may use, if any.
+    agent: Option<Arc<ForwardedAgent>>,
 }
 
 /// A logged-in hop plus what we learned while connecting.
@@ -119,12 +129,15 @@ impl Connector {
     async fn connect_inner(options: ConnectOptions) -> Result<Connection, ConnectError> {
         let config = Arc::new(Self::config(options.keepalive_secs));
         let forwards = Arc::new(RemoteForwardRouter::default());
+        let agent = Self::agent_for(&options).await?;
+        let forward_agent = agent.is_some();
         let target = Hop {
             host: &options.host,
             port: options.port,
             username: &options.username,
             credentials: &options.credentials,
             trusted: &options.trusted_host_keys,
+            agent,
         };
 
         let (opened, jump, via) = match &options.jump {
@@ -136,6 +149,7 @@ impl Connector {
                     username: &j.username,
                     credentials: &j.credentials,
                     trusted: &j.trusted_host_keys,
+                    agent: None,
                 };
                 // The jump host never forwards ports for us, so it gets its
                 // own empty router.
@@ -157,14 +171,26 @@ impl Connector {
                 public_key: String::new(),
             }),
         };
-        Ok(Connection { handle: opened.handle, jump, forwards, info })
+        Ok(Connection { handle: opened.handle, jump, forwards, info, forward_agent })
+    }
+
+    /// The agent for the target, when forwarding is on and it logs in
+    /// with a key. (A key that does not open fails the login anyway.)
+    async fn agent_for(options: &ConnectOptions) -> Result<Option<Arc<ForwardedAgent>>, ConnectError> {
+        let key_text = options.credentials.private_key.as_deref().filter(|k| !k.trim().is_empty());
+        let (true, Some(text)) = (options.forward_agent, key_text) else { return Ok(None) };
+        let Ok(key) = KeyFactory::decode_shared(text, options.credentials.key_passphrase.as_deref()) else { return Ok(None) };
+        ForwardedAgent::start(&key)
+            .await
+            .map(Some)
+            .map_err(|e| ConnectError::Protocol { message: format!("could not start the key agent: {e}") })
     }
 
     /// TCP connection straight to the server, then login.
     async fn open_direct(config: Arc<client::Config>, hop: &Hop<'_>, forwards: Arc<RemoteForwardRouter>) -> Result<OpenHop, ConnectError> {
         let guard = Arc::new(HostKeyGuard::new(hop.trusted));
         let banner = Arc::new(Mutex::new(None));
-        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone());
+        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
         let handle = client::connect(config, (hop.host, hop.port), handler)
             .await
             .map_err(|err| Self::classify(err, hop, &guard))?;
@@ -188,7 +214,7 @@ impl Connector {
             })?;
         let guard = Arc::new(HostKeyGuard::new(hop.trusted));
         let banner = Arc::new(Mutex::new(None));
-        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone());
+        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
         let handle = client::connect_stream(config, channel.into_stream(), handler)
             .await
             .map_err(|err| Self::classify(err, hop, &guard))?;

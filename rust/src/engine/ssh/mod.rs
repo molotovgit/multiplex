@@ -1,5 +1,6 @@
 //! SSH connections: host key checks, login and jump hosts.
 
+pub mod agent;
 pub mod auth;
 pub mod connection;
 pub mod handler;

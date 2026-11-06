@@ -42,6 +42,7 @@ fn live_options() -> Option<ConnectOptions> {
         keepalive_secs: 15,
         connect_timeout_secs: 15,
         jump: None,
+        forward_agent: false,
     })
 }
 

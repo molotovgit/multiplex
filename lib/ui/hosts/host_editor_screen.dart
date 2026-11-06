@@ -38,6 +38,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
   late bool _askUnlock = _original.askUnlock;
   late bool _favourite = _original.favourite;
   late bool _tmux = _original.keepWithTmux;
+  late bool _agent = _original.forwardAgent;
   bool _keyError = false;
 
   bool get _isNew => widget.host == null;
@@ -62,6 +63,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
     jumpHostId: () => _jumpId,
     startupCommand: () => _startup.text.trim().isEmpty ? null : _startup.text.trim(),
     keepWithTmux: _tmux,
+    forwardAgent: _auth != AuthMode.password && _agent,
     colorTag: _tag,
     askUnlock: _askUnlock,
     favourite: _favourite,
@@ -174,6 +176,9 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
                       startup: _startup,
                       tmux: _tmux,
                       onTmux: (on) => setState(() => _tmux = on),
+                      forwardAgent: _agent,
+                      onForwardAgent: (on) => setState(() => _agent = on),
+                      usesKey: _auth != AuthMode.password,
                     ),
                     const SizedBox(height: 24),
                     FilledButton(onPressed: _save, child: Text(_isNew ? 'Save host' : 'Save changes')),

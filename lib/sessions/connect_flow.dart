@@ -173,6 +173,8 @@ class ConnectFlow {
         trustedHostKeys: _store.trustedKeysFor(host.address, host.port),
         keepaliveSecs: _store.settings.keepAliveSecs,
         connectTimeoutSecs: _timeoutSecs,
+        // Only a key can be forwarded; a password login has none.
+        forwardAgent: host.forwardAgent && host.usesKey,
         jump: jump == null
             ? null
             : JumpHost(

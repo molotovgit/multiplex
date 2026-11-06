@@ -3047,8 +3047,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ConnectOptions dco_decode_connect_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 8)
-      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return ConnectOptions(
       host: dco_decode_String(arr[0]),
       port: dco_decode_u_16(arr[1]),
@@ -3058,6 +3058,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       keepaliveSecs: dco_decode_u_32(arr[5]),
       connectTimeoutSecs: dco_decode_u_32(arr[6]),
       jump: dco_decode_opt_box_autoadd_jump_host(arr[7]),
+      forwardAgent: dco_decode_bool(arr[8]),
     );
   }
 
@@ -3889,6 +3890,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_keepaliveSecs = sse_decode_u_32(deserializer);
     var var_connectTimeoutSecs = sse_decode_u_32(deserializer);
     var var_jump = sse_decode_opt_box_autoadd_jump_host(deserializer);
+    var var_forwardAgent = sse_decode_bool(deserializer);
     return ConnectOptions(
       host: var_host,
       port: var_port,
@@ -3898,6 +3900,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       keepaliveSecs: var_keepaliveSecs,
       connectTimeoutSecs: var_connectTimeoutSecs,
       jump: var_jump,
+      forwardAgent: var_forwardAgent,
     );
   }
 
@@ -4869,6 +4872,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.keepaliveSecs, serializer);
     sse_encode_u_32(self.connectTimeoutSecs, serializer);
     sse_encode_opt_box_autoadd_jump_host(self.jump, serializer);
+    sse_encode_bool(self.forwardAgent, serializer);
   }
 
   @protected

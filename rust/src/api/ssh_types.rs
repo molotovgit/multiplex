@@ -16,6 +16,9 @@ pub struct ConnectOptions {
     pub connect_timeout_secs: u32,
     /// Optional server to hop through first (like `ssh -J`).
     pub jump: Option<JumpHost>,
+    /// Let programs on the server use this connection's private key
+    /// (like `ssh -A`). Only the target server, never the jump host.
+    pub forward_agent: bool,
 }
 
 /// What Multiplex may try when logging in. Everything that is set is

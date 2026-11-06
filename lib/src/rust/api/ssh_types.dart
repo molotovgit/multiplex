@@ -81,6 +81,10 @@ class ConnectOptions {
   /// Optional server to hop through first (like `ssh -J`).
   final JumpHost? jump;
 
+  /// Let programs on the server use this connection's private key
+  /// (like `ssh -A`). Only the target server, never the jump host.
+  final bool forwardAgent;
+
   const ConnectOptions({
     required this.host,
     required this.port,
@@ -90,6 +94,7 @@ class ConnectOptions {
     required this.keepaliveSecs,
     required this.connectTimeoutSecs,
     this.jump,
+    required this.forwardAgent,
   });
 
   @override
@@ -101,7 +106,8 @@ class ConnectOptions {
       trustedHostKeys.hashCode ^
       keepaliveSecs.hashCode ^
       connectTimeoutSecs.hashCode ^
-      jump.hashCode;
+      jump.hashCode ^
+      forwardAgent.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -115,7 +121,8 @@ class ConnectOptions {
           trustedHostKeys == other.trustedHostKeys &&
           keepaliveSecs == other.keepaliveSecs &&
           connectTimeoutSecs == other.connectTimeoutSecs &&
-          jump == other.jump;
+          jump == other.jump &&
+          forwardAgent == other.forwardAgent;
 }
 
 /// What Multiplex may try when logging in. Everything that is set is
