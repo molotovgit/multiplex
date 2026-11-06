@@ -1,7 +1,9 @@
+import '../app/lock_gate.dart';
 import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
 import '../src/rust/api/ssh_types.dart';
+import 'owner_check.dart';
 
 /// A secret the user typed, and whether to keep it in the vault.
 class SecretAnswer {
@@ -26,6 +28,9 @@ abstract interface class ConnectPrompter {
   Future<SecretAnswer?> askPassphrase(StoredKey key, {required bool wasWrong});
 }
 
+/// Opens the SSH connection; tests pass a stand-in.
+typedef SshConnector = Future<SshSession> Function(ConnectOptions options);
+
 /// The user chose not to continue.
 class ConnectCancelled implements Exception {
   const ConnectCancelled();
@@ -45,10 +50,14 @@ class ConnectFailure implements Exception {
 /// Turns a saved [Host] into a logged-in [SshSession], asking the user
 /// whatever is needed on the way (trust this server? password?).
 class ConnectFlow {
-  ConnectFlow(this._store, this._prompter);
+  ConnectFlow(this._store, this._prompter, {DeviceUnlock unlock = const DeviceUnlock(), SshConnector? connector})
+      : _ownerCheck = OwnerCheck(unlock),
+        _connector = connector ?? ((options) => SshSession.connect(options: options));
 
   final VaultStore _store;
   final ConnectPrompter _prompter;
+  final OwnerCheck _ownerCheck;
+  final SshConnector _connector;
 
   /// Each question can lead to one more attempt; this stops endless loops.
   static const _maxAttempts = 8;
@@ -56,6 +65,7 @@ class ConnectFlow {
 
   Future<SshSession> connect(Host host) async {
     final jump = _store.host(host.jumpHostId);
+    if (OwnerCheck.needed(host, jump)) await _ownerCheck.require(host);
     final secrets = _Secrets(
       password: host.password,
       passphrase: _store.key(host.keyId)?.passphrase,
@@ -65,7 +75,7 @@ class ConnectFlow {
 
     for (var attempt = 0; attempt < _maxAttempts; attempt++) {
       try {
-        return await SshSession.connect(options: _options(host, jump, secrets));
+        return await _connector(_options(host, jump, secrets));
       } on ConnectError catch (error) {
         await _handle(error, host, jump, secrets);
       }

@@ -45,6 +45,7 @@ class Host {
     this.startupCommand,
     this.colorTag = 0,
     this.lastConnectedAt,
+    this.askUnlock = false,
   });
 
   final String id;
@@ -69,6 +70,10 @@ class Host {
   final int colorTag;
   final DateTime? lastConnectedAt;
 
+  /// Ask for fingerprint, face or PIN before every new connection, even
+  /// when the app itself is unlocked.
+  final bool askUnlock;
+
   /// "user@address:port", leaving out the default port.
   String get target => '${username.isEmpty ? '' : '$username@'}$address${port == 22 ? '' : ':$port'}';
 
@@ -90,6 +95,7 @@ class Host {
     String? Function()? startupCommand,
     int? colorTag,
     DateTime? lastConnectedAt,
+    bool? askUnlock,
   }) =>
       Host(
         id: id,
@@ -105,6 +111,7 @@ class Host {
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         colorTag: colorTag ?? this.colorTag,
         lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
+        askUnlock: askUnlock ?? this.askUnlock,
       );
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +128,7 @@ class Host {
         'startupCommand': startupCommand,
         'colorTag': colorTag,
         'lastConnectedAt': lastConnectedAt?.toIso8601String(),
+        'askUnlock': askUnlock,
       };
 
   factory Host.fromJson(Map<String, dynamic> j) => Host(
@@ -137,6 +145,7 @@ class Host {
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         colorTag: Json.integer(j, 'colorTag', 0),
         lastConnectedAt: Json.time(j, 'lastConnectedAt'),
+        askUnlock: Json.boolean(j, 'askUnlock', false),
       );
 }
 

@@ -13,7 +13,11 @@ class DeviceUnlock {
 
   /// True when the owner confirmed. Throws [LocalAuthException] when the
   /// prompt was cancelled or could not be shown.
-  Future<bool> confirm() => _auth.authenticate(localizedReason: 'Unlock Multiplex');
+  Future<bool> confirm() => confirmTo('Unlock Multiplex');
+
+  /// The same check, with [reason] shown in the prompt (for example
+  /// before connecting to a host marked sensitive).
+  Future<bool> confirmTo(String reason) => _auth.authenticate(localizedReason: reason);
 
   /// Whether the phone has any lock (biometrics or a PIN) to confirm with.
   Future<bool> hasAnyLock() => _auth.isDeviceSupported();

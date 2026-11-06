@@ -35,6 +35,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
   late String? _groupId = _original.groupId;
   late String? _jumpId = _original.jumpHostId;
   late int _tag = _original.colorTag;
+  late bool _askUnlock = _original.askUnlock;
   bool _keyError = false;
 
   bool get _isNew => widget.host == null;
@@ -59,6 +60,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
     jumpHostId: () => _jumpId,
     startupCommand: () => _startup.text.trim().isEmpty ? null : _startup.text.trim(),
     colorTag: _tag,
+    askUnlock: _askUnlock,
   );
 
   bool get _changed => _current().toJson().toString() != _original.toJson().toString();
@@ -135,6 +137,14 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
                         _keyError = false;
                       }),
                       onNewKey: _newKey,
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: const Icon(Icons.fingerprint),
+                      title: const Text('Ask for fingerprint before connecting'),
+                      subtitle: const Text('Every new connection to this host needs your fingerprint, face or PIN, even when the app is unlocked'),
+                      value: _askUnlock,
+                      onChanged: (on) => setState(() => _askUnlock = on),
                     ),
                     const SectionHeader('Organise'),
                     OrganiseFields(
