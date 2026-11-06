@@ -56,6 +56,21 @@ class FrameScreenText implements ScreenText {
   bool rowIsFull(int row) => RowCells.lastUsedCell(frame.lines[row]) >= frame.cols;
 }
 
+/// Spots a password prompt at the cursor ("Password:", "[sudo] password
+/// for alice:", "Enter passphrase for key:"). Typing there never echoes,
+/// which is how the command capture keeps it out of the history; this
+/// sees the prompt itself, before any key, so a recording can stop.
+abstract final class PasswordPrompt {
+  static final _prompt = RegExp(r'(password|passphrase|passcode|\bpin\b)[^:\n]{0,40}:\s*$', caseSensitive: false);
+
+  static bool at(ScreenText screen) {
+    if (screen.alternateScreen || screen.scrolledBack || screen.cursorCol == 0) return false;
+    final row = screen.cursorRow;
+    final from = (screen.cursorCol - 80).clamp(0, screen.cursorCol);
+    return _prompt.hasMatch(screen.between(row, from, row, screen.cursorCol - 1));
+  }
+}
+
 /// Measures rows of a frame.
 abstract final class RowCells {
   /// The column just after the last non-blank character of a row.

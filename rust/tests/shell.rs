@@ -149,3 +149,42 @@ async fn passes_on_shell_integration_marks() {
     .await;
     assert_eq!(seen, vec![ShellEvent::CommandStarted, ShellEvent::CommandFinished { exit_code: Some(7) }]);
 }
+
+#[tokio::test]
+async fn records_the_output_to_an_asciinema_file() {
+    let (shell, mut events) = open_shell(options()).await;
+    wait_for_text(&shell, &mut events, "welcome").await;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("rec.cast");
+    shell.start_recording(&path, "test").unwrap();
+    assert!(shell.is_recording());
+    shell.send_text("visible", KeyModifiers::default());
+    wait_for_text(&shell, &mut events, "visible").await;
+    shell.set_recording_paused(true);
+    shell.send_text("hidden", KeyModifiers::default());
+    wait_for_text(&shell, &mut events, "hidden").await;
+    shell.set_recording_paused(false);
+    shell.resize(50, 12);
+    wait_for_text(&shell, &mut events, "[resized 50x12]").await;
+    assert!(shell.stop_recording().unwrap());
+    assert!(!shell.stop_recording().unwrap());
+
+    let cast = std::fs::read_to_string(&path).unwrap();
+    assert!(cast.starts_with("{\"version\": 2, \"width\": 40, \"height\": 10,"), "{cast}");
+    assert!(cast.contains("\"o\", \"visible\"]"), "{cast}");
+    assert!(cast.contains("\"r\", \"50x12\"]"), "{cast}");
+    assert!(!cast.contains("hidden"), "{cast}");
+}
+
+#[tokio::test]
+async fn a_player_shows_fed_output_without_a_server() {
+    let (tx, mut events) = mpsc::unbounded_channel();
+    let shell = ShellSession::offline(20, 4, TerminalPalette::default(), Arc::new(move |e| tx.send(e).is_ok()));
+    shell.feed("\x1b[1mhello\x1b[0m\r\nworld".as_bytes());
+    assert_eq!(events.recv().await, Some(ShellEvent::Changed));
+    assert_eq!(shell.visible_text(), "hello\nworld");
+    // Typing goes nowhere and does not crash.
+    shell.send_text("x", KeyModifiers::default());
+    shell.reset_screen();
+    assert_eq!(shell.visible_text(), "");
+}

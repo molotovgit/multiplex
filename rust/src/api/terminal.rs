@@ -25,6 +25,49 @@ impl RemoteShell {
         Self { inner: Arc::new(inner), events }
     }
 
+    /// A terminal with no server, for playing back a recording: show
+    /// output with [`RemoteShell::feed`].
+    #[frb(sync)]
+    pub fn player(cols: u16, rows: u16, palette: TerminalPalette) -> RemoteShell {
+        let relay = Arc::new(EventRelay::<ShellEvent>::new());
+        Self::new(ShellSession::offline(cols, rows, palette, relay.clone()), relay)
+    }
+
+    /// Shows text as if the server had sent it (playback).
+    #[frb(sync)]
+    pub fn feed(&self, text: String) {
+        self.inner.feed(text.as_bytes());
+    }
+
+    /// Empties a playback screen, to play from the start again.
+    #[frb(sync)]
+    pub fn reset_screen(&self) {
+        self.inner.reset_screen();
+    }
+
+    /// Starts recording the output to an asciinema v2 file at `path`.
+    #[frb(sync)]
+    pub fn start_recording(&self, path: String, title: String) -> anyhow::Result<()> {
+        Ok(self.inner.start_recording(std::path::Path::new(&path), &title)?)
+    }
+
+    /// Ends the recording. False when none was running.
+    #[frb(sync)]
+    pub fn stop_recording(&self) -> anyhow::Result<bool> {
+        Ok(self.inner.stop_recording()?)
+    }
+
+    #[frb(sync)]
+    pub fn is_recording(&self) -> bool {
+        self.inner.is_recording()
+    }
+
+    /// Leaves output out of the recording while a password prompt shows.
+    #[frb(sync)]
+    pub fn set_recording_paused(&self, paused: bool) {
+        self.inner.set_recording_paused(paused);
+    }
+
     /// The engine shell, for other API objects (such as a new connection
     /// taking this shell over).
     pub(crate) fn engine(&self) -> Arc<ShellSession> {

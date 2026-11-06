@@ -9,6 +9,7 @@ import '../files/files_screen.dart';
 import '../terminal/terminal_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'broadcast_sheet.dart';
+import 'recordings_screen.dart';
 
 /// Everything that is open right now: connections with their terminals
 /// and tunnels.
@@ -22,6 +23,11 @@ class SessionsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Sessions'),
         actions: [
+          IconButton(
+            tooltip: 'Recordings',
+            icon: const Icon(Icons.video_library_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const RecordingsScreen())),
+          ),
           ListenableBuilder(
             listenable: sessions,
             builder: (context, _) {

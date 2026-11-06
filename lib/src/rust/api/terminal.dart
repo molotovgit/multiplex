@@ -24,12 +24,32 @@ abstract class RemoteShell implements RustOpaqueInterface {
   /// Listen once per shell.
   Stream<ShellEvent> events();
 
+  /// Shows text as if the server had sent it (playback).
+  void feed({required String text});
+
   /// The screen as it is now, ready to paint.
   TerminalFrame frame();
 
   bool isClosed();
 
+  bool isRecording();
+
   void paste({required String text});
+
+  /// A terminal with no server, for playing back a recording: show
+  /// output with [`RemoteShell::feed`].
+  static RemoteShell player({
+    required int cols,
+    required int rows,
+    required TerminalPalette palette,
+  }) => RustLib.instance.api.crateApiTerminalRemoteShellPlayer(
+    cols: cols,
+    rows: rows,
+    palette: palette,
+  );
+
+  /// Empties a playback screen, to play from the start again.
+  void resetScreen();
 
   void resize({required int cols, required int rows});
 
@@ -44,6 +64,15 @@ abstract class RemoteShell implements RustOpaqueInterface {
   void sendText({required String text, required KeyModifiers mods});
 
   void setPalette({required TerminalPalette palette});
+
+  /// Leaves output out of the recording while a password prompt shows.
+  void setRecordingPaused({required bool paused});
+
+  /// Starts recording the output to an asciinema v2 file at `path`.
+  void startRecording({required String path, required String title});
+
+  /// Ends the recording. False when none was running.
+  bool stopRecording();
 
   /// Text between two visible cells (inclusive), for copying.
   String textBetween({

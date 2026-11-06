@@ -26,7 +26,10 @@ use crate::api::terminal_types::{
 use crate::engine::events::SharedSink;
 use crate::engine::runtime::AsyncRuntime;
 use crate::engine::ssh::Connection;
+use crate::engine::terminal::cast::CastRecorder;
 use crate::engine::terminal::{ColorResolver, FrameBuilder, InputModes, KeyEncoder, ShellMark, TerminalEmulator};
+
+mod playback;
 
 /// Work for the writer task.
 enum Outgoing {
@@ -51,6 +54,8 @@ struct Shared {
     /// Counts the channels this shell has had. The loops of an older
     /// channel stop quietly once a newer one took over.
     generation: AtomicU64,
+    /// Set while the output is being recorded to a file.
+    recorder: Mutex<Option<CastRecorder>>,
 }
 
 impl Shared {
@@ -87,6 +92,7 @@ impl ShellSession {
             closed: AtomicBool::new(false),
             events,
             generation: AtomicU64::new(0),
+            recorder: Mutex::new(None),
         });
         let outgoing = Self::start_channel(conn, &options, &shared).await?;
         Ok(Self { outgoing: Mutex::new(outgoing), shared })
@@ -179,6 +185,7 @@ impl ShellSession {
             }
             screen.emulator.resize(rows, cols);
         }
+        self.shared.record(|r| r.resize(cols, rows));
         self.queue(Outgoing::Resize { cols, rows });
     }
 
@@ -319,6 +326,7 @@ impl ShellSession {
             if !current(&shared) {
                 break;
             }
+            shared.record(|r| r.output(&data));
             let signals = shared.screen().emulator.process(&data);
             if !signals.replies.is_empty() {
                 let _ = replies.send(Outgoing::Bytes(signals.replies));

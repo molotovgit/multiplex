@@ -1,5 +1,6 @@
 //! Native terminal emulation: screen state, colours, frames and keys.
 
+pub mod cast;
 pub mod emulator;
 pub mod frame;
 pub mod keys;

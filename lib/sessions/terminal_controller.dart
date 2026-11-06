@@ -25,6 +25,7 @@ class TerminalController extends ChangeNotifier {
     this.onConnectionLost,
     this.onCommandDone,
     this.onInput,
+    this.fixedSize = false,
     // The title is private and changes later, so it cannot be a named "this." parameter.
     // ignore: prefer_initializing_formals
   }) : _title = title {
@@ -58,6 +59,9 @@ class TerminalController extends ChangeNotifier {
   /// Told every piece of input sent to this shell, as a function that
   /// sends it to a shell, so broadcast mode can send it to others too.
   final void Function(TerminalController from, void Function(RemoteShell shell) send)? onInput;
+
+  /// Keeps the size the shell has (a recording plays at its own size).
+  final bool fixedSize;
 
   /// How many screens show this terminal right now.
   int _views = 0;
@@ -102,6 +106,36 @@ class TerminalController extends ChangeNotifier {
   bool get ctrlLatched => _ctrl;
   bool get altLatched => _alt;
 
+  /// The output is being recorded to a file.
+  bool get recording => _recording;
+  bool _recording = false;
+  bool _recordingPaused = false;
+
+  /// Starts recording the output to an asciinema file at [path].
+  void startRecording(String path) {
+    shell.startRecording(path: path, title: _title);
+    _recording = true;
+    _recordingPaused = false;
+    notifyListeners();
+  }
+
+  /// Ends the recording; the file is complete after this.
+  void stopRecording() {
+    if (!_recording) return;
+    _recording = false;
+    shell.stopRecording();
+    notifyListeners();
+  }
+
+  /// Never records while a password prompt is on screen.
+  void _guardRecording(ScreenText screen) {
+    if (!_recording) return;
+    final prompt = PasswordPrompt.at(screen);
+    if (prompt == _recordingPaused) return;
+    _recordingPaused = prompt;
+    shell.setRecordingPaused(paused: prompt);
+  }
+
   /// What the user has typed on the current command line so far, read
   /// from the screen. Empty when no line is being typed.
   String get typedLine => _capture.typed;
@@ -115,6 +149,7 @@ class TerminalController extends ChangeNotifier {
     final screen = FrameScreenText(_frame!, shell);
     _capture.onFrame(screen);
     _timer.onFrame(screen);
+    _guardRecording(screen);
     notifyListeners();
   }
 
@@ -201,7 +236,9 @@ class TerminalController extends ChangeNotifier {
 
   // View.
 
-  void resize(int cols, int rows) => shell.resize(cols: cols, rows: rows);
+  void resize(int cols, int rows) {
+    if (!fixedSize) shell.resize(cols: cols, rows: rows);
+  }
 
   /// Scroll by whole lines (positive = back in history).
   void scroll(int lines, int row, int col) {
@@ -255,6 +292,7 @@ class TerminalController extends ChangeNotifier {
 
   @override
   void dispose() {
+    stopRecording();
     _capture.flush();
     _events.cancel();
     if (!ended) shell.close();
@@ -312,6 +350,7 @@ class TerminalController extends ChangeNotifier {
 
   void _end(String reason) {
     if (ended) return;
+    stopRecording();
     _reconnectNote = null;
     _endReason = reason;
     pull();

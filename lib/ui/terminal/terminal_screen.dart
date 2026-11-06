@@ -34,6 +34,7 @@ import 'split_controller.dart';
 import 'split_panes.dart';
 import 'split_picker.dart';
 import 'reconnect_banner.dart';
+import 'recording_actions.dart';
 import 'terminal_tab_strip.dart';
 import 'terminal_view.dart';
 
@@ -288,6 +289,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 icon: Icon(_split.isOpen ? Icons.crop_square : Icons.vertical_split_outlined),
                 onPressed: _toggleSplit,
               ),
+            if (_terminal.recording) RecordingButton(onStop: () => RecordingActions.toggle(context, _terminal)),
             IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -303,6 +305,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
               onBigger: () => _changeFontSize(1),
               onSmaller: () => _changeFontSize(-1),
               onClearHistory: _terminal.shell.clearHistory,
+              recording: _terminal.recording,
+              onRecord: () => RecordingActions.toggle(context, _terminal),
               onSwitchTheme: () => ThemeSwitcherSheet.show(context),
               onNextBackground: AppScope.store(context).activeTheme.backgrounds.length > 1 ? () => ThemeActions(context).nextBackground() : null,
               onClose: _closeTerminal,
@@ -383,6 +387,8 @@ class _TerminalMenu extends StatelessWidget {
     required this.onBigger,
     required this.onSmaller,
     required this.onClearHistory,
+    required this.recording,
+    required this.onRecord,
     required this.onSwitchTheme,
     required this.onNextBackground,
     required this.onClose,
@@ -390,6 +396,8 @@ class _TerminalMenu extends StatelessWidget {
   });
 
   final VoidCallback onNewTerminal, onTunnels, onCommandHistory, onPaste, onCopyScreen, onBigger, onSmaller, onClearHistory, onSwitchTheme, onClose, onDisconnect;
+  final VoidCallback onRecord;
+  final bool recording;
 
   /// Null when the theme has fewer than two pictures to move between.
   final VoidCallback? onNextBackground;
@@ -434,6 +442,13 @@ class _TerminalMenu extends StatelessWidget {
         PopupMenuItem(
           value: onClearHistory,
           child: const ListTile(leading: Icon(Icons.clear_all), title: Text('Clear scrollback')),
+        ),
+        PopupMenuItem(
+          value: onRecord,
+          child: ListTile(
+            leading: Icon(recording ? Icons.stop_circle_outlined : Icons.fiber_manual_record_outlined),
+            title: Text(recording ? 'Stop recording' : 'Record'),
+          ),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
