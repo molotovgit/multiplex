@@ -29,6 +29,9 @@ import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import '../common/collapsible.dart';
 import 'key_bar.dart';
+import 'split_controller.dart';
+import 'split_panes.dart';
+import 'split_picker.dart';
 import 'terminal_tab_strip.dart';
 import 'terminal_view.dart';
 
@@ -88,8 +91,15 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   TerminalController get _terminal => widget.controller;
 
+  /// A second terminal next to this one (landscape and wide screens).
+  late final _split = SplitController(primary: widget.controller, primaryFocus: _focus);
+
+  /// The terminal that typing, snippets and picked commands go to: the
+  /// focused pane.
+  TerminalController get _typing => _split.typing(shown: SplitLayout.of(context));
+
   /// Where picked recent commands go.
-  late final _commands = TerminalCommandTarget(widget.controller);
+  TerminalCommandTarget get _commands => _split.commands(shown: SplitLayout.of(context));
 
   /// The tab strip shows for a moment when the screen opens, then folds
   /// away so the terminal has the room; a tap on the title brings it back.
@@ -129,12 +139,29 @@ class _TerminalScreenState extends State<TerminalScreen> {
     _terminal.onBell = null;
     _terminal.onRemoteCopy = null;
     if (_keepAwake) ScreenAwake.release();
+    _split.dispose();
     _focus.dispose();
     super.dispose();
   }
 
   void _keepFocus() {
-    if (!_focus.hasFocus) _focus.requestFocus();
+    final focus = _split.focusNode(shown: SplitLayout.of(context));
+    if (!focus.hasFocus) focus.requestFocus();
+  }
+
+  /// Picks a terminal for the second pane, or goes back to one pane.
+  Future<void> _toggleSplit() async {
+    if (_split.isOpen) {
+      _split.close();
+      return;
+    }
+    final choice = await SplitPicker.pick(context, current: _terminal);
+    if (choice == null || !mounted) return;
+    try {
+      _split.open(await SplitPicker.resolve(context, choice));
+    } catch (e) {
+      if (mounted) Toast.show(context, 'Could not open a terminal: $e');
+    }
   }
 
   Future<void> _pickSnippet() async {
@@ -142,8 +169,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (snippet == null || !mounted) return;
     final command = await SnippetBlanks.fill(context, snippet);
     if (command == null) return;
-    _terminal.paste(command);
-    if (snippet.runImmediately) _terminal.key(TerminalKey.enter);
+    _typing.paste(command);
+    if (snippet.runImmediately) _typing.key(TerminalKey.enter);
     _keepFocus();
   }
 
@@ -223,7 +250,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final builtIn = KeyboardSettings.of(AppScope.watch(context)).enabled && !_useSystem;
     final tabsByStyle = AppStyleTheme.of(context).style.terminal.showTabs;
     return PrivateScreen(child: ListenableBuilder(
-      listenable: Listenable.merge([_terminal, AppScope.sessions(context)]),
+      listenable: Listenable.merge([_terminal, AppScope.sessions(context), _split]),
       builder: (context, _) {
         // A theme can hide the tabs, but never once there are two terminals
         // to switch between.
@@ -251,6 +278,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
               IconButton(tooltip: 'Built-in keyboard', icon: const AppIcon(AppIcons.keyboard), onPressed: _useBuiltInKeyboard),
             // While the tab strip is away its "+" sits here.
             if (!(showTabs && _tabsOpen)) IconButton(tooltip: 'New terminal', icon: const Icon(Icons.add), onPressed: () => TerminalScreen.openNew(context, widget.session)),
+            if (SplitLayout.of(context))
+              IconButton(
+                tooltip: _split.isOpen ? 'Back to one terminal' : 'Split: two terminals side by side',
+                icon: Icon(_split.isOpen ? Icons.crop_square : Icons.vertical_split_outlined),
+                onPressed: _toggleSplit,
+              ),
             IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -261,7 +294,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
               onNewTerminal: () => TerminalScreen.openNew(context, widget.session),
               onTunnels: () => _openPage(TunnelsScreen(host: widget.session.host)),
               onCommandHistory: _openHistory,
-              onPaste: _terminal.pasteClipboard,
+              onPaste: () => _typing.pasteClipboard(),
               onCopyScreen: () => Toast.copy(context, _terminal.shell.visibleText(), what: 'Screen text copied'),
               onBigger: () => _changeFontSize(1),
               onSmaller: () => _changeFontSize(-1),
@@ -287,20 +320,25 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
               ),
             Expanded(
-              child: TerminalView(
-                controller: _terminal,
-                focusNode: _focus,
-                systemKeyboard: !builtIn,
-                onWantsKeyboard: () {
-                  if (_keyboardHidden) setState(() => _keyboardHidden = false);
-                },
+              child: SplitPanes(
+                split: _split,
+                shown: SplitLayout.of(context),
+                paneFor: (terminal, focus) => TerminalView(
+                  key: ObjectKey(terminal),
+                  controller: terminal,
+                  focusNode: focus,
+                  systemKeyboard: !builtIn,
+                  onWantsKeyboard: () {
+                    if (_keyboardHidden) setState(() => _keyboardHidden = false);
+                  },
+                ),
               ),
             ),
             if (_terminal.ended)
               _EndedBanner(reason: _terminal.endReason ?? '', onReconnect: _reconnect, onClose: _closeTerminal)
             else if (builtIn && !_keyboardHidden)
               TerminalKeyboardPanel(
-                controller: _terminal,
+                controller: _typing,
                 onSnippets: _pickSnippet,
                 onHistory: _openHistory,
                 onHide: () => setState(() => _keyboardHidden = true),
@@ -312,7 +350,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   color: colors.surface,
                   child: CommandStrip(target: _commands, onOpenHistory: _openHistory, autoHide: true),
                 ),
-              KeyBar(controller: _terminal, onSnippets: _pickSnippet, keepFocus: _keepFocus),
+              KeyBar(controller: _typing, onSnippets: _pickSnippet, keepFocus: _keepFocus),
             ],
           ],
         ),
