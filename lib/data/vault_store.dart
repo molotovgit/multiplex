@@ -10,6 +10,7 @@ import 'app_settings.dart';
 import 'command_history.dart';
 import 'models.dart';
 import 'otp_account.dart';
+import 'sync_pairs.dart';
 import 'vault_backend.dart';
 import 'vault_document.dart';
 
@@ -69,6 +70,7 @@ class VaultStore extends ChangeNotifier {
   StoredKey? key(String? id) => _find(_doc.keys, (k) => k.id == id);
   HostGroup? group(String? id) => _find(_doc.groups, (g) => g.id == id);
   List<ForwardRule> forwardsFor(String hostId) => _doc.forwards.where((f) => f.hostId == hostId).toList();
+  List<SyncPair> syncPairsFor(String hostId) => _doc.syncPairs.where((p) => p.hostId == hostId).toList();
 
   /// Host keys already accepted for this address and port.
   List<String> trustedKeysFor(String host, int port) =>
@@ -83,6 +85,7 @@ class VaultStore extends ChangeNotifier {
   void deleteHost(String id) {
     _doc.hosts.removeWhere((h) => h.id == id);
     _doc.forwards.removeWhere((f) => f.hostId == id);
+    _doc.syncPairs.removeWhere((p) => p.hostId == id);
     _doc.commandHistory.clear(id);
     _replaceWhere(_doc.hosts, (h) => h.jumpHostId == id, (h) => h.copyWith(jumpHostId: () => null));
     _replaceWhere(_doc.otpAccounts, (a) => a.hostId == id, (a) => a.copyWith(hostId: () => null));
@@ -187,6 +190,13 @@ class VaultStore extends ChangeNotifier {
     _changed();
   }
 
+  void saveSyncPair(SyncPair pair) => _upsert(_doc.syncPairs, pair, (p) => p.id);
+
+  void deleteSyncPair(String id) {
+    _doc.syncPairs.removeWhere((p) => p.id == id);
+    _changed();
+  }
+
   /// Adds or updates a custom theme.
   void saveTheme(ThemeSpec theme) => _upsert(_doc.customThemes, theme, (t) => t.id);
 
@@ -245,7 +255,8 @@ class VaultStore extends ChangeNotifier {
         ..knownHosts.clear()
         ..forwards.clear()
         ..customThemes.clear()
-        ..otpAccounts.clear();
+        ..otpAccounts.clear()
+        ..syncPairs.clear();
       _doc.settings = incoming.settings;
       _doc.commandHistory = CommandHistory();
     }

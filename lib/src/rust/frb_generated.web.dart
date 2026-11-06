@@ -286,6 +286,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<RemoteEntry> dco_decode_list_remote_entry(dynamic raw);
 
   @protected
+  List<SyncAction> dco_decode_list_sync_action(dynamic raw);
+
+  @protected
   List<TerminalLine> dco_decode_list_terminal_line(dynamic raw);
 
   @protected
@@ -317,6 +320,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ShellOptions dco_decode_shell_options(dynamic raw);
+
+  @protected
+  SyncAction dco_decode_sync_action(dynamic raw);
+
+  @protected
+  SyncActionKind dco_decode_sync_action_kind(dynamic raw);
+
+  @protected
+  SyncDirection dco_decode_sync_direction(dynamic raw);
+
+  @protected
+  SyncReason dco_decode_sync_reason(dynamic raw);
+
+  @protected
+  SyncReport dco_decode_sync_report(dynamic raw);
 
   @protected
   TerminalCursor dco_decode_terminal_cursor(dynamic raw);
@@ -603,6 +621,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<RemoteEntry> sse_decode_list_remote_entry(SseDeserializer deserializer);
 
   @protected
+  List<SyncAction> sse_decode_list_sync_action(SseDeserializer deserializer);
+
+  @protected
   List<TerminalLine> sse_decode_list_terminal_line(
     SseDeserializer deserializer,
   );
@@ -636,6 +657,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ShellOptions sse_decode_shell_options(SseDeserializer deserializer);
+
+  @protected
+  SyncAction sse_decode_sync_action(SseDeserializer deserializer);
+
+  @protected
+  SyncActionKind sse_decode_sync_action_kind(SseDeserializer deserializer);
+
+  @protected
+  SyncDirection sse_decode_sync_direction(SseDeserializer deserializer);
+
+  @protected
+  SyncReason sse_decode_sync_reason(SseDeserializer deserializer);
+
+  @protected
+  SyncReport sse_decode_sync_report(SseDeserializer deserializer);
 
   @protected
   TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer);
@@ -974,6 +1010,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_sync_action(
+    List<SyncAction> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_terminal_line(
     List<TerminalLine> self,
     SseSerializer serializer,
@@ -1014,6 +1056,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_shell_options(ShellOptions self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sync_action(SyncAction self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sync_action_kind(
+    SyncActionKind self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_sync_direction(SyncDirection self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sync_reason(SyncReason self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sync_report(SyncReport self, SseSerializer serializer);
 
   @protected
   void sse_encode_terminal_cursor(

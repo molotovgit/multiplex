@@ -5,6 +5,7 @@
 
 pub mod events;
 pub mod file_store;
+pub mod folder_sync;
 pub mod keys;
 pub mod runtime;
 pub mod sftp;

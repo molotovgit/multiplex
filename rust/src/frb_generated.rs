@@ -44,7 +44,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 759768569;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1030719601;
 
 // Section: executor
 
@@ -3815,6 +3815,198 @@ fn wire__crate__api__sftp__remote_parent_impl(
         },
     )
 }
+fn wire__crate__api__transfer__sync_apply_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sync_apply",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_left = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileSide>,
+            >>::sse_decode(&mut deserializer);
+            let api_left_root = <String>::sse_decode(&mut deserializer);
+            let api_right = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileSide>,
+            >>::sse_decode(&mut deserializer);
+            let api_right_root = <String>::sse_decode(&mut deserializer);
+            let api_actions =
+                <Vec<crate::api::transfer_types::SyncAction>>::sse_decode(&mut deserializer);
+            let api_transfer = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileTransfer>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_left_guard = None;
+                        let mut api_right_guard = None;
+                        let mut api_transfer_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_left, 0, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_right, 1, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_transfer,
+                                        2,
+                                        false,
+                                    ),
+                                ],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_left_guard =
+                                        Some(api_left.lockable_decode_async_ref().await)
+                                }
+                                1 => {
+                                    api_right_guard =
+                                        Some(api_right.lockable_decode_async_ref().await)
+                                }
+                                2 => {
+                                    api_transfer_guard =
+                                        Some(api_transfer.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_left_guard = api_left_guard.unwrap();
+                        let api_right_guard = api_right_guard.unwrap();
+                        let api_transfer_guard = api_transfer_guard.unwrap();
+                        let output_ok = crate::api::transfer::sync_apply(
+                            &*api_left_guard,
+                            api_left_root,
+                            &*api_right_guard,
+                            api_right_root,
+                            api_actions,
+                            &*api_transfer_guard,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__transfer__sync_plan_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sync_plan",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_left = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileSide>,
+            >>::sse_decode(&mut deserializer);
+            let api_left_root = <String>::sse_decode(&mut deserializer);
+            let api_right = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileSide>,
+            >>::sse_decode(&mut deserializer);
+            let api_right_root = <String>::sse_decode(&mut deserializer);
+            let api_direction =
+                <crate::api::transfer_types::SyncDirection>::sse_decode(&mut deserializer);
+            let api_mirror = <bool>::sse_decode(&mut deserializer);
+            let api_transfer = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileTransfer>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_left_guard = None;
+                        let mut api_right_guard = None;
+                        let mut api_transfer_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_left, 0, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_right, 1, false,
+                                    ),
+                                    flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                        &api_transfer,
+                                        2,
+                                        false,
+                                    ),
+                                ],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_left_guard =
+                                        Some(api_left.lockable_decode_async_ref().await)
+                                }
+                                1 => {
+                                    api_right_guard =
+                                        Some(api_right.lockable_decode_async_ref().await)
+                                }
+                                2 => {
+                                    api_transfer_guard =
+                                        Some(api_transfer.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_left_guard = api_left_guard.unwrap();
+                        let api_right_guard = api_right_guard.unwrap();
+                        let api_transfer_guard = api_transfer_guard.unwrap();
+                        let output_ok = crate::api::transfer::sync_plan(
+                            &*api_left_guard,
+                            api_left_root,
+                            &*api_right_guard,
+                            api_right_root,
+                            api_direction,
+                            api_mirror,
+                            &*api_transfer_guard,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__terminal_types__terminal_palette_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -4563,6 +4755,20 @@ impl SseDecode for Vec<crate::api::sftp_types::RemoteEntry> {
     }
 }
 
+impl SseDecode for Vec<crate::api::transfer_types::SyncAction> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::transfer_types::SyncAction>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::terminal_types::TerminalLine> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -4751,6 +4957,82 @@ impl SseDecode for crate::api::terminal_types::ShellOptions {
             startup_command: var_startupCommand,
             command: var_command,
             palette: var_palette,
+        };
+    }
+}
+
+impl SseDecode for crate::api::transfer_types::SyncAction {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_path = <String>::sse_decode(deserializer);
+        let mut var_kind = <crate::api::transfer_types::SyncActionKind>::sse_decode(deserializer);
+        let mut var_reason = <crate::api::transfer_types::SyncReason>::sse_decode(deserializer);
+        let mut var_isDir = <bool>::sse_decode(deserializer);
+        let mut var_size = <u64>::sse_decode(deserializer);
+        return crate::api::transfer_types::SyncAction {
+            path: var_path,
+            kind: var_kind,
+            reason: var_reason,
+            is_dir: var_isDir,
+            size: var_size,
+        };
+    }
+}
+
+impl SseDecode for crate::api::transfer_types::SyncActionKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::transfer_types::SyncActionKind::CopyToRight,
+            1 => crate::api::transfer_types::SyncActionKind::CopyToLeft,
+            2 => crate::api::transfer_types::SyncActionKind::DeleteOnRight,
+            3 => crate::api::transfer_types::SyncActionKind::DeleteOnLeft,
+            4 => crate::api::transfer_types::SyncActionKind::Conflict,
+            _ => unreachable!("Invalid variant for SyncActionKind: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::transfer_types::SyncDirection {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::transfer_types::SyncDirection::ToRight,
+            1 => crate::api::transfer_types::SyncDirection::ToLeft,
+            2 => crate::api::transfer_types::SyncDirection::Both,
+            _ => unreachable!("Invalid variant for SyncDirection: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::transfer_types::SyncReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::transfer_types::SyncReason::New,
+            1 => crate::api::transfer_types::SyncReason::Changed,
+            2 => crate::api::transfer_types::SyncReason::Newer,
+            3 => crate::api::transfer_types::SyncReason::Extra,
+            4 => crate::api::transfer_types::SyncReason::TypeClash,
+            5 => crate::api::transfer_types::SyncReason::Undecided,
+            _ => unreachable!("Invalid variant for SyncReason: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::transfer_types::SyncReport {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_copied = <u32>::sse_decode(deserializer);
+        let mut var_deleted = <u32>::sse_decode(deserializer);
+        let mut var_failed = <Vec<String>>::sse_decode(deserializer);
+        return crate::api::transfer_types::SyncReport {
+            copied: var_copied,
+            deleted: var_deleted,
+            failed: var_failed,
         };
     }
 }
@@ -5054,20 +5336,22 @@ fn pde_ffi_dispatcher_primary_impl(
             rust_vec_len,
             data_len,
         ),
-        76 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        76 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
+        77 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
+        78 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        77 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        79 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        78 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        80 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        80 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        82 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -5145,7 +5429,7 @@ fn pde_ffi_dispatcher_sync_impl(
         73 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
         74 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
         75 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
-        79 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        81 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -5745,6 +6029,123 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::terminal_types::ShellOptions>
     for crate::api::terminal_types::ShellOptions
 {
     fn into_into_dart(self) -> crate::api::terminal_types::ShellOptions {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::transfer_types::SyncAction {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.path.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
+            self.reason.into_into_dart().into_dart(),
+            self.is_dir.into_into_dart().into_dart(),
+            self.size.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::transfer_types::SyncAction
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::transfer_types::SyncAction>
+    for crate::api::transfer_types::SyncAction
+{
+    fn into_into_dart(self) -> crate::api::transfer_types::SyncAction {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::transfer_types::SyncActionKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::CopyToRight => 0.into_dart(),
+            Self::CopyToLeft => 1.into_dart(),
+            Self::DeleteOnRight => 2.into_dart(),
+            Self::DeleteOnLeft => 3.into_dart(),
+            Self::Conflict => 4.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::transfer_types::SyncActionKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::transfer_types::SyncActionKind>
+    for crate::api::transfer_types::SyncActionKind
+{
+    fn into_into_dart(self) -> crate::api::transfer_types::SyncActionKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::transfer_types::SyncDirection {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::ToRight => 0.into_dart(),
+            Self::ToLeft => 1.into_dart(),
+            Self::Both => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::transfer_types::SyncDirection
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::transfer_types::SyncDirection>
+    for crate::api::transfer_types::SyncDirection
+{
+    fn into_into_dart(self) -> crate::api::transfer_types::SyncDirection {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::transfer_types::SyncReason {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::New => 0.into_dart(),
+            Self::Changed => 1.into_dart(),
+            Self::Newer => 2.into_dart(),
+            Self::Extra => 3.into_dart(),
+            Self::TypeClash => 4.into_dart(),
+            Self::Undecided => 5.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::transfer_types::SyncReason
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::transfer_types::SyncReason>
+    for crate::api::transfer_types::SyncReason
+{
+    fn into_into_dart(self) -> crate::api::transfer_types::SyncReason {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::transfer_types::SyncReport {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.copied.into_into_dart().into_dart(),
+            self.deleted.into_into_dart().into_dart(),
+            self.failed.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::transfer_types::SyncReport
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::transfer_types::SyncReport>
+    for crate::api::transfer_types::SyncReport
+{
+    fn into_into_dart(self) -> crate::api::transfer_types::SyncReport {
         self
     }
 }
@@ -6467,6 +6868,16 @@ impl SseEncode for Vec<crate::api::sftp_types::RemoteEntry> {
     }
 }
 
+impl SseEncode for Vec<crate::api::transfer_types::SyncAction> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::transfer_types::SyncAction>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::terminal_types::TerminalLine> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -6612,6 +7023,82 @@ impl SseEncode for crate::api::terminal_types::ShellOptions {
         <Option<String>>::sse_encode(self.startup_command, serializer);
         <Option<String>>::sse_encode(self.command, serializer);
         <crate::api::terminal_types::TerminalPalette>::sse_encode(self.palette, serializer);
+    }
+}
+
+impl SseEncode for crate::api::transfer_types::SyncAction {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.path, serializer);
+        <crate::api::transfer_types::SyncActionKind>::sse_encode(self.kind, serializer);
+        <crate::api::transfer_types::SyncReason>::sse_encode(self.reason, serializer);
+        <bool>::sse_encode(self.is_dir, serializer);
+        <u64>::sse_encode(self.size, serializer);
+    }
+}
+
+impl SseEncode for crate::api::transfer_types::SyncActionKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::transfer_types::SyncActionKind::CopyToRight => 0,
+                crate::api::transfer_types::SyncActionKind::CopyToLeft => 1,
+                crate::api::transfer_types::SyncActionKind::DeleteOnRight => 2,
+                crate::api::transfer_types::SyncActionKind::DeleteOnLeft => 3,
+                crate::api::transfer_types::SyncActionKind::Conflict => 4,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::transfer_types::SyncDirection {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::transfer_types::SyncDirection::ToRight => 0,
+                crate::api::transfer_types::SyncDirection::ToLeft => 1,
+                crate::api::transfer_types::SyncDirection::Both => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::transfer_types::SyncReason {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::transfer_types::SyncReason::New => 0,
+                crate::api::transfer_types::SyncReason::Changed => 1,
+                crate::api::transfer_types::SyncReason::Newer => 2,
+                crate::api::transfer_types::SyncReason::Extra => 3,
+                crate::api::transfer_types::SyncReason::TypeClash => 4,
+                crate::api::transfer_types::SyncReason::Undecided => 5,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::transfer_types::SyncReport {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.copied, serializer);
+        <u32>::sse_encode(self.deleted, serializer);
+        <Vec<String>>::sse_encode(self.failed, serializer);
     }
 }
 

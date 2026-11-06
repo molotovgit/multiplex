@@ -11,6 +11,7 @@ import 'folder_browser.dart';
 import 'folder_view.dart';
 import 'transfer_panel.dart';
 import 'transfer_queue.dart';
+import 'sync/sync_pairs_screen.dart';
 import 'two_pane/two_pane_screen.dart';
 
 /// Remote file browser (SFTP) for one live session.
@@ -191,6 +192,8 @@ class _FolderMenu extends StatelessWidget {
             browser.toggleHidden();
           case _MenuItem.copyBetween:
             Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TwoPaneScreen(session: session)));
+          case _MenuItem.sync:
+            Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SyncPairsScreen(session: session, serverPath: browser.path)));
         }
       },
       itemBuilder: (context) => [
@@ -201,9 +204,10 @@ class _FolderMenu extends StatelessWidget {
         CheckedPopupMenuItem(value: _MenuItem.hidden, checked: browser.showHidden, child: const Text('Show hidden files')),
         const PopupMenuDivider(),
         PopupMenuItem(value: _MenuItem.copyBetween, enabled: connected, child: const Text('Copy between places')),
+        PopupMenuItem(value: _MenuItem.sync, enabled: connected, child: const Text('Folder sync')),
       ],
     );
   }
 }
 
-enum _MenuItem { goTo, home, refresh, hidden, copyBetween }
+enum _MenuItem { goTo, home, refresh, hidden, copyBetween, sync }

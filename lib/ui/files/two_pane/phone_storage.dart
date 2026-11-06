@@ -25,6 +25,9 @@ abstract final class PhoneStorage {
 
   static bool get _android => !kIsWeb && Platform.isAndroid;
 
+  /// True where "all files" access exists and may need asking for.
+  static bool get supportsAccess => _android;
+
   /// The app's own files are always there; the whole phone storage only
   /// once the user allowed all-files access.
   static Future<List<PhoneRoot>> roots() async {

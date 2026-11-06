@@ -29,6 +29,43 @@ Future<CopyReport> copyItem({
   transfer: transfer,
 );
 
+/// Compares two folders and returns what a sync would do, without
+/// changing anything. "Mirror" adds deletes of what the source lacks.
+Future<List<SyncAction>> syncPlan({
+  required FileSide left,
+  required String leftRoot,
+  required FileSide right,
+  required String rightRoot,
+  required SyncDirection direction,
+  required bool mirror,
+  required FileTransfer transfer,
+}) => RustLib.instance.api.crateApiTransferSyncPlan(
+  left: left,
+  leftRoot: leftRoot,
+  right: right,
+  rightRoot: rightRoot,
+  direction: direction,
+  mirror: mirror,
+  transfer: transfer,
+);
+
+/// Runs the steps of a plan the user looked at.
+Future<SyncReport> syncApply({
+  required FileSide left,
+  required String leftRoot,
+  required FileSide right,
+  required String rightRoot,
+  required List<SyncAction> actions,
+  required FileTransfer transfer,
+}) => RustLib.instance.api.crateApiTransferSyncApply(
+  left: left,
+  leftRoot: leftRoot,
+  right: right,
+  rightRoot: rightRoot,
+  actions: actions,
+  transfer: transfer,
+);
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<FileSide>>
 abstract class FileSide implements RustOpaqueInterface {
   Future<bool> exists({required String path});

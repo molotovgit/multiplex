@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 /// What to do when the copy would land on something already there.
 enum ConflictPolicy {
@@ -52,4 +52,113 @@ class CopyReport {
           copied == other.copied &&
           skipped == other.skipped &&
           bytes == other.bytes;
+}
+
+/// One step of a folder sync.
+class SyncAction {
+  /// Path inside the synced folders, with "/" between parts.
+  final String path;
+  final SyncActionKind kind;
+  final SyncReason reason;
+  final bool isDir;
+
+  /// Bytes to copy (0 for folders and deletes).
+  final BigInt size;
+
+  const SyncAction({
+    required this.path,
+    required this.kind,
+    required this.reason,
+    required this.isDir,
+    required this.size,
+  });
+
+  @override
+  int get hashCode =>
+      path.hashCode ^
+      kind.hashCode ^
+      reason.hashCode ^
+      isDir.hashCode ^
+      size.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncAction &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          kind == other.kind &&
+          reason == other.reason &&
+          isDir == other.isDir &&
+          size == other.size;
+}
+
+enum SyncActionKind {
+  copyToRight,
+  copyToLeft,
+  deleteOnRight,
+  deleteOnLeft,
+
+  /// Shown, never applied: the user has to sort it out.
+  conflict,
+}
+
+/// Which way a folder sync copies.
+enum SyncDirection {
+  /// Left (the phone) to right (the server).
+  toRight,
+
+  /// Right to left.
+  toLeft,
+
+  /// Each way: the newer copy of a file wins.
+  both,
+}
+
+/// Why an action is in the plan.
+enum SyncReason {
+  /// Only on one side.
+  new_,
+
+  /// Different size or time; the one-way source wins.
+  changed,
+
+  /// Both sides changed it; this copy is newer.
+  newer,
+
+  /// Not on the source side ("mirror" deletes it).
+  extra,
+
+  /// A file on one side, a folder on the other.
+  typeClash,
+
+  /// Different, but neither is clearly newer.
+  undecided,
+}
+
+/// What a sync did.
+class SyncReport {
+  final int copied;
+  final int deleted;
+
+  /// "path: why" for each step that failed; the others still ran.
+  final List<String> failed;
+
+  const SyncReport({
+    required this.copied,
+    required this.deleted,
+    required this.failed,
+  });
+
+  @override
+  int get hashCode => copied.hashCode ^ deleted.hashCode ^ failed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SyncReport &&
+          runtimeType == other.runtimeType &&
+          copied == other.copied &&
+          deleted == other.deleted &&
+          failed == other.failed;
 }

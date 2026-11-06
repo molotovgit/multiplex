@@ -3,6 +3,7 @@ import 'app_settings.dart';
 import 'command_history.dart';
 import 'models.dart';
 import 'otp_account.dart';
+import 'sync_pairs.dart';
 
 /// The whole saved state of the app, as one JSON document. It is written
 /// encrypted to disk by [VaultStore] and also used for backups.
@@ -18,6 +19,7 @@ class VaultDocument {
     this.settings = const AppSettings(),
     CommandHistory? commandHistory,
     List<OtpAccount>? otpAccounts,
+    List<SyncPair>? syncPairs,
   })  // Always keep our own growable copies, so constant lists passed in
       // (such as the starter snippets) can still be edited later.
       : hosts = List.of(hosts ?? const []),
@@ -28,7 +30,8 @@ class VaultDocument {
         forwards = List.of(forwards ?? const []),
         customThemes = List.of(customThemes ?? const []),
         commandHistory = commandHistory ?? CommandHistory(),
-        otpAccounts = List.of(otpAccounts ?? const []);
+        otpAccounts = List.of(otpAccounts ?? const []),
+        syncPairs = List.of(syncPairs ?? const []);
 
   /// Bumped when the format changes in a way old versions cannot read.
   static const formatVersion = 1;
@@ -49,6 +52,8 @@ class VaultDocument {
 
   /// One-time code accounts (the Codes tab).
   final List<OtpAccount> otpAccounts;
+  /// Phone and server folders kept in step, per host.
+  final List<SyncPair> syncPairs;
 
   /// A few handy commands so the snippets list is not empty on day one.
   factory VaultDocument.starter() => VaultDocument(snippets: const [
@@ -70,6 +75,7 @@ class VaultDocument {
         'settings': settings.toJson(),
         'commandHistory': commandHistory.toJson(),
         'otpAccounts': otpAccounts.map((e) => e.toJson()).toList(),
+        'syncPairs': syncPairs.map((e) => e.toJson()).toList(),
       };
 
   factory VaultDocument.fromJson(Map<String, dynamic> j) => VaultDocument(
@@ -83,6 +89,7 @@ class VaultDocument {
         settings: j['settings'] is Map ? AppSettings.fromJson((j['settings'] as Map).cast<String, dynamic>()) : const AppSettings(),
         commandHistory: CommandHistory.fromJson(j['commandHistory']),
         otpAccounts: Json.list(j, 'otpAccounts').map(OtpAccount.fromJson).toList(),
+        syncPairs: Json.list(j, 'syncPairs').map(SyncPair.fromJson).toList(),
       );
 
   /// Adds everything from [other], replacing items with the same id (or,
@@ -98,6 +105,7 @@ class VaultDocument {
     _mergeById(customThemes, other.customThemes, (e) => e.id);
     _mergeById(otpAccounts, other.otpAccounts, (e) => e.id);
     commandHistory.mergeFrom(other.commandHistory);
+    _mergeById(syncPairs, other.syncPairs, (e) => e.id);
   }
 
   static void _mergeById<T>(List<T> into, List<T> from, String Function(T) idOf) {
