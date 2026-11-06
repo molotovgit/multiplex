@@ -8,6 +8,7 @@ import '../common/widgets.dart';
 import '../keys/mono_style.dart';
 import '../keys/page_width.dart';
 import '../keys/undo_toast.dart';
+import 'snippet_blanks_sheet.dart';
 import 'snippet_runner.dart';
 
 /// Creates or edits a snippet. Closes with the saved snippet, or with
@@ -53,6 +54,14 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
     AppScope.store(context).saveSnippet(saved);
     Toast.show(context, 'Saved the snippet "${saved.name}"');
     Navigator.pop(context, saved);
+  }
+
+  /// Runs what is typed now (saved or not); blanks are asked for but not
+  /// remembered, since the text may still change.
+  Future<void> _run() async {
+    final draft = Snippet(id: widget.snippet?.id ?? '', name: _name.text, command: _command.text, lastValues: widget.snippet?.lastValues ?? const {});
+    final command = await SnippetBlanks.fill(context, draft, remember: false);
+    if (command != null && mounted) await SnippetRunner.run(context, name: _name.text, command: command);
   }
 
   Future<void> _delete() async {
@@ -105,7 +114,13 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
                         enableSuggestions: false,
                         style: MonoStyle.of(context),
                         validator: (value) => (value ?? '').trim().isEmpty ? 'Enter the command to run.' : null,
-                        decoration: const InputDecoration(labelText: 'Command', hintText: 'sudo systemctl restart nginx', alignLabelWithHint: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Command',
+                          hintText: 'sudo systemctl restart nginx',
+                          alignLabelWithHint: true,
+                          helperText: 'Blanks: write {name} or {name:default}. You fill them in each time it runs.',
+                          helperMaxLines: 3,
+                        ),
                       ),
                     ),
                     SwitchListTile(
@@ -122,7 +137,7 @@ class _SnippetEditorScreenState extends State<SnippetEditorScreen> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton.icon(
-                          onPressed: () => SnippetRunner.run(context, name: _name.text, command: _command.text),
+                          onPressed: _run,
                           icon: const Icon(Icons.play_arrow_outlined),
                           label: const Text('Run on a host'),
                         ),

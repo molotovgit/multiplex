@@ -24,6 +24,7 @@ import '../history/command_target.dart';
 import '../hosts/host_connector.dart';
 import '../keyboard/keyboard_settings.dart';
 import '../keyboard/terminal_keyboard_panel.dart';
+import '../snippets/snippet_blanks_sheet.dart';
 import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import '../common/collapsible.dart';
@@ -138,8 +139,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   Future<void> _pickSnippet() async {
     final snippet = await SnippetPicker.show(context);
-    if (snippet == null) return;
-    _terminal.paste(snippet.command);
+    if (snippet == null || !mounted) return;
+    final command = await SnippetBlanks.fill(context, snippet);
+    if (command == null) return;
+    _terminal.paste(command);
     if (snippet.runImmediately) _terminal.key(TerminalKey.enter);
     _keepFocus();
   }

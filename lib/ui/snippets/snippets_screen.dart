@@ -5,6 +5,7 @@ import '../../app/app_scope.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';
 import '../keys/page_width.dart';
+import 'snippet_blanks_sheet.dart';
 import 'snippet_editor_screen.dart';
 import 'snippet_list.dart';
 import 'snippet_picker_sheet.dart';
@@ -29,6 +30,11 @@ class _SnippetsScreenState extends State<SnippetsScreen> {
   }
 
   void _create() => SnippetEditorScreen.open(context);
+
+  Future<void> _run(Snippet snippet) async {
+    final command = await SnippetBlanks.fill(context, snippet);
+    if (command != null && mounted) await SnippetRunner.run(context, name: snippet.name, command: command);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +75,7 @@ class _SnippetsScreenState extends State<SnippetsScreen> {
                                   trailing: IconButton(
                                     tooltip: 'Run on a host',
                                     icon: const Icon(Icons.play_arrow_outlined),
-                                    onPressed: () => SnippetRunner.run(context, name: snippet.name, command: snippet.command),
+                                    onPressed: () => _run(snippet),
                                   ),
                                 ),
                               ),

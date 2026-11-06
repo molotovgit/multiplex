@@ -228,25 +228,42 @@ class StoredKey {
 
 /// A saved command.
 class Snippet {
-  const Snippet({required this.id, required this.name, required this.command, this.runImmediately = true});
+  const Snippet({required this.id, required this.name, required this.command, this.runImmediately = true, this.lastValues = const {}});
 
   final String id;
   final String name;
+
+  /// May hold blanks such as `{file}` or `{port:8080}`, filled in when it
+  /// runs (see SnippetTemplate).
   final String command;
 
   /// Press Enter after typing it.
   final bool runImmediately;
 
-  Snippet copyWith({String? name, String? command, bool? runImmediately}) =>
-      Snippet(id: id, name: name ?? this.name, command: command ?? this.command, runImmediately: runImmediately ?? this.runImmediately);
+  /// What was typed into each blank last time, by blank name.
+  final Map<String, String> lastValues;
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'command': command, 'runImmediately': runImmediately};
+  Snippet copyWith({String? name, String? command, bool? runImmediately, Map<String, String>? lastValues}) => Snippet(
+        id: id,
+        name: name ?? this.name,
+        command: command ?? this.command,
+        runImmediately: runImmediately ?? this.runImmediately,
+        lastValues: lastValues ?? this.lastValues,
+      );
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'command': command, 'runImmediately': runImmediately, 'lastValues': lastValues};
 
   factory Snippet.fromJson(Map<String, dynamic> j) => Snippet(
         id: Json.str(j, 'id'),
         name: Json.str(j, 'name'),
         command: Json.str(j, 'command'),
         runImmediately: Json.boolean(j, 'runImmediately', true),
+        lastValues: j['lastValues'] is Map
+            ? {
+                for (final e in (j['lastValues'] as Map).entries)
+                  if (e.key is String && e.value is String) e.key as String: e.value as String,
+              }
+            : const {},
       );
 }
 
