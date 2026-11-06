@@ -62,6 +62,21 @@ impl SshSession {
         Ok(RemoteShell::new(shell, relay))
     }
 
+    /// Joins a shell whose connection dropped to this (new) connection.
+    /// Its screen and history stay; the new shell carries on below them.
+    pub async fn reattach_shell(&self, shell: &RemoteShell, options: ShellOptions) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        let inner = shell.engine();
+        AsyncRuntime::run(async move { inner.reattach(&conn, options).await }).await?
+    }
+
+    /// True when the server answers within `timeout_secs`.
+    pub async fn check_alive(&self, timeout_secs: u32) -> bool {
+        let conn = self.conn.clone();
+        let limit = std::time::Duration::from_secs(u64::from(timeout_secs.max(1)));
+        AsyncRuntime::run(async move { conn.check_alive(limit).await }).await.unwrap_or(false)
+    }
+
     /// Opens a file browser on this connection.
     pub async fn open_files(&self) -> anyhow::Result<RemoteFiles> {
         let conn = self.conn.clone();

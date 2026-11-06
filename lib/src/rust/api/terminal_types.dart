@@ -102,6 +102,9 @@ class ShellOptions {
 
   /// Command typed automatically once the shell is ready.
   final String? startupCommand;
+
+  /// Run this command instead of the login shell (for example tmux).
+  final String? command;
   final TerminalPalette palette;
 
   const ShellOptions({
@@ -111,6 +114,7 @@ class ShellOptions {
     required this.scrollbackLines,
     required this.env,
     this.startupCommand,
+    this.command,
     required this.palette,
   });
 
@@ -122,6 +126,7 @@ class ShellOptions {
       scrollbackLines.hashCode ^
       env.hashCode ^
       startupCommand.hashCode ^
+      command.hashCode ^
       palette.hashCode;
 
   @override
@@ -135,6 +140,7 @@ class ShellOptions {
           scrollbackLines == other.scrollbackLines &&
           env == other.env &&
           startupCommand == other.startupCommand &&
+          command == other.command &&
           palette == other.palette;
 }
 

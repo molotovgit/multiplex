@@ -25,6 +25,12 @@ impl RemoteShell {
         Self { inner: Arc::new(inner), events }
     }
 
+    /// The engine shell, for other API objects (such as a new connection
+    /// taking this shell over).
+    pub(crate) fn engine(&self) -> Arc<ShellSession> {
+        self.inner.clone()
+    }
+
     /// Screen changes, title, bell, clipboard and exit, as a stream.
     /// Listen once per shell.
     pub fn events(&self, sink: StreamSink<ShellEvent>) {

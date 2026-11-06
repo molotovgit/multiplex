@@ -14,9 +14,17 @@ import 'command_capture.dart';
 /// Ctrl and Alt from the on-screen key bar are "sticky": tap Ctrl, then a
 /// letter on the keyboard, and the letter is sent with Ctrl.
 class TerminalController extends ChangeNotifier {
-  // The title is private and changes later, so it cannot be a named "this." parameter.
-  // ignore: prefer_initializing_formals
-  TerminalController({required this.shell, required String title, required this.sessionId, this.hostId, this.onCommand}) : _title = title {
+  TerminalController({
+    required this.shell,
+    required String title,
+    required this.sessionId,
+    this.number = 1,
+    this.hostId,
+    this.onCommand,
+    this.onConnectionLost,
+    // The title is private and changes later, so it cannot be a named "this." parameter.
+    // ignore: prefer_initializing_formals
+  }) : _title = title {
     _events = shell.events().listen(_onEvent, onError: (_) => _end('The terminal stopped unexpectedly.'));
     pull();
   }
@@ -30,14 +38,23 @@ class TerminalController extends ChangeNotifier {
   /// not saved.
   final String? hostId;
 
+  /// Which terminal of its connection this is (1, 2, ...). Never reused
+  /// while the connection is open, so it can name a tmux session.
+  final int number;
+
   /// Told each command the user runs (read from the screen at Enter).
   final void Function(String command)? onCommand;
+
+  /// Called when the connection drops, instead of ending the terminal;
+  /// the session then tries to reconnect. Null: the terminal just ends.
+  final VoidCallback? onConnectionLost;
   late final _capture = CommandCapture(onCommand: (command) => onCommand?.call(command));
   late final StreamSubscription<ShellEvent> _events;
 
   TerminalFrame? _frame;
   String _title;
   String? _endReason;
+  String? _reconnectNote;
   bool _pullPending = false;
   bool _ctrl = false;
   bool _alt = false;
@@ -52,6 +69,15 @@ class TerminalController extends ChangeNotifier {
   String get title => _title;
   bool get ended => _endReason != null;
   String? get endReason => _endReason;
+
+  /// The connection dropped and is being restored; the screen stays.
+  bool get reconnecting => _reconnectNote != null;
+
+  /// "Reconnecting…" and when the next try is, while [reconnecting].
+  String? get reconnectNote => _reconnectNote;
+
+  /// No input goes anywhere while the shell is gone or coming back.
+  bool get _inputOff => ended || reconnecting;
   bool get ctrlLatched => _ctrl;
   bool get altLatched => _alt;
 
@@ -73,14 +99,14 @@ class TerminalController extends ChangeNotifier {
 
   /// Text from the keyboard. Uses (and then releases) sticky Ctrl/Alt.
   void type(String text) {
-    if (text.isEmpty || ended) return;
+    if (text.isEmpty || _inputOff) return;
     final mods = _takeModifiers();
     _beforeText(text, mods);
     shell.sendText(text: text, mods: mods);
   }
 
   void key(TerminalKey key, {bool shift = false}) {
-    if (ended) return;
+    if (_inputOff) return;
     final mods = _takeModifiers();
     _beforeKey(key);
     shell.sendKey(key: key, mods: KeyModifiers(ctrl: mods.ctrl, alt: mods.alt, shift: shift));
@@ -88,19 +114,19 @@ class TerminalController extends ChangeNotifier {
 
   /// A key with explicit modifiers, from a hardware keyboard.
   void keyWith(TerminalKey key, KeyModifiers mods) {
-    if (ended) return;
+    if (_inputOff) return;
     _beforeKey(key);
     shell.sendKey(key: key, mods: mods);
   }
 
   void textWith(String text, KeyModifiers mods) {
-    if (ended) return;
+    if (_inputOff) return;
     _beforeText(text, mods);
     shell.sendText(text: text, mods: mods);
   }
 
   void paste(String text) {
-    if (ended || text.isEmpty) return;
+    if (_inputOff || text.isEmpty) return;
     // A paste of several lines runs them at once: not one command to keep.
     if (text.contains('\n') || text.contains('\r')) {
       _capture.cancel();
@@ -170,6 +196,29 @@ class TerminalController extends ChangeNotifier {
     pull();
   }
 
+  // Reconnecting.
+
+  /// Shows the "Reconnecting…" state with [note].
+  void showReconnecting(String note) {
+    if (ended) return;
+    _capture.cancel();
+    _reconnectNote = note;
+    notifyListeners();
+  }
+
+  /// The shell is back on a new connection.
+  void reconnected() {
+    if (_reconnectNote == null) return;
+    _reconnectNote = null;
+    pull();
+  }
+
+  /// The connection could not be restored.
+  void connectionGone(String reason) {
+    _reconnectNote = null;
+    _end(reason);
+  }
+
   void close() {
     shell.close();
     _end('Closed.');
@@ -207,7 +256,13 @@ class TerminalController extends ChangeNotifier {
       case ShellEvent_Exited(:final code):
         _end(code == null ? 'The shell ended.' : 'The shell ended with exit code $code.');
       case ShellEvent_Disconnected():
-        _end('The connection was lost.');
+        final lost = onConnectionLost;
+        if (lost == null) {
+          _end('The connection was lost.');
+        } else {
+          showReconnecting('Reconnecting…');
+          lost();
+        }
     }
   }
 
@@ -223,6 +278,7 @@ class TerminalController extends ChangeNotifier {
 
   void _end(String reason) {
     if (ended) return;
+    _reconnectNote = null;
     _endReason = reason;
     pull();
   }

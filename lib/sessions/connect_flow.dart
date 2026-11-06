@@ -56,7 +56,7 @@ class ConnectFailure implements Exception {
 /// Turns a saved [Host] into a logged-in [SshSession], asking the user
 /// whatever is needed on the way (trust this server? password?).
 class ConnectFlow {
-  ConnectFlow(this._store, this._prompter, {DeviceUnlock unlock = const DeviceUnlock(), SshConnector? connector})
+  ConnectFlow(this._store, this._prompter, {DeviceUnlock unlock = const DeviceUnlock(), SshConnector? connector, this.ownerConfirmed = false})
       : _ownerCheck = OwnerCheck(unlock),
         _connector = connector ?? ((options) => SshSession.connect(options: options));
 
@@ -65,13 +65,18 @@ class ConnectFlow {
   final OwnerCheck _ownerCheck;
   final SshConnector _connector;
 
+  /// The owner already confirmed this session (a reconnect of a session
+  /// that was approved when it opened), so the fingerprint is not asked
+  /// again.
+  final bool ownerConfirmed;
+
   /// Each question can lead to one more attempt; this stops endless loops.
   static const _maxAttempts = 8;
   static const _timeoutSecs = 20;
 
   Future<SshSession> connect(Host host) async {
     final jump = _store.host(host.jumpHostId);
-    if (OwnerCheck.needed(host, jump)) await _ownerCheck.require(host);
+    if (!ownerConfirmed && OwnerCheck.needed(host, jump)) await _ownerCheck.require(host);
     final secrets = _Secrets(
       password: host.password,
       passphrase: _store.key(host.keyId)?.passphrase,

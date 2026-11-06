@@ -21,7 +21,8 @@ class BackgroundKeeper {
   String? _lastSent;
 
   void _update() {
-    final open = _sessions.sessions.where((s) => s.connected).toList();
+    // A connection being restored still needs the app kept running.
+    final open = _sessions.sessions.where((s) => s.connected || s.reconnecting).toList();
     final summary = open.map((s) => s.host.title).join(', ');
     final state = '${open.length}|$summary';
     if (state == _lastSent) return;

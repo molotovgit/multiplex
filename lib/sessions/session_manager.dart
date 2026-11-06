@@ -8,6 +8,9 @@ import '../src/rust/api/ssh.dart';
 import '../src/rust/api/terminal_types.dart';
 import '../src/rust/api/tunnel.dart';
 import 'connect_flow.dart';
+import 'reconnector.dart';
+import 'session_restore.dart';
+import 'shell_launch.dart';
 import 'terminal_controller.dart';
 
 /// A port forward that is running, with the rule it came from.
@@ -24,12 +27,23 @@ class LiveSession {
 
   final String id;
   final Host host;
-  final SshSession ssh;
+
+  /// The connection. Replaced by a new one after a reconnect.
+  SshSession ssh;
   final DateTime startedAt;
   final List<TerminalController> terminals = [];
   final List<RunningTunnel> tunnels = [];
 
-  bool get connected => ssh.isConnected();
+  /// Set while the dropped connection is being restored.
+  Reconnector? reconnector;
+  int _nextTerminal = 1;
+
+  bool get connected => !reconnecting && ssh.isConnected();
+
+  bool get reconnecting => reconnector != null && !reconnector!.finished;
+
+  /// A number for a new terminal, never reused on this connection.
+  int takeTerminalNumber() => _nextTerminal++;
 
   RunningTunnel? tunnelFor(String ruleId) => tunnels.where((t) => t.rule.id == ruleId).firstOrNull;
 }
@@ -72,20 +86,8 @@ class SessionManager extends ChangeNotifier {
   /// Opens a new terminal on a session, sized roughly for a phone; the
   /// terminal view sends the real size as soon as it is laid out.
   Future<TerminalController> openTerminal(LiveSession session) async {
-    final settings = _store.settings;
-    final theme = _store.activeTheme;
-    final shell = await session.ssh.openShell(
-      options: ShellOptions(
-        cols: 80,
-        rows: 24,
-        term: 'xterm-256color',
-        scrollbackLines: settings.scrollbackLines,
-        env: const [EnvVar(name: 'LANG', value: 'en_US.UTF-8')],
-        startupCommand: session.host.startupCommand,
-        palette: theme.palette(boldIsBright: settings.boldIsBright),
-      ),
-    );
-    final number = session.terminals.length + 1;
+    final number = session.takeTerminalNumber();
+    final shell = await session.ssh.openShell(options: shellOptions(session.host, number));
     final title = number == 1 ? session.host.title : '${session.host.title} ($number)';
     final hostId = session.host.id;
     // Only saved hosts keep a history; a quick connection leaves none.
@@ -94,12 +96,95 @@ class SessionManager extends ChangeNotifier {
       shell: shell,
       title: title,
       sessionId: session.id,
+      number: number,
       hostId: saved ? hostId : null,
       onCommand: saved ? (command) => _store.recordCommand(hostId, command) : null,
+      onConnectionLost: () => connectionLost(session),
     );
     session.terminals.add(controller);
     notifyListeners();
     return controller;
+  }
+
+  /// How a terminal starts: size (until the view sends its own), theme,
+  /// and the shell, tmux or startup command of the host.
+  ShellOptions shellOptions(Host host, int number) {
+    final settings = _store.settings;
+    return ShellOptions(
+      cols: 80,
+      rows: 24,
+      term: 'xterm-256color',
+      scrollbackLines: settings.scrollbackLines,
+      env: const [EnvVar(name: 'LANG', value: 'en_US.UTF-8')],
+      startupCommand: ShellLaunch.startupCommand(host),
+      command: ShellLaunch.command(host, number),
+      palette: _store.activeTheme.palette(boldIsBright: settings.boldIsBright),
+    );
+  }
+
+  // Reconnecting.
+
+  /// The connection of [session] dropped: keep its terminals on screen
+  /// and log in again in the background, with what is saved only.
+  void connectionLost(LiveSession session) {
+    if (!_sessions.contains(session) || session.reconnecting) return;
+    final restore = SessionRestore(store: _store, session: session, shellOptions: shellOptions, stillOpen: () => _sessions.contains(session));
+    final reconnector = Reconnector(
+      tryOnce: restore.tryOnce,
+      onStatus: (status) {
+        for (final terminal in session.terminals) {
+          terminal.showReconnecting(SessionRestore.note(status));
+        }
+        notifyListeners();
+      },
+      onDone: (back) {
+        if (!back) {
+          for (final terminal in session.terminals) {
+            terminal.connectionGone(restore.failure ?? 'The connection was lost and could not be restored.');
+          }
+        }
+        notifyListeners();
+      },
+    );
+    session.reconnector = reconnector;
+    for (final terminal in session.terminals) {
+      terminal.showReconnecting('Reconnecting…');
+    }
+    reconnector.start();
+    notifyListeners();
+  }
+
+  /// The user stopped the reconnect: the terminals end and can be
+  /// reconnected by hand.
+  void stopReconnecting(LiveSession session) {
+    final reconnector = session.reconnector;
+    if (reconnector == null || reconnector.finished) return;
+    reconnector.cancel();
+    for (final terminal in session.terminals) {
+      terminal.connectionGone('Reconnecting was stopped.');
+    }
+    notifyListeners();
+  }
+
+  /// The phone has a network again: reconnect at once instead of waiting,
+  /// and check that the other connections still get through.
+  Future<void> networkBack() async {
+    for (final session in List.of(_sessions)) {
+      if (session.reconnecting) session.reconnector!.retryNow();
+    }
+    await checkConnections();
+  }
+
+  /// Asks each open connection for an answer; one that gives none (the
+  /// network changed under it) is dropped and reconnected.
+  Future<void> checkConnections() async {
+    for (final session in List.of(_sessions)) {
+      if (session.reconnecting || !session.ssh.isConnected()) continue;
+      if (await session.ssh.checkAlive(timeoutSecs: 5)) continue;
+      if (!_sessions.contains(session) || session.reconnecting) continue;
+      unawaited(session.ssh.disconnect());
+      connectionLost(session);
+    }
   }
 
   void closeTerminal(TerminalController terminal) {
@@ -142,6 +227,7 @@ class SessionManager extends ChangeNotifier {
   /// Closes the connection with all its terminals and tunnels.
   Future<void> disconnect(LiveSession session) async {
     _sessions.remove(session);
+    session.reconnector?.cancel();
     for (final terminal in session.terminals) {
       terminal.dispose();
     }

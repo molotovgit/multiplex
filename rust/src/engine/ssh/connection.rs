@@ -40,6 +40,16 @@ impl Connection {
         self.handle.is_closed() || self.jump.as_ref().is_some_and(|j| j.is_closed())
     }
 
+    /// Asks the server for an answer and waits at most `limit`. False when
+    /// none came: after a network change the connection can look open
+    /// while nothing gets through any more.
+    pub async fn check_alive(&self, limit: Duration) -> bool {
+        if self.is_closed() {
+            return false;
+        }
+        matches!(tokio::time::timeout(limit, self.handle.send_ping()).await, Ok(Ok(())))
+    }
+
     pub async fn disconnect(&self) {
         let _ = self.handle.disconnect(Disconnect::ByApplication, "", "en").await;
         if let Some(jump) = &self.jump {

@@ -16,6 +16,9 @@ import 'tunnel_types.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 abstract class SshSession implements RustOpaqueInterface {
+  /// True when the server answers within `timeout_secs`.
+  Future<bool> checkAlive({required int timeoutSecs});
+
   /// Connects and logs in. Fails with a [`ConnectError`] the app can
   /// act on (for example: ask the user to trust the host key).
   static Future<SshSession> connect({required ConnectOptions options}) =>
@@ -38,6 +41,13 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.
   Future<RemoteShell> openShell({required ShellOptions options});
+
+  /// Joins a shell whose connection dropped to this (new) connection.
+  /// Its screen and history stay; the new shell carries on below them.
+  Future<void> reattachShell({
+    required RemoteShell shell,
+    required ShellOptions options,
+  });
 
   /// Starts a port forward on this connection.
   Future<ActiveTunnel> startTunnel({required TunnelSpec spec});

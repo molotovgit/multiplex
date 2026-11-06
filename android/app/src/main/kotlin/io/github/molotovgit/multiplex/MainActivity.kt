@@ -2,6 +2,8 @@ package io.github.molotovgit.multiplex
 
 import android.content.Intent
 import android.os.Bundle
+import android.net.ConnectivityManager
+import android.net.Network
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -18,10 +20,15 @@ import io.flutter.plugin.common.MethodChannel
  * open-connections notification and the home-screen widget's favourites
  * current, and passes on what other apps or the widget asked for (see
  * [IncomingIntents]).
+ *
+ * It also tells Flutter when a network becomes available (Wi-Fi and
+ * mobile data swapped, or the signal came back), so dropped connections
+ * reconnect at once instead of waiting for the next try.
  */
 class MainActivity : FlutterFragmentActivity() {
     private var incomingChannel: MethodChannel? = null
     private val incoming = IncomingIntents(this) { runOnUiThread { incomingChannel?.invokeMethod("changed", null) } }
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,6 +97,22 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> result.notImplemented()
             }
         }
+        watchNetwork(MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NETWORK_CHANNEL))
+    }
+
+    private fun watchNetwork(channel: MethodChannel) {
+        val manager = getSystemService(ConnectivityManager::class.java) ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                runOnUiThread { channel.invokeMethod("networkAvailable", null) }
+            }
+        }
+        try {
+            manager.registerDefaultNetworkCallback(callback)
+            networkCallback = callback
+        } catch (e: RuntimeException) {
+            // Without it, reconnects simply wait for their next try.
+        }
     }
 
     /** Android 13+ hides the "connected" notification without this. */
@@ -104,6 +127,10 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onDestroy() {
         // The app is being closed for good: let the connections go too.
         if (isFinishing) SessionService.update(this, 0, "")
+        networkCallback?.let { callback ->
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
+        }
+        networkCallback = null
         super.onDestroy()
     }
 
@@ -113,5 +140,6 @@ class MainActivity : FlutterFragmentActivity() {
         const val PRIVACY_CHANNEL = "multiplex/privacy"
         const val WIDGET_CHANNEL = "multiplex/widget"
         const val INCOMING_CHANNEL = "multiplex/incoming"
+        const val NETWORK_CHANNEL = "multiplex/network"
     }
 }

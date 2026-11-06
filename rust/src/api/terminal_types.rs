@@ -162,6 +162,8 @@ pub struct ShellOptions {
     pub env: Vec<EnvVar>,
     /// Command typed automatically once the shell is ready.
     pub startup_command: Option<String>,
+    /// Run this command instead of the login shell (for example tmux).
+    pub command: Option<String>,
     pub palette: TerminalPalette,
 }
 

@@ -6,6 +6,7 @@ import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'platform/home_widget_sync.dart';
 import 'sessions/background_keeper.dart';
+import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
 import 'ui/settings/app_licenses.dart';
@@ -22,5 +23,7 @@ Future<void> main() async {
   BackgroundKeeper(sessions);
   // Keeps the home-screen widget's favourite hosts current.
   HomeWidgetSync(store);
+  // Reconnects at once when the phone's network comes back.
+  NetworkWatcher(sessions);
   runApp(MultiplexApp(store: store, sessions: sessions));
 }

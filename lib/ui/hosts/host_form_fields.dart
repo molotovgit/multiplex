@@ -262,14 +262,24 @@ class _TagChoice extends StatelessWidget {
   }
 }
 
-/// Jump host and startup command.
+/// Jump host, tmux and startup command.
 class AdvancedFields extends StatelessWidget {
-  const AdvancedFields({super.key, required this.jumpHosts, required this.jumpId, required this.onJump, required this.startup});
+  const AdvancedFields({
+    super.key,
+    required this.jumpHosts,
+    required this.jumpId,
+    required this.onJump,
+    required this.startup,
+    required this.tmux,
+    required this.onTmux,
+  });
 
   final List<Host> jumpHosts;
   final String? jumpId;
   final ValueChanged<String?> onJump;
   final TextEditingController startup;
+  final bool tmux;
+  final ValueChanged<bool> onTmux;
 
   @override
   Widget build(BuildContext context) {
@@ -286,17 +296,25 @@ class AdvancedFields extends StatelessWidget {
           ],
           onChanged: onJump,
         ),
-        const SizedBox(height: 12),
-        TextFormField(
-          controller: startup,
-          autocorrect: false,
-          style: const TextStyle(fontFamily: 'JetBrainsMonoNerd'),
-          decoration: const InputDecoration(
-            labelText: 'Startup command (optional)',
-            hintText: 'tmux attach || tmux',
-            helperText: 'Typed for you when the terminal opens',
-          ),
+        const SizedBox(height: 4),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Keep session with tmux'),
+          subtitle: const Text('Each terminal runs in tmux on the server, so after a reconnect you are back on the same screen'),
+          value: tmux,
+          onChanged: onTmux,
         ),
+        if (!tmux)
+          TextFormField(
+            controller: startup,
+            autocorrect: false,
+            style: const TextStyle(fontFamily: 'JetBrainsMonoNerd'),
+            decoration: const InputDecoration(
+              labelText: 'Startup command (optional)',
+              hintText: 'cd /var/www',
+              helperText: 'Typed for you after login',
+            ),
+          ),
       ],
     );
   }

@@ -8,8 +8,12 @@
 //!
 //! The app never waits on the network: sending a key just queues it, and
 //! drawing just copies the current screen.
+//!
+//! When the connection drops, the same shell can be joined to a new
+//! connection ([`ShellSession::reattach`]): the screen and its history stay,
+//! and the output of the new channel continues below.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use russh::client::Msg;
@@ -43,6 +47,10 @@ struct Shared {
     /// True while a "Changed" event is waiting to be picked up.
     dirty: AtomicBool,
     closed: AtomicBool,
+    events: SharedSink<ShellEvent>,
+    /// Counts the channels this shell has had. The loops of an older
+    /// channel stop quietly once a newer one took over.
+    generation: AtomicU64,
 }
 
 impl Shared {
@@ -55,7 +63,7 @@ impl Shared {
 
 /// Handle the app uses to drive one shell.
 pub struct ShellSession {
-    outgoing: mpsc::UnboundedSender<Outgoing>,
+    outgoing: Mutex<mpsc::UnboundedSender<Outgoing>>,
     shared: Arc<Shared>,
 }
 
@@ -64,8 +72,54 @@ impl ShellSession {
     /// programs that do not understand the mouse (less, man).
     const ARROWS_PER_WHEEL_STEP: usize = 3;
 
+    /// Input modes a program may have left on; the program is gone once
+    /// a shell joins a new connection.
+    const RESET_MODES: &'static [u8] = b"\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?2004l\x1b[?1l\x1b[?25h\x1b[0m";
+
     /// Opens a terminal on the server and starts the shell.
     pub async fn open(conn: &Connection, options: ShellOptions, events: SharedSink<ShellEvent>) -> anyhow::Result<Self> {
+        let shared = Arc::new(Shared {
+            screen: Mutex::new(Screen {
+                emulator: TerminalEmulator::new(options.rows, options.cols, options.scrollback_lines as usize),
+                colors: ColorResolver::new(options.palette.clone()),
+            }),
+            dirty: AtomicBool::new(false),
+            closed: AtomicBool::new(false),
+            events,
+            generation: AtomicU64::new(0),
+        });
+        let outgoing = Self::start_channel(conn, &options, &shared).await?;
+        Ok(Self { outgoing: Mutex::new(outgoing), shared })
+    }
+
+    /// Joins this shell to a new connection after the old one dropped. The
+    /// screen and history stay; the new shell (or tmux session) carries on
+    /// below them, at the size the screen has now.
+    pub async fn reattach(&self, conn: &Connection, mut options: ShellOptions) -> anyhow::Result<()> {
+        {
+            let mut screen = self.shared.screen();
+            if screen.emulator.screen().alternate_screen() {
+                // Leave vim's or htop's screen for the normal one.
+                screen.emulator.process(b"\x1b[?1049l");
+            }
+            screen.emulator.process(Self::RESET_MODES);
+            if screen.emulator.screen().cursor_position().1 > 0 {
+                screen.emulator.process(b"\r\n");
+            }
+            (options.rows, options.cols) = screen.emulator.size();
+        }
+        let outgoing = Self::start_channel(conn, &options, &self.shared).await?;
+        *self.outgoing.lock().unwrap_or_else(|p| p.into_inner()) = outgoing;
+        self.shared.closed.store(false, Ordering::SeqCst);
+        if !self.shared.dirty.swap(true, Ordering::SeqCst) {
+            self.shared.events.emit(ShellEvent::Changed);
+        }
+        Ok(())
+    }
+
+    /// Opens a channel with a terminal, starts the shell (or the given
+    /// command) and the two tasks that serve it.
+    async fn start_channel(conn: &Connection, options: &ShellOptions, shared: &Arc<Shared>) -> anyhow::Result<mpsc::UnboundedSender<Outgoing>> {
         let channel = conn.handle().channel_open_session().await?;
         channel
             .request_pty(true, &options.term, u32::from(options.cols), u32::from(options.rows), 0, 0, &[])
@@ -74,26 +128,21 @@ impl ShellSession {
             // Servers often refuse custom variables; that is not fatal.
             let _ = channel.set_env(false, var.name.clone(), var.value.clone()).await;
         }
-        channel.request_shell(true).await?;
+        match options.command.as_deref().filter(|c| !c.trim().is_empty()) {
+            Some(command) => channel.exec(true, command).await?,
+            None => channel.request_shell(true).await?,
+        }
 
-        let shared = Arc::new(Shared {
-            screen: Mutex::new(Screen {
-                emulator: TerminalEmulator::new(options.rows, options.cols, options.scrollback_lines as usize),
-                colors: ColorResolver::new(options.palette.clone()),
-            }),
-            dirty: AtomicBool::new(false),
-            closed: AtomicBool::new(false),
-        });
+        let generation = shared.generation.fetch_add(1, Ordering::SeqCst) + 1;
         let (tx, rx) = mpsc::unbounded_channel();
         let (reader, writer) = channel.split();
-
         AsyncRuntime::spawn(Self::write_loop(writer, rx));
-        AsyncRuntime::spawn(Self::read_loop(reader, shared.clone(), tx.clone(), events));
+        AsyncRuntime::spawn(Self::read_loop(reader, shared.clone(), tx.clone(), generation));
 
-        if let Some(command) = options.startup_command.filter(|c| !c.trim().is_empty()) {
+        if let Some(command) = options.startup_command.as_deref().filter(|c| !c.trim().is_empty()) {
             let _ = tx.send(Outgoing::Bytes(format!("{command}\r").into_bytes()));
         }
-        Ok(Self { outgoing: tx, shared })
+        Ok(tx)
     }
 
     /// The current screen, ready to draw. Taking a frame re-arms the
@@ -130,7 +179,7 @@ impl ShellSession {
             }
             screen.emulator.resize(rows, cols);
         }
-        let _ = self.outgoing.send(Outgoing::Resize { cols, rows });
+        self.queue(Outgoing::Resize { cols, rows });
     }
 
     /// A scroll gesture of `lines` (positive = towards older output) at a
@@ -206,7 +255,11 @@ impl ShellSession {
 
     /// Ends the shell politely (EOF, then close).
     pub fn close(&self) {
-        let _ = self.outgoing.send(Outgoing::Close);
+        self.queue(Outgoing::Close);
+    }
+
+    fn queue(&self, job: Outgoing) {
+        let _ = self.outgoing.lock().unwrap_or_else(|p| p.into_inner()).send(job);
     }
 
     fn with_encoder<T>(&self, f: impl FnOnce(&KeyEncoder) -> T) -> T {
@@ -222,7 +275,7 @@ impl ShellSession {
 
     fn send_raw(&self, bytes: Vec<u8>) {
         if !bytes.is_empty() {
-            let _ = self.outgoing.send(Outgoing::Bytes(bytes));
+            self.queue(Outgoing::Bytes(bytes));
         }
     }
 
@@ -247,8 +300,10 @@ impl ShellSession {
         mut reader: ChannelReadHalf,
         shared: Arc<Shared>,
         replies: mpsc::UnboundedSender<Outgoing>,
-        events: SharedSink<ShellEvent>,
+        generation: u64,
     ) {
+        let events = shared.events.clone();
+        let current = |shared: &Shared| shared.generation.load(Ordering::SeqCst) == generation;
         let mut exit_code = None;
         while let Some(msg) = reader.wait().await {
             let data = match msg {
@@ -261,6 +316,9 @@ impl ShellSession {
                 ChannelMsg::Close => break,
                 _ => continue,
             };
+            if !current(&shared) {
+                break;
+            }
             let signals = shared.screen().emulator.process(&data);
             if !signals.replies.is_empty() {
                 let _ = replies.send(Outgoing::Bytes(signals.replies));
@@ -279,8 +337,12 @@ impl ShellSession {
                 break;
             }
         }
-        shared.closed.store(true, Ordering::SeqCst);
         let _ = replies.send(Outgoing::Close);
+        if !current(&shared) {
+            // A newer channel took over; this one ends without a word.
+            return;
+        }
+        shared.closed.store(true, Ordering::SeqCst);
         events.emit(match exit_code {
             Some(code) => ShellEvent::Exited { code: Some(code) },
             None => ShellEvent::Disconnected,

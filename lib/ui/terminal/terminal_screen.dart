@@ -32,6 +32,7 @@ import 'key_bar.dart';
 import 'split_controller.dart';
 import 'split_panes.dart';
 import 'split_picker.dart';
+import 'reconnect_banner.dart';
 import 'terminal_tab_strip.dart';
 import 'terminal_view.dart';
 
@@ -334,7 +335,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
               ),
             ),
-            if (_terminal.ended)
+            if (_terminal.reconnecting)
+              ReconnectBanner(
+                note: _terminal.reconnectNote ?? '',
+                onTryNow: () => widget.session.reconnector?.retryNow(),
+                onStop: () => AppScope.sessions(context).stopReconnecting(widget.session),
+              )
+            else if (_terminal.ended)
               _EndedBanner(reason: _terminal.endReason ?? '', onReconnect: _reconnect, onClose: _closeTerminal)
             else if (builtIn && !_keyboardHidden)
               TerminalKeyboardPanel(

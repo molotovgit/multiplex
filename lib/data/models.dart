@@ -43,6 +43,7 @@ class Host {
     this.keyId,
     this.jumpHostId,
     this.startupCommand,
+    this.keepWithTmux = false,
     this.colorTag = 0,
     this.lastConnectedAt,
     this.askUnlock = false,
@@ -67,6 +68,10 @@ class Host {
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
+
+  /// Run each terminal in a tmux session, so a reconnect lands on the
+  /// same screen.
+  final bool keepWithTmux;
 
   /// Index into the tag colours, 0 = none.
   final int colorTag;
@@ -101,6 +106,7 @@ class Host {
     String? Function()? keyId,
     String? Function()? jumpHostId,
     String? Function()? startupCommand,
+    bool? keepWithTmux,
     int? colorTag,
     DateTime? lastConnectedAt,
     bool? askUnlock,
@@ -119,6 +125,7 @@ class Host {
         keyId: keyId != null ? keyId() : this.keyId,
         jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
+        keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         colorTag: colorTag ?? this.colorTag,
         lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
         askUnlock: askUnlock ?? this.askUnlock,
@@ -138,6 +145,7 @@ class Host {
         'keyId': keyId,
         'jumpHostId': jumpHostId,
         'startupCommand': startupCommand,
+        'keepWithTmux': keepWithTmux,
         'colorTag': colorTag,
         'lastConnectedAt': lastConnectedAt?.toIso8601String(),
         'askUnlock': askUnlock,
@@ -157,6 +165,7 @@ class Host {
         keyId: Json.strOrNull(j, 'keyId'),
         jumpHostId: Json.strOrNull(j, 'jumpHostId'),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
+        keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         colorTag: Json.integer(j, 'colorTag', 0),
         lastConnectedAt: Json.time(j, 'lastConnectedAt'),
         askUnlock: Json.boolean(j, 'askUnlock', false),

@@ -19,6 +19,7 @@ fn options() -> ShellOptions {
         scrollback_lines: 100,
         env: vec![],
         startup_command: None,
+        command: None,
         palette: TerminalPalette::default(),
     }
 }

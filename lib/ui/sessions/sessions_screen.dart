@@ -96,7 +96,10 @@ class _SessionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(connected ? 'Since $since' : 'Disconnected', style: text.bodySmall?.copyWith(color: connected ? colors.muted : colors.danger)),
+                Text(
+                  connected ? 'Since $since' : (session.reconnecting ? 'Reconnecting…' : 'Disconnected'),
+                  style: text.bodySmall?.copyWith(color: connected || session.reconnecting ? colors.muted : colors.danger),
+                ),
               ],
             ),
             const SizedBox(height: 8),

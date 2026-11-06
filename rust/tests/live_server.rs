@@ -77,6 +77,7 @@ async fn live_exec_and_shell() {
         scrollback_lines: 500,
         env: vec![],
         startup_command: None,
+        command: None,
         palette: TerminalPalette::default(),
     };
     let shell = ShellSession::open(&conn, options, Arc::new(move |e| tx.send(e).is_ok())).await.unwrap();
