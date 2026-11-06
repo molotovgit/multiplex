@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../app/app_scope.dart';
 import '../ui/common/widgets.dart';
 import '../ui/hosts/host_connector.dart';
+import '../ui/share/share_upload_screen.dart';
 import 'incoming_actions.dart';
 
 /// Carries out what Android asks from outside the app (see
@@ -40,7 +43,9 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
   Future<void> _takeAll() async {
     for (final action in await _channel.take()) {
       if (!mounted) return;
-      await _handle(action);
+      // Not awaited: each action opens a page, which only completes when
+      // the user leaves it.
+      unawaited(_handle(action));
     }
   }
 
@@ -53,9 +58,8 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
           return;
         }
         await HostConnector.openTerminal(context, host);
-      case ShareAction():
-        // Handled once sharing to a server is in place.
-        break;
+      case ShareAction(:final files):
+        await ShareUploadScreen.open(context, files);
     }
   }
 

@@ -21,7 +21,7 @@ import io.flutter.plugin.common.MethodChannel
  */
 class MainActivity : FlutterFragmentActivity() {
     private var incomingChannel: MethodChannel? = null
-    private val incoming = IncomingIntents { runOnUiThread { incomingChannel?.invokeMethod("changed", null) } }
+    private val incoming = IncomingIntents(this) { runOnUiThread { incomingChannel?.invokeMethod("changed", null) } }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

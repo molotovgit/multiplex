@@ -47,6 +47,7 @@ class Host {
     this.lastConnectedAt,
     this.askUnlock = false,
     this.favourite = false,
+    this.uploadFolder,
   });
 
   final String id;
@@ -78,6 +79,9 @@ class Host {
   /// Shown on the Android home-screen widget.
   final bool favourite;
 
+  /// The server folder files shared from other apps went to last time.
+  final String? uploadFolder;
+
   /// "user@address:port", leaving out the default port.
   String get target => '${username.isEmpty ? '' : '$username@'}$address${port == 22 ? '' : ':$port'}';
 
@@ -101,6 +105,7 @@ class Host {
     DateTime? lastConnectedAt,
     bool? askUnlock,
     bool? favourite,
+    String? Function()? uploadFolder,
   }) =>
       Host(
         id: id,
@@ -118,6 +123,7 @@ class Host {
         lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
         askUnlock: askUnlock ?? this.askUnlock,
         favourite: favourite ?? this.favourite,
+        uploadFolder: uploadFolder != null ? uploadFolder() : this.uploadFolder,
       );
 
   Map<String, dynamic> toJson() => {
@@ -136,6 +142,7 @@ class Host {
         'lastConnectedAt': lastConnectedAt?.toIso8601String(),
         'askUnlock': askUnlock,
         'favourite': favourite,
+        'uploadFolder': uploadFolder,
       };
 
   factory Host.fromJson(Map<String, dynamic> j) => Host(
@@ -154,6 +161,7 @@ class Host {
         lastConnectedAt: Json.time(j, 'lastConnectedAt'),
         askUnlock: Json.boolean(j, 'askUnlock', false),
         favourite: Json.boolean(j, 'favourite', false),
+        uploadFolder: Json.strOrNull(j, 'uploadFolder'),
       );
 }
 
