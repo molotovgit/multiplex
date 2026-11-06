@@ -1,5 +1,7 @@
 package io.github.molotovgit.multiplex
 
+import android.content.Intent
+import android.os.Bundle
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -12,11 +14,42 @@ import io.flutter.plugin.common.MethodChannel
  * It also answers small native calls from Flutter: keep the screen on
  * while a terminal is open, so long-running commands stay visible, and
  * hide the window from screenshots and the recent-apps preview while a
- * terminal or the keychain is shown (FLAG_SECURE).
+ * terminal or the keychain is shown (FLAG_SECURE). It also keeps the
+ * open-connections notification and the home-screen widget's favourites
+ * current, and passes on what other apps or the widget asked for (see
+ * [IncomingIntents]).
  */
 class MainActivity : FlutterFragmentActivity() {
+    private var incomingChannel: MethodChannel? = null
+    private val incoming = IncomingIntents { runOnUiThread { incomingChannel?.invokeMethod("changed", null) } }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // A recreated activity already handled the intent that started it.
+        if (savedInstanceState == null) incoming.read(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        incoming.read(intent)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        incomingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, INCOMING_CHANNEL).apply {
+            setMethodCallHandler { call, result ->
+                if (call.method == "take") result.success(incoming.take()) else result.notImplemented()
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "setFavourites") {
+                FavouritesWidget.save(this, call.argument<String>("json") ?: "[]")
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "setKeepScreenOn" -> {
@@ -78,5 +111,7 @@ class MainActivity : FlutterFragmentActivity() {
         const val SCREEN_CHANNEL = "multiplex/screen"
         const val SESSIONS_CHANNEL = "multiplex/sessions"
         const val PRIVACY_CHANNEL = "multiplex/privacy"
+        const val WIDGET_CHANNEL = "multiplex/widget"
+        const val INCOMING_CHANNEL = "multiplex/incoming"
     }
 }

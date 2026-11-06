@@ -36,6 +36,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
   late String? _jumpId = _original.jumpHostId;
   late int _tag = _original.colorTag;
   late bool _askUnlock = _original.askUnlock;
+  late bool _favourite = _original.favourite;
   bool _keyError = false;
 
   bool get _isNew => widget.host == null;
@@ -61,6 +62,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
     startupCommand: () => _startup.text.trim().isEmpty ? null : _startup.text.trim(),
     colorTag: _tag,
     askUnlock: _askUnlock,
+    favourite: _favourite,
   );
 
   bool get _changed => _current().toJson().toString() != _original.toJson().toString();
@@ -154,6 +156,13 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
                       onNewGroup: _newGroup,
                       tag: _tag,
                       onTag: (t) => setState(() => _tag = t),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _favourite,
+                      onChanged: (on) => setState(() => _favourite = on),
+                      title: const Text('Favourite'),
+                      subtitle: const Text('Shown on the Multiplex home-screen widget (the first 4 favourites).'),
                     ),
                     const SectionHeader('Advanced'),
                     AdvancedFields(

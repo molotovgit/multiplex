@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home-screen widget: a title and up to four favourite hosts. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="32dp"
+        android:gravity="center_vertical"
+        android:text="@string/widget_title"
+        android:textColor="@color/widget_muted"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="48dp"
+        android:gravity="center_vertical"
+        android:text="@string/widget_empty"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp" />
+
+    <TextView android:id="@+id/widget_host_0" style="@style/WidgetHost" />
+    <TextView android:id="@+id/widget_host_1" style="@style/WidgetHost" />
+    <TextView android:id="@+id/widget_host_2" style="@style/WidgetHost" />
+    <TextView android:id="@+id/widget_host_3" style="@style/WidgetHost" />
+</LinearLayout>

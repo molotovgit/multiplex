@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text, colours and the row style of the home-screen widget. The colours
+     follow the app's dark Ember look (see ic_launcher_colors.xml). -->
+<resources>
+    <string name="widget_title">Multiplex</string>
+    <string name="widget_empty">Mark hosts as favourite in Multiplex to see them here.</string>
+    <string name="widget_description">Your favourite servers. Tap one to connect.</string>
+    <string name="widget_connect_to">Connect to %1$s</string>
+
+    <color name="widget_background">#F2141618</color>
+    <color name="widget_row">#FF24272B</color>
+    <color name="widget_text">#FFE8EAED</color>
+    <color name="widget_muted">#FF9AA0A6</color>
+
+    <style name="WidgetHost">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:background">@drawable/widget_row</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:visibility">gone</item>
+    </style>
+</resources>

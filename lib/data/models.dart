@@ -46,6 +46,7 @@ class Host {
     this.colorTag = 0,
     this.lastConnectedAt,
     this.askUnlock = false,
+    this.favourite = false,
   });
 
   final String id;
@@ -74,6 +75,9 @@ class Host {
   /// when the app itself is unlocked.
   final bool askUnlock;
 
+  /// Shown on the Android home-screen widget.
+  final bool favourite;
+
   /// "user@address:port", leaving out the default port.
   String get target => '${username.isEmpty ? '' : '$username@'}$address${port == 22 ? '' : ':$port'}';
 
@@ -96,6 +100,7 @@ class Host {
     int? colorTag,
     DateTime? lastConnectedAt,
     bool? askUnlock,
+    bool? favourite,
   }) =>
       Host(
         id: id,
@@ -112,6 +117,7 @@ class Host {
         colorTag: colorTag ?? this.colorTag,
         lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
         askUnlock: askUnlock ?? this.askUnlock,
+        favourite: favourite ?? this.favourite,
       );
 
   Map<String, dynamic> toJson() => {
@@ -129,6 +135,7 @@ class Host {
         'colorTag': colorTag,
         'lastConnectedAt': lastConnectedAt?.toIso8601String(),
         'askUnlock': askUnlock,
+        'favourite': favourite,
       };
 
   factory Host.fromJson(Map<String, dynamic> j) => Host(
@@ -146,6 +153,7 @@ class Host {
         colorTag: Json.integer(j, 'colorTag', 0),
         lastConnectedAt: Json.time(j, 'lastConnectedAt'),
         askUnlock: Json.boolean(j, 'askUnlock', false),
+        favourite: Json.boolean(j, 'favourite', false),
       );
 }
 

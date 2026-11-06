@@ -76,7 +76,15 @@ class HostTile extends StatelessWidget {
       minVerticalPadding: 8,
       onTap: () => HostConnector.openTerminal(context, host),
       leading: _HostBadge(host: host, connected: connected),
-      title: Text(host.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Row(
+        children: [
+          Flexible(child: Text(host.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+          if (host.favourite) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.star, size: 16, color: colors.accent, semanticLabel: 'Favourite'),
+          ],
+        ],
+      ),
       subtitle: Row(
         children: [
           Flexible(
@@ -104,6 +112,7 @@ class HostTile extends StatelessWidget {
           1 => _openFiles(context),
           2 => _open(context, TunnelsScreen(host: host)),
           8 => ServerStatusScreen.open(context, host),
+          9 => AppScope.store(context).saveHost(host.copyWith(favourite: !host.favourite)),
           3 => _open(context, HostEditorScreen(host: host)),
           4 => _duplicate(context),
           6 => AppScope.store(context).moveHost(host.id, -1),
@@ -138,8 +147,15 @@ class HostTile extends StatelessWidget {
             value: 8,
             child: ListTile(leading: Icon(Icons.monitor_heart_outlined), title: Text('Server status')),
           ),
-          PopupMenuDivider(),
+          const PopupMenuDivider(),
           PopupMenuItem(
+            value: 9,
+            child: ListTile(
+              leading: Icon(host.favourite ? Icons.star : Icons.star_outline),
+              title: Text(host.favourite ? 'Remove from favourites' : 'Add to favourites'),
+            ),
+          ),
+          const PopupMenuItem(
             value: 3,
             child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Edit')),
           ),

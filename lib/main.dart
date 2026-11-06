@@ -4,6 +4,7 @@ import 'app/terminal_fonts.dart';
 import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
+import 'platform/home_widget_sync.dart';
 import 'sessions/background_keeper.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
@@ -19,5 +20,7 @@ Future<void> main() async {
   final sessions = SessionManager(store);
   // Lives as long as the app: keeps connections alive in the background.
   BackgroundKeeper(sessions);
+  // Keeps the home-screen widget's favourite hosts current.
+  HomeWidgetSync(store);
   runApp(MultiplexApp(store: store, sessions: sessions));
 }

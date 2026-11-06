@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/vault_store.dart';
+import '../platform/incoming_actions_handler.dart';
 import '../sessions/session_manager.dart';
 import '../ui/appearance/theme_switcher.dart';
 import '../ui/home/home_shell.dart';
@@ -36,7 +37,7 @@ class MultiplexApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.build(store.activeTheme),
             themeAnimationDuration: AppMotion.resolve(store.settings.motion, reduceMotion: AppMotion.systemReducesMotion).theme,
-            home: const LockGate(child: HomeShell()),
+            home: const LockGate(child: IncomingActionsHandler(child: HomeShell())),
           ),
         ),
       ),
