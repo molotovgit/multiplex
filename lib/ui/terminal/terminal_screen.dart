@@ -28,6 +28,7 @@ import '../snippets/snippet_blanks_sheet.dart';
 import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import '../common/collapsible.dart';
+import 'broadcast_banner.dart';
 import 'key_bar.dart';
 import 'split_controller.dart';
 import 'split_panes.dart';
@@ -311,6 +312,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
         body: Column(
           children: [
+            if (AppScope.sessions(context).broadcast.includes(_terminal))
+              BroadcastBanner(count: AppScope.sessions(context).broadcast.size, onStop: AppScope.sessions(context).broadcast.stop),
             if (showTabs)
               Collapsible(
                 open: _tabsOpen,

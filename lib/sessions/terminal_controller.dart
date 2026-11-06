@@ -24,6 +24,7 @@ class TerminalController extends ChangeNotifier {
     this.onCommand,
     this.onConnectionLost,
     this.onCommandDone,
+    this.onInput,
     // The title is private and changes later, so it cannot be a named "this." parameter.
     // ignore: prefer_initializing_formals
   }) : _title = title {
@@ -53,6 +54,10 @@ class TerminalController extends ChangeNotifier {
 
   /// Told each command that finished, with how long it ran.
   final void Function(FinishedCommand done)? onCommandDone;
+
+  /// Told every piece of input sent to this shell, as a function that
+  /// sends it to a shell, so broadcast mode can send it to others too.
+  final void Function(TerminalController from, void Function(RemoteShell shell) send)? onInput;
 
   /// How many screens show this terminal right now.
   int _views = 0;
@@ -120,27 +125,28 @@ class TerminalController extends ChangeNotifier {
     if (text.isEmpty || _inputOff) return;
     final mods = _takeModifiers();
     _beforeText(text, mods);
-    shell.sendText(text: text, mods: mods);
+    _send((s) => s.sendText(text: text, mods: mods));
   }
 
   void key(TerminalKey key, {bool shift = false}) {
     if (_inputOff) return;
     final mods = _takeModifiers();
     _beforeKey(key);
-    shell.sendKey(key: key, mods: KeyModifiers(ctrl: mods.ctrl, alt: mods.alt, shift: shift));
+    final all = KeyModifiers(ctrl: mods.ctrl, alt: mods.alt, shift: shift);
+    _send((s) => s.sendKey(key: key, mods: all));
   }
 
   /// A key with explicit modifiers, from a hardware keyboard.
   void keyWith(TerminalKey key, KeyModifiers mods) {
     if (_inputOff) return;
     _beforeKey(key);
-    shell.sendKey(key: key, mods: mods);
+    _send((s) => s.sendKey(key: key, mods: mods));
   }
 
   void textWith(String text, KeyModifiers mods) {
     if (_inputOff) return;
     _beforeText(text, mods);
-    shell.sendText(text: text, mods: mods);
+    _send((s) => s.sendText(text: text, mods: mods));
   }
 
   void paste(String text) {
@@ -151,7 +157,12 @@ class TerminalController extends ChangeNotifier {
     } else {
       _capture.input(_screen);
     }
-    shell.paste(text: text);
+    _send((s) => s.paste(text: text));
+  }
+
+  void _send(void Function(RemoteShell shell) send) {
+    send(shell);
+    onInput?.call(this, send);
   }
 
   // Command capture: tell it about each key before the key is sent, so

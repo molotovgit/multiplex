@@ -8,6 +8,7 @@ import '../common/widgets.dart';
 import '../files/files_screen.dart';
 import '../terminal/terminal_screen.dart';
 import '../tunnels/tunnels_screen.dart';
+import 'broadcast_sheet.dart';
 
 /// Everything that is open right now: connections with their terminals
 /// and tunnels.
@@ -18,7 +19,24 @@ class SessionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sessions = AppScope.sessions(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sessions')),
+      appBar: AppBar(
+        title: const Text('Sessions'),
+        actions: [
+          ListenableBuilder(
+            listenable: sessions,
+            builder: (context, _) {
+              final open = sessions.terminals.where((t) => !t.ended).length;
+              if (open < 2) return const SizedBox.shrink();
+              final on = sessions.broadcast.on;
+              return TextButton.icon(
+                onPressed: () => BroadcastSheet.show(context),
+                icon: Icon(on ? Icons.podcasts : Icons.podcasts_outlined),
+                label: Text(on ? 'Broadcasting' : 'Broadcast'),
+              );
+            },
+          ),
+        ],
+      ),
       body: ListenableBuilder(
         listenable: sessions,
         builder: (context, _) {

@@ -7,6 +7,7 @@ import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
 import '../src/rust/api/terminal_types.dart';
 import '../src/rust/api/tunnel.dart';
+import 'broadcast.dart';
 import 'connect_flow.dart';
 import 'done_notifier.dart';
 import 'reconnector.dart';
@@ -56,11 +57,15 @@ class SessionManager extends ChangeNotifier {
     // Connections can drop at any time; check regularly so the UI shows it
     // and tunnel counters stay fresh.
     _ticker = Timer.periodic(const Duration(seconds: 2), (_) => notifyListeners());
+    broadcast.addListener(notifyListeners);
   }
 
   final VaultStore _store;
   final DoneNotifier _done;
   final List<LiveSession> _sessions = [];
+
+  /// Terminals that all get what is typed in one of them.
+  final broadcast = Broadcast();
   late final Timer _ticker;
 
   List<LiveSession> get sessions => List.unmodifiable(_sessions);
@@ -103,6 +108,7 @@ class SessionManager extends ChangeNotifier {
       hostId: saved ? hostId : null,
       onCommand: saved ? (command) => _store.recordCommand(hostId, command) : null,
       onConnectionLost: () => connectionLost(session),
+      onInput: broadcast.forward,
       onCommandDone: (done) => _done.finished(session.host.title, done, terminalOnScreen: controller.onScreen),
     );
     session.terminals.add(controller);
@@ -194,6 +200,7 @@ class SessionManager extends ChangeNotifier {
   void closeTerminal(TerminalController terminal) {
     for (final session in _sessions) {
       if (session.terminals.remove(terminal)) {
+        broadcast.remove(terminal);
         terminal.dispose();
         break;
       }
@@ -233,6 +240,7 @@ class SessionManager extends ChangeNotifier {
     _sessions.remove(session);
     session.reconnector?.cancel();
     for (final terminal in session.terminals) {
+      broadcast.remove(terminal);
       terminal.dispose();
     }
     session.terminals.clear();
@@ -253,6 +261,7 @@ class SessionManager extends ChangeNotifier {
   @override
   void dispose() {
     _ticker.cancel();
+    broadcast.dispose();
     super.dispose();
   }
 }
