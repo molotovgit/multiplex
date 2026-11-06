@@ -268,6 +268,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   void _openPage(Widget page) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
 
+  /// Shows a tapped path in the file browser of the pane's own
+  /// connection (the second pane may be on another server).
+  void _openPath(TerminalController terminal, String path) {
+    final session = AppScope.sessions(context).byId(terminal.sessionId) ?? widget.session;
+    _openPage(FilesScreen(session: session, initialPath: path));
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
@@ -367,6 +374,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   focusNode: focus,
                   search: _searches.of(terminal),
                   onFind: () => _openSearch(terminal),
+                  onOpenPath: (path) => _openPath(terminal, path),
                   systemKeyboard: !builtIn,
                   onWantsKeyboard: () {
                     if (_keyboardHidden) setState(() => _keyboardHidden = false);

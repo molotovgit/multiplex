@@ -16,9 +16,13 @@ import 'two_pane/two_pane_screen.dart';
 
 /// Remote file browser (SFTP) for one live session.
 class FilesScreen extends StatefulWidget {
-  const FilesScreen({super.key, required this.session});
+  const FilesScreen({super.key, required this.session, this.initialPath});
 
   final LiveSession session;
+
+  /// Opens here instead of the home folder: a folder, or a file whose
+  /// folder opens ("~/logs", "/etc/nginx/nginx.conf").
+  final String? initialPath;
 
   @override
   State<FilesScreen> createState() => _FilesScreenState();
@@ -38,7 +42,7 @@ class _FilesScreenState extends State<FilesScreen> {
   @override
   void initState() {
     super.initState();
-    _browser.start();
+    _browser.start(at: widget.initialPath);
     _finished = _queue.finished.listen(_transferEnded);
   }
 

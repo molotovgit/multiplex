@@ -165,7 +165,7 @@ class TerminalPainter extends CustomPainter {
   /// own colour are filled.
   final bool paintBackground;
 
-  /// Search matches.
+  /// Search matches and link underlines.
   final TerminalMarks marks;
 
   @override
@@ -193,6 +193,7 @@ class TerminalPainter extends CustomPainter {
       } else {
         _paintSelectedRow(canvas, runs, y, selected);
       }
+      marks.paintOver(canvas, row, w, h);
     }
     _paintCursor(canvas);
   }

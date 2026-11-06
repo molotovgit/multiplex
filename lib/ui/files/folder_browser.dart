@@ -69,8 +69,9 @@ class FolderBrowser extends ChangeNotifier {
   /// How many entries the hidden-files filter is leaving out.
   int get hiddenCount => _showHidden ? 0 : _entries.where((e) => RemotePaths.isHidden(e.name)).length;
 
-  /// Opens the SFTP channel and lists the home folder.
-  Future<void> start() async {
+  /// Opens the SFTP channel and lists the home folder, or the folder `at`
+  /// (or the folder of the file `at`) when it can be opened.
+  Future<void> start({String? at}) async {
     _status = BrowserStatus.opening;
     _openError = null;
     _notify();
@@ -87,6 +88,7 @@ class FolderBrowser extends ChangeNotifier {
       _status = BrowserStatus.failed;
     }
     _notify();
+    if (at != null && _status == BrowserStatus.ready && await goTo(at) != null) await goTo(RemotePaths.parent(at));
   }
 
   /// Lists `dir` and makes it the current folder. Returns what went wrong,

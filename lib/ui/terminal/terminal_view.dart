@@ -12,6 +12,8 @@ import '../../app/theme_slides.dart';
 import '../../data/app_settings.dart';
 import '../../sessions/terminal_controller.dart';
 import '../common/theme_backdrop.dart';
+import 'links/link_sheet.dart';
+import 'links/screen_links.dart';
 import 'search/terminal_search.dart';
 import 'terminal_keyboard.dart';
 import 'terminal_marks.dart';
@@ -35,6 +37,7 @@ class TerminalView extends StatefulWidget {
     this.onWantsKeyboard,
     this.search,
     this.onFind,
+    this.onOpenPath,
   });
 
   final TerminalController controller;
@@ -53,6 +56,9 @@ class TerminalView extends StatefulWidget {
   /// Ctrl+Shift+F on a hardware keyboard.
   final VoidCallback? onFind;
 
+  /// Shows a tapped path in the file browser.
+  final ValueChanged<String>? onOpenPath;
+
   @override
   State<TerminalView> createState() => _TerminalViewState();
 }
@@ -64,6 +70,10 @@ class _TerminalViewState extends State<TerminalView> {
   double _padding = 4;
 
   final _cache = LineCache();
+  final _linkFinder = ScreenLinks();
+
+  /// The links on the frame being shown, for taps.
+  List<ScreenLink> _links = const [];
   Timer? _blink;
   bool _cursorOn = true;
   CellSelection? _selection;
@@ -120,6 +130,13 @@ class _TerminalViewState extends State<TerminalView> {
       return;
     }
     final (row, col) = _cellAt(details.localPosition, m);
+    // Programs that use the mouse (htop, mc) get the tap, links or not.
+    final link = _terminal.frame?.mouseReporting == false ? ScreenLinks.at(_links, row, col) : null;
+    if (link != null) {
+      HapticFeedback.selectionClick();
+      LinkSheet.show(context, link.link, onOpenPath: widget.onOpenPath);
+      return;
+    }
     if (!_terminal.click(row, col)) _showKeyboard();
   }
 
@@ -202,9 +219,14 @@ class _TerminalViewState extends State<TerminalView> {
         final slide = ActiveSlide.of(theme, settings);
         _padding = style.terminal.padding;
         final search = widget.search;
-        final marks = frame == null || search == null || !search.isOpen
-            ? TerminalMarks.none
-            : TerminalMarks(matches: search.visibleIn(frame), current: search.currentIn(frame), accent: Color(theme.accent));
+        final searching = frame != null && search != null && search.isOpen;
+        _links = frame == null ? const [] : _linkFinder.of(frame);
+        final marks = TerminalMarks(
+          matches: searching ? search.visibleIn(frame) : const [],
+          current: searching ? search.currentIn(frame) : null,
+          links: [for (final link in _links) link.span],
+          accent: Color(theme.accent),
+        );
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -216,7 +238,7 @@ class _TerminalViewState extends State<TerminalView> {
               onFind: widget.onFind,
               child: Semantics(
                 label: 'Terminal',
-                hint: 'Tap to type. Drag to scroll. Long press to select text.',
+                hint: 'Tap to type. Tap an underlined link for its actions. Drag to scroll. Long press to select text.',
                 child: Listener(
                   onPointerSignal: (e) => _onPointerSignal(e, metrics),
                   child: GestureDetector(
