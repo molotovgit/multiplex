@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../app/gloss.dart';
 import '../../app/theme_style.dart';
 
 import 'key_spec.dart';
@@ -58,13 +57,11 @@ class KeyFace extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: look.metrics.gapX, vertical: look.metrics.gapY),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: cap == KeyCapStyle.glossy ? null : fill,
-          // Glossy keys are shaded from white and pushed in while held.
-          gradient: cap == KeyCapStyle.glossy ? (pressed ? Gloss.pressed(fill) : Gloss.button(fill)) : null,
+          color: fill,
           borderRadius: look.radius,
           border: oneShot
               ? Border.all(color: p.accent, width: 1.5)
-              : (cap == KeyCapStyle.outlined || cap == KeyCapStyle.glossy ? Border.all(color: p.bubbleBorder) : null),
+              : (cap == KeyCapStyle.outlined ? Border.all(color: p.bubbleBorder) : null),
           boxShadow: cap == KeyCapStyle.raised ? [BoxShadow(color: p.shadow, offset: const Offset(0, 1))] : null,
         ),
         child: LayoutBuilder(

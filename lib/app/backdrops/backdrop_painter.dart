@@ -74,7 +74,6 @@ abstract class BackdropPainter {
         BackdropPattern.topo => const TopoPainter(),
         BackdropPattern.facets => const FacetPainter(),
         BackdropPattern.stars => const StarfieldPainter(),
-        BackdropPattern.hills => const HillsPainter(),
       };
 
   /// Fills [size] with the background colour, then draws the pattern.

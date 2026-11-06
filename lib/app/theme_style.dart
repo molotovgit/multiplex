@@ -21,8 +21,7 @@ enum SurfaceStyle {
   flat('Flat', 'No border, no shadow'),
   outlined('Outlined', 'A thin border'),
   raised('Raised', 'A soft shadow'),
-  glass('Glass', 'See-through, with blur'),
-  glossy('Glossy', 'Shaded, shiny bars and buttons, like early-2000s desktops');
+  glass('Glass', 'See-through, with blur');
 
   const SurfaceStyle(this.label, this.description);
 
@@ -68,8 +67,7 @@ enum IconStyle {
 enum KeyCapStyle {
   flat('Flat'),
   outlined('Outlined'),
-  raised('Raised'),
-  glossy('Glossy');
+  raised('Raised');
 
   const KeyCapStyle(this.label);
 
@@ -142,8 +140,7 @@ enum BackdropPattern {
   scanlines('Scanlines'),
   topo('Contour rings'),
   facets('Low-poly facets'),
-  stars('Starfield'),
-  hills('Rolling hills');
+  stars('Starfield');
 
   const BackdropPattern(this.label);
 

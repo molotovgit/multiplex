@@ -82,9 +82,6 @@ class SurfaceLook {
           elevation: 0,
           shadow: shadow,
         ),
-      // Bars are drawn banded in the accent (see Gloss); cards stay plain
-      // and light with a thin edge, like the panes of an old window.
-      SurfaceStyle.glossy => SurfaceLook(style: style, card: c.surface, bar: c.accent, side: BorderSide(color: c.outline), elevation: 0, shadow: shadow),
     };
   }
 
@@ -100,9 +97,6 @@ class SurfaceLook {
   final Color shadow;
 
   bool get isGlass => style == SurfaceStyle.glass;
-
-  /// Shaded, shiny bars and buttons.
-  bool get isGlossy => style == SurfaceStyle.glossy;
 
   /// Blur behind see-through bars.
   static const glassBlur = 18.0;
