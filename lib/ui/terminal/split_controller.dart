@@ -45,7 +45,12 @@ class SplitController extends ChangeNotifier {
   /// Shows [terminal] in the second pane and gives it the focus.
   void open(TerminalController terminal) {
     if (identical(terminal, primary)) return;
+    _release();
     _second = terminal;
+    // Its reconnect, recording and broadcast state show on this screen,
+    // and it counts as on screen for "done" notifications.
+    terminal.addListener(notifyListeners);
+    terminal.shownOnScreen();
     _secondFocused = true;
     secondFocus.requestFocus();
     notifyListeners();
@@ -54,6 +59,7 @@ class SplitController extends ChangeNotifier {
   /// Back to one terminal.
   void close() {
     if (_second == null) return;
+    _release();
     _second = null;
     _secondFocused = false;
     primaryFocus.requestFocus();
@@ -94,8 +100,18 @@ class SplitController extends ChangeNotifier {
     if (s != null && !sessions.terminals.contains(s)) close();
   }
 
+  void _release() {
+    _second?.removeListener(notifyListeners);
+    _second?.leftScreen();
+  }
+
+  /// The terminals on screen: the primary one, and the second pane's
+  /// when [shown].
+  List<TerminalController> visible({required bool shown}) => [primary, if (shown && _second != null) _second!];
+
   @override
   void dispose() {
+    _release();
     secondFocus.dispose();
     super.dispose();
   }

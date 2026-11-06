@@ -29,6 +29,7 @@ import '../snippets/snippets_screen.dart';
 import '../tunnels/tunnels_screen.dart';
 import '../common/collapsible.dart';
 import 'broadcast_banner.dart';
+import 'ended_banner.dart';
 import 'key_bar.dart';
 import 'split_controller.dart';
 import 'split_panes.dart';
@@ -260,6 +261,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
         // A theme can hide the tabs, but never once there are two terminals
         // to switch between.
         final showTabs = tabsByStyle || widget.session.terminals.length > 1;
+        final sessions = AppScope.sessions(context);
+        final typing = _typing;
+        final visible = _split.visible(shown: SplitLayout.of(context));
+        // A pane whose connection is being restored; the typing one first.
+        final lost = [typing, ...visible].where((t) => t.reconnecting).firstOrNull;
+        final lostSession = lost == null ? null : sessions.byId(lost.sessionId) ?? widget.session;
+        final broadcasting = visible.any(sessions.broadcast.includes);
         return Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
@@ -289,7 +297,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 icon: Icon(_split.isOpen ? Icons.crop_square : Icons.vertical_split_outlined),
                 onPressed: _toggleSplit,
               ),
-            if (_terminal.recording) RecordingButton(onStop: () => RecordingActions.toggle(context, _terminal)),
+            for (final pane in visible)
+              if (pane.recording) RecordingButton(onStop: () => RecordingActions.toggle(context, pane)),
             IconButton(tooltip: 'Snippets', icon: const AppIcon(AppIcons.snippets), onPressed: _pickSnippet),
             IconButton(
               tooltip: 'Files',
@@ -305,8 +314,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
               onBigger: () => _changeFontSize(1),
               onSmaller: () => _changeFontSize(-1),
               onClearHistory: _terminal.shell.clearHistory,
-              recording: _terminal.recording,
-              onRecord: () => RecordingActions.toggle(context, _terminal),
+              recording: typing.recording,
+              onRecord: () => RecordingActions.toggle(context, typing),
               onSwitchTheme: () => ThemeSwitcherSheet.show(context),
               onNextBackground: AppScope.store(context).activeTheme.backgrounds.length > 1 ? () => ThemeActions(context).nextBackground() : null,
               onClose: _closeTerminal,
@@ -316,8 +325,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
         ),
         body: Column(
           children: [
-            if (AppScope.sessions(context).broadcast.includes(_terminal))
-              BroadcastBanner(count: AppScope.sessions(context).broadcast.size, onStop: AppScope.sessions(context).broadcast.stop),
+            if (broadcasting) BroadcastBanner(count: sessions.broadcast.size, onStop: sessions.broadcast.stop),
             if (showTabs)
               Collapsible(
                 open: _tabsOpen,
@@ -344,14 +352,14 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
               ),
             ),
-            if (_terminal.reconnecting)
+            if (lost != null && lostSession != null)
               ReconnectBanner(
-                note: _terminal.reconnectNote ?? '',
-                onTryNow: () => widget.session.reconnector?.retryNow(),
-                onStop: () => AppScope.sessions(context).stopReconnecting(widget.session),
+                note: visible.length > 1 ? '${lost.title}: ${lost.reconnectNote ?? ''}' : lost.reconnectNote ?? '',
+                onTryNow: () => lostSession.reconnector?.retryNow(),
+                onStop: () => sessions.stopReconnecting(lostSession),
               )
             else if (_terminal.ended)
-              _EndedBanner(reason: _terminal.endReason ?? '', onReconnect: _reconnect, onClose: _closeTerminal)
+              EndedBanner(reason: _terminal.endReason ?? '', onReconnect: _reconnect, onClose: _closeTerminal)
             else if (builtIn && !_keyboardHidden)
               TerminalKeyboardPanel(
                 controller: _typing,
@@ -470,38 +478,6 @@ class _TerminalMenu extends StatelessWidget {
           child: const ListTile(leading: Icon(Icons.link_off), title: Text('Disconnect')),
         ),
       ],
-    );
-  }
-}
-
-/// Replaces the key bar once the shell has ended.
-class _EndedBanner extends StatelessWidget {
-  const _EndedBanner({required this.reason, required this.onReconnect, required this.onClose});
-
-  final String reason;
-  final VoidCallback onReconnect;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColorsTheme.of(context);
-    return Material(
-      color: colors.surface,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: colors.muted),
-              const SizedBox(width: 12),
-              Expanded(child: Text(reason)),
-              TextButton(onPressed: onClose, child: const Text('Close')),
-              FilledButton(onPressed: onReconnect, child: const Text('Reconnect')),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
