@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app/terminal_fonts.dart';
@@ -10,6 +12,8 @@ import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
 import 'ui/settings/app_licenses.dart';
+import 'update/update_controller.dart';
+import 'update/update_platform.dart';
 
 /// Starts the native core, opens the encrypted vault and shows the app.
 Future<void> main() async {
@@ -25,5 +29,8 @@ Future<void> main() async {
   HomeWidgetSync(store);
   // Reconnects at once when the phone's network comes back.
   NetworkWatcher(sessions);
-  runApp(MultiplexApp(store: store, sessions: sessions));
+  // Looks for a new version on GitHub (Android, at most once a day).
+  final updates = UpdateController(store: store, platform: const AndroidUpdatePlatform());
+  runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));
+  unawaited(updates.start());
 }

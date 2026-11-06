@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';
+import '../update/update_card.dart';
 import 'arranged_host_list.dart';
 import 'host_connector.dart';
 import 'host_editor_screen.dart';
@@ -57,12 +58,12 @@ class _HostsScreenState extends State<HostsScreen> {
               searchField: _SearchField(controller: _search, onChanged: _onQuery),
             );
           }
-          final header = [_SearchField(controller: _search, onChanged: _onQuery), ..._recent(hosts)];
+          final header = [const UpdateBanner(), _SearchField(controller: _search, onChanged: _onQuery), ..._recent(hosts)];
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 840),
               child: _query.isNotEmpty
-                  ? ListView(padding: const EdgeInsets.only(bottom: 96), children: [header.first, ..._searchResults(hosts)])
+                  ? ListView(padding: const EdgeInsets.only(bottom: 96), children: [...header.take(2), ..._searchResults(hosts)])
                   : ArrangedHostList(
                       header: header,
                       groupMenu: (group) => _GroupMenu(
@@ -148,6 +149,7 @@ class _EmptyHosts extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const UpdateBanner(),
         searchField,
         Expanded(
           child: EmptyState(

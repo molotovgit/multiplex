@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 import '../../app/theme_spec.dart';
 import '../../src/rust/api/app.dart' as core;
 import '../common/widgets.dart';
+import '../update/update_section.dart';
 import 'settings_widgets.dart';
 
 /// Facts about this build of the app.
@@ -49,6 +50,7 @@ class AboutScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 32),
           children: [
             const _AppHeader(),
+            const UpdateSection(),
             ListTile(
               leading: const AppIcon(AppIcons.memory),
               title: const Text('Core version'),
