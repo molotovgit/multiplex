@@ -11,6 +11,7 @@ import 'folder_browser.dart';
 import 'folder_view.dart';
 import 'transfer_panel.dart';
 import 'transfer_queue.dart';
+import 'two_pane/two_pane_screen.dart';
 
 /// Remote file browser (SFTP) for one live session.
 class FilesScreen extends StatefulWidget {
@@ -109,7 +110,7 @@ class _FilesScreenState extends State<FilesScreen> {
                   icon: const Icon(Icons.create_new_folder_outlined),
                   onPressed: canAct ? () => actions.newFolder(context) : null,
                 ),
-                _FolderMenu(browser: _browser, actions: actions, connected: connected),
+                _FolderMenu(session: widget.session, browser: _browser, actions: actions, connected: connected),
               ],
             ],
           ),
@@ -167,8 +168,9 @@ class _FilesBody extends StatelessWidget {
 /// The app bar's overflow menu: less common folder actions and the
 /// hidden-files switch.
 class _FolderMenu extends StatelessWidget {
-  const _FolderMenu({required this.browser, required this.actions, required this.connected});
+  const _FolderMenu({required this.session, required this.browser, required this.actions, required this.connected});
 
+  final LiveSession session;
   final FolderBrowser browser;
   final FileActions actions;
   final bool connected;
@@ -187,6 +189,8 @@ class _FolderMenu extends StatelessWidget {
             actions.refresh(context);
           case _MenuItem.hidden:
             browser.toggleHidden();
+          case _MenuItem.copyBetween:
+            Navigator.push(context, MaterialPageRoute<void>(builder: (_) => TwoPaneScreen(session: session)));
         }
       },
       itemBuilder: (context) => [
@@ -195,9 +199,11 @@ class _FolderMenu extends StatelessWidget {
         PopupMenuItem(value: _MenuItem.refresh, enabled: connected, child: const Text('Refresh')),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(value: _MenuItem.hidden, checked: browser.showHidden, child: const Text('Show hidden files')),
+        const PopupMenuDivider(),
+        PopupMenuItem(value: _MenuItem.copyBetween, enabled: connected, child: const Text('Copy between places')),
       ],
     );
   }
 }
 
-enum _MenuItem { goTo, home, refresh, hidden }
+enum _MenuItem { goTo, home, refresh, hidden, copyBetween }

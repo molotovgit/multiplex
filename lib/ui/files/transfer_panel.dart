@@ -15,7 +15,12 @@ abstract final class TransferText {
     final waiting = queue.waitingCount;
     if (running == 1 && waiting == 0) {
       final job = queue.jobs.firstWhere((j) => j.state == TransferState.running);
-      return '${job.direction == TransferDirection.upload ? 'Uploading' : 'Downloading'} ${job.name}';
+      final verb = switch (job.direction) {
+        TransferDirection.upload => 'Uploading',
+        TransferDirection.download => 'Downloading',
+        TransferDirection.copy => 'Copying',
+      };
+      return '$verb ${job.name}';
     }
     if (running > 0 || waiting > 0) {
       final parts = [if (running > 0) '$running running', if (waiting > 0) '$waiting waiting'];
@@ -31,7 +36,11 @@ abstract final class TransferText {
   static String status(TransferJob job) => switch (job.state) {
     TransferState.waiting => 'Waiting',
     TransferState.running => FileSizes.progress(job.transferred, job.total),
-    TransferState.done => job.direction == TransferDirection.download ? 'Saved to ${job.result}' : 'Uploaded to ${job.result}',
+    TransferState.done => switch (job.direction) {
+      TransferDirection.download => 'Saved to ${job.result}',
+      TransferDirection.upload => 'Uploaded to ${job.result}',
+      TransferDirection.copy => 'Copied to ${job.result}',
+    },
     TransferState.failed => 'Failed: ${job.error}',
     TransferState.cancelled => 'Cancelled',
   };
@@ -181,11 +190,15 @@ class TransferRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColorsTheme.of(context);
-    final upload = job.direction == TransferDirection.upload;
     final failed = job.state == TransferState.failed;
-    final savedPath = job.state == TransferState.done && !upload ? job.result : null;
+    final savedPath = job.state == TransferState.done && job.direction == TransferDirection.download ? job.result : null;
+    final (icon, label) = switch (job.direction) {
+      TransferDirection.upload => (Icons.upload_outlined, 'Upload'),
+      TransferDirection.download => (Icons.download_outlined, 'Download'),
+      TransferDirection.copy => (Icons.copy_all_outlined, 'Copy'),
+    };
     return ListTile(
-      leading: Icon(upload ? Icons.upload_outlined : Icons.download_outlined, semanticLabel: upload ? 'Upload' : 'Download'),
+      leading: Icon(icon, semanticLabel: label),
       title: Text(job.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -6,7 +6,9 @@ import '../../sessions/session_manager.dart';
 import '../../src/rust/api/sftp.dart';
 import 'file_format.dart';
 
-enum TransferDirection { upload, download }
+/// Upload and download go between this device and the open server; copy
+/// goes between any two places (see the two-pane copy screen).
+enum TransferDirection { upload, download, copy }
 
 enum TransferState { waiting, running, done, failed, cancelled }
 
