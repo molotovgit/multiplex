@@ -23,6 +23,11 @@ class RemoteMonitor {
   final double refresh;
 }
 
+/// Starts `~/.local/bin/gliff-server-fast` when the machine has one (gliff
+/// built for up to 120 frames a second; see docs/remote-desktop), and the
+/// normal gliff-server otherwise.
+const fastServerCommand = r'"$( [ -x "$HOME/.local/bin/gliff-server-fast" ] && echo "$HOME/.local/bin/gliff-server-fast" || echo gliff-server )"';
+
 /// Where a remote desktop stands.
 enum DesktopPhase { connecting, live, reconnecting, ended }
 
@@ -211,7 +216,7 @@ class DesktopController extends ChangeNotifier {
           scale: _scaleFor(_dpr),
           lowBandwidth: _settings.quality == DesktopQuality.saver,
           textureId: id,
-          serverCommand: '',
+          serverCommand: fastServerCommand,
         ),
       );
       if (_disposed) {

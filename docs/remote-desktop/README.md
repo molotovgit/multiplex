@@ -28,6 +28,19 @@ sudo systemctl enable --now sshd
 
 Building Tailscale into the app needs Go and the Android NDK. Run `native/tailscale/build-android.sh` before `flutter build apk`; builds without it work, minus Tailscale.
 
+## Optional: up to 120 frames a second
+
+gliff caps its stream at 60 frames a second (`MAX_FPS` in `crates/gliff-server/src/session.rs`). On a monitor faster than 60 Hz, a build with 120 cuts the wait for the next frame from about 8 ms to about 4 ms on average, for roughly 40% more data. Gliff's own rate control still lowers it on slow links.
+
+```sh
+git clone https://github.com/omacom/gliff && cd gliff
+sed -i 's/^const MAX_FPS: u32 = 60;/const MAX_FPS: u32 = 120;/' crates/gliff-server/src/session.rs
+cargo build --release -p gliff-server
+install -m 755 target/release/gliff-server ~/.local/bin/gliff-server-fast
+```
+
+Multiplex uses `~/.local/bin/gliff-server-fast` when it exists and falls back to `gliff-server` otherwise. Delete the file to go back.
+
 ## Using it
 
 | Gesture | Trackpad mode (default) | Direct touch |

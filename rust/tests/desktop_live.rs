@@ -65,13 +65,15 @@ async fn open(conn: &Connection) -> (DesktopSession, Events) {
     let session = DesktopSession::open(
         conn,
         DesktopOptions {
-            mode: DesktopMode::Mirror,
-            width: 1280,
-            height: 720,
+            // MPX_DESKTOP_OUTPUT picks a monitor; MPX_DESKTOP_SERVER another
+            // gliff-server build (A/B tests).
+            mode: std::env::var("MPX_DESKTOP_OUTPUT").map(|name| DesktopMode::Output { name }).unwrap_or(DesktopMode::Mirror),
+            width: 1920,
+            height: 1080,
             scale: 1.0,
             low_bandwidth: false,
             texture_id: 0,
-            server_command: String::new(),
+            server_command: std::env::var("MPX_DESKTOP_SERVER").unwrap_or_default(),
         },
         Arc::new(move |e| {
             seen.lock().unwrap().push(e);
