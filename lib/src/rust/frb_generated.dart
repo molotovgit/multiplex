@@ -4649,8 +4649,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DesktopOptions dco_decode_desktop_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 7)
-      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return DesktopOptions(
       mode: dco_decode_desktop_mode(arr[0]),
       width: dco_decode_u_32(arr[1]),
@@ -4659,6 +4659,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lowBandwidth: dco_decode_bool(arr[4]),
       textureId: dco_decode_i_64(arr[5]),
       serverCommand: dco_decode_String(arr[6]),
+      warmRadio: dco_decode_bool(arr[7]),
     );
   }
 
@@ -5911,6 +5912,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_lowBandwidth = sse_decode_bool(deserializer);
     var var_textureId = sse_decode_i_64(deserializer);
     var var_serverCommand = sse_decode_String(deserializer);
+    var var_warmRadio = sse_decode_bool(deserializer);
     return DesktopOptions(
       mode: var_mode,
       width: var_width,
@@ -5919,6 +5921,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       lowBandwidth: var_lowBandwidth,
       textureId: var_textureId,
       serverCommand: var_serverCommand,
+      warmRadio: var_warmRadio,
     );
   }
 
@@ -7348,6 +7351,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self.lowBandwidth, serializer);
     sse_encode_i_64(self.textureId, serializer);
     sse_encode_String(self.serverCommand, serializer);
+    sse_encode_bool(self.warmRadio, serializer);
   }
 
   @protected

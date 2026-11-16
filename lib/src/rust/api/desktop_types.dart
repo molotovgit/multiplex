@@ -123,6 +123,10 @@ class DesktopOptions {
   /// The command that starts the server. Empty means `gliff-server`.
   final String serverCommand;
 
+  /// Keep a mobile radio awake with a tiny ping every 15 ms, so packets
+  /// never wait for it to wake from power saving.
+  final bool warmRadio;
+
   const DesktopOptions({
     required this.mode,
     required this.width,
@@ -131,6 +135,7 @@ class DesktopOptions {
     required this.lowBandwidth,
     required this.textureId,
     required this.serverCommand,
+    required this.warmRadio,
   });
 
   @override
@@ -141,7 +146,8 @@ class DesktopOptions {
       scale.hashCode ^
       lowBandwidth.hashCode ^
       textureId.hashCode ^
-      serverCommand.hashCode;
+      serverCommand.hashCode ^
+      warmRadio.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -154,7 +160,8 @@ class DesktopOptions {
           scale == other.scale &&
           lowBandwidth == other.lowBandwidth &&
           textureId == other.textureId &&
-          serverCommand == other.serverCommand;
+          serverCommand == other.serverCommand &&
+          warmRadio == other.warmRadio;
 }
 
 /// One monitor of the remote machine.

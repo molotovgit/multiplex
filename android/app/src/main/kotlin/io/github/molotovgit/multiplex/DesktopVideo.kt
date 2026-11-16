@@ -34,7 +34,11 @@ object DesktopVideo {
     @JvmStatic
     private external fun nativeSetSurface(texture: Long, surface: Surface?)
 
+    /** Hands a Surface (or none) to the decoder registered under [id]. */
+    fun setSurface(id: Long, surface: Surface?) = nativeSetSurface(id, surface)
+
     fun register(engine: FlutterEngine, activity: Activity) {
+        engine.platformViewsController.registry.registerViewFactory(DesktopSurfaceFactory.VIEW_TYPE, DesktopSurfaceFactory())
         val registry = engine.renderer
         val channel = MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL)
         channel.setMethodCallHandler { call, result ->

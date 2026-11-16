@@ -45,6 +45,12 @@ const MAX_CLIPBOARD_TEXT: u64 = 4 * 1024 * 1024;
 const MAX_STREAM: (u32, u32) = (3840, 2160);
 /// How often we measure the round trip.
 const PING_EVERY: Duration = Duration::from_secs(1);
+/// With the radio kept warm: a tiny ping this often. Mobile radios sleep
+/// (DRX) after a few tens of milliseconds without traffic and the next
+/// packet then waits for them to wake (often 10-40 ms); a steady trickle
+/// keeps them awake, as cloud-gaming clients do. With every header
+/// (SSH, TCP, WireGuard) about 130 kbit/s in all, ~60 MB an hour.
+const WARM_PING_EVERY: Duration = Duration::from_millis(15);
 /// No answer to our pings for this long means the link is dead (for
 /// example a network switch left a connection that looks open).
 const SILENCE_LIMIT: Duration = Duration::from_secs(6);
@@ -154,7 +160,7 @@ impl DesktopSession {
         AsyncRuntime::spawn(Self::write_loop(writer, rx, shared.clone()));
         AsyncRuntime::spawn(Self::read_loop(reader, tx.clone(), shared.clone(), video.clone(), stats.clone()));
         AsyncRuntime::spawn(Self::report_loop(reports, tx.clone(), shared.clone(), stats.clone()));
-        AsyncRuntime::spawn(Self::tick_loop(tx.clone(), shared.clone(), stats, video));
+        AsyncRuntime::spawn(Self::tick_loop(tx.clone(), shared.clone(), stats, video, options.warm_radio));
         Ok(Self { tx, shared })
     }
 
@@ -396,7 +402,9 @@ impl DesktopSession {
                 }
                 ServerMsg::Ping { t } => tx.send(Outgoing::Msg(ClientMsg::Pong { t })).is_ok(),
                 ServerMsg::Pong { t, server_now_ms } => {
-                    stats.rtt_ms.store((now_ms().saturating_sub(t)) as u32, Ordering::Relaxed);
+                    let rtt = now_ms().saturating_sub(t);
+                    stats.rtt_ms.store(rtt as u32, Ordering::Relaxed);
+                    stats.rtts.lock().unwrap_or_else(|p| p.into_inner()).push(rtt as u32);
                     stats.note_clock(t, server_now_ms, now_ms());
                     stats.last_pong_ms.store(now_ms(), Ordering::Relaxed);
                     true
@@ -495,8 +503,9 @@ impl DesktopSession {
     }
 
     /// Pings for the round trip and publishes stats once a second.
-    async fn tick_loop(tx: mpsc::UnboundedSender<Outgoing>, shared: Arc<Shared>, stats: Arc<StatsCounter>, video: Arc<dyn VideoSink>) {
-        let mut tick = tokio::time::interval(PING_EVERY);
+    async fn tick_loop(tx: mpsc::UnboundedSender<Outgoing>, shared: Arc<Shared>, stats: Arc<StatsCounter>, video: Arc<dyn VideoSink>, warm: bool) {
+        let mut tick = tokio::time::interval(if warm { WARM_PING_EVERY } else { PING_EVERY });
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         let mut last = Instant::now();
         stats.last_pong_ms.store(now_ms(), Ordering::Relaxed);
         loop {
@@ -515,9 +524,12 @@ impl DesktopSession {
             if tx.send(Outgoing::Msg(ClientMsg::Ping { t: now_ms() })).is_err() {
                 break;
             }
-            let secs = last.elapsed().as_secs_f64().max(0.001);
-            last = Instant::now();
-            shared.events.emit(DesktopEvent::Stats(stats.take(secs)));
+            // Stats once a second, however often we ping.
+            if last.elapsed() >= Duration::from_millis(990) {
+                let secs = last.elapsed().as_secs_f64().max(0.001);
+                last = Instant::now();
+                shared.events.emit(DesktopEvent::Stats(stats.take(secs)));
+            }
         }
     }
 }
@@ -535,6 +547,8 @@ struct StatsCounter {
     bytes: std::sync::atomic::AtomicU64,
     latency_us: std::sync::atomic::AtomicU64,
     rtt_ms: AtomicU32,
+    /// This second's ping round trips.
+    rtts: std::sync::Mutex<Vec<u32>>,
     /// Server clock minus ours, from the ping with the shortest round
     /// trip: (offset ms, that round trip).
     clock: std::sync::Mutex<Option<(i64, u64)>>,
@@ -591,7 +605,16 @@ impl StatsCounter {
         DesktopStats {
             fps: frames as f64 / secs,
             kbps: bytes as f64 * 8.0 / 1000.0 / secs,
-            rtt_ms: f64::from(self.rtt_ms.load(Ordering::Relaxed)),
+            // The median of this second's pings (one sample when not warm).
+            rtt_ms: {
+                let mut v = std::mem::take(&mut *self.rtts.lock().unwrap_or_else(|p| p.into_inner()));
+                if v.is_empty() {
+                    f64::from(self.rtt_ms.load(Ordering::Relaxed))
+                } else {
+                    v.sort_unstable();
+                    f64::from(v[v.len() / 2])
+                }
+            },
             decode_ms: if frames == 0 { 0.0 } else { latency as f64 / frames as f64 / 1000.0 },
             frame_age_ms: {
                 let (sum, n) = std::mem::take(&mut *self.ages.lock().unwrap_or_else(|p| p.into_inner()));

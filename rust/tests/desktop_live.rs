@@ -74,6 +74,7 @@ async fn open(conn: &Connection) -> (DesktopSession, Events) {
             low_bandwidth: false,
             texture_id: 0,
             server_command: std::env::var("MPX_DESKTOP_SERVER").unwrap_or_default(),
+            warm_radio: std::env::var("MPX_DESKTOP_WARM").is_ok(),
         },
         Arc::new(move |e| {
             seen.lock().unwrap().push(e);
@@ -203,6 +204,7 @@ async fn real_keyframes_get_a_low_latency_header() {
             low_bandwidth: false,
             texture_id: 0,
             server_command: String::new(),
+            warm_radio: false,
         },
         Arc::new(|_| true),
         Box::new(KeyframeGrabber { reports: tx, first: first.clone() }),

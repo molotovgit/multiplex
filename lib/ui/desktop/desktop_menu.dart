@@ -284,6 +284,28 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.layers_outlined),
+              title: const Text('Direct video (fastest)'),
+              subtitle: Text(
+                s.directVideo != c.direct
+                    ? 'Applies the next time you open the desktop'
+                    : 'Android shows each picture itself, without waiting for the app to redraw: about one screen refresh less delay',
+              ),
+              value: s.directVideo,
+              onChanged: (on) => _save(s.copyWith(directVideo: on)),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.bolt_outlined),
+              title: const Text('Keep the connection fast'),
+              subtitle: const Text(
+                'Stops the phone\'s radio dozing between pictures, which on mobile data adds 10-40 ms. Uses about 60 MB an hour while open.',
+              ),
+              value: s.warmRadio,
+              onChanged: (on) => _save(s.copyWith(warmRadio: on)),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.speed),
               title: const Text('Show speed'),
               subtitle: const Text('Frame rate, network ping, picture delay (server to screen) and data rate'),

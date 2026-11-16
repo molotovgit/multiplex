@@ -20,6 +20,7 @@ import 'desktop_gestures.dart';
 import 'desktop_keyboard.dart';
 import 'desktop_menu.dart';
 import 'desktop_settings.dart';
+import 'direct_video_view.dart';
 
 /// The remote desktop, full screen: the live picture of the machine, a
 /// pointer you steer with a finger, the phone keyboard with shortcut keys,
@@ -337,7 +338,17 @@ class _RemoteView extends StatelessWidget {
     return ClipRect(
       child: Stack(
         children: [
-          if (id != null && controller.streamWidth > 0)
+          // Direct video: the decoder's own Android layer, placed where the
+          // screen goes (it must exist before the desktop can start).
+          if (controller.direct)
+            Positioned(
+              left: viewport.origin.dx,
+              top: viewport.origin.dy,
+              width: size.width,
+              height: size.height,
+              child: DirectVideoView(onSurface: controller.attachDirectSurface),
+            )
+          else if (id != null && controller.streamWidth > 0)
             Positioned(
               left: viewport.origin.dx,
               top: viewport.origin.dy,

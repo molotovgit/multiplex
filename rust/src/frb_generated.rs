@@ -5819,6 +5819,7 @@ impl SseDecode for crate::api::desktop_types::DesktopOptions {
         let mut var_lowBandwidth = <bool>::sse_decode(deserializer);
         let mut var_textureId = <i64>::sse_decode(deserializer);
         let mut var_serverCommand = <String>::sse_decode(deserializer);
+        let mut var_warmRadio = <bool>::sse_decode(deserializer);
         return crate::api::desktop_types::DesktopOptions {
             mode: var_mode,
             width: var_width,
@@ -5827,6 +5828,7 @@ impl SseDecode for crate::api::desktop_types::DesktopOptions {
             low_bandwidth: var_lowBandwidth,
             texture_id: var_textureId,
             server_command: var_serverCommand,
+            warm_radio: var_warmRadio,
         };
     }
 }
@@ -7398,6 +7400,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopOptions
             self.low_bandwidth.into_into_dart().into_dart(),
             self.texture_id.into_into_dart().into_dart(),
             self.server_command.into_into_dart().into_dart(),
+            self.warm_radio.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -8681,6 +8684,7 @@ impl SseEncode for crate::api::desktop_types::DesktopOptions {
         <bool>::sse_encode(self.low_bandwidth, serializer);
         <i64>::sse_encode(self.texture_id, serializer);
         <String>::sse_encode(self.server_command, serializer);
+        <bool>::sse_encode(self.warm_radio, serializer);
     }
 }
 

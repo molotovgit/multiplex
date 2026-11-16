@@ -56,6 +56,16 @@ class DesktopController extends ChangeNotifier {
   DesktopSettings _settings;
   DesktopSettings get settings => _settings;
 
+  /// Video in its own Android layer (see [DesktopSettings.directVideo]);
+  /// fixed for the life of this desktop.
+  late final bool direct = _settings.directVideo;
+  final Completer<int> _directSurface = Completer<int>();
+
+  /// The direct video layer exists; [surfaceId] is its decoder id.
+  void attachDirectSurface(int surfaceId) {
+    if (!_directSurface.isCompleted) _directSurface.complete(surfaceId);
+  }
+
   RemoteDesktop? _desktop;
   StreamSubscription<DesktopEvent>? _events;
 
@@ -121,6 +131,8 @@ class DesktopController extends ChangeNotifier {
 
   /// How much wider and taller the decoded picture is than the screen in it.
   Size get paddingFactor {
+    // Android's compositor applies the decoder's crop to a direct layer.
+    if (direct) return const Size(1, 1);
     final vw = visibleWidth > 0 ? visibleWidth : streamWidth;
     final vh = visibleHeight > 0 ? visibleHeight : streamHeight;
     final pw = pictureWidth > 0 ? pictureWidth : (streamWidth + 15) ~/ 16 * 16;
@@ -184,9 +196,18 @@ class DesktopController extends ChangeNotifier {
     _viewPx = viewPx;
     _dpr = dpr;
     try {
-      textureId ??= await _video.invokeMethod<int>('create', {'width': viewPx.width.round(), 'height': viewPx.height.round()});
+      if (direct) {
+        // The video layer is a platform view; its Surface id comes from
+        // [attachDirectSurface] once Android has made it.
+        textureId ??= await _directSurface.future.timeout(const Duration(seconds: 8));
+      } else {
+        textureId ??= await _video.invokeMethod<int>('create', {'width': viewPx.width.round(), 'height': viewPx.height.round()});
+      }
     } on MissingPluginException {
       _end('Remote desktop needs the Android app.');
+      return;
+    } on TimeoutException {
+      _end('The video layer did not start. Turn off "Direct video" in the menu and try again.');
       return;
     }
     _video.setMethodCallHandler(_onVideoCall);
@@ -217,6 +238,7 @@ class DesktopController extends ChangeNotifier {
           lowBandwidth: _settings.quality == DesktopQuality.saver,
           textureId: id,
           serverCommand: fastServerCommand,
+          warmRadio: _settings.warmRadio,
         ),
       );
       if (_disposed) {
@@ -370,6 +392,8 @@ class DesktopController extends ChangeNotifier {
   /// stretched on the way. Only resized when the size really changes
   /// (a resize makes the decoder start over on a new surface).
   void _sizeTexture(int width, int height) {
+    // A direct video layer takes the decoder's size by itself.
+    if (direct) return;
     final id = textureId;
     if (id == null || (width == _textureW && height == _textureH)) return;
     _textureW = width;
@@ -417,7 +441,8 @@ class DesktopController extends ChangeNotifier {
 
   /// New settings; the screen mode and quality need a restart to apply.
   Future<void> applySettings(DesktopSettings next) async {
-    final restart = next.screen != _settings.screen || next.quality != _settings.quality || next.output != _settings.output;
+    final restart =
+        next.screen != _settings.screen || next.quality != _settings.quality || next.output != _settings.output || next.warmRadio != _settings.warmRadio;
     final resized = next.resolution != _settings.resolution;
     final rescale = next.textSize != _settings.textSize;
     _settings = next;
@@ -626,7 +651,7 @@ class DesktopController extends ChangeNotifier {
     _desktop?.close();
     _desktop = null;
     final id = textureId;
-    if (id != null) _video.invokeMethod<void>('release', {'id': id});
+    if (id != null && !direct) _video.invokeMethod<void>('release', {'id': id});
     _video.invokeMethod<void>('lowLatency', {'on': false}).catchError((_) {});
     for (final s in _shapes.values) {
       s.$1.dispose();

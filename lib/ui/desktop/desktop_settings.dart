@@ -60,6 +60,8 @@ class DesktopSettings {
     this.showStats = false,
     this.haptics = true,
     this.syncClipboard = true,
+    this.warmRadio = true,
+    this.directVideo = false,
   });
 
   final DesktopScreenMode screen;
@@ -82,6 +84,14 @@ class DesktopSettings {
   /// Text copied on the desktop lands on the phone's clipboard.
   final bool syncClipboard;
 
+  /// A tiny ping every 15 ms keeps the phone's radio from dozing off
+  /// between pictures (it otherwise wakes 10-40 ms late on mobile data).
+  final bool warmRadio;
+
+  /// The decoder draws into a video layer of its own that Android shows
+  /// directly, instead of a Flutter texture: about one refresh less delay.
+  final bool directVideo;
+
   static const textSizes = [0.75, 0.85, 1.0, 1.15, 1.3];
 
   static DesktopSettings of(VaultStore store) => DesktopSettings.fromJson(store.settings.desktop);
@@ -98,6 +108,8 @@ class DesktopSettings {
     bool? showStats,
     bool? haptics,
     bool? syncClipboard,
+    bool? warmRadio,
+    bool? directVideo,
   }) => DesktopSettings(
     screen: screen ?? this.screen,
     touch: touch ?? this.touch,
@@ -108,6 +120,8 @@ class DesktopSettings {
     showStats: showStats ?? this.showStats,
     haptics: haptics ?? this.haptics,
     syncClipboard: syncClipboard ?? this.syncClipboard,
+    warmRadio: warmRadio ?? this.warmRadio,
+    directVideo: directVideo ?? this.directVideo,
   );
 
   Map<String, dynamic> toJson() => {
@@ -120,6 +134,8 @@ class DesktopSettings {
     'showStats': showStats,
     'haptics': haptics,
     'syncClipboard': syncClipboard,
+    'warmRadio': warmRadio,
+    'directVideo': directVideo,
   };
 
   /// Unknown or missing values fall back to the defaults.
@@ -136,6 +152,8 @@ class DesktopSettings {
       showStats: Json.boolean(j, 'showStats', d.showStats),
       haptics: Json.boolean(j, 'haptics', d.haptics),
       syncClipboard: Json.boolean(j, 'syncClipboard', d.syncClipboard),
+      warmRadio: Json.boolean(j, 'warmRadio', d.warmRadio),
+      directVideo: Json.boolean(j, 'directVideo', d.directVideo),
     );
   }
 }

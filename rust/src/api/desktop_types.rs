@@ -28,6 +28,9 @@ pub struct DesktopOptions {
     pub texture_id: i64,
     /// The command that starts the server. Empty means `gliff-server`.
     pub server_command: String,
+    /// Keep a mobile radio awake with a tiny ping every 15 ms, so packets
+    /// never wait for it to wake from power saving.
+    pub warm_radio: bool,
 }
 
 /// What the remote desktop tells the app.
