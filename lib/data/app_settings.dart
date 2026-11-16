@@ -51,6 +51,7 @@ class AppSettings {
     this.keepScreenOn = true,
     this.notifyWhenDone = true,
     this.keyboard = const {},
+    this.desktop = const {},
     this.motion = MotionSpeed.normal,
     this.backdropPicks = const {},
     this.hideScreens = true,
@@ -96,6 +97,10 @@ class AppSettings {
   /// settings class, so the keyboard can add options without changing
   /// this file.
   final Map<String, dynamic> keyboard;
+
+  /// Settings of the remote desktop (screen mode, touch mode, quality).
+  /// Plain JSON owned by the desktop's own settings class, like [keyboard].
+  final Map<String, dynamic> desktop;
 
   /// Speed of theme changes and sheets.
   final MotionSpeed motion;
@@ -149,6 +154,7 @@ class AppSettings {
     bool? keepScreenOn,
     bool? notifyWhenDone,
     Map<String, dynamic>? keyboard,
+    Map<String, dynamic>? desktop,
     MotionSpeed? motion,
     Map<String, int>? backdropPicks,
     bool? hideScreens,
@@ -173,6 +179,7 @@ class AppSettings {
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         notifyWhenDone: notifyWhenDone ?? this.notifyWhenDone,
         keyboard: keyboard ?? this.keyboard,
+        desktop: desktop ?? this.desktop,
         motion: motion ?? this.motion,
         backdropPicks: backdropPicks ?? this.backdropPicks,
         hideScreens: hideScreens ?? this.hideScreens,
@@ -198,6 +205,7 @@ class AppSettings {
         'keepScreenOn': keepScreenOn,
         'notifyWhenDone': notifyWhenDone,
         'keyboard': keyboard,
+        'desktop': desktop,
         'motion': motion.name,
         'backdropPicks': backdropPicks,
         'hideScreens': hideScreens,
@@ -225,6 +233,7 @@ class AppSettings {
       keepScreenOn: Json.boolean(j, 'keepScreenOn', true),
       notifyWhenDone: Json.boolean(j, 'notifyWhenDone', true),
       keyboard: j['keyboard'] is Map ? (j['keyboard'] as Map).cast<String, dynamic>() : const {},
+      desktop: j['desktop'] is Map ? (j['desktop'] as Map).cast<String, dynamic>() : const {},
       motion: MotionSpeed.values.asNameMap()[j['motion']] ?? MotionSpeed.normal,
       backdropPicks: {
         if (j['backdropPicks'] is Map)

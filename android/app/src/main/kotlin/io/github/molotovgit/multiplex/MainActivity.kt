@@ -58,6 +58,7 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
         PdfChannel.register(flutterEngine.dartExecutor.binaryMessenger)
+        DesktopVideo.register(flutterEngine)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->

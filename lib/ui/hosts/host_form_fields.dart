@@ -269,6 +269,9 @@ class AdvancedFields extends StatelessWidget {
     required this.jumpHosts,
     required this.jumpId,
     required this.onJump,
+    required this.awayHosts,
+    required this.awayId,
+    required this.onAway,
     required this.startup,
     required this.tmux,
     required this.onTmux,
@@ -280,6 +283,11 @@ class AdvancedFields extends StatelessWidget {
   final List<Host> jumpHosts;
   final String? jumpId;
   final ValueChanged<String?> onJump;
+
+  /// Hosts that can stand in when this one is out of reach.
+  final List<Host> awayHosts;
+  final String? awayId;
+  final ValueChanged<String?> onAway;
   final TextEditingController startup;
   final bool tmux;
   final ValueChanged<bool> onTmux;
@@ -292,6 +300,7 @@ class AdvancedFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = jumpHosts.any((h) => h.id == jumpId) ? jumpId : null;
+    final away = awayHosts.any((h) => h.id == awayId) ? awayId : null;
     return Column(
       children: [
         DropdownButtonFormField<String?>(
@@ -303,6 +312,21 @@ class AdvancedFields extends StatelessWidget {
             for (final h in jumpHosts) DropdownMenuItem<String?>(value: h.id, child: Text(h.title)),
           ],
           onChanged: onJump,
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String?>(
+          initialValue: away,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'When away, connect through',
+            helperText: 'Tried when this address is out of reach, for example through a VPS. Home stays first, so it stays fast.',
+            helperMaxLines: 3,
+          ),
+          items: [
+            const DropdownMenuItem<String?>(value: null, child: Text('Nothing: this address only')),
+            for (final h in awayHosts) DropdownMenuItem<String?>(value: h.id, child: Text(h.title)),
+          ],
+          onChanged: onAway,
         ),
         const SizedBox(height: 4),
         SwitchListTile(

@@ -4,6 +4,8 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'desktop.dart';
+import 'desktop_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -34,6 +36,11 @@ abstract class SshSession implements RustOpaqueInterface {
   SessionInfo info();
 
   bool isConnected();
+
+  /// Starts a remote desktop (gliff) on this connection. The video is
+  /// drawn into `options.texture_id`; listen to [`RemoteDesktop::events`]
+  /// for everything else.
+  Future<RemoteDesktop> openDesktop({required DesktopOptions options});
 
   /// Opens a file browser on this connection.
   Future<RemoteFiles> openFiles();

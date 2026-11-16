@@ -5,6 +5,8 @@
 //! The others hold the live objects Flutter keeps a handle to.
 
 pub mod app;
+pub mod desktop;
+pub mod desktop_types;
 pub mod keys;
 pub mod sftp;
 pub mod sftp_types;

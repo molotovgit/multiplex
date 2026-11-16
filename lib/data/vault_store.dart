@@ -88,6 +88,7 @@ class VaultStore extends ChangeNotifier {
     _doc.syncPairs.removeWhere((p) => p.hostId == id);
     _doc.commandHistory.clear(id);
     _replaceWhere(_doc.hosts, (h) => h.jumpHostId == id, (h) => h.copyWith(jumpHostId: () => null));
+    _replaceWhere(_doc.hosts, (h) => h.awayHostId == id, (h) => h.copyWith(awayHostId: () => null));
     _replaceWhere(_doc.otpAccounts, (a) => a.hostId == id, (a) => a.copyWith(hostId: () => null));
     _changed();
   }

@@ -262,6 +262,10 @@ impl Connector {
             keepalive_interval: (keepalive_secs > 0).then(|| Duration::from_secs(u64::from(keepalive_secs))),
             keepalive_max: 3,
             nodelay: true,
+            // Room for a few keyframes in flight: the remote desktop's
+            // video must never wait for the window to reopen, even
+            // through a far-away jump host.
+            window_size: 16 * 1024 * 1024,
             ..Default::default()
         }
     }

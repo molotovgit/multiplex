@@ -53,6 +53,11 @@ class ConnectFailure implements Exception {
   String toString() => '$title: $detail';
 }
 
+/// The home address answered with another machine's key.
+class _NotHome implements Exception {
+  const _NotHome();
+}
+
 /// Turns a saved [Host] into a logged-in [SshSession], asking the user
 /// whatever is needed on the way (trust this server? password?).
 class ConnectFlow {
@@ -74,9 +79,34 @@ class ConnectFlow {
   static const _maxAttempts = 8;
   static const _timeoutSecs = 20;
 
+  /// How long the home address gets when an away route stands by. A
+  /// machine on the same network answers well within this.
+  static const _homeTimeoutSecs = 4;
+
+  /// Connects to [host]. When it has an away route ([Host.awayHostId]),
+  /// the home address is tried first and the away route only when home is
+  /// out of reach, so at home it is direct and fast and anywhere else it
+  /// still works.
   Future<SshSession> connect(Host host) async {
+    final away = _store.host(host.awayHostId);
+    if (away == null || away.id == host.id) return _connectTo(host, _timeoutSecs);
+    try {
+      return await _connectTo(host, _homeTimeoutSecs, awayFallback: true);
+    } on ConnectFailure {
+      return _connectTo(away, _timeoutSecs);
+    } on _NotHome {
+      return _connectTo(away, _timeoutSecs);
+    }
+  }
+
+  bool _ownerChecked = false;
+
+  Future<SshSession> _connectTo(Host host, int timeoutSecs, {bool awayFallback = false}) async {
     final jump = _store.host(host.jumpHostId);
-    if (!ownerConfirmed && OwnerCheck.needed(host, jump)) await _ownerCheck.require(host);
+    if (!ownerConfirmed && !_ownerChecked && OwnerCheck.needed(host, jump)) {
+      await _ownerCheck.require(host);
+      _ownerChecked = true;
+    }
     final secrets = _Secrets(
       password: host.password,
       passphrase: _store.key(host.keyId)?.passphrase,
@@ -86,12 +116,21 @@ class ConnectFlow {
 
     for (var attempt = 0; attempt < _maxAttempts; attempt++) {
       try {
-        return await _connector(_options(host, jump, secrets));
+        return await _connector(_options(host, jump, secrets, timeoutSecs));
       } on ConnectError catch (error) {
+        // Away from home, the home address may belong to some other
+        // machine on this network. A different key there means "not
+        // home", not "danger": use the away route without asking.
+        if (awayFallback && _isStrangerAtHome(error, host)) throw const _NotHome();
         await _handle(error, host, jump, secrets);
       }
     }
     throw const ConnectFailure('Could not log in', 'Too many attempts. Check the user name and password or key.');
+  }
+
+  bool _isStrangerAtHome(ConnectError error, Host host) {
+    final known = _store.trustedKeysFor(host.address, host.port).isNotEmpty;
+    return known && (error is ConnectError_HostKeyUnknown || error is ConnectError_HostKeyChanged);
   }
 
   /// Answers one failure: either fixes what is missing (and returns, so the
@@ -165,14 +204,14 @@ class ConnectFlow {
     if (answer.remember) _store.saveKey(key.copyWith(passphrase: () => answer.value));
   }
 
-  ConnectOptions _options(Host host, Host? jump, _Secrets secrets) => ConnectOptions(
+  ConnectOptions _options(Host host, Host? jump, _Secrets secrets, int timeoutSecs) => ConnectOptions(
         host: host.address,
         port: host.port,
         username: host.username,
         credentials: _credentials(host, secrets.password, secrets.passphrase, secrets.code),
         trustedHostKeys: _store.trustedKeysFor(host.address, host.port),
         keepaliveSecs: _store.settings.keepAliveSecs,
-        connectTimeoutSecs: _timeoutSecs,
+        connectTimeoutSecs: timeoutSecs,
         // Only a key can be forwarded; a password login has none.
         forwardAgent: host.forwardAgent && host.usesKey,
         jump: jump == null

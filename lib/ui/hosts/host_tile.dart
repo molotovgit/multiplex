@@ -112,6 +112,7 @@ class HostTile extends StatelessWidget {
           1 => _openFiles(context),
           2 => _open(context, TunnelsScreen(host: host)),
           8 => ServerStatusScreen.open(context, host),
+          10 => HostConnector.openDesktop(context, host),
           9 => AppScope.store(context).saveHost(host.copyWith(favourite: !host.favourite)),
           3 => _open(context, HostEditorScreen(host: host)),
           4 => _duplicate(context),
@@ -142,6 +143,10 @@ class HostTile extends StatelessWidget {
           PopupMenuItem(
             value: 2,
             child: ListTile(leading: Icon(Icons.swap_horiz), title: Text('Tunnels')),
+          ),
+          PopupMenuItem(
+            value: 10,
+            child: ListTile(leading: Icon(Icons.desktop_windows_outlined), title: Text('Remote desktop')),
           ),
           PopupMenuItem(
             value: 8,

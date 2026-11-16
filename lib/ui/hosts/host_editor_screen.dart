@@ -34,6 +34,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
   late String? _keyId = _original.keyId;
   late String? _groupId = _original.groupId;
   late String? _jumpId = _original.jumpHostId;
+  late String? _awayId = _original.awayHostId;
   late int _tag = _original.colorTag;
   late bool _askUnlock = _original.askUnlock;
   late bool _favourite = _original.favourite;
@@ -61,6 +62,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
     keyId: () => _auth == AuthMode.password ? null : _keyId,
     groupId: () => _groupId,
     jumpHostId: () => _jumpId,
+    awayHostId: () => _awayId,
     startupCommand: () => _startup.text.trim().isEmpty ? null : _startup.text.trim(),
     keepWithTmux: _tmux,
     forwardAgent: _auth != AuthMode.password && _agent,
@@ -173,6 +175,10 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
                       jumpHosts: store.hosts.where((h) => h.id != _original.id && h.jumpHostId != _original.id).toList(),
                       jumpId: _jumpId,
                       onJump: (id) => setState(() => _jumpId = id),
+                      // A stand-in that itself falls back here would loop.
+                      awayHosts: store.hosts.where((h) => h.id != _original.id && h.awayHostId != _original.id).toList(),
+                      awayId: _awayId,
+                      onAway: (id) => setState(() => _awayId = id),
                       startup: _startup,
                       tmux: _tmux,
                       onTmux: (on) => setState(() => _tmux = on),

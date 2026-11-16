@@ -7,6 +7,8 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/app.dart';
+import 'api/desktop.dart';
+import 'api/desktop_types.dart';
 import 'api/keys.dart';
 import 'api/sftp.dart';
 import 'api/sftp_types.dart';
@@ -50,6 +52,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteDesktopPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_RemoteFilesPtr => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles;
 
@@ -79,6 +85,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteDesktop
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     dynamic raw,
   );
 
@@ -119,6 +131,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteDesktop
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  );
+
+  @protected
   RemoteFiles
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     dynamic raw,
@@ -155,6 +173,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteDesktop
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  );
+
+  @protected
   RemoteFiles
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     dynamic raw,
@@ -169,6 +193,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SshSession
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<DesktopEvent> dco_decode_StreamSink_desktop_event_Sse(
     dynamic raw,
   );
 
@@ -188,6 +217,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw);
+
+  @protected
+  DesktopOptions dco_decode_box_autoadd_desktop_options(dynamic raw);
+
+  @protected
+  DesktopStats dco_decode_box_autoadd_desktop_stats(dynamic raw);
 
   @protected
   HostKeyInfo dco_decode_box_autoadd_host_key_info(dynamic raw);
@@ -235,6 +270,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CursorShape dco_decode_cursor_shape(dynamic raw);
 
   @protected
+  DesktopButton dco_decode_desktop_button(dynamic raw);
+
+  @protected
+  DesktopEvent dco_decode_desktop_event(dynamic raw);
+
+  @protected
+  DesktopMode dco_decode_desktop_mode(dynamic raw);
+
+  @protected
+  DesktopOptions dco_decode_desktop_options(dynamic raw);
+
+  @protected
+  DesktopOutput dco_decode_desktop_output(dynamic raw);
+
+  @protected
+  DesktopStats dco_decode_desktop_stats(dynamic raw);
+
+  @protected
   EntryKind dco_decode_entry_kind(dynamic raw);
 
   @protected
@@ -242,6 +295,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ExecOutput dco_decode_exec_output(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
 
   @protected
   HostKeyInfo dco_decode_host_key_info(dynamic raw);
@@ -271,7 +327,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<DesktopOutput> dco_decode_list_desktop_output(dynamic raw);
+
+  @protected
   List<EnvVar> dco_decode_list_env_var(dynamic raw);
+
+  @protected
+  List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
 
   @protected
   Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
@@ -412,6 +474,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteDesktop
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteFiles
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     SseDeserializer deserializer,
@@ -444,6 +512,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteDesktop
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     SseDeserializer deserializer,
   );
 
@@ -484,6 +558,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteDesktop
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteFiles
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     SseDeserializer deserializer,
@@ -498,6 +578,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   SshSession
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<DesktopEvent> sse_decode_StreamSink_desktop_event_Sse(
     SseDeserializer deserializer,
   );
 
@@ -519,6 +604,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ConnectOptions sse_decode_box_autoadd_connect_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DesktopOptions sse_decode_box_autoadd_desktop_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DesktopStats sse_decode_box_autoadd_desktop_stats(
     SseDeserializer deserializer,
   );
 
@@ -576,6 +671,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CursorShape sse_decode_cursor_shape(SseDeserializer deserializer);
 
   @protected
+  DesktopButton sse_decode_desktop_button(SseDeserializer deserializer);
+
+  @protected
+  DesktopEvent sse_decode_desktop_event(SseDeserializer deserializer);
+
+  @protected
+  DesktopMode sse_decode_desktop_mode(SseDeserializer deserializer);
+
+  @protected
+  DesktopOptions sse_decode_desktop_options(SseDeserializer deserializer);
+
+  @protected
+  DesktopOutput sse_decode_desktop_output(SseDeserializer deserializer);
+
+  @protected
+  DesktopStats sse_decode_desktop_stats(SseDeserializer deserializer);
+
+  @protected
   EntryKind sse_decode_entry_kind(SseDeserializer deserializer);
 
   @protected
@@ -583,6 +696,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ExecOutput sse_decode_exec_output(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
   HostKeyInfo sse_decode_host_key_info(SseDeserializer deserializer);
@@ -612,7 +728,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<DesktopOutput> sse_decode_list_desktop_output(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer);
+
+  @protected
+  List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
 
   @protected
   Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
@@ -762,6 +886,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     RemoteFiles self,
     SseSerializer serializer,
@@ -799,6 +930,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
     FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
     SseSerializer serializer,
   );
 
@@ -846,6 +984,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     RemoteFiles self,
     SseSerializer serializer,
@@ -862,6 +1007,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SshSession self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_desktop_event_Sse(
+    RustStreamSink<DesktopEvent> self,
     SseSerializer serializer,
   );
 
@@ -886,6 +1037,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_connect_options(
     ConnectOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desktop_stats(
+    DesktopStats self,
     SseSerializer serializer,
   );
 
@@ -962,6 +1125,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_cursor_shape(CursorShape self, SseSerializer serializer);
 
   @protected
+  void sse_encode_desktop_button(DesktopButton self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_event(DesktopEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_mode(DesktopMode self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_desktop_output(DesktopOutput self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_stats(DesktopStats self, SseSerializer serializer);
+
+  @protected
   void sse_encode_entry_kind(EntryKind self, SseSerializer serializer);
 
   @protected
@@ -969,6 +1153,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_exec_output(ExecOutput self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
   void sse_encode_host_key_info(HostKeyInfo self, SseSerializer serializer);
@@ -998,7 +1185,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_desktop_output(
+    List<DesktopOutput> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_prim_u_32_loose(
+    List<int> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_32_strict(
@@ -1208,6 +1407,22 @@ class RustLibWire implements BaseWire {
       );
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+        ptr,
+      );
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     int ptr,
   ) => wasmModule
@@ -1289,6 +1504,16 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     int ptr,
   );
 

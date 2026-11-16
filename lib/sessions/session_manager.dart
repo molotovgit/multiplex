@@ -7,8 +7,10 @@ import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
 import '../src/rust/api/terminal_types.dart';
 import '../src/rust/api/tunnel.dart';
+import '../ui/desktop/desktop_settings.dart';
 import 'broadcast.dart';
 import 'connect_flow.dart';
+import 'desktop_controller.dart';
 import 'done_notifier.dart';
 import 'reconnector.dart';
 import 'session_restore.dart';
@@ -35,6 +37,7 @@ class LiveSession {
   final DateTime startedAt;
   final List<TerminalController> terminals = [];
   final List<RunningTunnel> tunnels = [];
+  final List<DesktopController> desktops = [];
 
   /// Set while the dropped connection is being restored.
   Reconnector? reconnector;
@@ -116,6 +119,23 @@ class SessionManager extends ChangeNotifier {
     return controller;
   }
 
+  /// Makes a remote desktop on a session. The desktop screen starts it
+  /// once it knows its size.
+  DesktopController openDesktop(LiveSession session, DesktopSettings settings) {
+    final desktop = DesktopController(session: session, settings: settings, onConnectionLost: () => connectionLost(session));
+    session.desktops.add(desktop);
+    notifyListeners();
+    return desktop;
+  }
+
+  void closeDesktop(DesktopController desktop) {
+    for (final session in _sessions) {
+      if (session.desktops.remove(desktop)) break;
+    }
+    desktop.dispose();
+    notifyListeners();
+  }
+
   /// How a terminal starts: size (until the view sends its own), theme,
   /// and the shell, tmux or startup command of the host.
   ShellOptions shellOptions(Host host, int number) {
@@ -145,12 +165,18 @@ class SessionManager extends ChangeNotifier {
         for (final terminal in session.terminals) {
           terminal.showReconnecting(SessionRestore.note(status));
         }
+        for (final desktop in session.desktops) {
+          desktop.showReconnecting(SessionRestore.note(status));
+        }
         notifyListeners();
       },
       onDone: (back) {
         if (!back) {
           for (final terminal in session.terminals) {
             terminal.connectionGone(restore.failure ?? 'The connection was lost and could not be restored.');
+          }
+          for (final desktop in session.desktops) {
+            desktop.connectionGone(restore.failure ?? 'The connection was lost and could not be restored.');
           }
         }
         notifyListeners();
@@ -172,6 +198,9 @@ class SessionManager extends ChangeNotifier {
     reconnector.cancel();
     for (final terminal in session.terminals) {
       terminal.connectionGone('Reconnecting was stopped.');
+    }
+    for (final desktop in session.desktops) {
+      desktop.connectionGone('Reconnecting was stopped.');
     }
     notifyListeners();
   }
@@ -244,6 +273,10 @@ class SessionManager extends ChangeNotifier {
       terminal.dispose();
     }
     session.terminals.clear();
+    for (final desktop in session.desktops) {
+      desktop.connectionGone('Disconnected.');
+    }
+    session.desktops.clear();
     for (final tunnel in session.tunnels) {
       await tunnel.tunnel.stop();
     }
