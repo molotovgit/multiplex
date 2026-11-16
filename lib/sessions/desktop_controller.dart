@@ -425,7 +425,27 @@ class DesktopController extends ChangeNotifier {
   // Cursor pictures.
 
   Future<void> _decodeCursor(int id, int width, int height, Offset hot, Uint8List bgra) async {
-    if (width == 0 || height == 0 || bgra.length < width * height * 4) return;
+    // Hyprland sometimes sends a blank or one-colour picture (a hidden or
+    // placeholder pointer). Like gliff's own client, show the plain arrow
+    // for those instead of a solid square.
+    final usable = width > 0 &&
+        height > 0 &&
+        width <= 1024 &&
+        height <= 1024 &&
+        bgra.length >= width * height * 4 &&
+        hot.dx >= 0 &&
+        hot.dy >= 0 &&
+        hot.dx < width &&
+        hot.dy < height &&
+        _hasVisibleShape(bgra);
+    if (!usable) {
+      _shapes.remove(id)?.$1.dispose();
+      if (_shapeId == id) {
+        cursorImage = null;
+        notifyListeners();
+      }
+      return;
+    }
     final completer = Completer<ui.Image>();
     ui.decodeImageFromPixels(bgra, width, height, ui.PixelFormat.bgra8888, completer.complete);
     final image = await completer.future;
@@ -438,11 +458,27 @@ class DesktopController extends ChangeNotifier {
     }
   }
 
+  /// Some pixel is not fully transparent, and not every pixel is the same.
+  static bool _hasVisibleShape(Uint8List bgra) {
+    var opaque = false;
+    var uniform = true;
+    for (var i = 0; i + 3 < bgra.length; i += 4) {
+      if (bgra[i + 3] != 0) opaque = true;
+      if (uniform && (bgra[i] != bgra[0] || bgra[i + 1] != bgra[1] || bgra[i + 2] != bgra[2] || bgra[i + 3] != bgra[3])) uniform = false;
+      if (opaque && !uniform) return true;
+    }
+    return false;
+  }
+
   void _useShape(int id) {
     if (id == _shapeId) return;
     final shape = _shapes[id];
-    if (shape == null) return;
     _shapeId = id;
+    if (shape == null) {
+      // Unknown or unusable picture: the plain arrow.
+      cursorImage = null;
+      return;
+    }
     cursorImage = shape.$1;
     // The picture is in remote pixels; the hot spot is drawn in logical.
     cursorHot = shape.$2;

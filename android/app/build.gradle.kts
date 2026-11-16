@@ -55,7 +55,15 @@ android {
     }
 
     buildTypes {
+        // Debug builds install next to the released app ("Multiplex dev"),
+        // so testing never replaces it or touches its saved hosts and keys.
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appLabel"] = "Multiplex dev"
+        }
         release {
+            manifestPlaceholders["appLabel"] = "Multiplex"
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
     }

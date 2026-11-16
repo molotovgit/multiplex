@@ -49,6 +49,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   final _focus = FocusNode(debugLabel: 'desktop keyboard');
   bool _started = false;
   bool _keyboardOpen = false;
+
+  /// The phone keyboard actually appeared since it was asked for; only then
+  /// does its disappearing (back gesture) mean the user closed it.
+  bool _keyboardSeen = false;
   bool _keysOpen = false;
   bool _toolbarShown = true;
   Timer? _hideToolbar;
@@ -115,7 +119,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   }
 
   void _toggleKeyboard() {
-    setState(() => _keyboardOpen = !_keyboardOpen);
+    setState(() {
+      _keyboardOpen = !_keyboardOpen;
+      _keyboardSeen = false;
+    });
     if (_keyboardOpen) {
       _focus.requestFocus();
       SystemChannels.textInput.invokeMethod<void>('TextInput.show');
@@ -181,7 +188,12 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     final media = MediaQuery.of(context);
     final keyboardHeight = media.viewInsets.bottom;
     // The phone keyboard closed by itself (back gesture): follow it.
-    if (_keyboardOpen && keyboardHeight == 0 && !_focus.hasFocus) _keyboardOpen = false;
+    if (_keyboardOpen && keyboardHeight > 0) _keyboardSeen = true;
+    if (_keyboardOpen && _keyboardSeen && keyboardHeight == 0) {
+      _keyboardOpen = false;
+      _keyboardSeen = false;
+      _focus.unfocus();
+    }
     final showKeys = _keysOpen || _keyboardOpen;
 
     return PrivateScreen(

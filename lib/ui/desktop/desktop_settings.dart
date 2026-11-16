@@ -3,8 +3,8 @@ import '../../data/vault_store.dart';
 
 /// Which screen of the remote machine the desktop shows.
 enum DesktopScreenMode {
-  fitted('Fitted to this phone', 'A private screen sized for the phone; text stays readable and it turns with the phone'),
-  mirror('Mirror the monitor', 'Shows the monitor you would see at the desk, scaled down to fit');
+  mirror('Your monitor', 'Shows the screen you see at the desk, as gliff does; pinch to zoom in'),
+  fitted('Phone-sized screen', 'Adds an extra screen to the desktop, sized for the phone, while connected');
 
   const DesktopScreenMode(this.label, this.description);
 
@@ -38,7 +38,7 @@ enum DesktopQuality {
 /// plain JSON in [AppSettings.desktop].
 class DesktopSettings {
   const DesktopSettings({
-    this.screen = DesktopScreenMode.fitted,
+    this.screen = DesktopScreenMode.mirror,
     this.touch = DesktopTouchMode.trackpad,
     this.quality = DesktopQuality.auto,
     this.textSize = 1.0,

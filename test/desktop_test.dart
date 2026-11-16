@@ -119,7 +119,7 @@ void main() {
   test('settings fall back to defaults and keep what they know', () {
     final s = DesktopSettings.fromJson({'touch': 'direct', 'screen': 'nonsense', 'textSize': 9});
     expect(s.touch, DesktopTouchMode.direct);
-    expect(s.screen, DesktopScreenMode.fitted);
+    expect(s.screen, DesktopScreenMode.mirror, reason: 'like gliff: the real monitor by default');
     expect(s.textSize, 2.0);
     expect(DesktopSettings.fromJson(s.toJson()).touch, DesktopTouchMode.direct);
   });

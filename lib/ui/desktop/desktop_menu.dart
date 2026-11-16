@@ -114,7 +114,7 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
                 for (final m in DesktopScreenMode.values)
                   ButtonSegment(
                     value: m,
-                    label: Text(m == DesktopScreenMode.fitted ? 'Fitted' : 'Mirror'),
+                    label: Text(m == DesktopScreenMode.fitted ? 'Phone-sized' : 'Your monitor'),
                     icon: Icon(m == DesktopScreenMode.fitted ? Icons.smartphone : Icons.desktop_windows_outlined),
                   ),
               ],
