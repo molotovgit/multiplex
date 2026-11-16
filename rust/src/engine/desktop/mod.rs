@@ -14,6 +14,7 @@
 //!
 //! The app never waits on the network: input calls only queue a message.
 
+pub mod h264;
 pub mod video;
 
 #[cfg(target_os = "android")]
@@ -40,6 +41,8 @@ use crate::engine::ssh::Connection;
 
 /// The longest text we take from the remote clipboard.
 const MAX_CLIPBOARD_TEXT: u64 = 4 * 1024 * 1024;
+/// The largest stream we accept (4K); the resolution setting picks below it.
+const MAX_STREAM: (u32, u32) = (3840, 2160);
 /// How often we measure the round trip.
 const PING_EVERY: Duration = Duration::from_secs(1);
 /// No answer to our pings for this long means the link is dead (for
@@ -114,8 +117,10 @@ impl DesktopSession {
                 keymap: String::new(),
                 caps: ClientCaps {
                     codecs: vec![Codec::H264],
-                    max_width: width,
-                    max_height: height,
+                    // The ceiling; the size actually streamed is what
+                    // Resize asks for (the resolution setting).
+                    max_width: MAX_STREAM.0.max(width),
+                    max_height: MAX_STREAM.1.max(height),
                     // Phones decode one ordinary 4:2:0 stream in hardware.
                     chroma: vec![ChromaMode::Single420],
                     features: gliff_proto::features(),
@@ -475,6 +480,10 @@ impl DesktopSession {
                 // server would wait for it and stall.
                 VideoReport::Skipped { id } => ClientMsg::FrameAck { frame_id: id, decoded_at_ms: now_ms() },
                 VideoReport::NeedKeyframe => ClientMsg::RequestKeyframe,
+                VideoReport::Picture { width, height, visible_width, visible_height } => {
+                    shared.events.emit(DesktopEvent::Picture { width, height, visible_width, visible_height });
+                    continue;
+                }
             };
             if tx.send(Outgoing::Msg(msg)).is_err() {
                 break;

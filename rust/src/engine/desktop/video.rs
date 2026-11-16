@@ -30,6 +30,10 @@ pub enum VideoReport {
     Skipped { id: u64 },
     /// The decoder lost its place; the next picture must be a keyframe.
     NeedKeyframe,
+    /// The decoded pictures are `width` x `height`, of which the top-left
+    /// `visible_width` x `visible_height` is the picture; the rest is
+    /// H.264 padding (pictures are coded in 16-pixel blocks).
+    Picture { width: u32, height: u32, visible_width: u32, visible_height: u32 },
 }
 
 /// A video decoder that draws onto the app's view.

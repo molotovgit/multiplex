@@ -23,6 +23,19 @@ enum DesktopTouchMode {
   final String description;
 }
 
+/// How many pixels the picture has.
+enum DesktopResolution {
+  auto('Automatic', 'Your monitor at its full resolution (or this phone\'s size for a phone-sized screen)'),
+  p1080('1080p', 'Up to 1920 × 1080'),
+  p720('720p', 'Up to 1280 × 720: less data, softer text'),
+  phone('Phone screen', 'As many pixels as this phone shows: the least data');
+
+  const DesktopResolution(this.label, this.description);
+
+  final String label;
+  final String description;
+}
+
 /// How much picture the stream carries.
 enum DesktopQuality {
   auto('Automatic', 'Full detail, adjusted to the network as it changes'),
@@ -41,6 +54,8 @@ class DesktopSettings {
     this.screen = DesktopScreenMode.mirror,
     this.touch = DesktopTouchMode.trackpad,
     this.quality = DesktopQuality.auto,
+    this.resolution = DesktopResolution.auto,
+    this.output = '',
     this.textSize = 1.0,
     this.showStats = false,
     this.haptics = true,
@@ -50,6 +65,11 @@ class DesktopSettings {
   final DesktopScreenMode screen;
   final DesktopTouchMode touch;
   final DesktopQuality quality;
+  final DesktopResolution resolution;
+
+  /// The monitor to mirror, by name (for example DP-1); empty means the
+  /// one in focus.
+  final String output;
 
   /// Size of things on a fitted screen, relative to the phone's own
   /// (1.0 = as large as the phone's apps).
@@ -72,6 +92,8 @@ class DesktopSettings {
     DesktopScreenMode? screen,
     DesktopTouchMode? touch,
     DesktopQuality? quality,
+    DesktopResolution? resolution,
+    String? output,
     double? textSize,
     bool? showStats,
     bool? haptics,
@@ -80,6 +102,8 @@ class DesktopSettings {
     screen: screen ?? this.screen,
     touch: touch ?? this.touch,
     quality: quality ?? this.quality,
+    resolution: resolution ?? this.resolution,
+    output: output ?? this.output,
     textSize: textSize ?? this.textSize,
     showStats: showStats ?? this.showStats,
     haptics: haptics ?? this.haptics,
@@ -90,6 +114,8 @@ class DesktopSettings {
     'screen': screen.name,
     'touch': touch.name,
     'quality': quality.name,
+    'resolution': resolution.name,
+    'output': output,
     'textSize': textSize,
     'showStats': showStats,
     'haptics': haptics,
@@ -104,6 +130,8 @@ class DesktopSettings {
       screen: DesktopScreenMode.values.asNameMap()[j['screen']] ?? d.screen,
       touch: DesktopTouchMode.values.asNameMap()[j['touch']] ?? d.touch,
       quality: DesktopQuality.values.asNameMap()[j['quality']] ?? d.quality,
+      resolution: DesktopResolution.values.asNameMap()[j['resolution']] ?? d.resolution,
+      output: Json.str(j, 'output'),
       textSize: size is num ? size.toDouble().clamp(0.5, 2.0) : d.textSize,
       showStats: Json.boolean(j, 'showStats', d.showStats),
       haptics: Json.boolean(j, 'haptics', d.haptics),

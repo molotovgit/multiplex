@@ -166,3 +166,53 @@ async fn clipboard_goes_both_ways() {
     assert_eq!(pasted, back, "our text did not reach the desktop clipboard");
     session.close();
 }
+
+/// Keeps the first keyframe it sees.
+struct KeyframeGrabber {
+    reports: mpsc::UnboundedSender<multiplex_core::engine::desktop::video::VideoReport>,
+    first: Arc<Mutex<Option<Vec<u8>>>>,
+}
+
+impl multiplex_core::engine::desktop::video::VideoSink for KeyframeGrabber {
+    fn configure(&self, _: u32, _: u32) {}
+    fn submit(&self, frame: multiplex_core::engine::desktop::video::EncodedFrame) {
+        if frame.keyframe {
+            self.first.lock().unwrap().get_or_insert_with(|| frame.data.to_vec());
+        }
+        let _ = self.reports.send(multiplex_core::engine::desktop::video::VideoReport::Shown { id: frame.id, latency: Duration::ZERO });
+    }
+    fn close(&self) {}
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn real_keyframes_get_a_low_latency_header() {
+    let Some(conn) = connect().await else { return };
+    let first = Arc::new(Mutex::new(None));
+    let (tx, rx) = mpsc::unbounded_channel();
+    let session = DesktopSession::open(
+        &conn,
+        DesktopOptions {
+            mode: DesktopMode::Mirror,
+            width: 1920,
+            height: 1080,
+            scale: 1.0,
+            low_bandwidth: false,
+            texture_id: 0,
+            server_command: String::new(),
+        },
+        Arc::new(|_| true),
+        Box::new(KeyframeGrabber { reports: tx, first: first.clone() }),
+        rx,
+    )
+    .await
+    .expect("desktop should start");
+    let start = Instant::now();
+    while first.lock().unwrap().is_none() && start.elapsed() < Duration::from_secs(10) {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let key = first.lock().unwrap().clone().expect("a keyframe");
+    let fixed = multiplex_core::engine::desktop::h264::low_latency_sps(&key).expect("the SPS was rewritten");
+    eprintln!("keyframe {} bytes -> {} bytes", key.len(), fixed.len());
+    assert!(fixed.len() > key.len() && fixed.len() < key.len() + 32);
+    session.close();
+}

@@ -56,12 +56,13 @@ extension DesktopEventPatterns on DesktopEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DesktopEvent_Started value)?  started,TResult Function( DesktopEvent_Stream value)?  stream,TResult Function( DesktopEvent_CursorShape value)?  cursorShape,TResult Function( DesktopEvent_CursorMoved value)?  cursorMoved,TResult Function( DesktopEvent_Clipboard value)?  clipboard,TResult Function( DesktopEvent_Stats value)?  stats,TResult Function( DesktopEvent_Ended value)?  ended,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DesktopEvent_Started value)?  started,TResult Function( DesktopEvent_Stream value)?  stream,TResult Function( DesktopEvent_Picture value)?  picture,TResult Function( DesktopEvent_CursorShape value)?  cursorShape,TResult Function( DesktopEvent_CursorMoved value)?  cursorMoved,TResult Function( DesktopEvent_Clipboard value)?  clipboard,TResult Function( DesktopEvent_Stats value)?  stats,TResult Function( DesktopEvent_Ended value)?  ended,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case DesktopEvent_Started() when started != null:
 return started(_that);case DesktopEvent_Stream() when stream != null:
-return stream(_that);case DesktopEvent_CursorShape() when cursorShape != null:
+return stream(_that);case DesktopEvent_Picture() when picture != null:
+return picture(_that);case DesktopEvent_CursorShape() when cursorShape != null:
 return cursorShape(_that);case DesktopEvent_CursorMoved() when cursorMoved != null:
 return cursorMoved(_that);case DesktopEvent_Clipboard() when clipboard != null:
 return clipboard(_that);case DesktopEvent_Stats() when stats != null:
@@ -84,12 +85,13 @@ return ended(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DesktopEvent_Started value)  started,required TResult Function( DesktopEvent_Stream value)  stream,required TResult Function( DesktopEvent_CursorShape value)  cursorShape,required TResult Function( DesktopEvent_CursorMoved value)  cursorMoved,required TResult Function( DesktopEvent_Clipboard value)  clipboard,required TResult Function( DesktopEvent_Stats value)  stats,required TResult Function( DesktopEvent_Ended value)  ended,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DesktopEvent_Started value)  started,required TResult Function( DesktopEvent_Stream value)  stream,required TResult Function( DesktopEvent_Picture value)  picture,required TResult Function( DesktopEvent_CursorShape value)  cursorShape,required TResult Function( DesktopEvent_CursorMoved value)  cursorMoved,required TResult Function( DesktopEvent_Clipboard value)  clipboard,required TResult Function( DesktopEvent_Stats value)  stats,required TResult Function( DesktopEvent_Ended value)  ended,}){
 final _that = this;
 switch (_that) {
 case DesktopEvent_Started():
 return started(_that);case DesktopEvent_Stream():
-return stream(_that);case DesktopEvent_CursorShape():
+return stream(_that);case DesktopEvent_Picture():
+return picture(_that);case DesktopEvent_CursorShape():
 return cursorShape(_that);case DesktopEvent_CursorMoved():
 return cursorMoved(_that);case DesktopEvent_Clipboard():
 return clipboard(_that);case DesktopEvent_Stats():
@@ -108,12 +110,13 @@ return ended(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DesktopEvent_Started value)?  started,TResult? Function( DesktopEvent_Stream value)?  stream,TResult? Function( DesktopEvent_CursorShape value)?  cursorShape,TResult? Function( DesktopEvent_CursorMoved value)?  cursorMoved,TResult? Function( DesktopEvent_Clipboard value)?  clipboard,TResult? Function( DesktopEvent_Stats value)?  stats,TResult? Function( DesktopEvent_Ended value)?  ended,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DesktopEvent_Started value)?  started,TResult? Function( DesktopEvent_Stream value)?  stream,TResult? Function( DesktopEvent_Picture value)?  picture,TResult? Function( DesktopEvent_CursorShape value)?  cursorShape,TResult? Function( DesktopEvent_CursorMoved value)?  cursorMoved,TResult? Function( DesktopEvent_Clipboard value)?  clipboard,TResult? Function( DesktopEvent_Stats value)?  stats,TResult? Function( DesktopEvent_Ended value)?  ended,}){
 final _that = this;
 switch (_that) {
 case DesktopEvent_Started() when started != null:
 return started(_that);case DesktopEvent_Stream() when stream != null:
-return stream(_that);case DesktopEvent_CursorShape() when cursorShape != null:
+return stream(_that);case DesktopEvent_Picture() when picture != null:
+return picture(_that);case DesktopEvent_CursorShape() when cursorShape != null:
 return cursorShape(_that);case DesktopEvent_CursorMoved() when cursorMoved != null:
 return cursorMoved(_that);case DesktopEvent_Clipboard() when clipboard != null:
 return clipboard(_that);case DesktopEvent_Stats() when stats != null:
@@ -135,11 +138,12 @@ return ended(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool fitted,  String output,  List<DesktopOutput> outputs)?  started,TResult Function( int width,  int height,  double scale,  bool hardware)?  stream,TResult Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)?  cursorShape,TResult Function( double x,  double y,  int shapeId,  bool visible)?  cursorMoved,TResult Function( String text)?  clipboard,TResult Function( DesktopStats field0)?  stats,TResult Function( String reason,  bool retryable)?  ended,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool fitted,  String output,  List<DesktopOutput> outputs)?  started,TResult Function( int width,  int height,  double scale,  bool hardware)?  stream,TResult Function( int width,  int height,  int visibleWidth,  int visibleHeight)?  picture,TResult Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)?  cursorShape,TResult Function( double x,  double y,  int shapeId,  bool visible)?  cursorMoved,TResult Function( String text)?  clipboard,TResult Function( DesktopStats field0)?  stats,TResult Function( String reason,  bool retryable)?  ended,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DesktopEvent_Started() when started != null:
 return started(_that.fitted,_that.output,_that.outputs);case DesktopEvent_Stream() when stream != null:
-return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_CursorShape() when cursorShape != null:
+return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_Picture() when picture != null:
+return picture(_that.width,_that.height,_that.visibleWidth,_that.visibleHeight);case DesktopEvent_CursorShape() when cursorShape != null:
 return cursorShape(_that.id,_that.width,_that.height,_that.hotX,_that.hotY,_that.bgra);case DesktopEvent_CursorMoved() when cursorMoved != null:
 return cursorMoved(_that.x,_that.y,_that.shapeId,_that.visible);case DesktopEvent_Clipboard() when clipboard != null:
 return clipboard(_that.text);case DesktopEvent_Stats() when stats != null:
@@ -162,11 +166,12 @@ return ended(_that.reason,_that.retryable);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool fitted,  String output,  List<DesktopOutput> outputs)  started,required TResult Function( int width,  int height,  double scale,  bool hardware)  stream,required TResult Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)  cursorShape,required TResult Function( double x,  double y,  int shapeId,  bool visible)  cursorMoved,required TResult Function( String text)  clipboard,required TResult Function( DesktopStats field0)  stats,required TResult Function( String reason,  bool retryable)  ended,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool fitted,  String output,  List<DesktopOutput> outputs)  started,required TResult Function( int width,  int height,  double scale,  bool hardware)  stream,required TResult Function( int width,  int height,  int visibleWidth,  int visibleHeight)  picture,required TResult Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)  cursorShape,required TResult Function( double x,  double y,  int shapeId,  bool visible)  cursorMoved,required TResult Function( String text)  clipboard,required TResult Function( DesktopStats field0)  stats,required TResult Function( String reason,  bool retryable)  ended,}) {final _that = this;
 switch (_that) {
 case DesktopEvent_Started():
 return started(_that.fitted,_that.output,_that.outputs);case DesktopEvent_Stream():
-return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_CursorShape():
+return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_Picture():
+return picture(_that.width,_that.height,_that.visibleWidth,_that.visibleHeight);case DesktopEvent_CursorShape():
 return cursorShape(_that.id,_that.width,_that.height,_that.hotX,_that.hotY,_that.bgra);case DesktopEvent_CursorMoved():
 return cursorMoved(_that.x,_that.y,_that.shapeId,_that.visible);case DesktopEvent_Clipboard():
 return clipboard(_that.text);case DesktopEvent_Stats():
@@ -185,11 +190,12 @@ return ended(_that.reason,_that.retryable);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool fitted,  String output,  List<DesktopOutput> outputs)?  started,TResult? Function( int width,  int height,  double scale,  bool hardware)?  stream,TResult? Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)?  cursorShape,TResult? Function( double x,  double y,  int shapeId,  bool visible)?  cursorMoved,TResult? Function( String text)?  clipboard,TResult? Function( DesktopStats field0)?  stats,TResult? Function( String reason,  bool retryable)?  ended,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool fitted,  String output,  List<DesktopOutput> outputs)?  started,TResult? Function( int width,  int height,  double scale,  bool hardware)?  stream,TResult? Function( int width,  int height,  int visibleWidth,  int visibleHeight)?  picture,TResult? Function( int id,  int width,  int height,  int hotX,  int hotY,  Uint8List bgra)?  cursorShape,TResult? Function( double x,  double y,  int shapeId,  bool visible)?  cursorMoved,TResult? Function( String text)?  clipboard,TResult? Function( DesktopStats field0)?  stats,TResult? Function( String reason,  bool retryable)?  ended,}) {final _that = this;
 switch (_that) {
 case DesktopEvent_Started() when started != null:
 return started(_that.fitted,_that.output,_that.outputs);case DesktopEvent_Stream() when stream != null:
-return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_CursorShape() when cursorShape != null:
+return stream(_that.width,_that.height,_that.scale,_that.hardware);case DesktopEvent_Picture() when picture != null:
+return picture(_that.width,_that.height,_that.visibleWidth,_that.visibleHeight);case DesktopEvent_CursorShape() when cursorShape != null:
 return cursorShape(_that.id,_that.width,_that.height,_that.hotX,_that.hotY,_that.bgra);case DesktopEvent_CursorMoved() when cursorMoved != null:
 return cursorMoved(_that.x,_that.y,_that.shapeId,_that.visible);case DesktopEvent_Clipboard() when clipboard != null:
 return clipboard(_that.text);case DesktopEvent_Stats() when stats != null:
@@ -354,6 +360,80 @@ as int,height: null == height ? _self.height : height // ignore: cast_nullable_t
 as int,scale: null == scale ? _self.scale : scale // ignore: cast_nullable_to_non_nullable
 as double,hardware: null == hardware ? _self.hardware : hardware // ignore: cast_nullable_to_non_nullable
 as bool,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class DesktopEvent_Picture extends DesktopEvent {
+  const DesktopEvent_Picture({required this.width, required this.height, required this.visibleWidth, required this.visibleHeight}): super._();
+  
+
+ final  int width;
+ final  int height;
+ final  int visibleWidth;
+ final  int visibleHeight;
+
+/// Create a copy of DesktopEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DesktopEvent_PictureCopyWith<DesktopEvent_Picture> get copyWith => _$DesktopEvent_PictureCopyWithImpl<DesktopEvent_Picture>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesktopEvent_Picture&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.visibleWidth, visibleWidth) || other.visibleWidth == visibleWidth)&&(identical(other.visibleHeight, visibleHeight) || other.visibleHeight == visibleHeight));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,width,height,visibleWidth,visibleHeight);
+}
+
+@override
+String toString() {
+    return 'DesktopEvent.picture(width: $width, height: $height, visibleWidth: $visibleWidth, visibleHeight: $visibleHeight)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DesktopEvent_PictureCopyWith<$Res> implements $DesktopEventCopyWith<$Res> {
+  factory $DesktopEvent_PictureCopyWith(DesktopEvent_Picture value, $Res Function(DesktopEvent_Picture) _then) = _$DesktopEvent_PictureCopyWithImpl;
+@useResult
+$Res call({
+ int width, int height, int visibleWidth, int visibleHeight
+});
+
+
+
+
+}
+/// @nodoc
+class _$DesktopEvent_PictureCopyWithImpl<$Res>
+    implements $DesktopEvent_PictureCopyWith<$Res> {
+  _$DesktopEvent_PictureCopyWithImpl(this._self, this._then);
+
+  final DesktopEvent_Picture _self;
+  final $Res Function(DesktopEvent_Picture) _then;
+
+/// Create a copy of DesktopEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? width = null,Object? height = null,Object? visibleWidth = null,Object? visibleHeight = null,}) {
+  return _then(DesktopEvent_Picture(
+width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
+as int,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
+as int,visibleWidth: null == visibleWidth ? _self.visibleWidth : visibleWidth // ignore: cast_nullable_to_non_nullable
+as int,visibleHeight: null == visibleHeight ? _self.visibleHeight : visibleHeight // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

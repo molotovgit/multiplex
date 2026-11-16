@@ -22,6 +22,94 @@ abstract final class DesktopMenu {
   }
 }
 
+/// Which screen to show: one of the remote's monitors, the monitor in
+/// focus, or a phone-sized screen of its own.
+abstract final class DesktopScreens {
+  static Future<void> show(BuildContext context, {required DesktopController controller}) {
+    // Monitors can be plugged in or out while connected.
+    controller.refreshMonitors();
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      sheetAnimationStyle: AppMotion.of(context).sheet,
+      builder: (context) => _ScreensSheet(controller: controller),
+    );
+  }
+}
+
+class _ScreensSheet extends StatelessWidget {
+  const _ScreensSheet({required this.controller});
+
+  final DesktopController controller;
+
+  void _pick(BuildContext context, DesktopSettings next) {
+    Navigator.pop(context);
+    next.saveTo(AppScope.store(context));
+    controller.applySettings(next);
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(listenable: controller, builder: (context, _) => _build(context));
+
+  Widget _build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final s = controller.settings;
+    final mirror = s.screen == DesktopScreenMode.mirror;
+    Widget tile({required IconData icon, required String title, String? subtitle, required bool selected, required VoidCallback onTap}) => ListTile(
+      leading: Icon(icon, color: selected ? colors.accent : null),
+      title: Text(title),
+      subtitle: subtitle == null ? null : Text(subtitle),
+      trailing: selected ? Icon(Icons.check, color: colors.accent) : null,
+      selected: selected,
+      onTap: onTap,
+    );
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: SectionHeader('Show')),
+            if (controller.monitors.isNotEmpty)
+              for (final m in controller.monitors)
+                tile(
+                  icon: Icons.desktop_windows_outlined,
+                  title: m.focused ? '${m.name} · in focus' : m.name,
+                  subtitle: '${m.width} × ${m.height}${m.refresh > 0 ? ' · ${m.refresh.round()} Hz' : ''}',
+                  selected: mirror && s.output == m.name,
+                  onTap: () => _pick(context, s.copyWith(screen: DesktopScreenMode.mirror, output: m.name)),
+                )
+            else
+              for (final o in controller.outputs)
+                tile(
+                  icon: Icons.desktop_windows_outlined,
+                  title: o.name,
+                  subtitle: '${o.width} × ${o.height}',
+                  selected: mirror && s.output == o.name,
+                  onTap: () => _pick(context, s.copyWith(screen: DesktopScreenMode.mirror, output: o.name)),
+                ),
+            tile(
+              icon: Icons.center_focus_strong_outlined,
+              title: 'The monitor in focus',
+              subtitle: 'Whichever monitor you last worked on',
+              selected: mirror && s.output.isEmpty,
+              onTap: () => _pick(context, s.copyWith(screen: DesktopScreenMode.mirror, output: '')),
+            ),
+            tile(
+              icon: Icons.smartphone,
+              title: 'Phone-sized screen',
+              subtitle: DesktopScreenMode.fitted.description,
+              selected: !mirror,
+              onTap: () => _pick(context, s.copyWith(screen: DesktopScreenMode.fitted)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DesktopMenuSheet extends StatefulWidget {
   const _DesktopMenuSheet({required this.controller, required this.onDisconnect});
 
@@ -109,21 +197,44 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
             ),
             const SizedBox(height: 8),
             const SectionHeader('Screen'),
-            SegmentedButton<DesktopScreenMode>(
-              segments: [
-                for (final m in DesktopScreenMode.values)
-                  ButtonSegment(
-                    value: m,
-                    label: Text(m == DesktopScreenMode.fitted ? 'Phone-sized' : 'Your monitor'),
-                    icon: Icon(m == DesktopScreenMode.fitted ? Icons.smartphone : Icons.desktop_windows_outlined),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.desktop_windows_outlined),
+              title: Text(s.screen == DesktopScreenMode.fitted ? 'Phone-sized screen' : (s.output.isEmpty ? 'The monitor in focus' : s.output)),
+              subtitle: Text(c.monitors.length > 1 ? '${c.monitors.length} monitors · tap to switch' : 'Tap to choose'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                DesktopScreens.show(context, controller: c);
+              },
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.high_quality_outlined, size: 20),
+                const SizedBox(width: 12),
+                Text('Resolution', style: text.bodyLarge),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final r in DesktopResolution.values)
+                  ChoiceChip(
+                    label: Text(r.label),
+                    selected: s.resolution == r,
+                    onSelected: (_) => _save(s.copyWith(resolution: r)),
                   ),
               ],
-              selected: {s.screen},
-              onSelectionChanged: (v) => _save(s.copyWith(screen: v.first)),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 6, bottom: 4),
-              child: Text(s.screen.description, style: text.bodySmall?.copyWith(color: colors.muted)),
+              child: Text(
+                '${s.resolution.description}${c.streamWidth > 0 ? ' · now ${c.streamWidth} × ${c.streamHeight}' : ''}',
+                style: text.bodySmall?.copyWith(color: colors.muted),
+              ),
             ),
             if (s.screen == DesktopScreenMode.fitted) ...[
               const SizedBox(height: 8),

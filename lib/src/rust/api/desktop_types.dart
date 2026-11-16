@@ -42,6 +42,16 @@ sealed class DesktopEvent with _$DesktopEvent {
     required bool hardware,
   }) = DesktopEvent_Stream;
 
+  /// The decoder's pictures: `width` x `height` pixels, of which the
+  /// top-left `visible_width` x `visible_height` is the screen. The rest
+  /// is padding (H.264 codes in 16-pixel blocks) and must not be shown.
+  const factory DesktopEvent.picture({
+    required int width,
+    required int height,
+    required int visibleWidth,
+    required int visibleHeight,
+  }) = DesktopEvent_Picture;
+
   /// A new mouse cursor picture: tightly packed 32-bit BGRA pixels.
   const factory DesktopEvent.cursorShape({
     required int id,

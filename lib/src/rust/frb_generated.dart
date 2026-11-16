@@ -4594,6 +4594,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           hardware: dco_decode_bool(raw[4]),
         );
       case 2:
+        return DesktopEvent_Picture(
+          width: dco_decode_u_32(raw[1]),
+          height: dco_decode_u_32(raw[2]),
+          visibleWidth: dco_decode_u_32(raw[3]),
+          visibleHeight: dco_decode_u_32(raw[4]),
+        );
+      case 3:
         return DesktopEvent_CursorShape(
           id: dco_decode_u_32(raw[1]),
           width: dco_decode_u_32(raw[2]),
@@ -4602,18 +4609,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           hotY: dco_decode_i_32(raw[5]),
           bgra: dco_decode_list_prim_u_8_strict(raw[6]),
         );
-      case 3:
+      case 4:
         return DesktopEvent_CursorMoved(
           x: dco_decode_f_64(raw[1]),
           y: dco_decode_f_64(raw[2]),
           shapeId: dco_decode_u_32(raw[3]),
           visible: dco_decode_bool(raw[4]),
         );
-      case 4:
-        return DesktopEvent_Clipboard(text: dco_decode_String(raw[1]));
       case 5:
-        return DesktopEvent_Stats(dco_decode_box_autoadd_desktop_stats(raw[1]));
+        return DesktopEvent_Clipboard(text: dco_decode_String(raw[1]));
       case 6:
+        return DesktopEvent_Stats(dco_decode_box_autoadd_desktop_stats(raw[1]));
+      case 7:
         return DesktopEvent_Ended(
           reason: dco_decode_String(raw[1]),
           retryable: dco_decode_bool(raw[2]),
@@ -5824,6 +5831,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           hardware: var_hardware,
         );
       case 2:
+        var var_width = sse_decode_u_32(deserializer);
+        var var_height = sse_decode_u_32(deserializer);
+        var var_visibleWidth = sse_decode_u_32(deserializer);
+        var var_visibleHeight = sse_decode_u_32(deserializer);
+        return DesktopEvent_Picture(
+          width: var_width,
+          height: var_height,
+          visibleWidth: var_visibleWidth,
+          visibleHeight: var_visibleHeight,
+        );
+      case 3:
         var var_id = sse_decode_u_32(deserializer);
         var var_width = sse_decode_u_32(deserializer);
         var var_height = sse_decode_u_32(deserializer);
@@ -5838,7 +5856,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           hotY: var_hotY,
           bgra: var_bgra,
         );
-      case 3:
+      case 4:
         var var_x = sse_decode_f_64(deserializer);
         var var_y = sse_decode_f_64(deserializer);
         var var_shapeId = sse_decode_u_32(deserializer);
@@ -5849,13 +5867,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           shapeId: var_shapeId,
           visible: var_visible,
         );
-      case 4:
+      case 5:
         var var_text = sse_decode_String(deserializer);
         return DesktopEvent_Clipboard(text: var_text);
-      case 5:
+      case 6:
         var var_field0 = sse_decode_box_autoadd_desktop_stats(deserializer);
         return DesktopEvent_Stats(var_field0);
-      case 6:
+      case 7:
         var var_reason = sse_decode_String(deserializer);
         var var_retryable = sse_decode_bool(deserializer);
         return DesktopEvent_Ended(reason: var_reason, retryable: var_retryable);
@@ -7250,6 +7268,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_u_32(height, serializer);
         sse_encode_f_64(scale, serializer);
         sse_encode_bool(hardware, serializer);
+      case DesktopEvent_Picture(
+        width: final width,
+        height: final height,
+        visibleWidth: final visibleWidth,
+        visibleHeight: final visibleHeight,
+      ):
+        sse_encode_i_32(2, serializer);
+        sse_encode_u_32(width, serializer);
+        sse_encode_u_32(height, serializer);
+        sse_encode_u_32(visibleWidth, serializer);
+        sse_encode_u_32(visibleHeight, serializer);
       case DesktopEvent_CursorShape(
         id: final id,
         width: final width,
@@ -7258,7 +7287,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         hotY: final hotY,
         bgra: final bgra,
       ):
-        sse_encode_i_32(2, serializer);
+        sse_encode_i_32(3, serializer);
         sse_encode_u_32(id, serializer);
         sse_encode_u_32(width, serializer);
         sse_encode_u_32(height, serializer);
@@ -7271,19 +7300,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         shapeId: final shapeId,
         visible: final visible,
       ):
-        sse_encode_i_32(3, serializer);
+        sse_encode_i_32(4, serializer);
         sse_encode_f_64(x, serializer);
         sse_encode_f_64(y, serializer);
         sse_encode_u_32(shapeId, serializer);
         sse_encode_bool(visible, serializer);
       case DesktopEvent_Clipboard(text: final text):
-        sse_encode_i_32(4, serializer);
+        sse_encode_i_32(5, serializer);
         sse_encode_String(text, serializer);
       case DesktopEvent_Stats(field0: final field0):
-        sse_encode_i_32(5, serializer);
+        sse_encode_i_32(6, serializer);
         sse_encode_box_autoadd_desktop_stats(field0, serializer);
       case DesktopEvent_Ended(reason: final reason, retryable: final retryable):
-        sse_encode_i_32(6, serializer);
+        sse_encode_i_32(7, serializer);
         sse_encode_String(reason, serializer);
         sse_encode_bool(retryable, serializer);
     }

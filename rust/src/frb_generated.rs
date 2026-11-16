@@ -5724,6 +5724,18 @@ impl SseDecode for crate::api::desktop_types::DesktopEvent {
                 };
             }
             2 => {
+                let mut var_width = <u32>::sse_decode(deserializer);
+                let mut var_height = <u32>::sse_decode(deserializer);
+                let mut var_visibleWidth = <u32>::sse_decode(deserializer);
+                let mut var_visibleHeight = <u32>::sse_decode(deserializer);
+                return crate::api::desktop_types::DesktopEvent::Picture {
+                    width: var_width,
+                    height: var_height,
+                    visible_width: var_visibleWidth,
+                    visible_height: var_visibleHeight,
+                };
+            }
+            3 => {
                 let mut var_id = <u32>::sse_decode(deserializer);
                 let mut var_width = <u32>::sse_decode(deserializer);
                 let mut var_height = <u32>::sse_decode(deserializer);
@@ -5739,7 +5751,7 @@ impl SseDecode for crate::api::desktop_types::DesktopEvent {
                     bgra: var_bgra,
                 };
             }
-            3 => {
+            4 => {
                 let mut var_x = <f64>::sse_decode(deserializer);
                 let mut var_y = <f64>::sse_decode(deserializer);
                 let mut var_shapeId = <u32>::sse_decode(deserializer);
@@ -5751,16 +5763,16 @@ impl SseDecode for crate::api::desktop_types::DesktopEvent {
                     visible: var_visible,
                 };
             }
-            4 => {
+            5 => {
                 let mut var_text = <String>::sse_decode(deserializer);
                 return crate::api::desktop_types::DesktopEvent::Clipboard { text: var_text };
             }
-            5 => {
+            6 => {
                 let mut var_field0 =
                     <crate::api::desktop_types::DesktopStats>::sse_decode(deserializer);
                 return crate::api::desktop_types::DesktopEvent::Stats(var_field0);
             }
-            6 => {
+            7 => {
                 let mut var_reason = <String>::sse_decode(deserializer);
                 let mut var_retryable = <bool>::sse_decode(deserializer);
                 return crate::api::desktop_types::DesktopEvent::Ended {
@@ -7275,6 +7287,19 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopEvent {
                 hardware.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::api::desktop_types::DesktopEvent::Picture {
+                width,
+                height,
+                visible_width,
+                visible_height,
+            } => [
+                2.into_dart(),
+                width.into_into_dart().into_dart(),
+                height.into_into_dart().into_dart(),
+                visible_width.into_into_dart().into_dart(),
+                visible_height.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             crate::api::desktop_types::DesktopEvent::CursorShape {
                 id,
                 width,
@@ -7283,7 +7308,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopEvent {
                 hot_y,
                 bgra,
             } => [
-                2.into_dart(),
+                3.into_dart(),
                 id.into_into_dart().into_dart(),
                 width.into_into_dart().into_dart(),
                 height.into_into_dart().into_dart(),
@@ -7298,7 +7323,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopEvent {
                 shape_id,
                 visible,
             } => [
-                3.into_dart(),
+                4.into_dart(),
                 x.into_into_dart().into_dart(),
                 y.into_into_dart().into_dart(),
                 shape_id.into_into_dart().into_dart(),
@@ -7306,13 +7331,13 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopEvent {
             ]
             .into_dart(),
             crate::api::desktop_types::DesktopEvent::Clipboard { text } => {
-                [4.into_dart(), text.into_into_dart().into_dart()].into_dart()
+                [5.into_dart(), text.into_into_dart().into_dart()].into_dart()
             }
             crate::api::desktop_types::DesktopEvent::Stats(field0) => {
-                [5.into_dart(), field0.into_into_dart().into_dart()].into_dart()
+                [6.into_dart(), field0.into_into_dart().into_dart()].into_dart()
             }
             crate::api::desktop_types::DesktopEvent::Ended { reason, retryable } => [
-                6.into_dart(),
+                7.into_dart(),
                 reason.into_into_dart().into_dart(),
                 retryable.into_into_dart().into_dart(),
             ]
@@ -8562,6 +8587,18 @@ impl SseEncode for crate::api::desktop_types::DesktopEvent {
                 <f64>::sse_encode(scale, serializer);
                 <bool>::sse_encode(hardware, serializer);
             }
+            crate::api::desktop_types::DesktopEvent::Picture {
+                width,
+                height,
+                visible_width,
+                visible_height,
+            } => {
+                <i32>::sse_encode(2, serializer);
+                <u32>::sse_encode(width, serializer);
+                <u32>::sse_encode(height, serializer);
+                <u32>::sse_encode(visible_width, serializer);
+                <u32>::sse_encode(visible_height, serializer);
+            }
             crate::api::desktop_types::DesktopEvent::CursorShape {
                 id,
                 width,
@@ -8570,7 +8607,7 @@ impl SseEncode for crate::api::desktop_types::DesktopEvent {
                 hot_y,
                 bgra,
             } => {
-                <i32>::sse_encode(2, serializer);
+                <i32>::sse_encode(3, serializer);
                 <u32>::sse_encode(id, serializer);
                 <u32>::sse_encode(width, serializer);
                 <u32>::sse_encode(height, serializer);
@@ -8584,22 +8621,22 @@ impl SseEncode for crate::api::desktop_types::DesktopEvent {
                 shape_id,
                 visible,
             } => {
-                <i32>::sse_encode(3, serializer);
+                <i32>::sse_encode(4, serializer);
                 <f64>::sse_encode(x, serializer);
                 <f64>::sse_encode(y, serializer);
                 <u32>::sse_encode(shape_id, serializer);
                 <bool>::sse_encode(visible, serializer);
             }
             crate::api::desktop_types::DesktopEvent::Clipboard { text } => {
-                <i32>::sse_encode(4, serializer);
+                <i32>::sse_encode(5, serializer);
                 <String>::sse_encode(text, serializer);
             }
             crate::api::desktop_types::DesktopEvent::Stats(field0) => {
-                <i32>::sse_encode(5, serializer);
+                <i32>::sse_encode(6, serializer);
                 <crate::api::desktop_types::DesktopStats>::sse_encode(field0, serializer);
             }
             crate::api::desktop_types::DesktopEvent::Ended { reason, retryable } => {
-                <i32>::sse_encode(6, serializer);
+                <i32>::sse_encode(7, serializer);
                 <String>::sse_encode(reason, serializer);
                 <bool>::sse_encode(retryable, serializer);
             }

@@ -143,6 +143,7 @@ class DesktopToolbar extends StatelessWidget {
     required this.onKeyboard,
     required this.onKeys,
     required this.onTouchMode,
+    required this.onScreens,
     required this.onMore,
   });
 
@@ -157,6 +158,9 @@ class DesktopToolbar extends StatelessWidget {
   final VoidCallback onKeyboard;
   final VoidCallback onKeys;
   final VoidCallback onTouchMode;
+
+  /// Switch between the remote's monitors.
+  final VoidCallback onScreens;
   final VoidCallback onMore;
 
   @override
@@ -236,6 +240,7 @@ class DesktopToolbar extends StatelessWidget {
               icon: Icon(trackpad ? Icons.touch_app_outlined : Icons.ads_click),
               onPressed: onTouchMode,
             ),
+            IconButton(tooltip: 'Switch screen', icon: const Icon(Icons.screenshot_monitor_outlined), onPressed: onScreens),
             IconButton(tooltip: 'More', icon: const Icon(Icons.more_vert), onPressed: onMore),
           ],
         ),

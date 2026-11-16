@@ -276,6 +276,11 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                                       _scheduleHide();
                                     },
                                     onTouchMode: _toggleTouchMode,
+                                    onScreens: () async {
+                                      _hideToolbar?.cancel();
+                                      await DesktopScreens.show(context, controller: c);
+                                      _scheduleHide();
+                                    },
                                     onMore: _more,
                                   ),
                                 )
@@ -328,6 +333,7 @@ class _RemoteView extends StatelessWidget {
     final id = controller.textureId;
     final remote = controller.remoteSize;
     final size = remote * viewport.k;
+    final pad = controller.paddingFactor;
     return ClipRect(
       child: Stack(
         children: [
@@ -337,7 +343,19 @@ class _RemoteView extends StatelessWidget {
               top: viewport.origin.dy,
               width: size.width,
               height: size.height,
-              child: Texture(textureId: id, filterQuality: viewport.zoom > 1.05 ? FilterQuality.medium : FilterQuality.low),
+              // The decoded picture is a little larger than the screen in
+              // it (16-pixel padding); draw it so the screen part fills the
+              // box and clip the padding away.
+              child: ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.topLeft,
+                  minWidth: size.width * pad.width,
+                  maxWidth: size.width * pad.width,
+                  minHeight: size.height * pad.height,
+                  maxHeight: size.height * pad.height,
+                  child: Texture(textureId: id, filterQuality: viewport.zoom > 1.05 ? FilterQuality.medium : FilterQuality.low),
+                ),
+              ),
             ),
           if (controller.live && controller.cursorVisible)
             Positioned.fill(

@@ -243,19 +243,23 @@ impl DecoderThread {
             self.need_keyframe = false;
             self.asked = false;
         }
+        // Keyframes carry the sequence header: give it a low-latency VUI so
+        // the decoder shows each picture at once (see h264.rs).
+        let data = if frame.keyframe { super::h264::low_latency_sps(&frame.data).map(bytes::Bytes::from) } else { None };
+        let data = data.as_ref().unwrap_or(&frame.data);
         let codec = &self.codec.as_ref().expect("codec built above").codec;
         let fed = match codec.dequeue_input_buffer(Self::INPUT_WAIT) {
             Ok(DequeuedInputBufferResult::Buffer(mut buf)) => {
                 let dst = buf.buffer_mut();
-                if dst.len() < frame.data.len() {
+                if dst.len() < data.len() {
                     None
                 } else {
-                    for (d, s) in dst.iter_mut().zip(frame.data.iter()) {
+                    for (d, s) in dst.iter_mut().zip(data.iter()) {
                         d.write(*s);
                     }
                     // The frame id rides along as the timestamp, so the
                     // output tells us which picture it is.
-                    codec.queue_input_buffer(buf, 0, frame.data.len(), frame.id, 0).ok()
+                    codec.queue_input_buffer(buf, 0, data.len(), frame.id, 0).ok()
                 }
             }
             _ => None,
@@ -293,7 +297,24 @@ impl DecoderThread {
                     wait = Duration::ZERO;
                 }
                 Ok(DequeuedOutputBufferInfoResult::TryAgainLater) => break,
-                Ok(_) => wait = Duration::ZERO, // format or buffers changed
+                Ok(DequeuedOutputBufferInfoResult::OutputFormatChanged) => {
+                    let f = c.codec.output_format();
+                    log_format(&f);
+                    let (w, h) = (f.i32("width").unwrap_or(0), f.i32("height").unwrap_or(0));
+                    // crop-right/bottom are inclusive pixel indices.
+                    let vw = f.i32("crop-right").map(|r| r - f.i32("crop-left").unwrap_or(0) + 1).unwrap_or(w);
+                    let vh = f.i32("crop-bottom").map(|b| b - f.i32("crop-top").unwrap_or(0) + 1).unwrap_or(h);
+                    if w > 0 && h > 0 {
+                        let _ = self.reports.send(VideoReport::Picture {
+                            width: w as u32,
+                            height: h as u32,
+                            visible_width: vw.clamp(1, w) as u32,
+                            visible_height: vh.clamp(1, h) as u32,
+                        });
+                    }
+                    wait = Duration::ZERO;
+                }
+                Ok(_) => wait = Duration::ZERO, // buffers changed
                 Err(_) => {
                     self.reset();
                     self.ask_keyframe();
@@ -331,4 +352,19 @@ impl DecoderThread {
         codec.start().ok()?;
         Some(Codec { codec, generation, _window: window })
     }
+}
+
+/// Writes the decoder's output format to the Android log (tag
+/// multiplex-video), for diagnosing picture-size problems.
+fn log_format(f: &MediaFormat) {
+    let keys = ["width", "height", "stride", "slice-height", "crop-left", "crop-top", "crop-right", "crop-bottom", "color-format"];
+    let line = keys.iter().map(|k| format!("{k}={}", f.i32(k).map_or("-".into(), |v| v.to_string()))).collect::<Vec<_>>().join(" ");
+    let msg = std::ffi::CString::new(format!("output format: {line}")).unwrap_or_default();
+    let tag = c"multiplex-video";
+    // SAFETY: valid NUL-terminated strings for the duration of the call.
+    unsafe { __android_log_write(4, tag.as_ptr(), msg.as_ptr()) };
+}
+
+extern "C" {
+    fn __android_log_write(prio: std::ffi::c_int, tag: *const std::ffi::c_char, text: *const std::ffi::c_char) -> std::ffi::c_int;
 }

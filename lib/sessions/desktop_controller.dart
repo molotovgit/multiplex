@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,18 @@ import '../src/rust/api/desktop_types.dart';
 import '../ui/desktop/desktop_keys.dart';
 import '../ui/desktop/desktop_settings.dart';
 import 'session_manager.dart';
+
+/// One monitor of the remote machine, as Hyprland reports it.
+class RemoteMonitor {
+  const RemoteMonitor({required this.name, required this.width, required this.height, required this.focused, this.description = '', this.refresh = 0});
+
+  final String name;
+  final int width;
+  final int height;
+  final bool focused;
+  final String description;
+  final double refresh;
+}
 
 /// Where a remote desktop stands.
 enum DesktopPhase { connecting, live, reconnecting, ended }
@@ -58,6 +71,63 @@ class DesktopController extends ChangeNotifier {
   int streamHeight = 0;
   double remoteScale = 1;
   bool hardwareEncoder = false;
+
+  /// The remote's monitors (from the server's welcome).
+  List<DesktopOutput> outputs = const [];
+
+  /// All monitors of the remote, from Hyprland (the server's welcome only
+  /// names the one being shown).
+  List<RemoteMonitor> monitors = const [];
+
+  /// Asks Hyprland for its monitors over the same SSH connection.
+  Future<void> refreshMonitors() async {
+    const command =
+        r'sig=$(ls -t "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr" 2>/dev/null | head -1); '
+        r'HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl monitors -j';
+    try {
+      final out = await session.ssh.exec(command: command, maxBytes: 256 * 1024);
+      final list = jsonDecode(out.stdout) as List<dynamic>;
+      monitors = [
+        for (final m in list.cast<Map<String, dynamic>>())
+          RemoteMonitor(
+            name: m['name'] as String? ?? '',
+            width: (m['width'] as num?)?.toInt() ?? 0,
+            height: (m['height'] as num?)?.toInt() ?? 0,
+            focused: m['focused'] == true,
+            description: m['description'] as String? ?? '',
+            refresh: (m['refreshRate'] as num?)?.toDouble() ?? 0,
+          ),
+      ]..sort((a, b) => a.name.compareTo(b.name));
+      notifyListeners();
+    } catch (_) {
+      // Not Hyprland, or hyprctl missing: the picker falls back to what
+      // the server named.
+    }
+  }
+
+  /// The decoder's picture size and the part of it that is the screen.
+  /// H.264 codes in 16-pixel blocks, so a 1072 x 602 stream decodes to
+  /// 1072 x 608: those extra rows must not be drawn (they show as a green
+  /// line). Until the decoder says, assume 16-pixel padding.
+  int pictureWidth = 0;
+  int pictureHeight = 0;
+  int visibleWidth = 0;
+  int visibleHeight = 0;
+
+  /// How much wider and taller the decoded picture is than the screen in it.
+  Size get paddingFactor {
+    final vw = visibleWidth > 0 ? visibleWidth : streamWidth;
+    final vh = visibleHeight > 0 ? visibleHeight : streamHeight;
+    final pw = pictureWidth > 0 ? pictureWidth : (streamWidth + 15) ~/ 16 * 16;
+    final ph = pictureHeight > 0 ? pictureHeight : (streamHeight + 15) ~/ 16 * 16;
+    if (vw == 0 || vh == 0) return const Size(1, 1);
+    // Smooth scaling blends the last row and column with the padding next
+    // to them; leaving out two more pixels there keeps the edge clean.
+    final ew = pw > vw ? vw - 2 : vw;
+    final eh = ph > vh ? vh - 2 : vh;
+    return Size(pw / ew, ph / eh);
+  }
+
   DesktopStats? stats;
 
   /// The remote pointer, in logical remote pixels.
@@ -132,9 +202,11 @@ class DesktopController extends ChangeNotifier {
     try {
       final desktop = await session.ssh.openDesktop(
         options: DesktopOptions(
-          mode: _settings.screen == DesktopScreenMode.fitted ? const DesktopMode.fitted() : const DesktopMode.mirror(),
-          width: _viewPx.width.round(),
-          height: _viewPx.height.round(),
+          mode: _settings.screen == DesktopScreenMode.fitted
+              ? const DesktopMode.fitted()
+              : (_settings.output.isEmpty ? const DesktopMode.mirror() : DesktopMode.output(name: _settings.output)),
+          width: _target.width.round(),
+          height: _target.height.round(),
           scale: _scaleFor(_dpr),
           lowBandwidth: _settings.quality == DesktopQuality.saver,
           textureId: id,
@@ -164,9 +236,11 @@ class DesktopController extends ChangeNotifier {
 
   void _onEvent(DesktopEvent event) {
     switch (event) {
-      case DesktopEvent_Started(:final fitted, :final output):
+      case DesktopEvent_Started(:final fitted, :final output, :final outputs):
         this.fitted = fitted;
         outputName = output;
+        this.outputs = outputs;
+        unawaited(refreshMonitors());
         phase = DesktopPhase.live;
         note = '';
         _quickRetries = 0;
@@ -177,9 +251,20 @@ class DesktopController extends ChangeNotifier {
         streamHeight = height;
         remoteScale = scale;
         hardwareEncoder = hardware;
-        final id = textureId;
-        if (id != null) _video.invokeMethod<void>('setSize', {'id': id, 'width': width, 'height': height});
+        visibleWidth = width;
+        visibleHeight = height;
+        pictureWidth = 0;
+        pictureHeight = 0;
+        _sizeTexture((width + 15) ~/ 16 * 16, (height + 15) ~/ 16 * 16);
         cursor = Offset(cursor.dx.clamp(0, remoteSize.width - 1), cursor.dy.clamp(0, remoteSize.height - 1));
+      case DesktopEvent_Picture(:final width, :final height, :final visibleWidth, :final visibleHeight):
+        pictureWidth = width;
+        pictureHeight = height;
+        // Some decoders (Qualcomm) report the padded size with no crop:
+        // the screen is never larger than the stream the server sent.
+        this.visibleWidth = streamWidth > 0 ? visibleWidth.clamp(1, streamWidth) : visibleWidth;
+        this.visibleHeight = streamHeight > 0 ? visibleHeight.clamp(1, streamHeight) : visibleHeight;
+        _sizeTexture(width, height);
       case DesktopEvent_CursorShape(:final id, :final width, :final height, :final hotX, :final hotY, :final bgra):
         _decodeCursor(id, width, height, Offset(hotX.toDouble(), hotY.toDouble()), bgra);
         return;
@@ -273,6 +358,42 @@ class DesktopController extends ChangeNotifier {
     }
   }
 
+  int _textureW = 0, _textureH = 0;
+
+  /// The texture's buffer matches the decoder's pictures, so they are not
+  /// stretched on the way. Only resized when the size really changes
+  /// (a resize makes the decoder start over on a new surface).
+  void _sizeTexture(int width, int height) {
+    final id = textureId;
+    if (id == null || (width == _textureW && height == _textureH)) return;
+    _textureW = width;
+    _textureH = height;
+    _video.invokeMethod<void>('setSize', {'id': id, 'width': width, 'height': height});
+  }
+
+  /// The stream size to ask for, from the resolution setting. A mirrored
+  /// monitor is scaled down by the server to fit this box (never up); a
+  /// phone-sized screen is created at it.
+  Size get _target {
+    final view = _viewPx;
+    final landscape = view.width >= view.height;
+    Size box(double w, double h) => landscape ? Size(w, h) : Size(h, w);
+    final fitted = _settings.screen == DesktopScreenMode.fitted;
+    final Size limit = switch (_settings.resolution) {
+      DesktopResolution.phone => view,
+      DesktopResolution.p720 => fitted ? box(1280, 720) : const Size(1280, 720),
+      DesktopResolution.p1080 => fitted ? box(1920, 1080) : const Size(1920, 1080),
+      DesktopResolution.auto => fitted ? view : const Size(3840, 2160),
+    };
+    if (!fitted || _settings.resolution == DesktopResolution.auto || _settings.resolution == DesktopResolution.phone) return limit;
+    // A phone-sized screen keeps the phone's shape inside the box.
+    final f = (limit.width / view.width) < (limit.height / view.height) ? limit.width / view.width : limit.height / view.height;
+    return f >= 1 ? view : Size((view.width * f).roundToDouble(), (view.height * f).roundToDouble());
+  }
+
+  /// Shows another monitor ('' = the one in focus).
+  Future<void> showOutput(String name) => applySettings(_settings.copyWith(screen: DesktopScreenMode.mirror, output: name));
+
   // View changes.
 
   /// The view changed size (rotation, split screen). Debounced so a
@@ -283,13 +404,15 @@ class DesktopController extends ChangeNotifier {
     _dpr = dpr;
     _resizeDebounce?.cancel();
     _resizeDebounce = Timer(const Duration(milliseconds: 250), () {
-      _desktop?.resize(width: px.width.round(), height: px.height.round(), scale: _scaleFor(dpr));
+      final t = _target;
+      _desktop?.resize(width: t.width.round(), height: t.height.round(), scale: _scaleFor(dpr));
     });
   }
 
   /// New settings; the screen mode and quality need a restart to apply.
   Future<void> applySettings(DesktopSettings next) async {
-    final restart = next.screen != _settings.screen || next.quality != _settings.quality;
+    final restart = next.screen != _settings.screen || next.quality != _settings.quality || next.output != _settings.output;
+    final resized = next.resolution != _settings.resolution;
     final rescale = next.textSize != _settings.textSize;
     _settings = next;
     notifyListeners();
@@ -298,9 +421,12 @@ class DesktopController extends ChangeNotifier {
       _desktop = null;
       phase = DesktopPhase.connecting;
       streamWidth = 0;
+      _textureW = 0;
+      _textureH = 0;
       await _open();
-    } else if (rescale) {
-      _desktop?.resize(width: _viewPx.width.round(), height: _viewPx.height.round(), scale: _scaleFor(_dpr));
+    } else if (rescale || resized) {
+      final t = _target;
+      _desktop?.resize(width: t.width.round(), height: t.height.round(), scale: _scaleFor(_dpr));
     }
   }
 
@@ -428,7 +554,8 @@ class DesktopController extends ChangeNotifier {
     // Hyprland sometimes sends a blank or one-colour picture (a hidden or
     // placeholder pointer). Like gliff's own client, show the plain arrow
     // for those instead of a solid square.
-    final usable = width > 0 &&
+    final usable =
+        width > 0 &&
         height > 0 &&
         width <= 1024 &&
         height <= 1024 &&

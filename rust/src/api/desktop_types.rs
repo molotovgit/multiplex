@@ -51,6 +51,10 @@ pub enum DesktopEvent {
         /// True when the remote encodes on its graphics card.
         hardware: bool,
     },
+    /// The decoder's pictures: `width` x `height` pixels, of which the
+    /// top-left `visible_width` x `visible_height` is the screen. The rest
+    /// is padding (H.264 codes in 16-pixel blocks) and must not be shown.
+    Picture { width: u32, height: u32, visible_width: u32, visible_height: u32 },
     /// A new mouse cursor picture: tightly packed 32-bit BGRA pixels.
     CursorShape {
         id: u32,
