@@ -1,0 +1,16 @@
+# /etc/systemd/system/gliff-tunnel.service on the desktop machine.
+# Keeps the reverse tunnel to the VPS open: restarts within 5 s, survives reboots.
+[Unit]
+Description=Reverse SSH tunnel to the VPS (VPS localhost:2222 -> sshd here)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+User=YOUR_USER
+ExecStart=/usr/bin/ssh -N -T -F none -i /home/YOUR_USER/.ssh/desktop-tunnel -o IdentitiesOnly=yes -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/home/YOUR_USER/.ssh/known_hosts -R localhost:2222:127.0.0.1:22 gtunnel@YOUR_VPS
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
