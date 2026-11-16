@@ -99,6 +99,9 @@ pub struct DesktopStats {
     pub rtt_ms: f64,
     /// Time from a picture arriving to it being on screen, in milliseconds.
     pub decode_ms: f64,
+    /// How old a picture is when it is on screen: from the server sending
+    /// it to the phone showing it (network, decoding and display), in ms.
+    pub frame_age_ms: f64,
 }
 
 /// Mouse buttons, as the remote expects them (Linux input codes).

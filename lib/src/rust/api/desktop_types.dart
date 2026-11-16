@@ -200,11 +200,16 @@ class DesktopStats {
   /// Time from a picture arriving to it being on screen, in milliseconds.
   final double decodeMs;
 
+  /// How old a picture is when it is on screen: from the server sending
+  /// it to the phone showing it (network, decoding and display), in ms.
+  final double frameAgeMs;
+
   const DesktopStats({
     required this.fps,
     required this.kbps,
     required this.rttMs,
     required this.decodeMs,
+    required this.frameAgeMs,
   });
 
   static Future<DesktopStats> default_() =>
@@ -212,7 +217,11 @@ class DesktopStats {
 
   @override
   int get hashCode =>
-      fps.hashCode ^ kbps.hashCode ^ rttMs.hashCode ^ decodeMs.hashCode;
+      fps.hashCode ^
+      kbps.hashCode ^
+      rttMs.hashCode ^
+      decodeMs.hashCode ^
+      frameAgeMs.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -222,5 +231,6 @@ class DesktopStats {
           fps == other.fps &&
           kbps == other.kbps &&
           rttMs == other.rttMs &&
-          decodeMs == other.decodeMs;
+          decodeMs == other.decodeMs &&
+          frameAgeMs == other.frameAgeMs;
 }

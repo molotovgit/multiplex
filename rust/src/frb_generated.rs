@@ -5854,11 +5854,13 @@ impl SseDecode for crate::api::desktop_types::DesktopStats {
         let mut var_kbps = <f64>::sse_decode(deserializer);
         let mut var_rttMs = <f64>::sse_decode(deserializer);
         let mut var_decodeMs = <f64>::sse_decode(deserializer);
+        let mut var_frameAgeMs = <f64>::sse_decode(deserializer);
         return crate::api::desktop_types::DesktopStats {
             fps: var_fps,
             kbps: var_kbps,
             rtt_ms: var_rttMs,
             decode_ms: var_decodeMs,
+            frame_age_ms: var_frameAgeMs,
         };
     }
 }
@@ -7442,6 +7444,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::desktop_types::DesktopStats {
             self.kbps.into_into_dart().into_dart(),
             self.rtt_ms.into_into_dart().into_dart(),
             self.decode_ms.into_into_dart().into_dart(),
+            self.frame_age_ms.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -8698,6 +8701,7 @@ impl SseEncode for crate::api::desktop_types::DesktopStats {
         <f64>::sse_encode(self.kbps, serializer);
         <f64>::sse_encode(self.rtt_ms, serializer);
         <f64>::sse_encode(self.decode_ms, serializer);
+        <f64>::sse_encode(self.frame_age_ms, serializer);
     }
 }
 

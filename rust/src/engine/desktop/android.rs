@@ -134,6 +134,8 @@ struct DecoderThread {
     need_keyframe: bool,
     /// We already asked for a keyframe and are waiting for it.
     asked: bool,
+    /// Logged once that the decoder does not keep timestamps.
+    warned_pts: bool,
 }
 
 impl DecoderThread {
@@ -153,6 +155,7 @@ impl DecoderThread {
             in_flight: VecDeque::new(),
             need_keyframe: true,
             asked: false,
+            warned_pts: false,
         }
     }
 
@@ -282,16 +285,26 @@ impl DecoderThread {
             let Some(c) = &self.codec else { return };
             match c.codec.dequeue_output_buffer(wait) {
                 Ok(DequeuedOutputBufferInfoResult::Buffer(buf)) => {
-                    let id = buf.info().presentation_time_us() as u64;
+                    let pts = buf.info().presentation_time_us() as u64;
+                    // Render at once: no frame is held for "smooth" pacing.
                     let _ = c.codec.release_output_buffer(buf, true);
-                    // Everything older than this picture was dropped by
-                    // the codec; report those too.
-                    while let Some(&(fid, arrived)) = self.in_flight.front() {
-                        self.in_flight.pop_front();
-                        if fid == id {
-                            let _ = self.reports.send(VideoReport::Shown { id, latency: arrived.elapsed() });
+                    // Pictures come out in the order they went in (the
+                    // stream has no reordering). Match by timestamp when
+                    // the decoder kept it; some decoders rewrite it, so
+                    // otherwise the oldest picture in flight is this one.
+                    // Either way the ack goes out now, which is what the
+                    // server's rate control measures.
+                    let known = self.in_flight.iter().any(|&(fid, _)| fid == pts);
+                    if !known && !self.warned_pts {
+                        self.warned_pts = true;
+                        log_line(&format!("decoder rewrites timestamps (got {pts}); matching pictures in order"));
+                    }
+                    while let Some((fid, arrived)) = self.in_flight.pop_front() {
+                        if !known || fid == pts {
+                            let _ = self.reports.send(VideoReport::Shown { id: fid, latency: arrived.elapsed() });
                             break;
                         }
+                        // Older than this picture: the codec dropped it.
                         let _ = self.reports.send(VideoReport::Skipped { id: fid });
                     }
                     wait = Duration::ZERO;
@@ -333,24 +346,42 @@ impl DecoderThread {
     }
 
     fn build(&self, window: NativeWindow, generation: u64) -> Option<Codec> {
-        let codec = MediaCodec::from_decoder_type("video/avc")?;
+        // Every low-latency switch first; a decoder that refuses one of
+        // them gets the plain, standard set instead.
+        for tuned in [true, false] {
+            let codec = MediaCodec::from_decoder_type("video/avc")?;
+            let format = self.format(tuned);
+            if codec.configure(&format, Some(&window), MediaCodecDirection::Decoder).is_ok() && codec.start().is_ok() {
+                log_line(if tuned { "decoder started (low-latency tuned)" } else { "decoder started (standard settings)" });
+                return Some(Codec { codec, generation, _window: window });
+            }
+        }
+        None
+    }
+
+    fn format(&self, tuned: bool) -> MediaFormat {
         let mut format = MediaFormat::new();
         format.set_str("mime", "video/avc");
         format.set_i32("width", self.size.0 as i32);
         format.set_i32("height", self.size.1 as i32);
         format.set_i32("max-width", 4096);
         format.set_i32("max-height", 4096);
-        // Show each picture as soon as it is decoded (Android 11+), plus
-        // the vendor switches for chips that predate that key.
+        // Show each picture as soon as it is decoded (Android 11+).
         format.set_i32("low-latency", 1);
-        format.set_i32("vendor.qti-ext-dec-low-latency.enable", 1);
-        format.set_i32("vendor.rtc-ext-dec-low-latency.enable", 1);
-        format.set_i32("vendor.low-latency.enable", 1);
         // Real-time priority.
         format.set_i32("priority", 0);
-        codec.configure(&format, Some(&window), MediaCodecDirection::Decoder).ok()?;
-        codec.start().ok()?;
-        Some(Codec { codec, generation, _window: window })
+        if tuned {
+            // Vendor switches for chips that predate the standard key.
+            format.set_i32("vendor.qti-ext-dec-low-latency.enable", 1);
+            format.set_i32("vendor.rtc-ext-dec-low-latency.enable", 1);
+            format.set_i32("vendor.low-latency.enable", 1);
+            // Qualcomm: hand out each picture as soon as it is decoded,
+            // not after the next one arrives (as Moonlight does).
+            format.set_i32("vendor.qti-ext-dec-picture-order.enable", 1);
+            // Full decoder clock: decode time drops to a few ms.
+            format.set_i32("operating-rate", i32::from(i16::MAX));
+        }
+        format
     }
 }
 
@@ -359,7 +390,12 @@ impl DecoderThread {
 fn log_format(f: &MediaFormat) {
     let keys = ["width", "height", "stride", "slice-height", "crop-left", "crop-top", "crop-right", "crop-bottom", "color-format"];
     let line = keys.iter().map(|k| format!("{k}={}", f.i32(k).map_or("-".into(), |v| v.to_string()))).collect::<Vec<_>>().join(" ");
-    let msg = std::ffi::CString::new(format!("output format: {line}")).unwrap_or_default();
+    log_line(&format!("output format: {line}"));
+}
+
+/// One line in the Android log, tag multiplex-video.
+fn log_line(text: &str) {
+    let msg = std::ffi::CString::new(text).unwrap_or_default();
     let tag = c"multiplex-video";
     // SAFETY: valid NUL-terminated strings for the duration of the call.
     unsafe { __android_log_write(4, tag.as_ptr(), msg.as_ptr()) };

@@ -109,8 +109,10 @@ async fn streams_video_and_keeps_pace() {
         "no stream config"
     );
     // Move the pointer around so the screen changes and frames flow.
-    for i in 0..60 {
-        session.pointer_move(200.0 + f64::from(i) * 5.0, 200.0);
+    // Move the pointer (MPX_DESKTOP_SECONDS long, default 1 s) so frames flow.
+    let secs: u32 = std::env::var("MPX_DESKTOP_SECONDS").ok().and_then(|v| v.parse().ok()).unwrap_or(1);
+    for i in 0..(60 * secs) {
+        session.pointer_move(200.0 + f64::from(i % 300) * 5.0, 200.0);
         tokio::time::sleep(Duration::from_millis(16)).await;
     }
     assert!(
@@ -123,8 +125,8 @@ async fn streams_video_and_keeps_pace() {
                 eprintln!("stream {width}x{height} scale {scale} hardware {hardware}")
             }
             DesktopEvent::Stats(s) => eprintln!(
-                "stats: {:.0} fps, {:.0} kbps, rtt {:.0} ms",
-                s.fps, s.kbps, s.rtt_ms
+                "stats: {:.0} fps, {:.0} kbps, rtt {:.0} ms, frame age {:.1} ms",
+                s.fps, s.kbps, s.rtt_ms, s.frame_age_ms
             ),
             _ => {}
         }

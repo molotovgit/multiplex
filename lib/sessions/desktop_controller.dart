@@ -185,6 +185,7 @@ class DesktopController extends ChangeNotifier {
       return;
     }
     _video.setMethodCallHandler(_onVideoCall);
+    unawaited(_video.invokeMethod<void>('lowLatency', {'on': true}).catchError((_) {}));
     await _open();
   }
 
@@ -621,6 +622,7 @@ class DesktopController extends ChangeNotifier {
     _desktop = null;
     final id = textureId;
     if (id != null) _video.invokeMethod<void>('release', {'id': id});
+    _video.invokeMethod<void>('lowLatency', {'on': false}).catchError((_) {});
     for (final s in _shapes.values) {
       s.$1.dispose();
     }

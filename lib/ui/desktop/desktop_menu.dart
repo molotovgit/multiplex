@@ -286,7 +286,7 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.speed),
               title: const Text('Show speed'),
-              subtitle: const Text('Frame rate, delay and data rate in a corner'),
+              subtitle: const Text('Frame rate, network ping, picture delay (server to screen) and data rate'),
               value: s.showStats,
               onChanged: (on) => _save(s.copyWith(showStats: on)),
             ),

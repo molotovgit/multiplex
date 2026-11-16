@@ -4680,13 +4680,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   DesktopStats dco_decode_desktop_stats(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
     return DesktopStats(
       fps: dco_decode_f_64(arr[0]),
       kbps: dco_decode_f_64(arr[1]),
       rttMs: dco_decode_f_64(arr[2]),
       decodeMs: dco_decode_f_64(arr[3]),
+      frameAgeMs: dco_decode_f_64(arr[4]),
     );
   }
 
@@ -5943,11 +5944,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_kbps = sse_decode_f_64(deserializer);
     var var_rttMs = sse_decode_f_64(deserializer);
     var var_decodeMs = sse_decode_f_64(deserializer);
+    var var_frameAgeMs = sse_decode_f_64(deserializer);
     return DesktopStats(
       fps: var_fps,
       kbps: var_kbps,
       rttMs: var_rttMs,
       decodeMs: var_decodeMs,
+      frameAgeMs: var_frameAgeMs,
     );
   }
 
@@ -7363,6 +7366,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_f_64(self.kbps, serializer);
     sse_encode_f_64(self.rttMs, serializer);
     sse_encode_f_64(self.decodeMs, serializer);
+    sse_encode_f_64(self.frameAgeMs, serializer);
   }
 
   @protected

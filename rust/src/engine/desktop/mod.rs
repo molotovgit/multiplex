@@ -259,7 +259,7 @@ impl DesktopSession {
             if value == 0.0 {
                 continue;
             }
-            let discrete = wheel.then(|| if value > 0.0 { 1 } else { -1 });
+            let discrete = wheel.then_some(if value > 0.0 { 1 } else { -1 });
             self.send(ClientMsg::PointerAxis { axis, value, discrete, stop: false });
         }
     }
@@ -364,8 +364,9 @@ impl DesktopSession {
                 }
             };
             let ok = match msg {
-                ServerMsg::VideoFrame { frame_id, keyframe, data_len, .. } => match reader.read_payload(data_len).await {
+                ServerMsg::VideoFrame { frame_id, pts_us, keyframe, data_len, .. } => match reader.read_payload(data_len).await {
                     Ok(data) => {
+                        stats.note_sent(frame_id, pts_us / 1000);
                         stats.bytes.fetch_add(u64::from(data_len), Ordering::Relaxed);
                         video.submit(EncodedFrame { id: frame_id, keyframe, data, arrived: Instant::now() });
                         true
@@ -394,8 +395,9 @@ impl DesktopSession {
                     true
                 }
                 ServerMsg::Ping { t } => tx.send(Outgoing::Msg(ClientMsg::Pong { t })).is_ok(),
-                ServerMsg::Pong { t, .. } => {
+                ServerMsg::Pong { t, server_now_ms } => {
                     stats.rtt_ms.store((now_ms().saturating_sub(t)) as u32, Ordering::Relaxed);
+                    stats.note_clock(t, server_now_ms, now_ms());
                     stats.last_pong_ms.store(now_ms(), Ordering::Relaxed);
                     true
                 }
@@ -472,6 +474,7 @@ impl DesktopSession {
             }
             let msg = match report {
                 VideoReport::Shown { id, latency } => {
+                    stats.note_shown(id, now_ms());
                     stats.frames.fetch_add(1, Ordering::Relaxed);
                     stats.latency_us.fetch_add(latency.as_micros() as u64, Ordering::Relaxed);
                     ClientMsg::FrameAck { frame_id: id, decoded_at_ms: now_ms() }
@@ -532,11 +535,55 @@ struct StatsCounter {
     bytes: std::sync::atomic::AtomicU64,
     latency_us: std::sync::atomic::AtomicU64,
     rtt_ms: AtomicU32,
+    /// Server clock minus ours, from the ping with the shortest round
+    /// trip: (offset ms, that round trip).
+    clock: std::sync::Mutex<Option<(i64, u64)>>,
+    /// When the server sent each frame still on its way (server clock).
+    sent: std::sync::Mutex<std::collections::VecDeque<(u64, u64)>>,
+    /// Sum and count of frame ages (server send to on screen) this second.
+    ages: std::sync::Mutex<(f64, u32)>,
     /// When the server last answered a ping (wall clock, ms).
     last_pong_ms: std::sync::atomic::AtomicU64,
 }
 
 impl StatsCounter {
+    fn note_sent(&self, id: u64, server_ms: u64) {
+        let mut sent = self.sent.lock().unwrap_or_else(|p| p.into_inner());
+        if sent.len() >= 256 {
+            sent.pop_front();
+        }
+        sent.push_back((id, server_ms));
+    }
+
+    /// A pong: the server's clock read at `server_ms`, roughly half way
+    /// between our `sent_ms` and `now_ms`. The shortest round trip seen
+    /// gives the best offset (NTP's rule), refreshed now and then.
+    fn note_clock(&self, sent_ms: u64, server_ms: u64, now_ms: u64) {
+        let rtt = now_ms.saturating_sub(sent_ms);
+        let offset = server_ms as i64 - (sent_ms + rtt / 2) as i64;
+        let mut clock = self.clock.lock().unwrap_or_else(|p| p.into_inner());
+        match *clock {
+            Some((_, best)) if rtt > best + 2 => *clock = clock.map(|(o, b)| (o, b + 1)), // let a stale best age out
+            _ => *clock = Some((offset, rtt)),
+        }
+    }
+
+    /// The frame is on screen: its age is our clock now minus the server's
+    /// send time, translated to our clock.
+    fn note_shown(&self, id: u64, now_ms: u64) {
+        let Some((offset, _)) = *self.clock.lock().unwrap_or_else(|p| p.into_inner()) else { return };
+        let mut sent = self.sent.lock().unwrap_or_else(|p| p.into_inner());
+        let Some(pos) = sent.iter().position(|&(fid, _)| fid == id) else { return };
+        let (_, server_ms) = sent[pos];
+        sent.drain(..=pos);
+        let age = now_ms as i64 - (server_ms as i64 - offset);
+        if (0..5000).contains(&age) {
+            let mut ages = self.ages.lock().unwrap_or_else(|p| p.into_inner());
+            ages.0 += age as f64;
+            ages.1 += 1;
+        }
+    }
+
     fn take(&self, secs: f64) -> DesktopStats {
         let frames = self.frames.swap(0, Ordering::Relaxed);
         let bytes = self.bytes.swap(0, Ordering::Relaxed);
@@ -546,6 +593,10 @@ impl StatsCounter {
             kbps: bytes as f64 * 8.0 / 1000.0 / secs,
             rtt_ms: f64::from(self.rtt_ms.load(Ordering::Relaxed)),
             decode_ms: if frames == 0 { 0.0 } else { latency as f64 / frames as f64 / 1000.0 },
+            frame_age_ms: {
+                let (sum, n) = std::mem::take(&mut *self.ages.lock().unwrap_or_else(|p| p.into_inner()));
+                if n == 0 { 0.0 } else { sum / n as f64 }
+            },
         }
     }
 }
