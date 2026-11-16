@@ -10,10 +10,13 @@ import 'hosts_screen.dart';
 
 /// Adds a new host or edits a saved one.
 class HostEditorScreen extends StatefulWidget {
-  const HostEditorScreen({super.key, this.host, this.initialGroupId});
+  const HostEditorScreen({super.key, this.host, this.initialGroupId, this.draft});
 
   final Host? host;
   final String? initialGroupId;
+
+  /// A new host filled in ahead (for example from a Tailscale device).
+  final Host? draft;
 
   @override
   State<HostEditorScreen> createState() => _HostEditorScreenState();
@@ -21,7 +24,7 @@ class HostEditorScreen extends StatefulWidget {
 
 class _HostEditorScreenState extends State<HostEditorScreen> {
   final _form = GlobalKey<FormState>();
-  late final Host _original = widget.host ?? Host(id: VaultStore.newId(), label: '', address: '', groupId: widget.initialGroupId);
+  late final Host _original = widget.host ?? widget.draft ?? Host(id: VaultStore.newId(), label: '', address: '', groupId: widget.initialGroupId);
 
   late final _label = TextEditingController(text: _original.label);
   late final _address = TextEditingController(text: _original.address);
@@ -34,7 +37,7 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
   late String? _keyId = _original.keyId;
   late String? _groupId = _original.groupId;
   late String? _jumpId = _original.jumpHostId;
-  late String? _awayId = _original.awayHostId;
+  late bool _tailscale = _original.viaTailscale;
   late int _tag = _original.colorTag;
   late bool _askUnlock = _original.askUnlock;
   late bool _favourite = _original.favourite;
@@ -61,8 +64,8 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
     password: () => _auth == AuthMode.key || _password.text.isEmpty ? null : _password.text,
     keyId: () => _auth == AuthMode.password ? null : _keyId,
     groupId: () => _groupId,
-    jumpHostId: () => _jumpId,
-    awayHostId: () => _awayId,
+    jumpHostId: () => _tailscale ? null : _jumpId,
+    viaTailscale: _tailscale,
     startupCommand: () => _startup.text.trim().isEmpty ? null : _startup.text.trim(),
     keepWithTmux: _tmux,
     forwardAgent: _auth != AuthMode.password && _agent,
@@ -175,10 +178,8 @@ class _HostEditorScreenState extends State<HostEditorScreen> {
                       jumpHosts: store.hosts.where((h) => h.id != _original.id && h.jumpHostId != _original.id).toList(),
                       jumpId: _jumpId,
                       onJump: (id) => setState(() => _jumpId = id),
-                      // A stand-in that itself falls back here would loop.
-                      awayHosts: store.hosts.where((h) => h.id != _original.id && h.awayHostId != _original.id).toList(),
-                      awayId: _awayId,
-                      onAway: (id) => setState(() => _awayId = id),
+                      viaTailscale: _tailscale,
+                      onTailscale: (on) => setState(() => _tailscale = on),
                       startup: _startup,
                       tmux: _tmux,
                       onTmux: (on) => setState(() => _tmux = on),

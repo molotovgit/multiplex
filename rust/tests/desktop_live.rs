@@ -4,8 +4,6 @@
 //! - `MPX_DESKTOP_HOST`, `MPX_DESKTOP_USER`, `MPX_DESKTOP_KEY` (key file),
 //!   `MPX_DESKTOP_PORT` (optional, 22): a machine running Hyprland with
 //!   gliff installed;
-//! - `MPX_DESKTOP_JUMP` (optional, `user@host`): reach it through this jump
-//!   host, with the same key;
 //! - `MPX_DESKTOP_CLIPBOARD=1` (optional): also test the clipboard with
 //!   `wl-copy`/`wl-paste`, which must then run on the same machine as the
 //!   test (as when testing against localhost).
@@ -16,7 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use multiplex_core::api::desktop_types::{DesktopEvent, DesktopMode, DesktopOptions};
-use multiplex_core::api::ssh_types::{ConnectError, ConnectOptions, Credentials, JumpHost};
+use multiplex_core::api::ssh_types::{ConnectError, ConnectOptions, Credentials};
 use multiplex_core::engine::desktop::video::CountingSink;
 use multiplex_core::engine::desktop::DesktopSession;
 use multiplex_core::engine::ssh::{Connection, Connector};
@@ -28,16 +26,6 @@ fn options() -> Option<ConnectOptions> {
     let key = std::fs::read_to_string(std::env::var("MPX_DESKTOP_KEY").ok()?).expect("key file");
     let port = std::env::var("MPX_DESKTOP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(22);
     let credentials = Credentials { private_key: Some(key), ..Default::default() };
-    let jump = std::env::var("MPX_DESKTOP_JUMP").ok().map(|j| {
-        let (user, host) = j.split_once('@').expect("MPX_DESKTOP_JUMP is user@host");
-        JumpHost {
-            host: host.to_owned(),
-            port: 22,
-            username: user.to_owned(),
-            credentials: credentials.clone(),
-            trusted_host_keys: vec![],
-        }
-    });
     Some(ConnectOptions {
         host,
         port,
@@ -46,8 +34,9 @@ fn options() -> Option<ConnectOptions> {
         trusted_host_keys: vec![],
         keepalive_secs: 10,
         connect_timeout_secs: 20,
-        jump,
+        jump: None,
         forward_agent: false,
+        via_tailscale: false,
     })
 }
 
@@ -60,10 +49,7 @@ async fn connect() -> Option<Connection> {
     for _ in 0..3 {
         match Connector::connect(opts.clone()).await {
             Ok(c) => return Some(c),
-            Err(ConnectError::HostKeyUnknown { host, key, .. }) => match &mut opts.jump {
-                Some(j) if j.host == host && j.trusted_host_keys.is_empty() => j.trusted_host_keys = vec![key.public_key],
-                _ => opts.trusted_host_keys = vec![key.public_key],
-            },
+            Err(ConnectError::HostKeyUnknown { key, .. }) => opts.trusted_host_keys = vec![key.public_key],
             Err(e) => panic!("connect failed: {e:?}"),
         }
     }

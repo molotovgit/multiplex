@@ -1,1 +1,0 @@
-restrict,port-forwarding,permitopen="localhost:2222" ssh-ed25519 AAAA...phone-public-key

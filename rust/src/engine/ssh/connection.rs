@@ -141,6 +141,9 @@ impl Connector {
         };
 
         let (opened, jump, via) = match &options.jump {
+            None if options.via_tailscale => {
+                (Self::open_tailscale(config, &target, forwards.clone(), options.connect_timeout_secs).await?, None, Some("Tailscale".to_owned()))
+            }
             None => (Self::open_direct(config, &target, forwards.clone()).await?, None, None),
             Some(j) => {
                 let jump_hop = Hop {
@@ -192,6 +195,25 @@ impl Connector {
         let banner = Arc::new(Mutex::new(None));
         let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
         let handle = client::connect(config, (hop.host, hop.port), handler)
+            .await
+            .map_err(|err| Self::classify(err, hop, &guard))?;
+        Self::finish(handle, hop, guard, banner).await
+    }
+
+    /// SSH connection carried over the app's own Tailscale node.
+    async fn open_tailscale(
+        config: Arc<client::Config>,
+        hop: &Hop<'_>,
+        forwards: Arc<RemoteForwardRouter>,
+        timeout_secs: u32,
+    ) -> Result<OpenHop, ConnectError> {
+        let stream = crate::engine::tailscale::connect(hop.host, hop.port, timeout_secs.max(1) * 1000)
+            .await
+            .map_err(|err| ConnectError::Network { host: hop.host.to_owned(), port: hop.port, message: err.to_string() })?;
+        let guard = Arc::new(HostKeyGuard::new(hop.trusted));
+        let banner = Arc::new(Mutex::new(None));
+        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
+        let handle = client::connect_stream(config, stream, handler)
             .await
             .map_err(|err| Self::classify(err, hop, &guard))?;
         Self::finish(handle, hop, guard, banner).await

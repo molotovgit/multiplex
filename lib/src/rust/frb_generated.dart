@@ -11,6 +11,8 @@ import 'api/sftp.dart';
 import 'api/sftp_types.dart';
 import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/tailscale.dart';
+import 'api/tailscale_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
@@ -85,7 +87,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -826306864;
+  int get rustContentHash => 107243934;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -492,6 +494,23 @@ abstract class RustLibApi extends BaseApi {
     required bool mirror,
     required FileTransfer transfer,
   });
+
+  bool crateApiTailscaleTailscaleAvailable();
+
+  Future<TailscaleDevice> crateApiTailscaleTypesTailscaleDeviceDefault();
+
+  Future<void> crateApiTailscaleTailscaleLogin();
+
+  Future<void> crateApiTailscaleTailscaleLogout();
+
+  Future<void> crateApiTailscaleTailscaleStart({
+    required String dir,
+    required String hostname,
+  });
+
+  Future<TailscaleStatus> crateApiTailscaleTailscaleStatus();
+
+  Future<TailscaleStatus> crateApiTailscaleTypesTailscaleStatusDefault();
 
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault();
 
@@ -3739,6 +3758,198 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  bool crateApiTailscaleTailscaleAvailable() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 95)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleAvailableConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleAvailableConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_available", argNames: []);
+
+  @override
+  Future<TailscaleDevice> crateApiTailscaleTypesTailscaleDeviceDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 96,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_device,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTypesTailscaleDeviceDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTypesTailscaleDeviceDefaultConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_device_default", argNames: []);
+
+  @override
+  Future<void> crateApiTailscaleTailscaleLogin() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 97,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleLoginConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleLoginConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_login", argNames: []);
+
+  @override
+  Future<void> crateApiTailscaleTailscaleLogout() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 98,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleLogoutConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleLogoutConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_logout", argNames: []);
+
+  @override
+  Future<void> crateApiTailscaleTailscaleStart({
+    required String dir,
+    required String hostname,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(dir, serializer);
+          sse_encode_String(hostname, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 99,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleStartConstMeta,
+        argValues: [dir, hostname],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleStartConstMeta =>
+      const TaskConstMeta(
+        debugName: "tailscale_start",
+        argNames: ["dir", "hostname"],
+      );
+
+  @override
+  Future<TailscaleStatus> crateApiTailscaleTailscaleStatus() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 100,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleStatusConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleStatusConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_status", argNames: []);
+
+  @override
+  Future<TailscaleStatus> crateApiTailscaleTypesTailscaleStatusDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 101,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_status,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTypesTailscaleStatusDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTypesTailscaleStatusDefaultConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_status_default", argNames: []);
+
+  @override
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -3747,7 +3958,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 95,
+            funcId: 102,
             port: port_,
           );
         },
@@ -3774,7 +3985,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 96,
+            funcId: 103,
             port: port_,
           );
         },
@@ -3806,7 +4017,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 97,
+            funcId: 104,
             port: port_,
           );
         },
@@ -3830,7 +4041,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 98)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 105,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_8_strict,
@@ -3862,7 +4077,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 99,
+            funcId: 106,
             port: port_,
           );
         },
@@ -4224,6 +4439,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice dco_decode_box_autoadd_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_tailscale_device(raw);
+  }
+
+  @protected
   TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_terminal_palette(raw);
@@ -4299,8 +4520,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ConnectOptions dco_decode_connect_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return ConnectOptions(
       host: dco_decode_String(arr[0]),
       port: dco_decode_u_16(arr[1]),
@@ -4311,6 +4532,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       connectTimeoutSecs: dco_decode_u_32(arr[6]),
       jump: dco_decode_opt_box_autoadd_jump_host(arr[7]),
       forwardAgent: dco_decode_bool(arr[8]),
+      viaTailscale: dco_decode_bool(arr[9]),
     );
   }
 
@@ -4652,6 +4874,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TailscaleDevice> dco_decode_list_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tailscale_device).toList();
+  }
+
+  @protected
   List<TerminalLine> dco_decode_list_terminal_line(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_terminal_line).toList();
@@ -4685,6 +4913,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   JumpHost? dco_decode_opt_box_autoadd_jump_host(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_jump_host(raw);
+  }
+
+  @protected
+  TailscaleDevice? dco_decode_opt_box_autoadd_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_tailscale_device(raw);
   }
 
   @protected
@@ -4827,6 +5061,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       copied: dco_decode_u_32(arr[0]),
       deleted: dco_decode_u_32(arr[1]),
       failed: dco_decode_list_String(arr[2]),
+    );
+  }
+
+  @protected
+  TailscaleDevice dco_decode_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TailscaleDevice(
+      name: dco_decode_String(arr[0]),
+      dnsName: dco_decode_String(arr[1]),
+      ips: dco_decode_list_String(arr[2]),
+      os: dco_decode_String(arr[3]),
+      online: dco_decode_bool(arr[4]),
+      direct: dco_decode_bool(arr[5]),
+      relay: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
+  TailscaleStatus dco_decode_tailscale_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TailscaleStatus(
+      state: dco_decode_String(arr[0]),
+      authUrl: dco_decode_String(arr[1]),
+      tailnet: dco_decode_String(arr[2]),
+      user: dco_decode_String(arr[3]),
+      thisDevice: dco_decode_opt_box_autoadd_tailscale_device(arr[4]),
+      devices: dco_decode_list_tailscale_device(arr[5]),
+      error: dco_decode_String(arr[6]),
     );
   }
 
@@ -5361,6 +5629,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice sse_decode_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_tailscale_device(deserializer));
+  }
+
+  @protected
   TerminalPalette sse_decode_box_autoadd_terminal_palette(
     SseDeserializer deserializer,
   ) {
@@ -5462,6 +5738,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_connectTimeoutSecs = sse_decode_u_32(deserializer);
     var var_jump = sse_decode_opt_box_autoadd_jump_host(deserializer);
     var var_forwardAgent = sse_decode_bool(deserializer);
+    var var_viaTailscale = sse_decode_bool(deserializer);
     return ConnectOptions(
       host: var_host,
       port: var_port,
@@ -5472,6 +5749,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       connectTimeoutSecs: var_connectTimeoutSecs,
       jump: var_jump,
       forwardAgent: var_forwardAgent,
+      viaTailscale: var_viaTailscale,
     );
   }
 
@@ -5892,6 +6170,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TailscaleDevice> sse_decode_list_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TailscaleDevice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tailscale_device(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<TerminalLine> sse_decode_list_terminal_line(
     SseDeserializer deserializer,
   ) {
@@ -5956,6 +6248,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_jump_host(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  TailscaleDevice? sse_decode_opt_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_tailscale_device(deserializer));
     } else {
       return null;
     }
@@ -6123,6 +6428,50 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       copied: var_copied,
       deleted: var_deleted,
       failed: var_failed,
+    );
+  }
+
+  @protected
+  TailscaleDevice sse_decode_tailscale_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_dnsName = sse_decode_String(deserializer);
+    var var_ips = sse_decode_list_String(deserializer);
+    var var_os = sse_decode_String(deserializer);
+    var var_online = sse_decode_bool(deserializer);
+    var var_direct = sse_decode_bool(deserializer);
+    var var_relay = sse_decode_String(deserializer);
+    return TailscaleDevice(
+      name: var_name,
+      dnsName: var_dnsName,
+      ips: var_ips,
+      os: var_os,
+      online: var_online,
+      direct: var_direct,
+      relay: var_relay,
+    );
+  }
+
+  @protected
+  TailscaleStatus sse_decode_tailscale_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_state = sse_decode_String(deserializer);
+    var var_authUrl = sse_decode_String(deserializer);
+    var var_tailnet = sse_decode_String(deserializer);
+    var var_user = sse_decode_String(deserializer);
+    var var_thisDevice = sse_decode_opt_box_autoadd_tailscale_device(
+      deserializer,
+    );
+    var var_devices = sse_decode_list_tailscale_device(deserializer);
+    var var_error = sse_decode_String(deserializer);
+    return TailscaleStatus(
+      state: var_state,
+      authUrl: var_authUrl,
+      tailnet: var_tailnet,
+      user: var_user,
+      thisDevice: var_thisDevice,
+      devices: var_devices,
+      error: var_error,
     );
   }
 
@@ -6729,6 +7078,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tailscale_device(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_terminal_palette(
     TerminalPalette self,
     SseSerializer serializer,
@@ -6835,6 +7193,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.connectTimeoutSecs, serializer);
     sse_encode_opt_box_autoadd_jump_host(self.jump, serializer);
     sse_encode_bool(self.forwardAgent, serializer);
+    sse_encode_bool(self.viaTailscale, serializer);
   }
 
   @protected
@@ -7183,6 +7542,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_tailscale_device(
+    List<TailscaleDevice> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tailscale_device(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_terminal_line(
     List<TerminalLine> self,
     SseSerializer serializer,
@@ -7246,6 +7617,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_jump_host(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_tailscale_device(
+    TailscaleDevice? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_tailscale_device(self, serializer);
     }
   }
 
@@ -7367,6 +7751,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.copied, serializer);
     sse_encode_u_32(self.deleted, serializer);
     sse_encode_list_String(self.failed, serializer);
+  }
+
+  @protected
+  void sse_encode_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.dnsName, serializer);
+    sse_encode_list_String(self.ips, serializer);
+    sse_encode_String(self.os, serializer);
+    sse_encode_bool(self.online, serializer);
+    sse_encode_bool(self.direct, serializer);
+    sse_encode_String(self.relay, serializer);
+  }
+
+  @protected
+  void sse_encode_tailscale_status(
+    TailscaleStatus self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.state, serializer);
+    sse_encode_String(self.authUrl, serializer);
+    sse_encode_String(self.tailnet, serializer);
+    sse_encode_String(self.user, serializer);
+    sse_encode_opt_box_autoadd_tailscale_device(self.thisDevice, serializer);
+    sse_encode_list_tailscale_device(self.devices, serializer);
+    sse_encode_String(self.error, serializer);
   }
 
   @protected

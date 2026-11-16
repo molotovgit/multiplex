@@ -12,6 +12,7 @@ import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
 import 'ui/settings/app_licenses.dart';
+import 'sessions/tailscale_node.dart';
 import 'update/update_controller.dart';
 import 'update/update_platform.dart';
 
@@ -32,5 +33,10 @@ Future<void> main() async {
   // Looks for a new version on GitHub (Android, at most once a day).
   final updates = UpdateController(store: store, platform: const AndroidUpdatePlatform());
   runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));
+  // Tailscale starts in the background when a host uses it, so the first
+  // connection does not wait for it.
+  if (store.hosts.any((h) => h.viaTailscale) && TailscaleNode.instance.available) {
+    unawaited(TailscaleNode.instance.ensureStarted().catchError((_) {}));
+  }
   unawaited(updates.start());
 }

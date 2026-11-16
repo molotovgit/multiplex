@@ -14,6 +14,8 @@ import 'api/sftp.dart';
 import 'api/sftp_types.dart';
 import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/tailscale.dart';
+import 'api/tailscale_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
@@ -243,6 +245,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ShellOptions dco_decode_box_autoadd_shell_options(dynamic raw);
 
   @protected
+  TailscaleDevice dco_decode_box_autoadd_tailscale_device(dynamic raw);
+
+  @protected
   TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw);
 
   @protected
@@ -354,6 +359,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SyncAction> dco_decode_list_sync_action(dynamic raw);
 
   @protected
+  List<TailscaleDevice> dco_decode_list_tailscale_device(dynamic raw);
+
+  @protected
   List<TerminalLine> dco_decode_list_terminal_line(dynamic raw);
 
   @protected
@@ -370,6 +378,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   JumpHost? dco_decode_opt_box_autoadd_jump_host(dynamic raw);
+
+  @protected
+  TailscaleDevice? dco_decode_opt_box_autoadd_tailscale_device(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
@@ -403,6 +414,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SyncReport dco_decode_sync_report(dynamic raw);
+
+  @protected
+  TailscaleDevice dco_decode_tailscale_device(dynamic raw);
+
+  @protected
+  TailscaleStatus dco_decode_tailscale_status(dynamic raw);
 
   @protected
   TerminalCursor dco_decode_terminal_cursor(dynamic raw);
@@ -642,6 +659,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  TailscaleDevice sse_decode_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TerminalPalette sse_decode_box_autoadd_terminal_palette(
     SseDeserializer deserializer,
   );
@@ -757,6 +779,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SyncAction> sse_decode_list_sync_action(SseDeserializer deserializer);
 
   @protected
+  List<TailscaleDevice> sse_decode_list_tailscale_device(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<TerminalLine> sse_decode_list_terminal_line(
     SseDeserializer deserializer,
   );
@@ -775,6 +802,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   JumpHost? sse_decode_opt_box_autoadd_jump_host(SseDeserializer deserializer);
+
+  @protected
+  TailscaleDevice? sse_decode_opt_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
@@ -808,6 +840,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SyncReport sse_decode_sync_report(SseDeserializer deserializer);
+
+  @protected
+  TailscaleDevice sse_decode_tailscale_device(SseDeserializer deserializer);
+
+  @protected
+  TailscaleStatus sse_decode_tailscale_status(SseDeserializer deserializer);
 
   @protected
   TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer);
@@ -1086,6 +1124,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_terminal_palette(
     TerminalPalette self,
     SseSerializer serializer,
@@ -1233,6 +1277,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_tailscale_device(
+    List<TailscaleDevice> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_terminal_line(
     List<TerminalLine> self,
     SseSerializer serializer,
@@ -1256,6 +1306,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_jump_host(
     JumpHost? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_tailscale_device(
+    TailscaleDevice? self,
     SseSerializer serializer,
   );
 
@@ -1294,6 +1350,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_sync_report(SyncReport self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tailscale_status(
+    TailscaleStatus self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_terminal_cursor(

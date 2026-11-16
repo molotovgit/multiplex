@@ -42,7 +42,7 @@ class Host {
     this.password,
     this.keyId,
     this.jumpHostId,
-    this.awayHostId,
+    this.viaTailscale = false,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -68,10 +68,9 @@ class Host {
   /// Another saved host to hop through first.
   final String? jumpHostId;
 
-  /// Another saved host that reaches the same machine from anywhere (for
-  /// example through a VPS). Used when this one cannot be reached, so the
-  /// home address is tried first and the far route only when away.
-  final String? awayHostId;
+  /// Reach it over Tailscale, built into the app: [address] is then a
+  /// tailnet device name (or 100.x address) and works from anywhere.
+  final bool viaTailscale;
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
@@ -116,7 +115,7 @@ class Host {
     String? Function()? password,
     String? Function()? keyId,
     String? Function()? jumpHostId,
-    String? Function()? awayHostId,
+    bool? viaTailscale,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -137,7 +136,7 @@ class Host {
         password: password != null ? password() : this.password,
         keyId: keyId != null ? keyId() : this.keyId,
         jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
-        awayHostId: awayHostId != null ? awayHostId() : this.awayHostId,
+        viaTailscale: viaTailscale ?? this.viaTailscale,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -159,7 +158,7 @@ class Host {
         'password': password,
         'keyId': keyId,
         'jumpHostId': jumpHostId,
-        'awayHostId': awayHostId,
+        'viaTailscale': viaTailscale,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -181,7 +180,7 @@ class Host {
         password: Json.strOrNull(j, 'password'),
         keyId: Json.strOrNull(j, 'keyId'),
         jumpHostId: Json.strOrNull(j, 'jumpHostId'),
-        awayHostId: Json.strOrNull(j, 'awayHostId'),
+        viaTailscale: Json.boolean(j, 'viaTailscale', false),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

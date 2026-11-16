@@ -12,6 +12,8 @@ pub mod sftp;
 pub mod sftp_types;
 pub mod ssh;
 pub mod ssh_types;
+pub mod tailscale;
+pub mod tailscale_types;
 pub mod terminal;
 pub mod terminal_types;
 pub mod theme;

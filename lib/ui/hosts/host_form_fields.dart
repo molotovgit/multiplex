@@ -269,9 +269,8 @@ class AdvancedFields extends StatelessWidget {
     required this.jumpHosts,
     required this.jumpId,
     required this.onJump,
-    required this.awayHosts,
-    required this.awayId,
-    required this.onAway,
+    required this.viaTailscale,
+    required this.onTailscale,
     required this.startup,
     required this.tmux,
     required this.onTmux,
@@ -284,10 +283,9 @@ class AdvancedFields extends StatelessWidget {
   final String? jumpId;
   final ValueChanged<String?> onJump;
 
-  /// Hosts that can stand in when this one is out of reach.
-  final List<Host> awayHosts;
-  final String? awayId;
-  final ValueChanged<String?> onAway;
+  /// Reach the host over Tailscale (built into the app).
+  final bool viaTailscale;
+  final ValueChanged<bool> onTailscale;
   final TextEditingController startup;
   final bool tmux;
   final ValueChanged<bool> onTmux;
@@ -300,33 +298,26 @@ class AdvancedFields extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = jumpHosts.any((h) => h.id == jumpId) ? jumpId : null;
-    final away = awayHosts.any((h) => h.id == awayId) ? awayId : null;
     return Column(
       children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.hub_outlined),
+          title: const Text('Connect through Tailscale'),
+          subtitle: const Text('Works from anywhere, no VPN app needed. Use the device name as the address (for example omarchy). Sign in under Settings, Tailscale.'),
+          value: viaTailscale,
+          onChanged: onTailscale,
+        ),
+        const SizedBox(height: 4),
         DropdownButtonFormField<String?>(
-          initialValue: selected,
+          initialValue: viaTailscale ? null : selected,
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Jump host', helperText: 'Connect through another saved host first, like ssh -J'),
           items: [
             const DropdownMenuItem<String?>(value: null, child: Text('None: connect directly')),
             for (final h in jumpHosts) DropdownMenuItem<String?>(value: h.id, child: Text(h.title)),
           ],
-          onChanged: onJump,
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String?>(
-          initialValue: away,
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'When away, connect through',
-            helperText: 'Tried when this address is out of reach, for example through a VPS. Home stays first, so it stays fast.',
-            helperMaxLines: 3,
-          ),
-          items: [
-            const DropdownMenuItem<String?>(value: null, child: Text('Nothing: this address only')),
-            for (final h in awayHosts) DropdownMenuItem<String?>(value: h.id, child: Text(h.title)),
-          ],
-          onChanged: onAway,
+          onChanged: viaTailscale ? null : onJump,
         ),
         const SizedBox(height: 4),
         SwitchListTile(

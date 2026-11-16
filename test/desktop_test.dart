@@ -1,69 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:multiplex/data/models.dart';
-import 'package:multiplex/data/vault_backend.dart';
-import 'package:multiplex/data/vault_store.dart';
-import 'package:multiplex/sessions/connect_flow.dart';
-import 'package:multiplex/sessions/shell_launch.dart';
-import 'package:multiplex/src/rust/api/ssh_types.dart';
 import 'package:multiplex/ui/desktop/desktop_gestures.dart';
 import 'package:multiplex/ui/desktop/desktop_keys.dart';
 import 'package:multiplex/ui/desktop/desktop_settings.dart';
 
-import 'security/fakes.dart';
-
-const _key = HostKeyInfo(algorithm: 'ssh-ed25519', fingerprint: 'SHA256:home', publicKey: 'ssh-ed25519 AAAAhome');
-const _other = HostKeyInfo(algorithm: 'ssh-ed25519', fingerprint: 'SHA256:other', publicKey: 'ssh-ed25519 AAAAother');
-
 void main() {
-  group('home first, away route when out of reach', () {
-    late VaultStore store;
-    setUp(() async {
-      store = await VaultStore.open(MemoryBackend());
-      store.saveHost(const Host(id: 'vps', label: 'VPS', address: 'vps.example', username: 'jump', password: 'pw'));
-      store.saveHost(const Host(id: 'away', label: 'Desk via VPS', address: 'localhost', port: 2222, username: 'me', password: 'pw', jumpHostId: 'vps'));
-      store.saveHost(const Host(id: 'home', label: 'Desk', address: '192.168.1.20', username: 'me', password: 'pw', awayHostId: 'away'));
-    });
-
-    test('home is tried quickly, then the away route', () async {
-      final connector = FakeConnector();
-      final flow = ConnectFlow(store, const SilentPrompter(), unlock: FakeUnlock(), connector: connector.call);
-      await expectLater(flow.connect(store.host('home')!), throwsA(isA<ConnectFailure>()));
-      expect(connector.attempts.map((o) => '${o.host}:${o.port}'), ['192.168.1.20:22', 'localhost:2222']);
-      expect(connector.attempts.first.connectTimeoutSecs, lessThanOrEqualTo(5), reason: 'home must not hold up the away route');
-      expect(connector.attempts.last.jump?.host, 'vps.example');
-    });
-
-    test('another machine at the home address means away, without a warning', () async {
-      store.trustHostKey('192.168.1.20', 22, _key);
-      final connector = FakeConnector([const ConnectError.hostKeyChanged(host: '192.168.1.20', port: 22, key: _other)]);
-      final prompter = FakePrompter();
-      final flow = ConnectFlow(store, prompter, unlock: FakeUnlock(), connector: connector.call);
-      await expectLater(flow.connect(store.host('home')!), throwsA(isA<ConnectFailure>()));
-      expect(prompter.asked, isEmpty);
-      expect(connector.attempts.last.port, 2222);
-    });
-
-    test('without an away route nothing changes', () async {
-      final connector = FakeConnector();
-      final flow = ConnectFlow(store, const SilentPrompter(), unlock: FakeUnlock(), connector: connector.call);
-      await expectLater(flow.connect(store.host('away')!), throwsA(isA<ConnectFailure>()));
-      expect(connector.attempts, hasLength(1));
-      expect(connector.attempts.single.connectTimeoutSecs, greaterThan(5));
-    });
-
-    test('deleting the away host clears the link', () {
-      store.deleteHost('away');
-      expect(store.host('home')!.awayHostId, isNull);
-    });
-
-    test('the link survives a save and load', () {
-      final host = store.host('home')!;
-      expect(Host.fromJson(host.toJson()).awayHostId, 'away');
-    });
-  });
-
   group('typing on a US layout', () {
     test('letters, capitals, digits and symbols', () {
       expect(UsLayout.stroke('a')!.code, 30);

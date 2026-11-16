@@ -19,6 +19,9 @@ pub struct ConnectOptions {
     /// Let programs on the server use this connection's private key
     /// (like `ssh -A`). Only the target server, never the jump host.
     pub forward_agent: bool,
+    /// Reach the server over Tailscale (the node built into the app):
+    /// `host` is then a tailnet device name or 100.x address.
+    pub via_tailscale: bool,
 }
 
 /// What Multiplex may try when logging in. Everything that is set is

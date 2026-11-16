@@ -10,6 +10,7 @@ import '../../app/screen_privacy.dart';
 import '../../app/theme.dart';
 import '../../sessions/desktop_controller.dart';
 import '../../sessions/session_manager.dart';
+import '../../sessions/tailscale_node.dart';
 import '../common/widgets.dart';
 import '../terminal/ended_banner.dart';
 import '../terminal/reconnect_banner.dart';
@@ -169,6 +170,11 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
 
   String get _route {
     final via = widget.session.ssh.info().via;
+    if (via == 'Tailscale') {
+      final device = TailscaleNode.instance.deviceFor(widget.session.host.address);
+      if (device == null) return 'Tailscale';
+      return device.direct ? 'Tailscale · direct' : 'Tailscale · relay ${device.relay}';
+    }
     return via == null ? 'Direct' : 'via $via';
   }
 

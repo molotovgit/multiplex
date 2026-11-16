@@ -11,6 +11,7 @@ pub mod keys;
 pub mod runtime;
 pub mod sftp;
 pub mod shell;
+pub mod tailscale;
 pub mod ssh;
 pub mod terminal;
 pub mod theme_import;
