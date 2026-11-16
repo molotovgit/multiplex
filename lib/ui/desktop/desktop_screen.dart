@@ -70,6 +70,12 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     ScreenAwake.hold();
     c.addListener(_changed);
     c.copiedFromDesktop.addListener(_copied);
+    // Over Tailscale, keep the route label current: a connection often
+    // starts on a relay and turns direct a few seconds later.
+    if (widget.session.host.viaTailscale) {
+      TailscaleNode.instance.addListener(_changed);
+      TailscaleNode.instance.watch();
+    }
     _scheduleHide();
   }
 
@@ -79,6 +85,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     _hideToolbar?.cancel();
     c.removeListener(_changed);
     c.copiedFromDesktop.removeListener(_copied);
+    if (widget.session.host.viaTailscale) {
+      TailscaleNode.instance.removeListener(_changed);
+      TailscaleNode.instance.unwatch();
+    }
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     ScreenAwake.release();
     _focus.dispose();
@@ -173,7 +183,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     if (via == 'Tailscale') {
       final device = TailscaleNode.instance.deviceFor(widget.session.host.address);
       if (device == null) return 'Tailscale';
-      return device.direct ? 'Tailscale · direct' : 'Tailscale · relay ${device.relay}';
+      return device.direct ? 'Tailscale · direct' : (device.relay.isEmpty ? 'Tailscale' : 'Tailscale · relay ${device.relay}');
     }
     return via == null ? 'Direct' : 'via $via';
   }
