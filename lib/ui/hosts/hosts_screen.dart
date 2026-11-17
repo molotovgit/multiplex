@@ -8,6 +8,7 @@ import 'arranged_host_list.dart';
 import 'host_connector.dart';
 import 'host_editor_screen.dart';
 import 'host_tile.dart';
+import '../pair/pair_screen.dart';
 import 'quick_connect.dart';
 
 /// The saved servers: search, recent ones first, then by group. Tap a host
@@ -46,7 +47,10 @@ class _HostsScreenState extends State<HostsScreen> {
     final store = AppScope.store(context);
     final sessions = AppScope.sessions(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Hosts')),
+      appBar: AppBar(
+        title: const Text('Hosts'),
+        actions: [IconButton(tooltip: 'Pair a computer', icon: const Icon(Icons.qr_code_scanner), onPressed: () => PairScreen.open(context))],
+      ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _openEditor(), icon: const Icon(Icons.add), label: const Text('New host')),
       body: ListenableBuilder(
         listenable: Listenable.merge([store, sessions]),

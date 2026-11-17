@@ -78,3 +78,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Pairing: Google's code scanner reads the QR code without the app
+    // needing the camera permission.
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+}

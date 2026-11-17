@@ -218,7 +218,7 @@ done
   Timer? _netProbe;
 
   void _startNetProbe() {
-    if (_netProbe != null || !session.host.viaTailscale) return;
+    if (_netProbe != null || session.ssh.info().via != 'Tailscale') return;
     _netProbe = Timer.periodic(const Duration(seconds: 2), (_) => _probeNet());
   }
 
@@ -226,7 +226,7 @@ done
 
   Future<void> _probeNet() async {
     if (_probing || !live) return;
-    final ip = TailscaleNode.instance.deviceFor(session.host.address)?.ips.where((i) => !i.contains(':')).firstOrNull;
+    final ip = TailscaleNode.instance.deviceFor(session.host.tailnetName)?.ips.where((i) => !i.contains(':')).firstOrNull;
     if (ip == null) return;
     _probing = true;
     try {

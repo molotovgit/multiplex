@@ -43,6 +43,9 @@ class Host {
     this.keyId,
     this.jumpHostId,
     this.viaTailscale = false,
+    this.computer = false,
+    this.tailscaleName,
+    this.mac,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -71,6 +74,18 @@ class Host {
   /// Reach it over Tailscale, built into the app: [address] is then a
   /// tailnet device name (or 100.x address) and works from anywhere.
   final bool viaTailscale;
+
+  /// A computer paired by QR code (an Omarchy machine with the multiplex
+  /// package), not a plain SSH server.
+  final bool computer;
+
+  /// A paired computer's name on the tailnet. With it the computer has two
+  /// routes: Tailscale when the phone is signed in, [address] (the home
+  /// network) otherwise.
+  final String? tailscaleName;
+
+  /// The computer's network card address, for Wake-on-LAN.
+  final String? mac;
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
@@ -102,6 +117,10 @@ class Host {
 
   String get title => label.isEmpty ? address : label;
 
+  /// The name this host has on the tailnet: a paired computer's Tailscale
+  /// name, or the address of a host that is reached over Tailscale.
+  String get tailnetName => (tailscaleName ?? '').isNotEmpty ? tailscaleName! : address;
+
   bool get usesKey => authMode != AuthMode.password;
   bool get usesPassword => authMode != AuthMode.key;
 
@@ -116,6 +135,9 @@ class Host {
     String? Function()? keyId,
     String? Function()? jumpHostId,
     bool? viaTailscale,
+    bool? computer,
+    String? Function()? tailscaleName,
+    String? Function()? mac,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -137,6 +159,9 @@ class Host {
         keyId: keyId != null ? keyId() : this.keyId,
         jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
         viaTailscale: viaTailscale ?? this.viaTailscale,
+        computer: computer ?? this.computer,
+        tailscaleName: tailscaleName != null ? tailscaleName() : this.tailscaleName,
+        mac: mac != null ? mac() : this.mac,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -159,6 +184,9 @@ class Host {
         'keyId': keyId,
         'jumpHostId': jumpHostId,
         'viaTailscale': viaTailscale,
+        'computer': computer,
+        'tailscaleName': tailscaleName,
+        'mac': mac,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -181,6 +209,9 @@ class Host {
         keyId: Json.strOrNull(j, 'keyId'),
         jumpHostId: Json.strOrNull(j, 'jumpHostId'),
         viaTailscale: Json.boolean(j, 'viaTailscale', false),
+        computer: Json.boolean(j, 'computer', false),
+        tailscaleName: Json.strOrNull(j, 'tailscaleName'),
+        mac: Json.strOrNull(j, 'mac'),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

@@ -35,7 +35,7 @@ Future<void> main() async {
   runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));
   // Tailscale starts in the background when a host uses it, so the first
   // connection does not wait for it.
-  if (store.hosts.any((h) => h.viaTailscale) && TailscaleNode.instance.available) {
+  if (store.hosts.any((h) => h.viaTailscale || (h.tailscaleName ?? '').isNotEmpty) && TailscaleNode.instance.available) {
     unawaited(TailscaleNode.instance.ensureStarted().catchError((_) {}));
   }
   unawaited(updates.start());

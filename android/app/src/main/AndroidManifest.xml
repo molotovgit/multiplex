@@ -26,6 +26,8 @@
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- Pairing: have Play services fetch its QR scanner screen at install time, not on first use. -->
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>
         <!-- No cloud backup or device transfer of app data: the vault's key
              lives in the Android Keystore and cannot travel with it, so a
              copied vault could never be opened. Use the in-app encrypted

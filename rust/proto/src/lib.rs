@@ -221,6 +221,15 @@ pub fn clean_device_name(name: &str) -> Option<String> {
     ok.then(|| name.to_owned())
 }
 
+/// The nearest name [`clean_device_name`] accepts: other characters are
+/// dropped, the rest is cut to 40, and an empty result becomes "Phone".
+/// Phones are named by their owners ("Sam's phone 📱"), and pairing should
+/// not fail over that.
+pub fn tidy_device_name(name: &str) -> String {
+    let kept: String = name.chars().filter(|c| c.is_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.' | '\'' | '(' | ')')).take(40).collect();
+    clean_device_name(&kept).unwrap_or_else(|| "Phone".to_owned())
+}
+
 fn decode32(b64: &str) -> Option<[u8; 32]> {
     STANDARD.decode(b64).ok()?.try_into().ok()
 }
@@ -290,6 +299,14 @@ mod tests {
         let parsed = RegisterRequest::parse(&req.command_line()).unwrap();
         assert_eq!(parsed.key, ed25519_line(&[3u8; 32]));
         assert_eq!(parsed.name, "Galaxy S21 FE");
+    }
+
+    #[test]
+    fn odd_phone_names_are_tidied_not_refused() {
+        assert_eq!(tidy_device_name("  Sam's phone 📱 "), "Sam's phone");
+        assert_eq!(tidy_device_name("📱📱"), "Phone");
+        assert_eq!(tidy_device_name(&"x".repeat(80)).chars().count(), 40);
+        assert_eq!(clean_device_name(&tidy_device_name("a\nb;rm -rf")), Some("abrm -rf".to_owned()));
     }
 
     #[test]

@@ -4,27 +4,36 @@ Multiplex can show and control a Hyprland desktop (for example Omarchy) on the p
 
 Away from home it connects through **Tailscale, built into Multiplex**: the phone joins your tailnet from inside the app, so no Tailscale VPN app is needed. Tailscale picks the most direct path by itself: peer to peer when the networks allow it (fastest), otherwise a Tailscale relay.
 
-## 1. The desktop machine
+## 1. On the computer (Omarchy)
+
+Install the package and prepare the computer once:
 
 ```sh
-sudo pacman -S gliff                 # Omarchy ships it already
-sudo systemctl enable --now sshd
+git clone https://github.com/molotovgit/multiplex.git
+cd multiplex/dist/arch
+makepkg -si          # installs the `multiplex` command
+multiplex setup      # asks for sudo; `multiplex setup --dry-run` shows the steps first
+multiplex doctor     # checks that everything is ready
 ```
 
-1. **Lock SSH down.** Copy `desktop-sshd-hardening.conf` to `/etc/ssh/sshd_config.d/10-hardening.conf` and put your user name in `AllowUsers`. It allows your home network and your tailnet (`100.64.0.0/10`).
-2. **Check and reload.** Run `sudo sshd -t`, then `sudo systemctl restart sshd`.
-3. **Open the firewall** to the home network and Tailscale only:
-   - `sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp`
-   - `sudo ufw allow in on tailscale0 to any port 22 proto tcp`
-4. **Join your tailnet:** `sudo tailscale up --hostname=<name>`, then sign in.
-5. **Check the video encoder.** `gliff-probe gpu` shows which encoder gliff will use. NVIDIA cards encode through Vulkan Video.
+`multiplex setup` turns the SSH server on with key-only logins, opens the firewall for SSH from the home network and Tailscale only, and makes sure gliff is installed. For access away from home, also join your tailnet: `sudo tailscale up`.
 
-## 2. In Multiplex
+## 2. Pair the phone
 
-1. **Settings → Tailscale → Sign in to Tailscale**, with the same account as the desktop. You do this once per phone. The screen lists your devices and whether each is reached directly or through a relay.
-2. **Keychain:** add or import the phone's key, and put its public half in the desktop's `~/.ssh/authorized_keys`.
-3. **Add the desktop:** in the Tailscale screen, open the device's menu → **Add as host**. Or create a host with the device name as the address (for example `omarchy`) and turn on **Advanced → Connect through Tailscale**.
-4. **Open the desktop:** host menu → **Remote desktop**. It works the same at home and away.
+1. On the computer, run `multiplex pair`. It shows a QR code for five minutes.
+2. In the app: **Hosts → Pair a computer → Scan the code**. No camera? Paste the line of text shown under the code.
+3. The app shows **Paired with <computer>**. Tap **Open the desktop**.
+
+The phone has to reach the computer while pairing: be on the same Wi-Fi, or sign in to Tailscale in the app first (**Settings → Tailscale**) with the account the computer uses. Later the app picks the route by itself: Tailscale when the phone is signed in, the home-network address otherwise.
+
+What the code does, and why it is safe to show on a screen for a few minutes:
+
+- It carries a one-time SSH key that can do one thing, register a phone, once. `authorized_keys` holds it with `restrict`, an `expiry-time` and a forced command; it is removed the moment a phone pairs, and refused after five minutes either way.
+- It carries the computer's SSH host key, so the phone's first connection already knows who it is talking to. There is no "trust this server?" question to wave through.
+- The phone registers its own key. Only a well-formed ed25519 key and a plain-character name are accepted; nothing else reaches `authorized_keys`, and lines that are not Multiplex's stay untouched.
+- The computer shows a notification naming the phone that paired.
+
+`multiplex devices` lists the paired phones; `multiplex unpair "<name>"` removes one.
 
 Building Tailscale into the app needs Go and the Android NDK. Run `native/tailscale/build-android.sh` before `flutter build apk`; builds without it work, minus Tailscale.
 

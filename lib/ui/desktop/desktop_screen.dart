@@ -74,6 +74,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
 
   DesktopController get c => widget.controller;
 
+  /// This connection runs over the app's Tailscale (a Tailscale host, or a
+  /// paired computer on its Tailscale route).
+  late final bool _overTailscale = widget.session.ssh.info().via == 'Tailscale';
+
   @override
   void initState() {
     super.initState();
@@ -86,7 +90,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     c.remoteTextFocusEvents.addListener(_remoteFocusGained);
     // Over Tailscale, keep the route label current: a connection often
     // starts on a relay and turns direct a few seconds later.
-    if (widget.session.host.viaTailscale) {
+    if (_overTailscale) {
       TailscaleNode.instance.addListener(_changed);
       TailscaleNode.instance.watch();
     }
@@ -102,7 +106,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     c.remoteTextFocus.removeListener(_remoteFocusChanged);
     c.remoteTextFocusEvents.removeListener(_remoteFocusGained);
     _clickCheck?.cancel();
-    if (widget.session.host.viaTailscale) {
+    if (_overTailscale) {
       TailscaleNode.instance.removeListener(_changed);
       TailscaleNode.instance.unwatch();
     }
@@ -253,7 +257,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   String get _route {
     final via = widget.session.ssh.info().via;
     if (via == 'Tailscale') {
-      final device = TailscaleNode.instance.deviceFor(widget.session.host.address);
+      final device = TailscaleNode.instance.deviceFor(widget.session.host.tailnetName);
       if (device == null) return 'Tailscale';
       return device.direct ? 'Tailscale · direct' : (device.relay.isEmpty ? 'Tailscale' : 'Tailscale · relay ${device.relay}');
     }

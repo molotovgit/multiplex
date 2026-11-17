@@ -62,7 +62,7 @@ fn one_time_key(code: &PairingCode) -> Result<String, PairError> {
 /// from anywhere and goes direct on the home network), then the
 /// home-network addresses.
 pub async fn register(code: &PairingCode, phone_key: &str, phone_name: &str, tailscale_ready: bool) -> Result<Paired, PairError> {
-    let request = RegisterRequest { key: phone_key.to_owned(), name: phone_name.to_owned() };
+    let request = RegisterRequest { key: phone_key.to_owned(), name: multiplex_proto::tidy_device_name(phone_name) };
     // Fail on our own mistakes before going on the network.
     RegisterRequest::parse(&request.command_line())?;
     let private_key = one_time_key(code)?;

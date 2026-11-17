@@ -46,6 +46,31 @@ void main() {
     expect(connector.attempts.single.viaTailscale, isFalse);
   });
 
+  group('a paired computer has two routes', () {
+    const desk = Host(id: 'c', label: 'Desk', address: '192.168.1.20', username: 'me', password: 'pw', computer: true, tailscaleName: 'desk');
+
+    test('Tailscale first when it is usable, then the home network', () async {
+      store.saveHost(desk);
+      final connector = FakeConnector();
+      final flow = ConnectFlow(store, const SilentPrompter(), unlock: FakeUnlock(), connector: connector.call, tailscaleReady: () async {}, tailscaleUsable: () async => true);
+      await expectLater(flow.connect(desk), throwsA(isA<ConnectFailure>()));
+      expect(connector.attempts.map((o) => '${o.host} ${o.viaTailscale}'), ['desk true', '192.168.1.20 false']);
+    });
+
+    test('only the home network when Tailscale is not signed in', () async {
+      store.saveHost(desk);
+      final connector = FakeConnector();
+      final flow = ConnectFlow(store, const SilentPrompter(), unlock: FakeUnlock(), connector: connector.call, tailscaleUsable: () async => false);
+      await expectLater(flow.connect(desk), throwsA(isA<ConnectFailure>()));
+      expect(connector.attempts.map((o) => '${o.host} ${o.viaTailscale}'), ['192.168.1.20 false']);
+    });
+
+    test('the pairing fields survive a save and load', () {
+      final back = Host.fromJson(desk.copyWith(mac: () => 'aa:bb:cc:dd:ee:ff').toJson());
+      expect((back.computer, back.tailscaleName, back.mac), (true, 'desk', 'aa:bb:cc:dd:ee:ff'));
+    });
+  });
+
   test('the setting survives a save and load', () {
     expect(Host.fromJson(store.host('t')!.toJson()).viaTailscale, isTrue);
     expect(Host.fromJson(const Host(id: 'x', label: '', address: 'a').toJson()).viaTailscale, isFalse);

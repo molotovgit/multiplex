@@ -105,6 +105,24 @@ class TailscaleNode extends ChangeNotifier {
     }
   }
 
+  /// For choosing a route: true when Tailscale is signed in and connected
+  /// within [limit]. Never asks the user anything, and never throws.
+  Future<bool> usableSoon({Duration limit = const Duration(seconds: 4)}) async {
+    if (!available) return false;
+    try {
+      await ensureStarted();
+    } catch (_) {
+      return false;
+    }
+    final until = DateTime.now().add(limit);
+    while (true) {
+      await refresh();
+      if (running) return true;
+      if (needsLogin || DateTime.now().isAfter(until)) return false;
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
+  }
+
   /// Signs in: returns the page to open, once Tailscale has made one.
   Future<Uri?> startSignIn() async {
     await ensureStarted();
