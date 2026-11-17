@@ -80,6 +80,8 @@ multiplex send                                  # what is still waiting
 
 The file waits in an outbox until the phone is connected to the computer (Multiplex open, or kept in the background by an open session); then the phone fetches it into its Multiplex downloads and shows a notification, and the computer says it was delivered. What is sent while the phone is away simply waits: the outbox is the queue.
 
+**A newer app.** `multiplex send multiplex.apk` also updates the phone: when a received file is a newer version of Multiplex itself, signed with the same key as the one installed, the phone says so, and that computer's **Sharing and notifications** page has an **Install** button. Any other app file is just a file in the downloads.
+
 **The clipboard.** While the phone is connected to a paired computer, text copied at the computer lands on the phone's clipboard, and text copied on the phone goes to the computer when Multiplex comes back to the front (Android only lets the app in front read the clipboard). What a password manager marks as secret is not passed on. The panel has **Phone to computer** and **Computer to phone** for doing it by hand.
 
 Nothing new listens on the network for any of this: the phone runs `multiplex share …` and `multiplex link` on the computer over its SSH connection, and files travel by SFTP. The computer needs `wl-clipboard` for the clipboard and `libnotify` for its notices.

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -12,6 +13,7 @@ import '../src/rust/api/sftp_types.dart';
 import '../src/rust/api/share.dart';
 import '../ui/files/transfer_queue.dart';
 import '../ui/files/transfer_tasks.dart';
+import '../update/update_platform.dart';
 import 'phone_outbox.dart';
 import 'session_manager.dart';
 
@@ -156,6 +158,16 @@ class SshShareChannel implements ShareChannel {
   }
 }
 
+/// A newer version of this app that a computer sent.
+class NewerApp {
+  const NewerApp({required this.path, required this.from});
+
+  final String path;
+
+  /// The computer's name.
+  final String from;
+}
+
 /// A file a computer sent to the phone.
 class ReceivedFile {
   const ReceivedFile({required this.name, required this.path, required this.from, required this.at});
@@ -191,7 +203,10 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     String? Function(String privateKey, String data)? describeSigning,
     String Function(String privateKey, String data)? signRequest,
     bool Function()? appInFront,
+    UpdatePlatform updates = const AndroidUpdatePlatform(),
   }) : outbox = outbox ?? PhoneOutbox(),
+       // ignore: prefer_initializing_formals
+       _updates = updates,
        _confirm = confirm ?? const DeviceUnlock().confirmTo,
        _sign = sign ?? ((key, id, reason, challenge) => approvalSign(privateKey: key, id: id, reason: reason, challenge: challenge)),
        _describeSigning = describeSigning ?? ((key, data) => signingDescribe(privateKey: key, data: data)),
@@ -276,6 +291,46 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   /// Files received since the app started, newest first.
   final List<ReceivedFile> received = [];
 
+  /// Checks and installs an app file (the phone's own updater).
+  final UpdatePlatform _updates;
+
+  /// A newer Multiplex that a computer sent, checked and ready to install.
+  NewerApp? newerApp;
+
+  /// A received file that is an Android app: if it is a newer Multiplex,
+  /// signed with the same key as this one, it is offered for installing.
+  /// Anything else stays an ordinary received file.
+  Future<void> _maybeNewerApp(ReceivedFile file) async {
+    if (!file.name.toLowerCase().endsWith('.apk')) return;
+    try {
+      // The updater only installs from its own folder.
+      final folder = await _updates.downloadDir();
+      final copy = await File(file.path).copy('${folder.path}${Platform.pathSeparator}from-computer.apk');
+      if (!(await _updates.checkApk(copy.path)).ok) {
+        await copy.delete();
+        return;
+      }
+      newerApp = NewerApp(path: copy.path, from: file.from);
+      notifyListeners();
+      await _notify('A newer Multiplex from ${file.from}', 'Open that computer\'s Sharing page in Multiplex to install it');
+    } catch (_) {
+      // Not installable from here: it is still in the downloads.
+    }
+  }
+
+  /// Hands the newer app to Android's installer. False when Android has
+  /// not yet let Multiplex install apps: its settings page is then opened.
+  Future<bool> installNewerApp() async {
+    final app = newerApp;
+    if (app == null) return false;
+    if (!await _updates.canInstall()) {
+      await _updates.openInstallPermission();
+      return false;
+    }
+    await _updates.install(app.path);
+    return true;
+  }
+
   static const _notices = MethodChannel('multiplex/sessions');
 
   static Future<void> _postOnPhone(String title, String body) async {
@@ -300,6 +355,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   void _arrived(ReceivedFile file) {
     received.insert(0, file);
     notifyListeners();
+    unawaited(_maybeNewerApp(file));
   }
 
   /// The saved computer behind a session (its settings may have changed

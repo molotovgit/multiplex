@@ -12,6 +12,7 @@ import 'package:multiplex/sessions/phone_outbox.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/src/rust/api/share.dart';
 import 'package:multiplex/src/rust/api/ssh.dart';
+import 'package:multiplex/update/update_platform.dart';
 
 /// A connection that is always up and does nothing.
 class _Ssh implements SshSession {
@@ -39,11 +40,14 @@ class _Computer implements ShareChannel {
     return (events.stream, () => stopped = true);
   }
 
+  /// Where a fetched file "lands" on the phone, when a test needs a real one.
+  String? downloadTo;
+
   @override
   Future<String> fetch(ShareEvent_File file) async {
     if (failFetch) throw Exception('the network dropped');
     log.add('fetch ${file.name}');
-    return '/phone/downloads/${file.name}';
+    return downloadTo ?? '/phone/downloads/${file.name}';
   }
 
   @override
@@ -112,6 +116,35 @@ class _Phone extends PhoneBridge {
   Stream<({bool? call, bool? dnd})> changes() => changed.stream;
 }
 
+/// The phone's updater: says whether an app file is a newer Multiplex.
+class _Updater implements UpdatePlatform {
+  _Updater(this.folder);
+
+  final Directory folder;
+  String? problem;
+  bool allowed = true;
+  final installed_ = <String>[];
+  int permissionOpened = 0;
+
+  @override
+  Future<Directory> downloadDir() async => folder..createSync(recursive: true);
+
+  @override
+  Future<ApkReport> checkApk(String path) async => ApkReport(problem);
+
+  @override
+  Future<bool> canInstall() async => allowed;
+
+  @override
+  Future<void> openInstallPermission() async => permissionOpened++;
+
+  @override
+  Future<void> install(String path) async => installed_.add(path);
+
+  @override
+  Future<InstalledApp?> installed() async => null;
+}
+
 /// Sessions, without connecting anywhere.
 class _Sessions extends SessionManager {
   _Sessions(super.store);
@@ -136,6 +169,7 @@ void main() {
   late Directory temp;
   late PhoneOutbox outbox;
   late _Phone phone;
+  late _Updater updater;
   final asked = <String>[];
   var fingerprintOk = true;
   var inFront = true;
@@ -159,6 +193,7 @@ void main() {
     temp = Directory.systemTemp.createTempSync('outbox-test');
     outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
     phone = _Phone();
+    updater = _Updater(Directory('${temp.path}/updates'));
     asked.clear();
     fingerprintOk = true;
     inFront = true;
@@ -193,6 +228,7 @@ void main() {
       describeSigning: (key, data) => data == 'LOGIN' ? 'Log in as sam with this phone\'s key' : null,
       signRequest: (key, data) => 'sshsig($data)',
       appInFront: () => inFront,
+      updates: updater,
     );
   });
 
@@ -441,6 +477,46 @@ void main() {
       computer.events.add(const ShareEvent.sign(id: '00dd', data: 'LOGIN'));
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(computer.log, ['approval 00dd: no']);
+    });
+  });
+
+  group('a newer app from the computer', () {
+    /// A computer that really leaves a file on the phone.
+    Future<void> receive(String name) async {
+      File('${temp.path}/$name').writeAsStringSync('app');
+      computer.downloadTo = '${temp.path}/$name';
+      computer.events.add(ShareEvent.file(id: '00ee', name: name, size: BigInt.from(3), path: '/home/me/$name'));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+    }
+
+    test('a newer Multiplex with the same signature is offered and can be installed', () async {
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await receive('multiplex.apk');
+      expect(links.newerApp?.from, 'Desk');
+      expect(notices.last, startsWith('A newer Multiplex from Desk'));
+      expect(await links.installNewerApp(), isTrue);
+      expect(updater.installed_.single, endsWith('from-computer.apk'));
+    });
+
+    test('another app, an older one or a differently signed one is just a file', () async {
+      updater.problem = 'otherSigner';
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await receive('something.apk');
+      expect(links.newerApp, isNull);
+      expect(links.received.single.name, 'something.apk');
+      expect(Directory('${temp.path}/updates').listSync(), isEmpty, reason: 'the copy made for checking is removed');
+    });
+
+    test('without the permission, Android\'s page for it opens instead', () async {
+      updater.allowed = false;
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await receive('multiplex.apk');
+      expect(await links.installNewerApp(), isFalse);
+      expect(updater.permissionOpened, 1);
+      expect(updater.installed_, isEmpty);
     });
   });
 

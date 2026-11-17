@@ -104,6 +104,32 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
             final apps = {...?links?.seenApps, ...host.mutedApps}.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
             return ListView(
               children: [
+                // The computer sent a newer Multiplex (checked: same app, same signing key).
+                if (links?.newerApp case final app? when app.from == host.title)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 12, SettingsLayout.gutter, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        NoticeBox(
+                          tone: NoticeTone.success,
+                          text: '${host.title} sent a newer version of Multiplex. It is the same app, signed with the same key.',
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: FilledButton.icon(
+                            onPressed: () async {
+                              final started = await links!.installNewerApp();
+                              if (!started && context.mounted) Toast.show(context, 'Allow Multiplex to install apps, then tap Install again');
+                            },
+                            icon: const Icon(Icons.system_update_alt),
+                            label: const Text('Install'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SectionHeader('Clipboard'),
                 SwitchListTile(
                   title: const Text('Share the clipboard'),
