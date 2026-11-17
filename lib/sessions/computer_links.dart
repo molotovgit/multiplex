@@ -9,6 +9,7 @@ import '../src/rust/api/sftp_types.dart';
 import '../src/rust/api/share.dart';
 import '../ui/files/transfer_queue.dart';
 import '../ui/files/transfer_tasks.dart';
+import 'phone_outbox.dart';
 import 'session_manager.dart';
 
 /// What a link needs from one connected computer. The real one is the
@@ -26,6 +27,10 @@ abstract class ShareChannel {
 
   /// Puts text on the computer's clipboard.
   Future<void> copy(String text);
+
+  /// Uploads files that waited on the phone into the computer's inbox and
+  /// has it say what arrived. The answer is the ones that got there.
+  Future<List<WaitingFile>> send(List<WaitingFile> files, {required String phone});
 }
 
 class SshShareChannel implements ShareChannel {
@@ -82,6 +87,38 @@ class SshShareChannel implements ShareChannel {
 
   @override
   Future<void> copy(String text) => session.ssh.shareCopy(text: text);
+
+  @override
+  Future<List<WaitingFile>> send(List<WaitingFile> files, {required String phone}) async {
+    final remote = await session.ssh.openFiles();
+    final inbox = await session.ssh.shareInbox();
+    final queue = TransferQueue.of(session);
+    final jobs = {
+      for (final f in files)
+        f: queue.add(
+          UploadTask(
+            files: remote,
+            source: UploadSource(name: f.name, path: f.path),
+            remoteFolder: inbox,
+          ),
+        ),
+    };
+    final finished = Completer<void>();
+    void check() {
+      if (!finished.isCompleted && jobs.values.every((j) => !j.isActive)) finished.complete();
+    }
+
+    queue.addListener(check);
+    check();
+    await finished.future;
+    queue.removeListener(check);
+    final arrived = [
+      for (final e in jobs.entries)
+        if (e.value.state == TransferState.done) e.key,
+    ];
+    if (arrived.isNotEmpty) await session.ssh.shareReceived(phone: phone, names: [for (final f in arrived) f.name]);
+    return arrived;
+  }
 }
 
 /// A file a computer sent to the phone.
@@ -112,7 +149,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     Future<void> Function(String title, String body)? notify,
     Future<String?> Function()? readClipboard,
     Future<void> Function(String text)? writeClipboard,
-  }) : _channel = channel ?? SshShareChannel.new,
+    PhoneOutbox? outbox,
+  }) : outbox = outbox ?? PhoneOutbox(),
+       _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
        _readClipboard = readClipboard ?? _phoneClipboard,
        _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))) {
@@ -128,6 +167,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   final Future<String?> Function() _readClipboard;
   final Future<void> Function(String text) _writeClipboard;
   final Map<LiveSession, _Link> _links = {};
+
+  /// Files shared to a computer that could not be reached at the time.
+  final PhoneOutbox outbox;
 
   /// The app's own, set once at start (null in tests that do not need it).
   static ComputerLinks? app;
@@ -238,6 +280,7 @@ class _Link {
       }
       _stop = stop;
       _events = events.listen(_on);
+      unawaited(_sendWaiting());
     } catch (_) {
       // An older package without sharing, or the connection just dropped:
       // everything else about the computer still works.
@@ -267,6 +310,19 @@ class _Link {
       // It stays in the computer's outbox and is offered again next time.
     } finally {
       _fetching.remove(file.id);
+    }
+  }
+
+  /// What was shared while the computer was out of reach goes now.
+  Future<void> _sendWaiting() async {
+    try {
+      final waiting = await owner.outbox.waiting(host.id);
+      if (waiting.isEmpty || _closed) return;
+      for (final sent in await channel.send(waiting, phone: host.pairedAs ?? 'your phone')) {
+        await owner.outbox.remove(sent);
+      }
+    } catch (_) {
+      // They keep waiting for the next connection.
     }
   }
 

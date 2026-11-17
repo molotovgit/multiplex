@@ -7,6 +7,8 @@ import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../../platform/incoming_actions.dart';
+import '../../sessions/computer_links.dart';
+import '../../sessions/phone_outbox.dart';
 import '../../sessions/session_manager.dart';
 import '../../src/rust/api/sftp.dart';
 import '../common/widgets.dart';
@@ -68,7 +70,10 @@ class ComputerShare {
 /// host and a folder there (the one used last time for that host, or the
 /// home folder), then the files upload over SFTP with progress.
 class ShareUploadScreen extends StatefulWidget {
-  const ShareUploadScreen({super.key, required this.files, this.text, this.connect, this.queueFor, this.computer = const ComputerShare()});
+  const ShareUploadScreen({super.key, required this.files, this.text, this.connect, this.queueFor, this.computer = const ComputerShare(), this.outbox});
+
+  /// Where files wait for a computer that is out of reach. Replaced in tests.
+  final PhoneOutbox? outbox;
 
   final List<SharedFile> files;
 
@@ -102,6 +107,12 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
   bool _busy = false;
   List<TransferJob> _jobs = const [];
 
+  /// A computer that could not be reached just now.
+  Host? _unreached;
+
+  /// The files were handed to the outbox.
+  bool _kept = false;
+
   bool get _started => _jobs.isNotEmpty;
 
   @override
@@ -117,7 +128,7 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
   @override
   void dispose() {
     // Files that never started uploading are not needed any more.
-    if (!_started) {
+    if (!_started && !_kept) {
       for (final file in widget.files) {
         SharedFiles.delete(file.path);
       }
@@ -182,11 +193,37 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
     }
   }
 
+  /// The files wait on the phone and go when the computer is next connected.
+  Future<void> _sendLater(Host computer) async {
+    final outbox = widget.outbox ?? ComputerLinks.app?.outbox ?? PhoneOutbox();
+    setState(() => _busy = true);
+    try {
+      for (final file in widget.files) {
+        await outbox.add(computer.id, name: file.name, path: file.path);
+      }
+      // They are the outbox's now; leaving must not delete them.
+      _kept = true;
+      if (!mounted) return;
+      final count = widget.files.length;
+      Toast.show(context, '${count == 1 ? 'It goes' : 'They go'} to ${computer.title} when it is next connected');
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (mounted) setState(() => _problem = 'Could not keep the files for later. ${ErrorText.of(error)}');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   /// One tap: the files go into the computer's Downloads folder.
   Future<void> _sendTo(Host computer) async {
     if (_started || _busy) return;
     final session = await _reach(computer);
-    if (session == null || !mounted) return;
+    if (session == null) {
+      // Out of reach (or cancelled): they can wait for it.
+      if (mounted) setState(() => _unreached = computer);
+      return;
+    }
+    if (!mounted) return;
     setState(() => _busy = true);
     try {
       final remote = await session.ssh.openFiles();
@@ -291,15 +328,27 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
         if (computers.isNotEmpty) ...[
           const SectionHeader('Computers'),
           for (final computer in computers) ...[
-            if (text == null)
+            if (text == null) ...[
               ListTile(
                 leading: const Icon(Icons.computer),
                 title: Text('Send to ${computer.title}'),
                 subtitle: const Text('Into its Downloads folder'),
                 enabled: !_busy,
                 onTap: () => _sendTo(computer),
-              )
-            else ...[
+              ),
+              if (_unreached?.id == computer.id)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(72, 0, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonalIcon(
+                      onPressed: _busy ? null : () => _sendLater(computer),
+                      icon: const Icon(Icons.schedule_send_outlined),
+                      label: const Text('Send when it is next connected'),
+                    ),
+                  ),
+                ),
+            ] else ...[
               ListTile(
                 leading: const Icon(Icons.content_paste_go_outlined),
                 title: Text('Copy to ${computer.title}'),

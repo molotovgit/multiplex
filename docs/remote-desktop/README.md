@@ -66,6 +66,8 @@ On the computer this is `multiplex input`: an ordinary Wayland program that make
 - files: **Send to <computer>** puts them in its Downloads folder, and the computer says on its screen what arrived;
 - text: **Copy to <computer>** puts it on its clipboard; a web link can also **Open on <computer>**, in its browser.
 
+If the computer cannot be reached just then, **Send when it is next connected** keeps the files on the phone; they go by themselves the next time the phone connects to it.
+
 Plain SSH servers are one tap further, as before (pick the server and a folder).
 
 **From the computer.**

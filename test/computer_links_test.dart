@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,7 @@ import 'package:multiplex/data/models.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/sessions/computer_links.dart';
+import 'package:multiplex/sessions/phone_outbox.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/src/rust/api/share.dart';
 import 'package:multiplex/src/rust/api/ssh.dart';
@@ -45,6 +47,18 @@ class _Computer implements ShareChannel {
 
   @override
   Future<void> copy(String text) async => log.add('copy $text');
+
+  /// Names that do not make it across.
+  final failing = <String>{};
+
+  @override
+  Future<List<WaitingFile>> send(List<WaitingFile> files, {required String phone}) async {
+    log.add('send from $phone: ${files.map((f) => f.name).join(', ')}');
+    return [
+      for (final f in files)
+        if (!failing.contains(f.name)) f,
+    ];
+  }
 }
 
 /// Sessions, without connecting anywhere.
@@ -68,6 +82,8 @@ void main() {
   late ComputerLinks links;
   late List<String> notices;
   String? phoneClipboard;
+  late Directory temp;
+  late PhoneOutbox outbox;
   const desk = Host(id: 'c', label: 'Desk', address: 'desk', computer: true, pairedAs: 'My phone');
 
   Future<LiveSession> connect({Host host = desk}) async {
@@ -85,6 +101,8 @@ void main() {
     computer = _Computer();
     notices = [];
     phoneClipboard = 'on the phone already';
+    temp = Directory.systemTemp.createTempSync('outbox-test');
+    outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
     links = ComputerLinks(
       sessions,
       store,
@@ -92,6 +110,7 @@ void main() {
       notify: (title, body) async => notices.add('$title | $body'),
       readClipboard: () async => phoneClipboard,
       writeClipboard: (text) async => phoneClipboard = text,
+      outbox: outbox,
     );
   });
 
@@ -100,6 +119,34 @@ void main() {
     sessions.dispose();
     // Let the store's delayed save run.
     await Future<void>.delayed(const Duration(milliseconds: 450));
+    temp.deleteSync(recursive: true);
+  });
+
+  File shared(String name) => File('${temp.path}/$name')..writeAsStringSync('hello $name');
+
+  test('files kept for an unreachable computer wait, in order, under names that do not clash', () async {
+    final first = await outbox.add('c', name: 'photo.jpg', path: shared('photo.jpg').path);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    // The first was moved away, so the same name is free again.
+    final second = await outbox.add('c', name: 'photo.jpg', path: shared('photo.jpg').path);
+    expect(first.name, 'photo.jpg');
+    expect(second.name, 'photo (1).jpg');
+    expect(File('${temp.path}/photo.jpg').existsSync(), isFalse, reason: 'moved, not copied');
+    expect((await outbox.waiting('c')).map((f) => f.name), ['photo.jpg', 'photo (1).jpg']);
+    expect(await outbox.waiting('another computer'), isEmpty);
+    await outbox.remove(first);
+    expect((await outbox.waiting('c')).map((f) => f.name), ['photo (1).jpg']);
+  });
+
+  test('what waited on the phone goes when the computer connects; what fails keeps waiting', () async {
+    await outbox.add('c', name: 'notes.txt', path: shared('notes.txt').path);
+    await outbox.add('c', name: 'big.iso', path: shared('big.iso').path);
+    computer.failing.add('big.iso');
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(computer.log.single, startsWith('send from My phone: '));
+    expect(computer.log.single, allOf(contains('notes.txt'), contains('big.iso')));
+    expect((await outbox.waiting('c')).map((f) => f.name), ['big.iso']);
   });
 
   test('a connected computer is linked under the name the phone paired as; a plain server is not', () async {
