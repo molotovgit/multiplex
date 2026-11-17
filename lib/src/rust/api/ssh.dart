@@ -135,6 +135,13 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Puts text on the computer's clipboard.
   Future<void> shareCopy({required String text});
 
+  /// Puts a picture (`kind`: `png`, `jpeg`, `webp` or `gif`) on the
+  /// computer's clipboard.
+  Future<void> shareCopyPicture({
+    required String kind,
+    required List<int> picture,
+  });
+
   /// The phone has a waiting file now: the computer forgets it.
   Future<void> shareDone({required String id});
 
@@ -151,6 +158,9 @@ abstract class SshSession implements RustOpaqueInterface {
 
   /// The text on the computer's clipboard, if it holds text.
   Future<String?> sharePaste();
+
+  /// The picture on the computer's clipboard, if it holds one.
+  Future<ClipPictureData?> sharePastePicture();
 
   /// Has the computer read the text in a picture (a JPEG or PNG) and
   /// put it on its clipboard.

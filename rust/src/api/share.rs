@@ -24,6 +24,9 @@ pub enum ShareEvent {
     },
     /// The computer's clipboard now holds this text.
     Clip { text: String },
+    /// The computer's clipboard now holds a picture; `mark` names exactly
+    /// that picture. It is fetched with `share_paste_picture`.
+    Picture { kind: String, size: u64, mark: String },
     /// Someone at the computer is looking for the phone: ring, loudly, for
     /// at most this long.
     Ring { seconds: u32 },
@@ -40,6 +43,20 @@ pub enum ShareEvent {
     /// [`signing_describe`] says what for; answer with
     /// [`SshSession::share_approved`] and what [`signing_sign`] made.
     Sign { id: String, data: String },
+}
+
+/// A picture from a clipboard.
+pub struct ClipPictureData {
+    /// `png`, `jpeg`, `webp` or `gif`.
+    pub kind: String,
+    pub bytes: Vec<u8>,
+}
+
+/// A short name for exactly this picture: the same on both sides, so a
+/// picture that was just received is not sent straight back.
+#[frb(sync)]
+pub fn share_picture_mark(picture: Vec<u8>) -> String {
+    proto::picture_mark(&picture)
 }
 
 /// The text a computer read in a picture.
@@ -73,6 +90,20 @@ impl SshSession {
     pub async fn share_paste(&self) -> anyhow::Result<Option<String>> {
         let conn = self.conn.clone();
         AsyncRuntime::run(async move { share::paste(&conn).await }).await?
+    }
+
+    /// The picture on the computer's clipboard, if it holds one.
+    pub async fn share_paste_picture(&self) -> anyhow::Result<Option<ClipPictureData>> {
+        let conn = self.conn.clone();
+        let picture = AsyncRuntime::run(async move { share::paste_picture(&conn).await }).await??;
+        Ok(picture.map(|(kind, bytes)| ClipPictureData { kind, bytes }))
+    }
+
+    /// Puts a picture (`kind`: `png`, `jpeg`, `webp` or `gif`) on the
+    /// computer's clipboard.
+    pub async fn share_copy_picture(&self, kind: String, picture: Vec<u8>) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { share::copy_picture(&conn, &kind, &picture).await }).await?
     }
 
     /// Has the computer read the text in a picture (a JPEG or PNG) and
@@ -174,6 +205,14 @@ impl ShareLink {
         self.inner.lines.attach(Arc::new(move |line: String| match proto::parse_link_event(&line) {
             Ok(proto::LinkEvent::File(file)) => sink.add(ShareEvent::File { id: file.id, name: proto::clean_file_name(&file.name), size: file.size, path: file.path }).is_ok(),
             Ok(proto::LinkEvent::Clip { text }) => sink.add(ShareEvent::Clip { text }).is_ok(),
+            Ok(proto::LinkEvent::Picture { kind, size, mark }) => {
+                // Only kinds that are shared, and of a size a clipboard takes.
+                if proto::picture_mime(&kind).is_some() && size <= proto::MAX_CLIP_PICTURE as u64 && mark.len() <= 64 {
+                    sink.add(ShareEvent::Picture { kind, size, mark }).is_ok()
+                } else {
+                    true
+                }
+            }
             Ok(proto::LinkEvent::Ring { seconds }) => sink.add(ShareEvent::Ring { seconds: seconds.min(120) }).is_ok(),
             // Checked again here: what reaches the phone's messaging is exact.
             Ok(proto::LinkEvent::Sms { to, text }) => match (proto::clean_phone_number(&to), proto::clean_sms_text(&text)) {

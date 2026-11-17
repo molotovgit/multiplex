@@ -12,6 +12,8 @@
 //! the file by SFTP and says `multiplex share done <id>`. An outbox is
 //! also the queue: what is sent while the phone is away waits in it.
 
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 use crate::ProtoError;
@@ -21,6 +23,45 @@ pub const SHARE_COMMAND: &str = r#"PATH="$PATH:$HOME/.local/bin" multiplex"#;
 
 /// A clipboard's worth of text, not a file.
 pub const MAX_CLIP: usize = 256 * 1024;
+
+/// The biggest picture that is passed from one clipboard to the other.
+pub const MAX_CLIP_PICTURE: usize = 8 * 1024 * 1024;
+
+/// The kinds of picture a clipboard is shared as, by the short name used
+/// between the two sides and the name both systems know them by.
+const PICTURE_KINDS: [(&str, &str); 4] = [("png", "image/png"), ("jpeg", "image/jpeg"), ("webp", "image/webp"), ("gif", "image/gif")];
+
+/// The system's name for a kind of picture (`png` is `image/png`).
+pub fn picture_mime(kind: &str) -> Option<&'static str> {
+    PICTURE_KINDS.iter().find(|(short, _)| *short == kind).map(|(_, mime)| *mime)
+}
+
+/// The kind of picture a system's name stands for, when it is one that
+/// is shared.
+pub fn picture_kind(mime: &str) -> Option<&'static str> {
+    let mime = mime.trim().to_ascii_lowercase();
+    let mime = if mime == "image/jpg" { "image/jpeg" } else { mime.as_str() };
+    PICTURE_KINDS.iter().find(|(_, name)| *name == mime).map(|(short, _)| *short)
+}
+
+/// The kind a clipboard offers, from the names of everything it offers:
+/// the first of ours it has, in our order of preference.
+pub fn picture_kind_among<'a>(offered: impl IntoIterator<Item = &'a str>) -> Option<&'static str> {
+    let offered: Vec<&'static str> = offered.into_iter().filter_map(picture_kind).collect();
+    PICTURE_KINDS.iter().map(|(short, _)| *short).find(|short| offered.contains(short))
+}
+
+/// A short name for exactly these bytes, so each side can tell a picture
+/// it has just been sent from a new one (and not send it straight back).
+pub fn picture_mark(bytes: &[u8]) -> String {
+    // FNV-1a: not for secrets, only for telling pictures apart.
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    format!("{hash:016x}-{}", bytes.len())
+}
 
 /// The biggest picture that is taken for reading its text.
 pub const MAX_PICTURE: usize = 20 * 1024 * 1024;
@@ -45,6 +86,9 @@ pub enum LinkEvent {
     File(OutFile),
     /// The computer's clipboard now holds this text.
     Clip { text: String },
+    /// The computer's clipboard now holds a picture (not sent along: the
+    /// phone fetches it if it wants it). `mark` is its [`picture_mark`].
+    Picture { kind: String, size: u64, mark: String },
     /// Someone at the computer is looking for the phone: ring, loudly, for
     /// at most this long.
     Ring { seconds: u32 },
@@ -67,6 +111,30 @@ pub enum LinkEvent {
 pub struct Clipboard {
     /// None: the clipboard is empty, or holds something that is not text.
     pub text: Option<String>,
+}
+
+/// What `multiplex share paste-picture` prints: the picture on the
+/// computer's clipboard.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub struct ClipPicture {
+    /// Empty: the clipboard holds no picture that may be passed on.
+    pub kind: String,
+    /// The picture's bytes, in base64.
+    pub data: String,
+}
+
+impl ClipPicture {
+    pub fn of(kind: &str, picture: &[u8]) -> Self {
+        Self { kind: kind.to_owned(), data: STANDARD.encode(picture) }
+    }
+
+    /// The kind and the bytes, when there is a picture of a kind that is
+    /// shared, whole and not too big.
+    pub fn picture(&self) -> Option<(&'static str, Vec<u8>)> {
+        let kind = PICTURE_KINDS.iter().map(|(short, _)| *short).find(|short| *short == self.kind)?;
+        let bytes = STANDARD.decode(&self.data).ok()?;
+        (!bytes.is_empty() && bytes.len() <= MAX_CLIP_PICTURE).then_some((kind, bytes))
+    }
 }
 
 /// What `multiplex share read` prints: the text found in a picture.
@@ -145,6 +213,18 @@ pub fn received_command(phone: &str, names: &[String]) -> String {
 /// Reads text from standard input onto the computer's clipboard.
 pub fn copy_command() -> String {
     command(&["share", "clip"])
+}
+
+/// Prints the picture on the computer's clipboard as [`ClipPicture`].
+pub fn paste_picture_command() -> String {
+    command(&["share", "paste-picture"])
+}
+
+/// Puts the picture on standard input (of this kind) on the computer's
+/// clipboard.
+pub fn copy_picture_command(kind: &str) -> Result<String, ProtoError> {
+    picture_mime(kind).ok_or(ProtoError::Invalid("that kind of picture is not shared"))?;
+    Ok(command(&["share", "clip-picture", kind]))
 }
 
 /// Reads the text in the picture on standard input (a JPEG or PNG),
@@ -350,6 +430,47 @@ pub fn done_command(id: &str) -> Result<String, ProtoError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pictures_are_known_by_kind_on_both_sides() {
+        assert_eq!(picture_mime("png"), Some("image/png"));
+        assert_eq!(picture_kind("image/jpeg"), Some("jpeg"));
+        assert_eq!(picture_kind("image/jpg"), Some("jpeg"), "some phones say it this way");
+        assert_eq!(picture_kind(" IMAGE/PNG "), Some("png"));
+        for other in ["image/svg+xml", "text/plain", "image/x-xcf", ""] {
+            assert_eq!(picture_kind(other), None, "{other}");
+        }
+        assert_eq!(picture_mime("svg"), None);
+        // A clipboard offers several forms of one picture: png is preferred.
+        assert_eq!(picture_kind_among(["text/html", "image/jpeg", "image/png", "image/bmp"]), Some("png"));
+        assert_eq!(picture_kind_among(["image/bmp", "image/jpeg"]), Some("jpeg"));
+        assert_eq!(picture_kind_among(["text/plain", "UTF8_STRING"]), None);
+        // Only the kinds that are shared can be asked for.
+        assert!(copy_picture_command("png").unwrap().ends_with("multiplex 'share' 'clip-picture' 'png'"));
+        assert!(copy_picture_command("png; rm -rf ~").is_err());
+        assert!(paste_picture_command().ends_with("multiplex 'share' 'paste-picture'"));
+    }
+
+    #[test]
+    fn a_picture_travels_whole_or_not_at_all() {
+        let sent = ClipPicture::of("png", b"\x89PNG\r\n\x1a\n and so on");
+        assert_eq!(sent.picture(), Some(("png", b"\x89PNG\r\n\x1a\n and so on".to_vec())));
+        assert_eq!(ClipPicture::default().picture(), None, "no picture on the clipboard");
+        assert_eq!(ClipPicture { kind: "svg".into(), data: sent.data.clone() }.picture(), None);
+        assert_eq!(ClipPicture { kind: "png".into(), data: "not base64!".into() }.picture(), None);
+        assert_eq!(ClipPicture { kind: "png".into(), data: String::new() }.picture(), None);
+    }
+
+    #[test]
+    fn a_pictures_mark_tells_it_from_any_other() {
+        let mark = picture_mark(b"one picture");
+        assert_eq!(mark, picture_mark(b"one picture"));
+        assert_ne!(mark, picture_mark(b"one picturf"));
+        assert_ne!(picture_mark(b""), picture_mark(b"\0"));
+        assert!(mark.ends_with("-11") && mark.len() == 19, "{mark}");
+        let event = LinkEvent::Picture { kind: "png".into(), size: 11, mark };
+        assert_eq!(parse_link_event(&serde_json::to_string(&event).unwrap()).unwrap(), event);
+    }
 
     #[test]
     fn the_speaker_is_asked_for_with_or_without_all_of_the_sound() {

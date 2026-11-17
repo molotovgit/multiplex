@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
+import '../../sessions/clipboard_picture.dart';
 import '../../sessions/desk_controller.dart';
 import '../../src/rust/api/desk_types.dart';
 import '../common/widgets.dart';
@@ -25,11 +26,17 @@ class OmarchyPanel extends StatefulWidget {
     this.dense = false,
     this.readClipboard,
     this.writeClipboard,
+    this.readPicture,
+    this.writePicture,
   });
 
   /// The phone's clipboard. Replaced in tests.
   final Future<String?> Function()? readClipboard;
   final Future<void> Function(String text)? writeClipboard;
+
+  /// The same for a picture on the phone's clipboard. Tests replace them.
+  final Future<ClipboardPicture?> Function()? readPicture;
+  final Future<void> Function(ClipboardPicture picture)? writePicture;
 
   final DeskController controller;
 
@@ -76,7 +83,14 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
     final text = await (widget.readClipboard ?? _phoneClipboard)() ?? '';
     if (!mounted) return;
     if (text.trim().isEmpty) {
-      Toast.show(context, 'The phone\'s clipboard has no text');
+      // No text: it may hold a picture.
+      final picture = await (widget.readPicture ?? PhoneClipboardPictures.read)();
+      if (!mounted) return;
+      if (picture == null) {
+        Toast.show(context, 'The phone\'s clipboard has no text or picture');
+      } else if (await c.copyPictureToComputer(picture) && mounted) {
+        Toast.show(context, 'The picture is on the computer\'s clipboard now');
+      }
       return;
     }
     if (await c.copyToComputer(text) && mounted) Toast.show(context, 'On the computer\'s clipboard now');
@@ -87,7 +101,15 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
     final text = await c.computerClipboard();
     if (!mounted || c.problem != null) return;
     if (text == null || text.isEmpty) {
-      Toast.show(context, 'The computer\'s clipboard has no text');
+      // No text: it may hold a picture.
+      final picture = await c.computerPicture();
+      if (!mounted || c.problem != null) return;
+      if (picture == null) {
+        Toast.show(context, 'The computer\'s clipboard has no text or picture');
+      } else {
+        await (widget.writePicture ?? PhoneClipboardPictures.write)(picture);
+        if (mounted) Toast.show(context, 'The picture is on the phone\'s clipboard now');
+      }
       return;
     }
     await (widget.writeClipboard ?? ((String t) => Clipboard.setData(ClipboardData(text: t))))(text);

@@ -84,6 +84,8 @@ The file waits in an outbox until the phone is connected to the computer. With *
 
 **The clipboard.** While the phone is connected to a paired computer, text copied at the computer lands on the phone's clipboard, and text copied on the phone goes to the computer when Multiplex comes back to the front (Android only lets the app in front read the clipboard). What a password manager marks as secret is not passed on. The panel has **Phone to computer** and **Computer to phone** for doing it by hand.
 
+Pictures go the same way: a screenshot or a copied image (PNG, JPEG, WebP or GIF, up to 8 MB) on one clipboard lands on the other, under the same switch and by the same two buttons. The computer only tells the phone that there is a picture; the phone fetches it. On the phone the picture is kept in the app's cache, one at a time, and only the app you paste it into gets to read it.
+
 Nothing new listens on the network for any of this: the phone runs `multiplex share …` and `multiplex link` on the computer over its SSH connection, and files travel by SFTP. The computer needs `wl-clipboard` for the clipboard and `libnotify` for its notices.
 
 ## The phone, from the computer

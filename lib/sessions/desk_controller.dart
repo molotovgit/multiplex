@@ -1,3 +1,5 @@
+import 'clipboard_picture.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -25,6 +27,12 @@ abstract class DeskLink {
 
   /// The text on the computer's clipboard, if it holds text.
   Future<String?> paste();
+
+  /// Puts a picture on the computer's clipboard.
+  Future<void> copyPicture(ClipboardPicture picture);
+
+  /// The picture on the computer's clipboard, if it holds one.
+  Future<ClipboardPicture?> pastePicture();
 }
 
 class SshDeskLink implements DeskLink {
@@ -54,6 +62,15 @@ class SshDeskLink implements DeskLink {
 
   @override
   Future<String?> paste() => ssh().sharePaste();
+
+  @override
+  Future<void> copyPicture(ClipboardPicture picture) => ssh().shareCopyPicture(kind: picture.kind, picture: picture.bytes);
+
+  @override
+  Future<ClipboardPicture?> pastePicture() async {
+    final picture = await ssh().sharePastePicture();
+    return picture == null ? null : ClipboardPicture(picture.kind, picture.bytes);
+  }
 }
 
 /// The computer's desktop for the panel: what it shows now, the key
@@ -143,6 +160,28 @@ class DeskController extends ChangeNotifier {
   Future<String?> computerClipboard() async {
     try {
       return await _link.paste();
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
+
+  /// Puts a picture on the computer's clipboard. False when it could not.
+  Future<bool> copyPictureToComputer(ClipboardPicture picture) async {
+    try {
+      await _link.copyPicture(picture);
+      return true;
+    } catch (e) {
+      _fail(e);
+      return false;
+    }
+  }
+
+  /// The picture on the computer's clipboard; null when it holds none or
+  /// it could not be read (then [problem] says why).
+  Future<ClipboardPicture?> computerPicture() async {
+    try {
+      return await _link.pastePicture();
     } catch (e) {
       _fail(e);
       return null;

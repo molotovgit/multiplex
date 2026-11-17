@@ -19,6 +19,7 @@ use base64::Engine;
 use multiplex_proto::share::{
     approval_message, clean_file_name, clean_id, clean_phone_number, clean_reason, clean_sms_text, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, APPROVE_SECONDS, MAX_CLIP,
     RING_SECONDS, TextRead, MAX_PICTURE,
+    picture_kind_among, picture_mark, picture_mime, ClipPicture, MAX_CLIP_PICTURE,
 };
 use multiplex_proto::ed25519_key_bytes;
 use multiplex_proto::clean_device_name;
@@ -249,6 +250,59 @@ fn clipboard_text(session: &Session) -> Option<String> {
     String::from_utf8(out.stdout).ok()
 }
 
+/// What the phone was last told the clipboard holds: a text or a picture
+/// (by its mark), whichever came last. The same thing copied again right
+/// away is not news; copied again after something else, it is.
+#[derive(Default, Debug)]
+struct Told {
+    text: Option<String>,
+    picture: Option<String>,
+}
+
+impl Told {
+    /// The clipboard now holds this text, or none. Whether to tell.
+    fn text_is_news(&mut self, now: &Option<String>) -> bool {
+        let news = now.is_some() && *now != self.text;
+        self.text.clone_from(now);
+        if now.is_some() {
+            self.picture = None;
+        }
+        news
+    }
+
+    /// The clipboard now holds the picture with this mark (and no text).
+    /// Whether to tell.
+    fn picture_is_news(&mut self, mark: &str) -> bool {
+        let news = self.picture.as_deref() != Some(mark);
+        self.picture = Some(mark.to_owned());
+        news
+    }
+}
+
+/// The picture on the clipboard, when it holds one that may be passed on:
+/// its kind and its bytes.
+fn clipboard_picture(session: &Session) -> Option<(&'static str, Vec<u8>)> {
+    let types = session.command("wl-paste").arg("--list-types").stderr(Stdio::null()).output().ok()?;
+    let types = String::from_utf8_lossy(&types.stdout).into_owned();
+    // Marked by a password manager: not kept, not passed on.
+    if types.lines().any(|t| t.contains("x-kde-passwordManagerHint")) {
+        return None;
+    }
+    let kind = picture_kind_among(types.lines())?;
+    let out = session.command("wl-paste").args(["--type", picture_mime(kind)?]).stderr(Stdio::null()).output().ok()?;
+    (out.status.success() && !out.stdout.is_empty() && out.stdout.len() <= MAX_CLIP_PICTURE).then_some((kind, out.stdout))
+}
+
+fn set_clipboard_picture(session: &Session, kind: &str, picture: &[u8]) -> Result<()> {
+    let mime = picture_mime(kind).ok_or_else(|| anyhow!("that kind of picture is not shared"))?;
+    let mut copy = session.command("wl-copy").args(["--type", mime]).stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().context("wl-copy (from wl-clipboard) is needed for the clipboard")?;
+    copy.stdin.take().ok_or_else(|| anyhow!("wl-copy did not take the picture"))?.write_all(picture)?;
+    if !copy.wait()?.success() {
+        bail!("the clipboard did not take the picture");
+    }
+    Ok(())
+}
+
 fn set_clipboard(session: &Session, text: &str) -> Result<()> {
     // Said to be text: left to guess, wl-copy calls a very short text
     // (a single character, a line break) binary, and nothing can paste it.
@@ -292,6 +346,22 @@ pub fn share(args: &[&str]) -> Result<()> {
             println!("ok");
         }
         ["paste"] => println!("{}", serde_json::to_string(&Clipboard { text: clipboard_text(&Session::find()?) })?),
+        ["paste-picture"] => {
+            let picture = clipboard_picture(&Session::find()?).map(|(kind, bytes)| ClipPicture::of(kind, &bytes)).unwrap_or_default();
+            println!("{}", serde_json::to_string(&picture)?);
+        }
+        ["clip-picture", kind] => {
+            let mut picture = Vec::new();
+            std::io::stdin().lock().take(MAX_CLIP_PICTURE as u64 + 1).read_to_end(&mut picture)?;
+            if picture.is_empty() {
+                bail!("no picture came");
+            }
+            if picture.len() > MAX_CLIP_PICTURE {
+                bail!("that picture is too big for a clipboard");
+            }
+            set_clipboard_picture(&Session::find()?, kind, &picture)?;
+            println!("ok");
+        }
         // A photo of a page from the phone: its text goes on the clipboard here.
         ["read"] => {
             let mut picture = Vec::new();
@@ -664,7 +734,10 @@ pub fn link(phone: &str) -> Result<()> {
         let started = Instant::now();
         let _ = asks_for(phone);
         // What is on the clipboard when the phone connects is not news.
-        let mut last_clip = session.as_ref().and_then(clipboard_text);
+        let mut clipboard_told = Told { text: session.as_ref().and_then(clipboard_text), picture: None };
+        if clipboard_told.text.is_none() {
+            clipboard_told.picture = session.as_ref().and_then(clipboard_picture).map(|(_, bytes)| picture_mark(&bytes));
+        }
         let mut alive = Instant::now();
         // Coding agents (under herdr): the phone hears when one starts
         // waiting for an answer or finishes. Looked at every few seconds.
@@ -706,12 +779,22 @@ pub fn link(phone: &str) -> Result<()> {
                     std::thread::sleep(Duration::from_millis(60));
                     while changed.try_recv().is_ok() {}
                     let now = session.as_ref().and_then(clipboard_text);
-                    if now != last_clip {
+                    if clipboard_told.text_is_news(&now) {
                         if let Some(text) = now.clone() {
                             say(Some(&LinkEvent::Clip { text }))?;
                             alive = Instant::now();
                         }
-                        last_clip = now;
+                    }
+                    // No text: it may be a picture (a screenshot, say). The
+                    // phone is told that there is one; it fetches it itself.
+                    if now.is_none() {
+                        if let Some((kind, bytes)) = session.as_ref().and_then(clipboard_picture) {
+                            let mark = picture_mark(&bytes);
+                            if clipboard_told.picture_is_news(&mark) {
+                                say(Some(&LinkEvent::Picture { kind: kind.to_owned(), size: bytes.len() as u64, mark }))?;
+                                alive = Instant::now();
+                            }
+                        }
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => {}
@@ -745,6 +828,24 @@ pub fn link(phone: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_same_thing_is_news_again_after_something_else() {
+        let text = |t: &str| Some(t.to_owned());
+        let mut told = Told::default();
+        assert!(told.text_is_news(&text("one")));
+        assert!(!told.text_is_news(&text("one")), "touched, not changed");
+        // A picture: the text is gone from the clipboard, which is not itself news.
+        assert!(!told.text_is_news(&None));
+        assert!(told.picture_is_news("A"));
+        assert!(!told.picture_is_news("A"));
+        assert!(told.picture_is_news("B"));
+        // The same text as before the pictures: news again.
+        assert!(told.text_is_news(&text("one")));
+        // And the same picture as before that text: news again too.
+        assert!(!told.text_is_news(&None));
+        assert!(told.picture_is_news("B"));
+    }
 
     #[test]
     fn a_phone_that_stopped_reporting_is_taken_for_gone() {

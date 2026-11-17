@@ -1,3 +1,7 @@
+export 'clipboard_picture.dart' show ClipboardPicture;
+
+import 'clipboard_picture.dart';
+
 import 'dart:async';
 import 'dart:io';
 
@@ -34,6 +38,12 @@ abstract class ShareChannel {
 
   /// Puts text on the computer's clipboard.
   Future<void> copy(String text);
+
+  /// The picture on the computer's clipboard, if it holds one.
+  Future<ClipboardPicture?> pastePicture();
+
+  /// Puts a picture on the computer's clipboard.
+  Future<void> copyPicture(ClipboardPicture picture);
 
   /// Tells the computer the phone's battery level.
   Future<void> status(String phone, {required int battery, required bool charging});
@@ -109,6 +119,15 @@ class SshShareChannel implements ShareChannel {
 
   @override
   Future<void> copy(String text) => session.ssh.shareCopy(text: text);
+
+  @override
+  Future<ClipboardPicture?> pastePicture() async {
+    final picture = await session.ssh.sharePastePicture();
+    return picture == null ? null : ClipboardPicture(picture.kind, picture.bytes);
+  }
+
+  @override
+  Future<void> copyPicture(ClipboardPicture picture) => session.ssh.shareCopyPicture(kind: picture.kind, picture: picture.bytes);
 
   @override
   Future<void> status(String phone, {required int battery, required bool charging}) =>
@@ -198,6 +217,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     Future<void> Function(String title, String body)? notify,
     Future<String?> Function()? readClipboard,
     Future<void> Function(String text)? writeClipboard,
+    Future<ClipboardPicture?> Function()? readPicture,
+    Future<void> Function(ClipboardPicture picture)? writePicture,
+    String Function(Uint8List picture)? markOf,
     PhoneOutbox? outbox,
     PhoneBridge phone = const PhoneBridge(),
     Future<bool> Function(String reason)? confirm,
@@ -225,7 +247,10 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
        _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
        _readClipboard = readClipboard ?? _phoneClipboard,
-       _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))) {
+       _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))),
+       _readPicture = readPicture ?? PhoneClipboardPictures.read,
+       _writePicture = writePicture ?? PhoneClipboardPictures.write,
+       _markOf = markOf ?? ((picture) => sharePictureMark(picture: picture)) {
     _sessions.addListener(_sync);
     _store.addListener(_keepConnected);
     WidgetsBinding.instance.addObserver(this);
@@ -337,6 +362,11 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   final Future<void> Function(String title, String body) _notify;
   final Future<String?> Function() _readClipboard;
   final Future<void> Function(String text) _writeClipboard;
+  final Future<ClipboardPicture?> Function() _readPicture;
+  final Future<void> Function(ClipboardPicture picture) _writePicture;
+
+  /// A short name for exactly one picture (the same on the computer).
+  final String Function(Uint8List picture) _markOf;
   final Map<LiveSession, _Link> _links = {};
 
   /// Files shared to a computer that could not be reached at the time.
@@ -455,7 +485,8 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Sends the phone's clipboard to a computer now, whatever the setting.
-  /// False when it holds no text or the computer is not linked.
+  /// False when it holds neither text nor a picture, or the computer is
+  /// not linked.
   Future<bool> sendClipboardTo(LiveSession session) async => await _links[session]?.sendPhoneClipboard(force: true) ?? false;
 
   @override
@@ -492,6 +523,9 @@ class _Link {
   /// The text both clipboards last agreed on, so nothing bounces back.
   String? _lastClip;
 
+  /// The mark of the last picture that went either way.
+  String? _lastPicture;
+
   /// Whether [_lastClip] is really what the phone's clipboard held. Android
   /// only lets the app in front read it, so a link that starts while the
   /// app is not on screen does not know yet; until it does, nothing on
@@ -509,6 +543,12 @@ class _Link {
     if (now != null) {
       _lastClip = now;
       _clipKnown = true;
+    } else {
+      final picture = await owner._readPicture();
+      if (picture != null) {
+        _lastPicture = owner._markOf(picture.bytes);
+        _clipKnown = true;
+      }
     }
     try {
       final (events, stop) = await channel.link(_name);
@@ -536,10 +576,19 @@ class _Link {
       case ShareEvent_Clip(:final text):
         if (!host.shareClipboard || text == _lastClip) return;
         _lastClip = text;
+        // Whatever picture crossed before is no longer what the clipboards hold.
+        _lastPicture = null;
         _clipKnown = true;
         // Sizes only: what is on a clipboard is nobody's business.
         if (kDebugMode) debugPrint('mpxlink clipboard to the phone (${text.length} characters)');
         unawaited(owner._writeClipboard(text));
+      case ShareEvent_Picture(:final size, :final mark):
+        if (!host.shareClipboard || mark == _lastPicture) return;
+        _lastPicture = mark;
+        _lastClip = null;
+        _clipKnown = true;
+        if (kDebugMode) debugPrint('mpxlink clipboard picture to the phone ($size bytes)');
+        unawaited(_fetchPicture());
       case ShareEvent_Ring(:final seconds):
         unawaited(owner._phone.ring(seconds));
       case ShareEvent_Sms(:final to, :final text):
@@ -666,11 +715,48 @@ class _Link {
     }
   }
 
+  /// The picture the computer said is on its clipboard, onto the phone's.
+  Future<void> _fetchPicture() async {
+    try {
+      final picture = await channel.pastePicture();
+      // Meanwhile replaced on the computer by something else: let it go.
+      if (picture == null || _closed || owner._markOf(picture.bytes) != _lastPicture) return;
+      await owner._writePicture(picture);
+    } catch (_) {
+      // The next one copied there is a new chance.
+    }
+  }
+
+  /// Sends the picture on the phone's clipboard if it is a new one.
+  Future<bool> _sendPhonePicture({required bool force}) async {
+    final picture = await owner._readPicture();
+    if (picture == null) return false;
+    final mark = owner._markOf(picture.bytes);
+    // As with text: the first look only notes what is there.
+    if (!force && !_clipKnown) {
+      _lastPicture = mark;
+      _clipKnown = true;
+      return false;
+    }
+    if (!force && mark == _lastPicture) return false;
+    _lastPicture = mark;
+    _lastClip = null;
+    _clipKnown = true;
+    try {
+      await channel.copyPicture(picture);
+      if (kDebugMode) debugPrint('mpxlink clipboard picture to the computer (${picture.bytes.length} bytes)');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Sends the phone's clipboard if it changed. True when it was sent.
   Future<bool> sendPhoneClipboard({bool force = false}) async {
     if (_closed || (!force && !host.shareClipboard)) return false;
     final text = await owner._readClipboard();
-    if (text == null) return false;
+    // No text: it may hold a picture.
+    if (text == null || text.isEmpty) return _sendPhonePicture(force: force);
     // The first look only notes what is there: it was copied before this
     // link could see the clipboard, so it is not news, and it must not
     // replace what the computer holds.
@@ -681,6 +767,7 @@ class _Link {
     }
     if (text.isEmpty || (!force && text == _lastClip)) return false;
     _lastClip = text;
+    _lastPicture = null;
     _clipKnown = true;
     try {
       await channel.copy(text);

@@ -126,7 +126,8 @@
                 android:resource="@xml/favourites_widget_info" />
         </receiver>
         <!-- Hands a downloaded update (cache/updates only) to the system
-             installer. -->
+             installer, and a clipboard picture from a paired computer
+             (cache/clipboard only) to the app it is pasted into. -->
         <provider
             android:name=".UpdateFileProvider"
             android:authorities="${applicationId}.updates"

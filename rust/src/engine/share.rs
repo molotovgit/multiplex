@@ -73,6 +73,34 @@ pub async fn paste(conn: &Connection) -> anyhow::Result<Option<String>> {
     Ok(clipboard.text)
 }
 
+/// The picture on the computer's clipboard, if it holds one: its kind
+/// (`png`, `jpeg`, ...) and its bytes.
+pub async fn paste_picture(conn: &Connection) -> anyhow::Result<Option<(String, Vec<u8>)>> {
+    let out = conn.exec(&proto::paste_picture_command(), proto::MAX_CLIP_PICTURE / 3 * 4 + 4096).await?;
+    if out.exit_code != Some(0) {
+        return Err(problem(&out));
+    }
+    let reply: proto::ClipPicture = serde_json::from_str(out.stdout.trim()).map_err(|_| anyhow::anyhow!("The computer's answer was not understood."))?;
+    Ok(reply.picture().map(|(kind, bytes)| (kind.to_owned(), bytes)))
+}
+
+/// Puts a picture on the computer's clipboard.
+pub async fn copy_picture(conn: &Connection, kind: &str, picture: &[u8]) -> anyhow::Result<()> {
+    if picture.is_empty() {
+        anyhow::bail!("There is no picture to copy.");
+    }
+    if picture.len() > proto::MAX_CLIP_PICTURE {
+        anyhow::bail!("That picture is too big for a clipboard.");
+    }
+    let command = proto::copy_picture_command(kind).map_err(|_| anyhow::anyhow!("That kind of picture cannot be put on the computer's clipboard."))?;
+    let out = conn.exec_with_input(&command, picture, 4096).await?;
+    if out.exit_code == Some(0) {
+        Ok(())
+    } else {
+        Err(problem(&out))
+    }
+}
+
 /// Has the computer read the text in a picture (a JPEG or PNG) and put it
 /// on its clipboard. An empty text: none could be read.
 pub async fn read_text(conn: &Connection, picture: &[u8]) -> anyhow::Result<proto::TextRead> {

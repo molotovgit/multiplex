@@ -403,6 +403,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_box_autoadd_bool(dynamic raw);
 
   @protected
+  ClipPictureData dco_decode_box_autoadd_clip_picture_data(dynamic raw);
+
+  @protected
   ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw);
 
   @protected
@@ -452,6 +455,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  ClipPictureData dco_decode_clip_picture_data(dynamic raw);
 
   @protected
   ConflictPolicy dco_decode_conflict_policy(dynamic raw);
@@ -608,6 +614,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
+  ClipPictureData? dco_decode_opt_box_autoadd_clip_picture_data(dynamic raw);
 
   @protected
   DeskMedia? dco_decode_opt_box_autoadd_desk_media(dynamic raw);
@@ -1044,6 +1053,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
 
   @protected
+  ClipPictureData sse_decode_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   ConnectOptions sse_decode_box_autoadd_connect_options(
     SseDeserializer deserializer,
   );
@@ -1109,6 +1123,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  ClipPictureData sse_decode_clip_picture_data(SseDeserializer deserializer);
 
   @protected
   ConflictPolicy sse_decode_conflict_policy(SseDeserializer deserializer);
@@ -1271,6 +1288,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  ClipPictureData? sse_decode_opt_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  );
 
   @protected
   DeskMedia? sse_decode_opt_box_autoadd_desk_media(
@@ -1767,6 +1789,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_connect_options(
     ConnectOptions self,
     SseSerializer serializer,
@@ -1861,6 +1889,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_conflict_policy(
@@ -2059,6 +2093,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_clip_picture_data(
+    ClipPictureData? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_desk_media(

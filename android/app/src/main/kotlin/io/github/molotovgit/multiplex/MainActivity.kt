@@ -67,6 +67,7 @@ class MainActivity : FlutterFragmentActivity() {
         MicCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         SpeakerPlay.register(flutterEngine.dartExecutor.binaryMessenger, this)
         TextScan.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        ClipPictures.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->

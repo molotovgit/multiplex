@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,18 @@ class _Computer implements ShareChannel {
 
   @override
   Future<void> copy(String text) async => log.add('copy $text');
+
+  /// The picture on this stand-in computer's clipboard.
+  ClipboardPicture? picture;
+
+  @override
+  Future<ClipboardPicture?> pastePicture() async {
+    log.add('paste picture');
+    return picture;
+  }
+
+  @override
+  Future<void> copyPicture(ClipboardPicture picture) async => log.add('copy picture ${picture.kind} ${picture.bytes}');
 
   @override
   Future<void> status(String phone, {required int battery, required bool charging}) async => statuses.add('$phone: $battery%${charging ? ' charging' : ''}');
@@ -166,6 +179,7 @@ void main() {
   late ComputerLinks links;
   late List<String> notices;
   String? phoneClipboard;
+  ClipboardPicture? phonePicture;
   late Directory temp;
   late PhoneOutbox outbox;
   late _Phone phone;
@@ -192,6 +206,7 @@ void main() {
     computer = _Computer();
     notices = [];
     phoneClipboard = 'on the phone already';
+    phonePicture = null;
     temp = Directory.systemTemp.createTempSync('outbox-test');
     outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
     phone = _Phone();
@@ -222,6 +237,9 @@ void main() {
       notify: (title, body) async => notices.add('$title | $body'),
       readClipboard: () async => phoneClipboard,
       writeClipboard: (text) async => phoneClipboard = text,
+      readPicture: () async => phonePicture,
+      writePicture: (picture) async => phonePicture = picture,
+      markOf: (bytes) => bytes.join('.'),
       outbox: outbox,
       phone: phone,
       confirm: (reason) async {
@@ -338,6 +356,101 @@ void main() {
     links.didChangeAppLifecycleState(AppLifecycleState.resumed);
     await Future<void>.delayed(Duration.zero);
     expect(computer.log, ['copy copied just now']);
+  });
+
+  test('a picture copied at the computer is fetched onto the phone, once', () async {
+    await connect();
+    final screenshot = ClipboardPicture('png', Uint8List.fromList([1, 2, 3]));
+    computer.picture = screenshot;
+    // The computer only says that there is one; the phone fetches it.
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(3), mark: '1.2.3'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['paste picture']);
+    expect(phonePicture?.bytes, [1, 2, 3]);
+    expect(phonePicture?.kind, 'png');
+    // Said again (the clipboard was touched, same picture): not fetched again.
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(3), mark: '1.2.3'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['paste picture']);
+    // Coming back to the app does not send it straight back.
+    phoneClipboard = null;
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['paste picture']);
+  });
+
+  test('the same picture copied again after something else counts as new', () async {
+    await connect();
+    computer.picture = ClipboardPicture('png', Uint8List.fromList([1, 2, 3]));
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(3), mark: '1.2.3'));
+    await Future<void>.delayed(Duration.zero);
+    // Text in between replaces it on the phone.
+    computer.events.add(const ShareEvent.clip(text: 'words in between'));
+    await Future<void>.delayed(Duration.zero);
+    expect(phoneClipboard, 'words in between');
+    phonePicture = null;
+    // The same picture again: it has to come over again.
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(3), mark: '1.2.3'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['paste picture', 'paste picture']);
+    expect(phonePicture?.bytes, [1, 2, 3]);
+    // And the same words again after that picture.
+    phoneClipboard = null;
+    computer.events.add(const ShareEvent.clip(text: 'words in between'));
+    await Future<void>.delayed(Duration.zero);
+    expect(phoneClipboard, 'words in between');
+  });
+
+  test('a picture that was replaced on the computer before it could be fetched is let go', () async {
+    await connect();
+    computer.picture = ClipboardPicture('png', Uint8List.fromList([9, 9]));
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(3), mark: '1.2.3'));
+    await Future<void>.delayed(Duration.zero);
+    expect(phonePicture, isNull, reason: 'what came is not the picture that was announced');
+  });
+
+  test('a picture copied on the phone goes over when the app comes back in front', () async {
+    await connect();
+    // A picture, so no text.
+    phoneClipboard = null;
+    phonePicture = ClipboardPicture('jpeg', Uint8List.fromList([4, 5]));
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['copy picture jpeg [4, 5]']);
+    // The same picture is not sent twice.
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['copy picture jpeg [4, 5]']);
+    // Text copied afterwards goes as text.
+    phoneClipboard = 'and now words';
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['copy picture jpeg [4, 5]', 'copy and now words']);
+  });
+
+  test('a picture that was on the phone before the link is not news', () async {
+    phoneClipboard = null;
+    phonePicture = ClipboardPicture('png', Uint8List.fromList([7]));
+    await connect();
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, isEmpty);
+  });
+
+  test('with clipboard sharing off pictures stay where they are too', () async {
+    store.saveHost(desk.copyWith(shareClipboard: false));
+    final session = await connect();
+    computer.picture = ClipboardPicture('png', Uint8List.fromList([1]));
+    computer.events.add(ShareEvent.picture(kind: 'png', size: BigInt.from(1), mark: '1'));
+    phoneClipboard = null;
+    phonePicture = ClipboardPicture('png', Uint8List.fromList([2]));
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, isEmpty);
+    expect(phonePicture?.bytes, [2]);
+    // Asked for by hand, it still goes.
+    expect(await links.sendClipboardTo(session), isTrue);
+    expect(computer.log, ['copy picture png [2]']);
   });
 
   test('with clipboard sharing off nothing moves by itself, but a request still does', () async {

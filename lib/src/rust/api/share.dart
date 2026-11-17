@@ -11,6 +11,11 @@ part 'share.freezed.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
+/// A short name for exactly this picture: the same on both sides, so a
+/// picture that was just received is not sent straight back.
+String sharePictureMark({required List<int> picture}) =>
+    RustLib.instance.api.crateApiShareSharePictureMark(picture: picture);
+
 /// Signs an approval request with the phone's own key (its OpenSSH
 /// private key). Only call this after the owner has confirmed with a
 /// fingerprint: the signature is the "yes".
@@ -56,6 +61,26 @@ abstract class ShareLink implements RustOpaqueInterface {
   void stop();
 }
 
+/// A picture from a clipboard.
+class ClipPictureData {
+  /// `png`, `jpeg`, `webp` or `gif`.
+  final String kind;
+  final Uint8List bytes;
+
+  const ClipPictureData({required this.kind, required this.bytes});
+
+  @override
+  int get hashCode => kind.hashCode ^ bytes.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClipPictureData &&
+          runtimeType == other.runtimeType &&
+          kind == other.kind &&
+          bytes == other.bytes;
+}
+
 @freezed
 sealed class ShareEvent with _$ShareEvent {
   const ShareEvent._();
@@ -72,6 +97,14 @@ sealed class ShareEvent with _$ShareEvent {
 
   /// The computer's clipboard now holds this text.
   const factory ShareEvent.clip({required String text}) = ShareEvent_Clip;
+
+  /// The computer's clipboard now holds a picture; `mark` names exactly
+  /// that picture. It is fetched with `share_paste_picture`.
+  const factory ShareEvent.picture({
+    required String kind,
+    required BigInt size,
+    required String mark,
+  }) = ShareEvent_Picture;
 
   /// Someone at the computer is looking for the phone: ring, loudly, for
   /// at most this long.

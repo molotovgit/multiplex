@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/app/app_scope.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/sessions/clipboard_picture.dart';
 import 'package:multiplex/sessions/desk_controller.dart';
 import 'package:multiplex/sessions/error_text.dart';
 import 'package:multiplex/sessions/session_manager.dart';
@@ -54,6 +56,14 @@ class _Link implements DeskLink {
 
   @override
   Future<String?> paste() async => clipboard;
+
+  ClipboardPicture? picture;
+
+  @override
+  Future<void> copyPicture(ClipboardPicture picture) async => this.picture = picture;
+
+  @override
+  Future<ClipboardPicture?> pastePicture() async => picture;
 }
 
 DeskState _state({int active = 2, bool playing = false, bool floating = false}) => DeskState(
@@ -80,6 +90,7 @@ void main() {
   late DeskController controller;
   late List<String> pins;
   String? phoneClipboard;
+  ClipboardPicture? phonePicture;
 
   Future<void> pump(WidgetTester tester, {Size size = const Size(400, 1200)}) async {
     await tester.binding.setSurfaceSize(size);
@@ -106,6 +117,8 @@ void main() {
                   onPinsChanged: (next) => setState(() => pins = next),
                   readClipboard: () async => phoneClipboard,
                   writeClipboard: (text) async => phoneClipboard = text,
+                  readPicture: () async => phonePicture,
+                  writePicture: (picture) async => phonePicture = picture,
                 ),
               ),
             ),
@@ -211,7 +224,39 @@ void main() {
     await tester.tap(find.text('Phone to computer'));
     await tester.pumpAndSettle();
     expect(link.clipboard, 'fresh from the desk');
-    expect(find.text("The phone's clipboard has no text"), findsOneWidget);
+    expect(find.text("The phone's clipboard has no text or picture"), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('a picture on a clipboard goes either way on request too', (tester) async {
+    await pump(tester);
+    // The phone holds a picture, so no text.
+    phoneClipboard = null;
+    phonePicture = ClipboardPicture('jpeg', Uint8List.fromList([4, 5, 6]));
+    await tester.ensureVisible(find.text('Phone to computer'));
+    await tester.tap(find.text('Phone to computer'));
+    await tester.pumpAndSettle();
+    expect(link.picture?.bytes, [4, 5, 6]);
+    expect(link.picture?.kind, 'jpeg');
+    expect(find.text("The picture is on the computer's clipboard now"), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+
+    // The computer holds a picture (a screenshot), so no text.
+    link.clipboard = null;
+    link.picture = ClipboardPicture('png', Uint8List.fromList([7, 8]));
+    phonePicture = null;
+    await tester.tap(find.text('Computer to phone'));
+    await tester.pumpAndSettle();
+    expect(phonePicture?.bytes, [7, 8]);
+    expect(find.text("The picture is on the phone's clipboard now"), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+
+    // Neither: said so.
+    link.picture = null;
+    await tester.tap(find.text('Computer to phone'));
+    await tester.pumpAndSettle();
+    expect(find.text("The computer's clipboard has no text or picture"), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
   });
 
   testWidgets('changes on the computer show by themselves', (tester) async {
