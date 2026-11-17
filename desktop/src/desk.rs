@@ -77,9 +77,12 @@ impl Session {
 
     /// A command that can reach the session: Hyprland, the session bus
     /// and the sound server, with Omarchy's own commands on the path.
-    fn command(&self, program: &str) -> Command {
+    pub(crate) fn command(&self, program: &str) -> Command {
         let mut command = Command::new(program);
         command.env("XDG_RUNTIME_DIR", &self.runtime).env("HYPRLAND_INSTANCE_SIGNATURE", &self.signature);
+        if std::env::var_os("WAYLAND_DISPLAY").is_none() {
+            command.env("WAYLAND_DISPLAY", self.wayland_socket());
+        }
         if std::env::var_os("DBUS_SESSION_BUS_ADDRESS").is_none() {
             command.env("DBUS_SESSION_BUS_ADDRESS", format!("unix:path={}", self.runtime.join("bus").display()));
         }
@@ -120,7 +123,7 @@ impl Session {
     }
 
     /// Tries the Lua form, then the older one.
-    fn dispatch_either(&self, lua: &str, older: (&str, &str)) -> Result<()> {
+    pub(crate) fn dispatch_either(&self, lua: &str, older: (&str, &str)) -> Result<()> {
         let first = match self.dispatch(&[lua]) {
             Ok(()) => return Ok(()),
             Err(err) => err,
@@ -396,7 +399,7 @@ pub fn run(args: &[&str]) -> Result<()> {
 }
 
 /// A Lua string literal.
-fn lua_string(text: &str) -> String {
+pub(crate) fn lua_string(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 2);
     out.push('"');
     for c in text.chars() {

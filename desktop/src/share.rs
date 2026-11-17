@@ -1,0 +1,418 @@
+//! Sharing with a paired phone: files it sends land in the inbox (the
+//! Downloads folder), text on the clipboard, links in the browser; files
+//! for the phone wait in an outbox until it is connected.
+//!
+//! The phone drives all of it over SSH (see `multiplex_proto::share`).
+//! `multiplex send` is the one command here that the computer's user
+//! runs.
+
+use std::collections::HashSet;
+use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use std::sync::mpsc::{self, RecvTimeoutError};
+use std::time::{Duration, Instant};
+
+use anyhow::{anyhow, bail, Context, Result};
+use multiplex_proto::share::{clean_file_name, clean_id, clean_url, Clipboard, LinkEvent, OutFile, MAX_CLIP};
+use multiplex_proto::clean_device_name;
+use serde::{Deserialize, Serialize};
+
+use crate::desk::{lua_string, Session};
+use crate::store::Store;
+
+/// A file waiting for a phone.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+struct Waiting {
+    id: String,
+    /// The phone it is for.
+    phone: String,
+    name: String,
+    path: String,
+    size: u64,
+    /// An archive made for sending: removed once delivered.
+    #[serde(default)]
+    made_here: bool,
+}
+
+/// Files for the phones, each with a small note beside it. It is also the
+/// queue: what is sent while a phone is away waits here.
+pub struct Outbox {
+    dir: PathBuf,
+}
+
+fn state_dir() -> PathBuf {
+    std::env::var_os("XDG_STATE_HOME")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(std::env::var_os("HOME").unwrap_or_default()).join(".local/state"))
+        .join("multiplex")
+}
+
+fn random_id() -> Result<String> {
+    let mut bytes = [0u8; 8];
+    std::fs::File::open("/dev/urandom")?.read_exact(&mut bytes)?;
+    Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())
+}
+
+impl Outbox {
+    pub fn open() -> Result<Self> {
+        Self::at(state_dir().join("outbox"))
+    }
+
+    fn at(dir: PathBuf) -> Result<Self> {
+        std::fs::create_dir_all(dir.join("files")).context("could not make the outbox")?;
+        Ok(Self { dir })
+    }
+
+    fn note(&self, id: &str) -> PathBuf {
+        self.dir.join(format!("{id}.json"))
+    }
+
+    /// Queues a file or a folder for a phone. A folder goes as one archive.
+    fn add(&self, phone: &str, path: &Path) -> Result<Waiting> {
+        let path = path.canonicalize().with_context(|| format!("{} is not there", path.display()))?;
+        let id = random_id()?;
+        let base = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "folder".to_owned());
+        let (name, file, made_here) = if path.is_dir() {
+            let name = format!("{}.tar.gz", clean_file_name(&base));
+            let archive = self.dir.join("files").join(format!("{id}-{name}"));
+            let parent = path.parent().unwrap_or(Path::new("/"));
+            let ok = std::process::Command::new("tar").arg("-czf").arg(&archive).arg("-C").arg(parent).arg("--").arg(&base).status().is_ok_and(|s| s.success());
+            if !ok {
+                let _ = std::fs::remove_file(&archive);
+                bail!("could not pack the folder {}", path.display());
+            }
+            (name, archive, true)
+        } else if path.is_file() {
+            (clean_file_name(&base), path.clone(), false)
+        } else {
+            bail!("{} is not a file or a folder", path.display());
+        };
+        let size = std::fs::metadata(&file)?.len();
+        let waiting = Waiting { id: id.clone(), phone: phone.to_owned(), name, path: file.to_string_lossy().into_owned(), size, made_here };
+        let temp = self.dir.join(format!(".{id}.tmp"));
+        std::fs::write(&temp, serde_json::to_vec(&waiting)?)?;
+        std::fs::rename(&temp, self.note(&id))?;
+        Ok(waiting)
+    }
+
+    /// Everything waiting, oldest first.
+    fn all(&self) -> Vec<Waiting> {
+        let mut notes: Vec<(std::time::SystemTime, Waiting)> = std::fs::read_dir(&self.dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter(|e| e.path().extension().is_some_and(|x| x == "json"))
+            .filter_map(|e| Some((e.metadata().ok()?.modified().ok()?, serde_json::from_slice(&std::fs::read(e.path()).ok()?).ok()?)))
+            .collect();
+        notes.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));
+        notes.into_iter().map(|(_, w)| w).collect()
+    }
+
+    /// What waits for this phone. A file that has gone missing is dropped.
+    fn waiting_for(&self, phone: &str) -> Vec<Waiting> {
+        self.all()
+            .into_iter()
+            .filter(|w| w.phone == phone)
+            .filter(|w| {
+                let there = Path::new(&w.path).is_file();
+                if !there {
+                    let _ = std::fs::remove_file(self.note(&w.id));
+                }
+                there
+            })
+            .collect()
+    }
+
+    /// The phone has it: forget it (and the archive made for it).
+    fn done(&self, id: &str) -> Result<Waiting> {
+        let note = self.note(id);
+        let waiting: Waiting = serde_json::from_slice(&std::fs::read(&note).map_err(|_| anyhow!("nothing with that id is waiting"))?)?;
+        std::fs::remove_file(&note)?;
+        if waiting.made_here && Path::new(&waiting.path).starts_with(self.dir.join("files")) {
+            let _ = std::fs::remove_file(&waiting.path);
+        }
+        Ok(waiting)
+    }
+}
+
+fn bytes(size: u64) -> String {
+    match size {
+        s if s >= 1 << 30 => format!("{:.1} GB", s as f64 / (1u64 << 30) as f64),
+        s if s >= 1 << 20 => format!("{:.1} MB", s as f64 / (1u64 << 20) as f64),
+        s if s >= 1 << 10 => format!("{:.0} KB", s as f64 / 1024.0),
+        s => format!("{s} bytes"),
+    }
+}
+
+/// The paired phone a name means; with nothing said, the only one.
+fn phone_named(given: Option<&str>) -> Result<Vec<String>> {
+    let paired: Vec<String> = Store::open()?.devices()?.into_iter().map(|d| d.name).collect();
+    if paired.is_empty() {
+        bail!("no phone is paired: run `multiplex pair` first");
+    }
+    match given {
+        None => Ok(paired),
+        Some(name) => match paired.iter().find(|p| p.eq_ignore_ascii_case(name)) {
+            Some(found) => Ok(vec![found.clone()]),
+            None => bail!("no paired phone is called \"{name}\" (see `multiplex devices`)"),
+        },
+    }
+}
+
+/// `multiplex send [--to <phone>] <file or folder>…`, and with nothing to
+/// send, what is waiting.
+pub fn send(args: &[&str]) -> Result<()> {
+    let (to, paths) = match args {
+        ["--to", name, rest @ ..] => (Some(*name), rest),
+        rest => (None, rest),
+    };
+    let outbox = Outbox::open()?;
+    if paths.is_empty() {
+        let all = outbox.all();
+        if all.is_empty() {
+            println!("Nothing is waiting. Send with: multiplex send <file or folder>");
+        }
+        for w in all {
+            println!("{}  {}  for {}", w.name, bytes(w.size), w.phone);
+        }
+        return Ok(());
+    }
+    let phones = phone_named(to)?;
+    for path in paths {
+        for phone in &phones {
+            let w = outbox.add(phone, Path::new(path))?;
+            println!("{} ({}) is on its way to {phone}. It arrives as soon as the phone is connected.", w.name, bytes(w.size));
+        }
+    }
+    Ok(())
+}
+
+fn notify(session: Option<&Session>, title: &str, body: &str) {
+    let mut command = match session {
+        Some(session) => session.command("notify-send"),
+        None => std::process::Command::new("notify-send"),
+    };
+    let _ = command.args(["--app-name=Multiplex", "--icon=phone", title, body]).stdout(Stdio::null()).stderr(Stdio::null()).status();
+}
+
+/// The folder files from the phone go to.
+fn inbox() -> Result<PathBuf> {
+    let home = PathBuf::from(std::env::var_os("HOME").ok_or_else(|| anyhow!("no home folder"))?);
+    let asked = std::process::Command::new("xdg-user-dir").arg("DOWNLOAD").output().ok().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned());
+    // Without a Downloads folder xdg-user-dir answers with the home folder.
+    let dir = asked.map(PathBuf::from).filter(|p| p.is_absolute() && *p != home).unwrap_or_else(|| home.join("Downloads"));
+    std::fs::create_dir_all(&dir).with_context(|| format!("could not make {}", dir.display()))?;
+    Ok(dir)
+}
+
+/// Whether what is on the clipboard came from a password manager, which
+/// marks it so that it is not kept or passed on.
+fn clipboard_is_secret(session: &Session) -> bool {
+    session
+        .command("wl-paste")
+        .arg("--list-types")
+        .stderr(Stdio::null())
+        .output()
+        .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).lines().any(|t| t.contains("x-kde-passwordManagerHint")))
+}
+
+/// The clipboard's text, when it holds text that may be passed on.
+fn clipboard_text(session: &Session) -> Option<String> {
+    if clipboard_is_secret(session) {
+        return None;
+    }
+    let out = session.command("wl-paste").args(["--no-newline", "--type", "text"]).stderr(Stdio::null()).output().ok()?;
+    if !out.status.success() || out.stdout.is_empty() || out.stdout.len() > MAX_CLIP {
+        return None;
+    }
+    String::from_utf8(out.stdout).ok()
+}
+
+fn set_clipboard(session: &Session, text: &str) -> Result<()> {
+    let mut copy = session.command("wl-copy").stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().context("wl-copy (from wl-clipboard) is needed for the clipboard")?;
+    copy.stdin.take().ok_or_else(|| anyhow!("wl-copy did not take the text"))?.write_all(text.as_bytes())?;
+    if !copy.wait()?.success() {
+        bail!("the clipboard did not take the text");
+    }
+    Ok(())
+}
+
+/// `multiplex share …`: what the phone asks for.
+pub fn share(args: &[&str]) -> Result<()> {
+    match args {
+        ["inbox"] => println!("{}", inbox()?.display()),
+        ["received", phone, names @ ..] if !names.is_empty() => {
+            let phone = clean_device_name(phone).unwrap_or_else(|| "the phone".to_owned());
+            let names: Vec<String> = names.iter().map(|n| clean_file_name(n)).collect();
+            let title = if names.len() == 1 { format!("{} from {phone}", names[0]) } else { format!("{} files from {phone}", names.len()) };
+            let mut body = format!("In {}", inbox()?.display());
+            if names.len() > 1 {
+                let shown = names.iter().take(3).cloned().collect::<Vec<_>>().join(", ");
+                body = format!("{shown}{}\n{body}", if names.len() > 3 { format!(" and {} more", names.len() - 3) } else { String::new() });
+            }
+            notify(Session::find().ok().as_ref(), &title, &body);
+        }
+        ["clip"] => {
+            let mut text = String::new();
+            std::io::stdin().lock().take(MAX_CLIP as u64 + 1).read_to_string(&mut text).map_err(|_| anyhow!("the clipboard only takes text"))?;
+            if text.len() > MAX_CLIP {
+                bail!("that is too much text for a clipboard");
+            }
+            set_clipboard(&Session::find()?, &text)?;
+            println!("ok");
+        }
+        ["paste"] => println!("{}", serde_json::to_string(&Clipboard { text: clipboard_text(&Session::find()?) })?),
+        ["open", url] => {
+            let url = clean_url(url).map_err(|err| anyhow!("{err}"))?;
+            // Started by Hyprland, so the browser opens in the session.
+            Session::find()?.dispatch_either(&format!("hl.dsp.exec_cmd({})", lua_string(&format!("xdg-open '{url}'"))), ("exec", &format!("xdg-open '{url}'")))?;
+            println!("ok");
+        }
+        ["done", id] => {
+            let waiting = Outbox::open()?.done(&clean_id(id).map_err(|err| anyhow!("{err}"))?)?;
+            notify(Session::find().ok().as_ref(), &format!("{} is on {}", waiting.name, waiting.phone), "Delivered.");
+            println!("ok");
+        }
+        _ => bail!("use: multiplex share inbox | received <phone> <name>… | clip | paste | open <url> | done <id>"),
+    }
+    Ok(())
+}
+
+/// `multiplex link <phone>`: prints what waits for the phone, now and as
+/// it comes, and the clipboard's text when it changes, one line of JSON
+/// each, until the phone hangs up.
+pub fn link(phone: &str) -> Result<()> {
+    let phones = phone_named(if phone.is_empty() { None } else { Some(phone) })?;
+    // An unnamed phone is the only one paired.
+    let [phone] = phones.as_slice() else { bail!("several phones are paired: this one has to say its name") };
+    let outbox = Outbox::open()?;
+    let session = Session::find().ok();
+
+    // The clipboard is watched by wl-paste, which says a word per change.
+    let (changes, changed) = mpsc::channel::<()>();
+    let mut watcher = session.as_ref().and_then(|s| s.command("wl-paste").args(["--watch", "echo", "changed"]).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().ok());
+    if let Some(out) = watcher.as_mut().and_then(|w| w.stdout.take()) {
+        std::thread::spawn(move || {
+            for line in BufReader::new(out).lines() {
+                if line.is_err() || changes.send(()).is_err() {
+                    break;
+                }
+            }
+        });
+    }
+
+    let run = || -> Result<()> {
+        let mut out = std::io::stdout().lock();
+        // One line per event; an empty line just shows the link is alive.
+        let mut say = |event: Option<&LinkEvent>| -> Result<()> {
+            match event {
+                Some(event) => writeln!(out, "{}", serde_json::to_string(event)?)?,
+                None => writeln!(out)?,
+            }
+            Ok(out.flush()?)
+        };
+        let mut told = HashSet::new();
+        // What is on the clipboard when the phone connects is not news.
+        let mut last_clip = session.as_ref().and_then(clipboard_text);
+        let mut alive = Instant::now();
+        loop {
+            for w in outbox.waiting_for(phone) {
+                if told.insert(w.id.clone()) {
+                    say(Some(&LinkEvent::File(OutFile { id: w.id, name: w.name, size: w.size, path: w.path })))?;
+                    alive = Instant::now();
+                }
+            }
+            match changed.recv_timeout(Duration::from_secs(1)) {
+                Ok(()) => {
+                    // Let a burst of changes settle, then look once.
+                    std::thread::sleep(Duration::from_millis(60));
+                    while changed.try_recv().is_ok() {}
+                    let now = session.as_ref().and_then(clipboard_text);
+                    if now != last_clip {
+                        if let Some(text) = now.clone() {
+                            say(Some(&LinkEvent::Clip { text }))?;
+                            alive = Instant::now();
+                        }
+                        last_clip = now;
+                    }
+                }
+                Err(RecvTimeoutError::Timeout) => {}
+                // No clipboard watcher (or it ended): files still go.
+                Err(RecvTimeoutError::Disconnected) => std::thread::sleep(Duration::from_secs(1)),
+            }
+            // So that a phone that left is noticed.
+            if alive.elapsed() > Duration::from_secs(10) {
+                say(None)?;
+                alive = Instant::now();
+            }
+        }
+    };
+    let result = run();
+    if let Some(mut watcher) = watcher {
+        let _ = watcher.kill();
+        let _ = watcher.wait();
+    }
+    match result {
+        // The phone hung up: that is how a link ends.
+        Err(err) if err.downcast_ref::<std::io::Error>().is_some_and(|e| e.kind() == ErrorKind::BrokenPipe) => Ok(()),
+        other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_file_waits_for_its_phone_until_it_is_done() {
+        let dir = tempfile::tempdir().unwrap();
+        let outbox = Outbox::at(dir.path().join("outbox")).unwrap();
+        let file = dir.path().join("notes.txt");
+        std::fs::write(&file, b"hello").unwrap();
+        let w = outbox.add("Phone A", &file).unwrap();
+        assert_eq!((w.name.as_str(), w.size, w.made_here), ("notes.txt", 5, false));
+        assert_eq!(outbox.waiting_for("Phone A"), vec![w.clone()]);
+        assert!(outbox.waiting_for("Phone B").is_empty());
+        assert_eq!(outbox.done(&w.id).unwrap(), w);
+        assert!(outbox.waiting_for("Phone A").is_empty());
+        assert!(file.exists(), "the user's own file is never removed");
+        assert!(outbox.done(&w.id).is_err());
+    }
+
+    #[test]
+    fn a_folder_goes_as_one_archive_which_is_removed_when_delivered() {
+        let dir = tempfile::tempdir().unwrap();
+        let outbox = Outbox::at(dir.path().join("outbox")).unwrap();
+        let folder = dir.path().join("Holiday photos");
+        std::fs::create_dir_all(folder.join("day 1")).unwrap();
+        std::fs::write(folder.join("day 1/a.jpg"), b"picture").unwrap();
+        let w = outbox.add("Phone", &folder).unwrap();
+        assert_eq!(w.name, "Holiday photos.tar.gz");
+        assert!(w.made_here && w.size > 0);
+        let listing = std::process::Command::new("tar").arg("-tzf").arg(&w.path).output().unwrap();
+        assert!(String::from_utf8_lossy(&listing.stdout).contains("Holiday photos/day 1/a.jpg"));
+        outbox.done(&w.id).unwrap();
+        assert!(!Path::new(&w.path).exists());
+        assert!(folder.join("day 1/a.jpg").exists());
+    }
+
+    #[test]
+    fn what_has_gone_missing_stops_waiting() {
+        let dir = tempfile::tempdir().unwrap();
+        let outbox = Outbox::at(dir.path().join("outbox")).unwrap();
+        let file = dir.path().join("gone.txt");
+        std::fs::write(&file, b"x").unwrap();
+        outbox.add("Phone", &file).unwrap();
+        std::fs::remove_file(&file).unwrap();
+        assert!(outbox.waiting_for("Phone").is_empty());
+        assert!(outbox.all().is_empty());
+        assert!(outbox.add("Phone", &file).is_err());
+    }
+
+    #[test]
+    fn sizes_read_naturally() {
+        assert_eq!((bytes(12), bytes(2048), bytes(5 << 20), bytes(3 << 30)), ("12 bytes".into(), "2 KB".into(), "5.0 MB".into(), "3.0 GB".into()));
+    }
+}

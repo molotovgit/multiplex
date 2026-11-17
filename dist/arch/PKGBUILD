@@ -13,8 +13,9 @@ optdepends=(
   'tailscale: reach the computer from anywhere'
   'ufw: firewall rules written by multiplex setup'
   'fcitx5: the phone keyboard opens when a text field has the focus'
-  'libnotify: a notification when a phone pairs'
-  'wl-clipboard: the phone touchpad types text outside the US keyboard through the clipboard'
+  'libnotify: notices when a phone pairs and when files arrive or are delivered'
+  'wl-clipboard: the clipboard shared with the phone, and typing outside the US keyboard from its touchpad'
+  'xdg-user-dirs: files from the phone go to the Downloads folder it names'
   'networkmanager: multiplex setup turns Wake-on-LAN on'
 )
 options=('!debug')

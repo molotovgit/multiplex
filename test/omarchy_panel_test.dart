@@ -45,6 +45,15 @@ class _Link implements DeskLink {
 
   @override
   Future<(Stream<DeskState>, void Function())> watch() async => (changes.stream, () => stopped = true);
+
+  /// The computer's clipboard.
+  String? clipboard = 'copied at the desk';
+
+  @override
+  Future<void> copy(String text) async => clipboard = text;
+
+  @override
+  Future<String?> paste() async => clipboard;
 }
 
 DeskState _state({int active = 2, bool playing = false, bool floating = false}) => DeskState(
@@ -69,8 +78,9 @@ void main() {
   late _Link link;
   late DeskController controller;
   late List<String> pins;
+  String? phoneClipboard;
 
-  Future<void> pump(WidgetTester tester, {Size size = const Size(400, 900)}) async {
+  Future<void> pump(WidgetTester tester, {Size size = const Size(400, 1200)}) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     link = _Link(_state());
@@ -89,7 +99,13 @@ void main() {
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: StatefulBuilder(
-                builder: (context, setState) => OmarchyPanel(controller: controller, pins: pins, onPinsChanged: (next) => setState(() => pins = next)),
+                builder: (context, setState) => OmarchyPanel(
+                  controller: controller,
+                  pins: pins,
+                  onPinsChanged: (next) => setState(() => pins = next),
+                  readClipboard: () async => phoneClipboard,
+                  writeClipboard: (text) async => phoneClipboard = text,
+                ),
               ),
             ),
           ),
@@ -168,6 +184,28 @@ void main() {
     // The sheet closed and the new pin is on the panel.
     expect(find.byType(SearchBar), findsNothing);
     expect(find.text('Close window'), findsOneWidget);
+  });
+
+  testWidgets('the clipboard goes either way on request', (tester) async {
+    await pump(tester);
+    phoneClipboard = 'copied on the phone';
+    await tester.ensureVisible(find.text('Phone to computer'));
+    await tester.tap(find.text('Phone to computer'));
+    await tester.pumpAndSettle();
+    expect(link.clipboard, 'copied on the phone');
+    expect(find.text("On the computer's clipboard now"), findsOneWidget);
+
+    link.clipboard = 'fresh from the desk';
+    await tester.tap(find.text('Computer to phone'));
+    await tester.pumpAndSettle();
+    expect(phoneClipboard, 'fresh from the desk');
+
+    // Nothing to send: said so, and the computer's is left alone.
+    phoneClipboard = '';
+    await tester.tap(find.text('Phone to computer'));
+    await tester.pumpAndSettle();
+    expect(link.clipboard, 'fresh from the desk');
+    expect(find.text("The phone's clipboard has no text"), findsOneWidget);
   });
 
   testWidgets('changes on the computer show by themselves', (tester) async {

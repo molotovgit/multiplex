@@ -105,11 +105,15 @@ class PairingOutcome {
   /// What the computer has ("gliff", "hyprland", "tailscale", "fcitx5").
   final List<String> features;
 
+  /// The name the phone is paired under on the computer.
+  final String phoneName;
+
   const PairingOutcome({
     required this.info,
     required this.address,
     required this.viaTailscale,
     required this.features,
+    required this.phoneName,
   });
 
   @override
@@ -117,7 +121,8 @@ class PairingOutcome {
       info.hashCode ^
       address.hashCode ^
       viaTailscale.hashCode ^
-      features.hashCode;
+      features.hashCode ^
+      phoneName.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -127,5 +132,6 @@ class PairingOutcome {
           info == other.info &&
           address == other.address &&
           viaTailscale == other.viaTailscale &&
-          features == other.features;
+          features == other.features &&
+          phoneName == other.phoneName;
 }

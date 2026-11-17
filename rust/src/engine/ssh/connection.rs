@@ -86,6 +86,29 @@ impl Connection {
         Ok(out)
     }
 
+    /// Like [`exec`](Self::exec), with `input` written to the command's
+    /// standard input first.
+    pub async fn exec_with_input(&self, command: &str, input: &[u8], max_bytes: usize) -> anyhow::Result<ExecOutput> {
+        let mut channel = self.handle.channel_open_session().await?;
+        channel.exec(true, command).await?;
+        channel.data(input).await?;
+        channel.eof().await?;
+        let mut out = ExecOutput { stdout: String::new(), stderr: String::new(), exit_code: None, truncated: false };
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        while let Some(msg) = channel.wait().await {
+            match msg {
+                ChannelMsg::Data { data } => Self::append(&mut stdout, &data, max_bytes, &mut out.truncated),
+                ChannelMsg::ExtendedData { data, .. } => Self::append(&mut stderr, &data, max_bytes, &mut out.truncated),
+                ChannelMsg::ExitStatus { exit_status } => out.exit_code = Some(exit_status),
+                ChannelMsg::Close => break,
+                _ => {}
+            }
+        }
+        out.stdout = String::from_utf8_lossy(&stdout).into_owned();
+        out.stderr = String::from_utf8_lossy(&stderr).into_owned();
+        Ok(out)
+    }
+
     fn append(buf: &mut Vec<u8>, data: &[u8], max: usize, truncated: &mut bool) {
         let room = max.saturating_sub(buf.len());
         if data.len() > room {

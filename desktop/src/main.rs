@@ -9,6 +9,7 @@
 
 mod desk;
 mod input;
+mod share;
 mod store;
 mod system;
 
@@ -34,6 +35,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex devices           List the paired phones
   multiplex unpair <name>     Remove a paired phone
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
+  multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
   multiplex doctor            Check that everything is ready
 
 The paired phone uses these over SSH:
@@ -42,6 +44,8 @@ The paired phone uses these over SSH:
   multiplex desk binds        Every key binding with a description
   multiplex desk do <action>  Switch workspace, move focus, media keys, …
   multiplex input             A touchpad and keyboard, driven by lines on standard input
+  multiplex share …           The inbox, the clipboard, opening a link
+  multiplex link [<phone>]    What waits for the phone, and clipboard changes, as lines
 ";
 
 fn main() {
@@ -57,6 +61,10 @@ fn main() {
         ["setup", "--dry-run"] => setup(true),
         ["doctor"] => doctor(),
         ["desk", rest @ ..] => desk::run(rest),
+        ["send", rest @ ..] => share::send(rest),
+        ["share", rest @ ..] => share::share(rest),
+        ["link"] => share::link(""),
+        ["link", phone] => share::link(phone),
         ["input"] => input::run(false),
         ["input", "--check"] => input::run(true),
         ["--version" | "version"] => {

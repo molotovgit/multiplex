@@ -1,0 +1,292 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+
+import '../data/models.dart';
+import '../data/vault_store.dart';
+import '../src/rust/api/sftp_types.dart';
+import '../src/rust/api/share.dart';
+import '../ui/files/transfer_queue.dart';
+import '../ui/files/transfer_tasks.dart';
+import 'session_manager.dart';
+
+/// What a link needs from one connected computer. The real one is the
+/// SSH connection (commands in the Rust core, files by SFTP); tests pass
+/// a stand-in.
+abstract class ShareChannel {
+  /// What the computer has for this phone, and how to stop listening.
+  Future<(Stream<ShareEvent>, void Function())> link(String phone);
+
+  /// Downloads a waiting file; the answer is where it is on the phone.
+  Future<String> fetch(ShareEvent_File file);
+
+  /// The phone has the file: the computer forgets it.
+  Future<void> done(String id);
+
+  /// Puts text on the computer's clipboard.
+  Future<void> copy(String text);
+}
+
+class SshShareChannel implements ShareChannel {
+  SshShareChannel(this.session);
+
+  final LiveSession session;
+
+  @override
+  Future<(Stream<ShareEvent>, void Function())> link(String phone) async {
+    final link = await session.ssh.shareLink(phone: phone);
+    return (link.events(), link.stop);
+  }
+
+  @override
+  Future<String> fetch(ShareEvent_File file) async {
+    final files = await session.ssh.openFiles();
+    final found = await files.stat(path: file.path);
+    // Under the name it was sent as (an archive's file has a longer one).
+    final entry = RemoteEntry(
+      name: file.name,
+      path: found.path,
+      kind: found.kind,
+      isDir: found.isDir,
+      size: found.size,
+      permissions: found.permissions,
+      modified: found.modified,
+    );
+    final queue = TransferQueue.of(session);
+    final job = queue.add(DownloadTask(files: files, entry: entry));
+    final finished = Completer<String>();
+    void check() {
+      if (finished.isCompleted) return;
+      switch (job.state) {
+        case TransferState.done:
+          finished.complete(job.result ?? file.name);
+        case TransferState.failed || TransferState.cancelled:
+          finished.completeError(job.error ?? 'The download stopped.');
+        case TransferState.waiting || TransferState.running:
+          break;
+      }
+    }
+
+    queue.addListener(check);
+    check();
+    try {
+      return await finished.future;
+    } finally {
+      queue.removeListener(check);
+    }
+  }
+
+  @override
+  Future<void> done(String id) => session.ssh.shareDone(id: id);
+
+  @override
+  Future<void> copy(String text) => session.ssh.shareCopy(text: text);
+}
+
+/// A file a computer sent to the phone.
+class ReceivedFile {
+  const ReceivedFile({required this.name, required this.path, required this.from, required this.at});
+
+  final String name;
+
+  /// Where it is on the phone.
+  final String path;
+
+  /// The computer's name.
+  final String from;
+  final DateTime at;
+}
+
+/// Keeps each connected, paired computer linked with the phone: files it
+/// has waiting (`multiplex send`, also from while the phone was away) are
+/// fetched, and the two clipboards follow each other.
+///
+/// The link lives as long as the connection does, which the app keeps in
+/// the background while sessions are open.
+class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
+  ComputerLinks(
+    this._sessions,
+    this._store, {
+    ShareChannel Function(LiveSession session)? channel,
+    Future<void> Function(String title, String body)? notify,
+    Future<String?> Function()? readClipboard,
+    Future<void> Function(String text)? writeClipboard,
+  }) : _channel = channel ?? SshShareChannel.new,
+       _notify = notify ?? _postOnPhone,
+       _readClipboard = readClipboard ?? _phoneClipboard,
+       _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))) {
+    _sessions.addListener(_sync);
+    WidgetsBinding.instance.addObserver(this);
+    _sync();
+  }
+
+  final SessionManager _sessions;
+  final VaultStore _store;
+  final ShareChannel Function(LiveSession session) _channel;
+  final Future<void> Function(String title, String body) _notify;
+  final Future<String?> Function() _readClipboard;
+  final Future<void> Function(String text) _writeClipboard;
+  final Map<LiveSession, _Link> _links = {};
+
+  /// The app's own, set once at start (null in tests that do not need it).
+  static ComputerLinks? app;
+
+  /// Files received since the app started, newest first.
+  final List<ReceivedFile> received = [];
+
+  static const _notices = MethodChannel('multiplex/sessions');
+
+  static Future<void> _postOnPhone(String title, String body) async {
+    try {
+      await _notices.invokeMethod<void>('notifyDone', {'title': title, 'body': body});
+    } on MissingPluginException {
+      // No notifications on this platform.
+    } on PlatformException {
+      // A notification is never worth an error.
+    }
+  }
+
+  static Future<String?> _phoneClipboard() async {
+    try {
+      return (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    } on PlatformException {
+      // Android only lets the app in front read the clipboard.
+      return null;
+    }
+  }
+
+  void _arrived(ReceivedFile file) {
+    received.insert(0, file);
+    notifyListeners();
+  }
+
+  /// The saved computer behind a session (its settings may have changed
+  /// since it connected).
+  Host _host(LiveSession session) => _store.host(session.host.id) ?? session.host;
+
+  /// Starts a link for each connected computer, restarts it after a
+  /// reconnect, and ends those whose connection is gone.
+  void _sync() {
+    final live = {
+      for (final s in _sessions.sessions)
+        if (s.host.computer && s.connected) s,
+    };
+    for (final session in _links.keys.toList()) {
+      if (!live.contains(session) || !identical(_links[session]!.ssh, session.ssh)) _links.remove(session)!.close();
+    }
+    for (final session in live) {
+      _links.putIfAbsent(session, () => _Link(this, session)..start());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back in front: what was copied on the phone meanwhile goes over.
+    if (state == AppLifecycleState.resumed) {
+      for (final link in _links.values) {
+        link.sendPhoneClipboard();
+      }
+    }
+  }
+
+  /// Sends the phone's clipboard to a computer now, whatever the setting.
+  /// False when it holds no text or the computer is not linked.
+  Future<bool> sendClipboardTo(LiveSession session) async => await _links[session]?.sendPhoneClipboard(force: true) ?? false;
+
+  @override
+  void dispose() {
+    _sessions.removeListener(_sync);
+    WidgetsBinding.instance.removeObserver(this);
+    for (final link in _links.values) {
+      link.close();
+    }
+    _links.clear();
+    super.dispose();
+  }
+}
+
+class _Link {
+  _Link(this.owner, this.session) : ssh = session.ssh, channel = owner._channel(session);
+
+  final ComputerLinks owner;
+  final LiveSession session;
+
+  /// The connection this link runs on (a reconnect brings a new one).
+  final Object ssh;
+  final ShareChannel channel;
+  StreamSubscription<ShareEvent>? _events;
+  void Function()? _stop;
+  bool _closed = false;
+
+  /// The text both clipboards last agreed on, so nothing bounces back.
+  String? _lastClip;
+
+  /// Files being fetched, so one is not fetched twice.
+  final Set<String> _fetching = {};
+
+  Host get host => owner._host(session);
+
+  Future<void> start() async {
+    // What is on the phone's clipboard now is not news for the computer.
+    _lastClip = await owner._readClipboard();
+    try {
+      final (events, stop) = await channel.link(host.pairedAs ?? '');
+      if (_closed) {
+        stop();
+        return;
+      }
+      _stop = stop;
+      _events = events.listen(_on);
+    } catch (_) {
+      // An older package without sharing, or the connection just dropped:
+      // everything else about the computer still works.
+    }
+  }
+
+  void _on(ShareEvent event) {
+    switch (event) {
+      case ShareEvent_File():
+        unawaited(_fetch(event));
+      case ShareEvent_Clip(:final text):
+        if (!host.shareClipboard || text == _lastClip) return;
+        _lastClip = text;
+        unawaited(owner._writeClipboard(text));
+    }
+  }
+
+  Future<void> _fetch(ShareEvent_File file) async {
+    if (!_fetching.add(file.id)) return;
+    try {
+      final path = await channel.fetch(file);
+      await channel.done(file.id);
+      if (_closed) return;
+      owner._arrived(ReceivedFile(name: file.name, path: path, from: host.title, at: DateTime.now()));
+      await owner._notify('${file.name} from ${host.title}', 'Saved in Multiplex downloads');
+    } catch (_) {
+      // It stays in the computer's outbox and is offered again next time.
+    } finally {
+      _fetching.remove(file.id);
+    }
+  }
+
+  /// Sends the phone's clipboard if it changed. True when it was sent.
+  Future<bool> sendPhoneClipboard({bool force = false}) async {
+    if (_closed || (!force && !host.shareClipboard)) return false;
+    final text = await owner._readClipboard();
+    if (text == null || text.isEmpty || (!force && text == _lastClip)) return false;
+    _lastClip = text;
+    try {
+      await channel.copy(text);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void close() {
+    _closed = true;
+    _events?.cancel();
+    _stop?.call();
+  }
+}

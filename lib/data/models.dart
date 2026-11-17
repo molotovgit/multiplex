@@ -47,6 +47,8 @@ class Host {
     this.tailscaleName,
     this.mac,
     this.pins = const [],
+    this.pairedAs,
+    this.shareClipboard = true,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -91,6 +93,15 @@ class Host {
   /// The key bindings pinned to this computer's panel, by their keys
   /// ("SUPER + RETURN"). Empty means the usual four.
   final List<String> pins;
+
+  /// The name this phone is paired under on the computer (it asks for
+  /// its waiting files by it). Null for computers paired before this
+  /// was kept; the computer then takes the only paired phone.
+  final String? pairedAs;
+
+  /// Keep this phone's clipboard and the computer's in step while they
+  /// are connected.
+  final bool shareClipboard;
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
@@ -144,6 +155,8 @@ class Host {
     String? Function()? tailscaleName,
     String? Function()? mac,
     List<String>? pins,
+    String? Function()? pairedAs,
+    bool? shareClipboard,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -169,6 +182,8 @@ class Host {
         tailscaleName: tailscaleName != null ? tailscaleName() : this.tailscaleName,
         mac: mac != null ? mac() : this.mac,
         pins: pins ?? this.pins,
+        pairedAs: pairedAs != null ? pairedAs() : this.pairedAs,
+        shareClipboard: shareClipboard ?? this.shareClipboard,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -195,6 +210,8 @@ class Host {
         'tailscaleName': tailscaleName,
         'mac': mac,
         'pins': pins,
+        'pairedAs': pairedAs,
+        'shareClipboard': shareClipboard,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -221,6 +238,8 @@ class Host {
         tailscaleName: Json.strOrNull(j, 'tailscaleName'),
         mac: Json.strOrNull(j, 'mac'),
         pins: [for (final p in (j['pins'] as List?) ?? const []) if (p is String) p],
+        pairedAs: Json.strOrNull(j, 'pairedAs'),
+        shareClipboard: Json.boolean(j, 'shareClipboard', true),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

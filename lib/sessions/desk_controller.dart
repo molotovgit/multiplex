@@ -19,6 +19,12 @@ abstract class DeskLink {
 
   /// The state whenever it changes, and how to stop listening.
   Future<(Stream<DeskState>, void Function())> watch();
+
+  /// Puts text on the computer's clipboard.
+  Future<void> copy(String text);
+
+  /// The text on the computer's clipboard, if it holds text.
+  Future<String?> paste();
 }
 
 class SshDeskLink implements DeskLink {
@@ -42,6 +48,12 @@ class SshDeskLink implements DeskLink {
     final watch = await ssh().deskWatch();
     return (watch.states(), watch.stop);
   }
+
+  @override
+  Future<void> copy(String text) => ssh().shareCopy(text: text);
+
+  @override
+  Future<String?> paste() => ssh().sharePaste();
 }
 
 /// The computer's desktop for the panel: what it shows now, the key
@@ -111,6 +123,28 @@ class DeskController extends ChangeNotifier {
     } catch (e) {
       _fail(e);
       return false;
+    }
+  }
+
+  /// Puts text on the computer's clipboard. False when it could not.
+  Future<bool> copyToComputer(String text) async {
+    try {
+      await _link.copy(text);
+      return true;
+    } catch (e) {
+      _fail(e);
+      return false;
+    }
+  }
+
+  /// The computer's clipboard text; null when it holds none or it could
+  /// not be read (then [problem] says why).
+  Future<String?> computerClipboard() async {
+    try {
+      return await _link.paste();
+    } catch (e) {
+      _fail(e);
+      return null;
     }
   }
 

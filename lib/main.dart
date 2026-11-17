@@ -7,6 +7,7 @@ import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'platform/home_widget_sync.dart';
+import 'sessions/computer_links.dart';
 import 'sessions/background_keeper.dart';
 import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
@@ -30,6 +31,9 @@ Future<void> main() async {
   HomeWidgetSync(store);
   // Reconnects at once when the phone's network comes back.
   NetworkWatcher(sessions);
+  // Links each connected, paired computer: files it sends arrive, and the
+  // clipboards follow each other.
+  ComputerLinks.app = ComputerLinks(sessions, store);
   // Looks for a new version on GitHub (Android, at most once a day).
   final updates = UpdateController(store: store, platform: const AndroidUpdatePlatform());
   runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));

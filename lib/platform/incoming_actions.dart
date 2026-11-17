@@ -20,7 +20,8 @@ sealed class IncomingAction {
           for (final f in files)
             if (f is Map && f['name'] is String && f['path'] is String) SharedFile(name: f['name'] as String, path: f['path'] as String),
         ];
-        return parsed.isEmpty ? null : ShareAction(parsed);
+        final text = raw['text'];
+        return parsed.isEmpty ? null : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null);
     }
     return null;
   }
@@ -36,9 +37,13 @@ class ConnectAction extends IncomingAction {
 /// Upload these files to a server. The native side has already copied
 /// each one into the app's cache, at [SharedFile.path].
 class ShareAction extends IncomingAction {
-  const ShareAction(this.files);
+  const ShareAction(this.files, {this.text});
 
   final List<SharedFile> files;
+
+  /// Set when text (a link, a note) was shared rather than files; [files]
+  /// then holds it as one text file, for servers.
+  final String? text;
 }
 
 class SharedFile {

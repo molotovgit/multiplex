@@ -93,6 +93,7 @@ class PairingFlow {
       computer: true,
       tailscaleName: () => home == null ? null : info.tailscale,
       mac: () => info.mac,
+      pairedAs: () => outcome.phoneName,
       favourite: true,
     );
     _store.saveHost(host);

@@ -35,6 +35,8 @@ pub struct PairingOutcome {
     pub via_tailscale: bool,
     /// What the computer has ("gliff", "hyprland", "tailscale", "fcitx5").
     pub features: Vec<String>,
+    /// The name the phone is paired under on the computer.
+    pub phone_name: String,
 }
 
 fn info_of(code: &PairingCode) -> PairingInfo {
@@ -75,5 +77,5 @@ pub async fn pairing_register(code: String, phone_key: String, phone_name: Strin
     })
     .await??;
     let (paired, code) = paired;
-    Ok(PairingOutcome { info: info_of(&code), address: paired.address, via_tailscale: paired.via_tailscale, features: paired.features })
+    Ok(PairingOutcome { info: info_of(&code), address: paired.address, via_tailscale: paired.via_tailscale, features: paired.features, phone_name: paired.phone_name })
 }

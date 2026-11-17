@@ -17,7 +17,19 @@ import 'bindings_sheet.dart';
 /// in portrait, at the side in landscape), so it sizes to its content and
 /// leaves scrolling to whoever holds it.
 class OmarchyPanel extends StatefulWidget {
-  const OmarchyPanel({super.key, required this.controller, required this.pins, required this.onPinsChanged, this.dense = false});
+  const OmarchyPanel({
+    super.key,
+    required this.controller,
+    required this.pins,
+    required this.onPinsChanged,
+    this.dense = false,
+    this.readClipboard,
+    this.writeClipboard,
+  });
+
+  /// The phone's clipboard. Replaced in tests.
+  final Future<String?> Function()? readClipboard;
+  final Future<void> Function(String text)? writeClipboard;
 
   final DeskController controller;
 
@@ -57,6 +69,31 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
   }
 
   List<String> get _pins => widget.pins.isEmpty ? OmarchyPanel.usualPins : widget.pins;
+
+  /// What is on the phone's clipboard goes onto the computer's.
+  Future<void> _sendClipboard() async {
+    final text = (await (widget.readClipboard ?? _phoneClipboard)())?.trim() ?? '';
+    if (!mounted) return;
+    if (text.isEmpty) {
+      Toast.show(context, 'The phone\'s clipboard has no text');
+      return;
+    }
+    if (await c.copyToComputer(text) && mounted) Toast.show(context, 'On the computer\'s clipboard now');
+  }
+
+  /// What is on the computer's clipboard comes onto the phone's.
+  Future<void> _fetchClipboard() async {
+    final text = await c.computerClipboard();
+    if (!mounted || c.problem != null) return;
+    if (text == null || text.isEmpty) {
+      Toast.show(context, 'The computer\'s clipboard has no text');
+      return;
+    }
+    await (widget.writeClipboard ?? ((String t) => Clipboard.setData(ClipboardData(text: t))))(text);
+    if (mounted) Toast.show(context, 'On the phone\'s clipboard now');
+  }
+
+  static Future<String?> _phoneClipboard() async => (await Clipboard.getData(Clipboard.kTextPlain))?.text;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +158,26 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
               pins: _pins,
               onRun: (b) => _run(DeskAction.bind(keys: b.keys)),
               onAll: _allShortcuts,
+            ),
+            gap,
+            if (!widget.dense) const _Heading('Clipboard'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.content_paste_go_outlined, size: 18),
+                  label: const Text('Phone to computer'),
+                  tooltip: 'Put the phone\'s clipboard on the computer\'s',
+                  onPressed: _sendClipboard,
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.content_paste_outlined, size: 18),
+                  label: const Text('Computer to phone'),
+                  tooltip: 'Put the computer\'s clipboard on the phone\'s',
+                  onPressed: _fetchClipboard,
+                ),
+              ],
             ),
             if (state.media != null || state.volume != null) ...[
               gap,

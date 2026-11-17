@@ -59,6 +59,29 @@ When the computer's screen is in sight (a TV across the room, the desk you are s
 
 On the computer this is `multiplex input`: an ordinary Wayland program that makes a virtual pointer and a virtual keyboard (with a US keymap from `xkbcli`) and reads one short line per event from the SSH connection. A key or button cannot stay down: everything is released when the phone leaves, and when it goes quiet for a few seconds while something is held.
 
+## Sharing: files, the clipboard, links
+
+**From the phone.** Share anything to Multiplex from another app. A paired computer is offered first:
+
+- files: **Send to <computer>** puts them in its Downloads folder, and the computer says on its screen what arrived;
+- text: **Copy to <computer>** puts it on its clipboard; a web link can also **Open on <computer>**, in its browser.
+
+Plain SSH servers are one tap further, as before (pick the server and a folder).
+
+**From the computer.**
+
+```sh
+multiplex send report.pdf "Holiday photos/"     # a folder goes as one .tar.gz
+multiplex send --to "Sam's phone" notes.txt     # with several phones paired
+multiplex send                                  # what is still waiting
+```
+
+The file waits in an outbox until the phone is connected to the computer (Multiplex open, or kept in the background by an open session); then the phone fetches it into its Multiplex downloads and shows a notification, and the computer says it was delivered. What is sent while the phone is away simply waits: the outbox is the queue.
+
+**The clipboard.** While the phone is connected to a paired computer, text copied at the computer lands on the phone's clipboard, and text copied on the phone goes to the computer when Multiplex comes back to the front (Android only lets the app in front read the clipboard). What a password manager marks as secret is not passed on. The panel has **Phone to computer** and **Computer to phone** for doing it by hand.
+
+Nothing new listens on the network for any of this: the phone runs `multiplex share …` and `multiplex link` on the computer over its SSH connection, and files travel by SFTP. The computer needs `wl-clipboard` for the clipboard and `libnotify` for its notices.
+
 ## Waking the computer
 
 A paired computer's page has a **Wake** tile: it broadcasts a Wake-on-LAN signal for the computer's network card, whose address the pairing code carried. Three things have to hold:

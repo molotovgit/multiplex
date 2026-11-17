@@ -22,3 +22,4 @@ pub mod tunnel;
 pub mod vault;
 pub mod wol;
 pub mod touchpad;
+pub mod share;

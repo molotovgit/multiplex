@@ -58,8 +58,8 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
           return;
         }
         await HostConnector.openTerminal(context, host);
-      case ShareAction(:final files):
-        await ShareUploadScreen.open(context, files);
+      case ShareAction(:final files, :final text):
+        await ShareUploadScreen.open(context, files, text: text);
     }
   }
 

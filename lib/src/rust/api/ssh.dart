@@ -12,6 +12,7 @@ import 'desktop_types.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 import 'sftp.dart';
+import 'share.dart';
 import 'ssh_types.dart';
 import 'terminal.dart';
 import 'terminal_types.dart';
@@ -75,6 +76,32 @@ abstract class SshSession implements RustOpaqueInterface {
   Future<void> reattachShell({
     required RemoteShell shell,
     required ShellOptions options,
+  });
+
+  /// Puts text on the computer's clipboard.
+  Future<void> shareCopy({required String text});
+
+  /// The phone has a waiting file now: the computer forgets it.
+  Future<void> shareDone({required String id});
+
+  /// The folder on the computer that files from the phone go to.
+  Future<String> shareInbox();
+
+  /// Hears what the computer has for this phone: files waiting (also
+  /// ones sent while the phone was away) and clipboard changes. `phone`
+  /// is the name this phone paired under; empty when it is the only one.
+  Future<ShareLink> shareLink({required String phone});
+
+  /// Opens a web link in the computer's browser.
+  Future<void> shareOpen({required String url});
+
+  /// The text on the computer's clipboard, if it holds text.
+  Future<String?> sharePaste();
+
+  /// Tells the computer which files arrived, so it can say so on screen.
+  Future<void> shareReceived({
+    required String phone,
+    required List<String> names,
   });
 
   /// Starts a port forward on this connection.

@@ -106,3 +106,24 @@ async fn the_touchpad_starts_and_ends_without_touching_anything() {
     }
     assert_eq!(*reasons.lock().unwrap(), vec![String::new()], "closed from here: no reason to give");
 }
+
+/// Sharing, as far as it can go without touching the computer's
+/// clipboard, browser or screen: the inbox, reading the clipboard, and
+/// refusals.
+#[tokio::test(flavor = "multi_thread")]
+async fn sharing_answers_over_ssh() {
+    use multiplex_core::engine::share;
+
+    let Some(conn) = connect().await else {
+        eprintln!("share test skipped: set MPX_DESKTOP_HOST, MPX_DESKTOP_USER and MPX_DESKTOP_KEY");
+        return;
+    };
+    let inbox = share::inbox(&conn).await.expect("the inbox");
+    assert!(inbox.starts_with('/'), "{inbox}");
+    // Whatever it holds is the owner's; only that reading works is checked.
+    let clipboard = share::paste(&conn).await.expect("the clipboard can be read");
+    eprintln!("inbox {inbox}; clipboard holds {}", if clipboard.is_some() { "text" } else { "no text" });
+    assert!(share::open(&conn, "file:///etc/passwd").await.is_err());
+    assert!(share::done(&conn, "not-an-id").await.is_err());
+    assert_eq!(share::done(&conn, "0000000000000000").await.unwrap_err().to_string(), "Nothing with that id is waiting");
+}

@@ -73,7 +73,10 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
                 copy.writeText(text)
                 files.add(mapOf("name" to copy.name, "path" to copy.absolutePath))
             }
-            if (files.isNotEmpty()) add(mapOf("type" to "share", "files" to files))
+            // The text itself goes along too: a paired computer takes it on
+            // its clipboard, or opens it when it is a link.
+            val shared = if (links.isEmpty() && !text.isNullOrEmpty()) mapOf("text" to text) else emptyMap()
+            if (files.isNotEmpty()) add(mapOf("type" to "share", "files" to files) + shared)
         }.start()
         return true
     }

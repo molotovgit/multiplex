@@ -44,6 +44,8 @@ pub struct Paired {
     pub via_tailscale: bool,
     /// What the computer has ("gliff", "hyprland", "tailscale", "fcitx5").
     pub features: Vec<String>,
+    /// The name the phone is paired under on the computer.
+    pub phone_name: String,
 }
 
 pub fn now_unix() -> u64 {
@@ -106,7 +108,7 @@ pub async fn register(code: &PairingCode, phone_key: &str, phone_name: &str, tai
         if !reply.ok {
             return Err(PairError::Refused(reply.error));
         }
-        return Ok(Paired { computer: reply.computer, address, via_tailscale, features: reply.features });
+        return Ok(Paired { computer: reply.computer, address, via_tailscale, features: reply.features, phone_name: request.name.clone() });
     }
     Err(PairError::Unreachable { name: code.n.clone() })
 }
