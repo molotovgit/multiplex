@@ -188,10 +188,14 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     PhoneBridge phone = const PhoneBridge(),
     Future<bool> Function(String reason)? confirm,
     String Function(String privateKey, String id, String reason, String challenge)? sign,
+    String? Function(String privateKey, String data)? describeSigning,
+    String Function(String privateKey, String data)? signRequest,
     bool Function()? appInFront,
   }) : outbox = outbox ?? PhoneOutbox(),
        _confirm = confirm ?? const DeviceUnlock().confirmTo,
        _sign = sign ?? ((key, id, reason, challenge) => approvalSign(privateKey: key, id: id, reason: reason, challenge: challenge)),
+       _describeSigning = describeSigning ?? ((key, data) => signingDescribe(privateKey: key, data: data)),
+       _signRequest = signRequest ?? ((key, data) => signingSign(privateKey: key, data: data)),
        _appInFront = appInFront ?? (() => WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed),
        // ignore: prefer_initializing_formals
        _phone = phone,
@@ -219,6 +223,14 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   /// Signs an approval with the phone's key (in the Rust core).
   final String Function(String privateKey, String id, String reason, String challenge) _sign;
   final bool Function() _appInFront;
+
+  /// What a request from the computer's SSH agent is for (read from the
+  /// request itself, in the Rust core); null when it is not something an
+  /// SSH key signs.
+  final String? Function(String privateKey, String data) _describeSigning;
+
+  /// Signs such a request with the phone's key.
+  final String Function(String privateKey, String data) _signRequest;
 
   /// Completed when the app next comes to the front (a fingerprint
   /// prompt can only show then).
@@ -395,6 +407,8 @@ class _Link {
         unawaited(_sendSms(to, text));
       case ShareEvent_Approve(:final id, :final reason, :final challenge):
         unawaited(_approve(id, reason, challenge));
+      case ShareEvent_Sign(:final id, :final data):
+        unawaited(_signFor(id, data));
       case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting):
         // A coding agent on the computer wants an answer, or is done.
         final where = [if (title.isNotEmpty) title, if (workspace.isNotEmpty) workspace, host.title].join(' · ');
@@ -428,6 +442,28 @@ class _Link {
       final key = owner._store.key(host.keyId);
       if (key != null && !key.encrypted && await owner._whenInFront(const Duration(seconds: 50)) && await owner._confirm('Approve on ${host.title}: $reason')) {
         answer = owner._sign(key.privatePem, id, reason, challenge);
+      }
+    } catch (_) {
+      // A cancelled or failed check is a no.
+    }
+    if (_closed) return;
+    unawaited(channel.approved(id, answer).catchError((Object _) {}));
+  }
+
+  /// The computer's SSH agent wants this phone's key used: a login
+  /// somewhere, or a signature (a Git commit). The phone reads the request
+  /// itself to say what it is, and signs only after a fingerprint. What it
+  /// cannot read as one of those is refused without asking.
+  Future<void> _signFor(String id, String data) async {
+    var answer = 'no';
+    try {
+      final key = owner._store.key(host.keyId);
+      final what = key == null || key.encrypted ? null : owner._describeSigning(key.privatePem, data);
+      if (key != null && what != null) {
+        if (!owner._appInFront()) await owner._notify('${host.title} wants to use this phone\'s key', 'Open Multiplex to answer: $what');
+        if (await owner._whenInFront(const Duration(seconds: 50)) && await owner._confirm('$what (asked by ${host.title})')) {
+          answer = owner._signRequest(key.privatePem, data);
+        }
       }
     } catch (_) {
       // A cancelled or failed check is a no.

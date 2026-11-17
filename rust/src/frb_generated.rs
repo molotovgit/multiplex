@@ -49,7 +49,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1426519829;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -634540338;
 
 // Section: executor
 
@@ -6890,6 +6890,73 @@ fn wire__crate__api__share__share_is_link_impl(
         },
     )
 }
+fn wire__crate__api__share__signing_describe_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "signing_describe",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_private_key = <String>::sse_decode(&mut deserializer);
+            let api_data = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let output_ok = Ok::<_, ()>(crate::api::share::signing_describe(
+                    api_private_key,
+                    api_data,
+                ))?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__share__signing_sign_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "signing_sign",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_private_key = <String>::sse_decode(&mut deserializer);
+            let api_data = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                (move || {
+                    let output_ok = crate::api::share::signing_sign(api_private_key, api_data)?;
+                    std::result::Result::Ok(output_ok)
+                })(),
+            )
+        },
+    )
+}
 fn wire__crate__api__transfer__sync_apply_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -9143,6 +9210,14 @@ impl SseDecode for crate::api::share::ShareEvent {
                     challenge: var_challenge,
                 };
             }
+            6 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                let mut var_data = <String>::sse_decode(deserializer);
+                return crate::api::share::ShareEvent::Sign {
+                    id: var_id,
+                    data: var_data,
+                };
+            }
             _ => {
                 unimplemented!("");
             }
@@ -9737,44 +9812,44 @@ fn pde_ffi_dispatcher_primary_impl(
             data_len,
         ),
         131 => wire__crate__api__pairing__pairing_register_impl(port, ptr, rust_vec_len, data_len),
-        138 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
-        139 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
-        141 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
+        140 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
+        141 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
+        143 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        142 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
-        143 => {
+        144 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
+        145 => {
             wire__crate__api__tailscale__tailscale_logout_impl(port, ptr, rust_vec_len, data_len)
         }
-        144 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
-        145 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
-        146 => {
+        146 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
+        147 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
+        148 => {
             wire__crate__api__tailscale__tailscale_status_impl(port, ptr, rust_vec_len, data_len)
         }
-        147 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
+        149 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        148 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        150 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        149 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        151 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        150 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        152 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
-        153 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
+        152 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        154 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        155 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -9889,8 +9964,10 @@ fn pde_ffi_dispatcher_sync_impl(
         135 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
         136 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
         137 => wire__crate__api__share__share_is_link_impl(ptr, rust_vec_len, data_len),
-        140 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
-        151 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        138 => wire__crate__api__share__signing_describe_impl(ptr, rust_vec_len, data_len),
+        139 => wire__crate__api__share__signing_sign_impl(ptr, rust_vec_len, data_len),
+        142 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
+        153 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -11133,6 +11210,12 @@ impl flutter_rust_bridge::IntoDart for crate::api::share::ShareEvent {
                 id.into_into_dart().into_dart(),
                 reason.into_into_dart().into_dart(),
                 challenge.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::share::ShareEvent::Sign { id, data } => [
+                6.into_dart(),
+                id.into_into_dart().into_dart(),
+                data.into_into_dart().into_dart(),
             ]
             .into_dart(),
             _ => {
@@ -12914,6 +12997,11 @@ impl SseEncode for crate::api::share::ShareEvent {
                 <String>::sse_encode(id, serializer);
                 <String>::sse_encode(reason, serializer);
                 <String>::sse_encode(challenge, serializer);
+            }
+            crate::api::share::ShareEvent::Sign { id, data } => {
+                <i32>::sse_encode(6, serializer);
+                <String>::sse_encode(id, serializer);
+                <String>::sse_encode(data, serializer);
             }
             _ => {
                 unimplemented!("");

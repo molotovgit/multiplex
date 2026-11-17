@@ -95,8 +95,12 @@ async fn next_approval(heard: &mut mpsc::UnboundedReceiver<LinkEvent>) -> (Strin
     }
 }
 
+/// One pretend phone at a time: both tests listen as the same phone.
+static ONE_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 #[tokio::test(flavor = "multi_thread")]
 async fn a_fingerprint_yes_reaches_the_computer_and_nothing_else_passes() {
+    let _alone = ONE_AT_A_TIME.lock().await;
     let Some(Setup { conn, key, name, bin }) = setup().await else {
         eprintln!("phone test skipped: set MPX_PHONE_HOST, MPX_PHONE_USER, MPX_PHONE_KEY, MPX_PHONE_NAME and MPX_PHONE_BIN");
         return;
@@ -133,4 +137,110 @@ async fn a_fingerprint_yes_reaches_the_computer_and_nothing_else_passes() {
 
     // An answer to a request that is over is not taken.
     assert!(share::approved(&conn, &id, &other).await.is_err());
+}
+
+/// The phone's key used from the computer through `multiplex agent`: ssh
+/// lists it, logs in with it and signs with it, and each use is a
+/// request the phone reads, shows and signs itself.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_phones_key_logs_in_and_signs_through_the_agent() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Mutex;
+
+    let _alone = ONE_AT_A_TIME.lock().await;
+    let Some(Setup { conn, key, name, bin }) = setup().await else {
+        eprintln!("agent test skipped: set MPX_PHONE_HOST, MPX_PHONE_USER, MPX_PHONE_KEY, MPX_PHONE_NAME and MPX_PHONE_BIN");
+        return;
+    };
+    let public_file = format!("{}.pub", std::env::var("MPX_PHONE_KEY").unwrap());
+    let host = format!("{}@{}", std::env::var("MPX_PHONE_USER").unwrap(), std::env::var("MPX_PHONE_HOST").unwrap());
+    let work = std::env::temp_dir().join(format!("mpx-agent-test-{}", std::process::id()));
+    std::fs::create_dir_all(&work).unwrap();
+
+    // The computer's agent.
+    let socket = String::from_utf8(Command::new(&bin).args(["agent", "--socket"]).output().unwrap().stdout).unwrap().trim().to_owned();
+    // Stopped when the test ends, however it ends; and it holds none of
+    // the test's own pipes.
+    struct Agent(std::process::Child, String);
+    impl Drop for Agent {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+            let _ = std::fs::remove_file(&self.1);
+        }
+    }
+    let log = std::fs::File::create(work.join("agent.log")).unwrap();
+    let _agent = Agent(Command::new(&bin).arg("agent").stdin(Stdio::null()).stdout(Stdio::null()).stderr(log).spawn().expect("the agent starts"), socket.clone());
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    // The phone: it reads each request itself, "shows" it, and signs or refuses.
+    let mut heard = link(&conn, &name).await;
+    let says_yes = Arc::new(AtomicBool::new(true));
+    let shown = Arc::new(Mutex::new(Vec::<String>::new()));
+    let (yes, prompts, phone, phone_key) = (says_yes.clone(), shown.clone(), conn.clone(), key.clone());
+    tokio::spawn(async move {
+        while let Some(event) = heard.recv().await {
+            let LinkEvent::Sign { id, data } = event else { continue };
+            let answer = match share::signing_request(&phone_key, &data) {
+                Some(what) => {
+                    prompts.lock().unwrap().push(what);
+                    if yes.load(Ordering::SeqCst) { share::signing_signature(&phone_key, &data).unwrap() } else { "no".to_owned() }
+                }
+                None => "no".to_owned(),
+            };
+            let _ = share::approved(&phone, &id, &answer).await;
+        }
+    });
+
+    let ssh_env = |command: &mut Command| {
+        command.env("SSH_AUTH_SOCK", &socket).stdin(Stdio::null());
+    };
+    let run = |mut command: Command| tokio::task::spawn_blocking(move || command.output().expect("the tool runs"));
+
+    // 1. ssh sees the phone's key in the agent.
+    let mut list = Command::new("ssh-add");
+    list.arg("-L");
+    ssh_env(&mut list);
+    let listed = String::from_utf8_lossy(&run(list).await.unwrap().stdout).into_owned();
+    let public = std::fs::read_to_string(&public_file).unwrap();
+    let blob = public.split_whitespace().nth(1).unwrap();
+    assert!(listed.contains(blob), "the phone's key is listed: {listed}");
+
+    // 2. A real login with it, to the same computer.
+    let login = |socket: &str| {
+        let mut ssh = Command::new("ssh");
+        ssh.args(["-o", "IdentitiesOnly=yes", "-o", "BatchMode=yes", "-o", "PreferredAuthentications=publickey", "-o", "StrictHostKeyChecking=accept-new", "-o", "LogLevel=ERROR"])
+            .args(["-o", &format!("UserKnownHostsFile={}", work.join("known_hosts").display())])
+            .args(["-o", &format!("IdentityAgent={socket}"), "-i", &public_file, &host, "echo logged-in-with-the-phone"])
+            .stdin(Stdio::null());
+        ssh
+    };
+    let out = run(login(&socket)).await.unwrap();
+    let agent_said = || std::fs::read_to_string(work.join("agent.log")).unwrap_or_default();
+    assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "logged-in-with-the-phone", "ssh: {} | agent: {}", String::from_utf8_lossy(&out.stderr), agent_said());
+    let user = std::env::var("MPX_PHONE_USER").unwrap();
+    assert_eq!(shown.lock().unwrap().last().unwrap(), &format!("Log in as {user} with this phone's key"));
+
+    // 3. A Git-style signature, checked by ssh-keygen itself.
+    let file = work.join("commit.txt");
+    std::fs::write(&file, b"a commit to sign\n").unwrap();
+    let mut sign = Command::new("ssh-keygen");
+    sign.args(["-Y", "sign", "-n", "git", "-f", &public_file]).arg(&file);
+    ssh_env(&mut sign);
+    let out = run(sign).await.unwrap();
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    assert_eq!(shown.lock().unwrap().last().unwrap(), "Sign a Git commit or tag with this phone's key");
+    let signers = work.join("allowed_signers");
+    std::fs::write(&signers, format!("phone {public}")).unwrap();
+    let mut verify = Command::new("ssh-keygen");
+    verify.args(["-Y", "verify", "-n", "git", "-I", "phone", "-f"]).arg(&signers).arg("-s").arg(work.join("commit.txt.sig")).stdin(std::fs::File::open(&file).unwrap());
+    let out = tokio::task::spawn_blocking(move || verify.output().unwrap()).await.unwrap();
+    assert!(out.status.success(), "ssh-keygen accepts the signature: {}", String::from_utf8_lossy(&out.stderr));
+
+    // 4. Refused on the phone: no login.
+    says_yes.store(false, Ordering::SeqCst);
+    let out = run(login(&socket)).await.unwrap();
+    assert!(!out.status.success(), "a refusal on the phone means no login");
+
+    let _ = std::fs::remove_dir_all(&work);
 }

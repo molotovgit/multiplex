@@ -36,6 +36,10 @@ pub enum ShareEvent {
     /// Someone at the computer asks the phone's owner to approve
     /// something (`reason`). Answer with [`SshSession::share_approved`].
     Approve { id: String, reason: String, challenge: String },
+    /// The computer's SSH agent asks the phone to sign with its key.
+    /// [`signing_describe`] says what for; answer with
+    /// [`SshSession::share_approved`] and what [`signing_sign`] made.
+    Sign { id: String, data: String },
 }
 
 impl SshSession {
@@ -120,6 +124,22 @@ pub fn approval_sign(private_key: String, id: String, reason: String, challenge:
     share::approval_signature(&private_key, &id, &reason, &challenge)
 }
 
+/// What a signing request from the computer's SSH agent is for, as a
+/// line for the fingerprint prompt: a login as some user, or an SSH
+/// signature. `None` when it is neither; it must then be refused.
+#[frb(sync)]
+pub fn signing_describe(private_key: String, data: String) -> Option<String> {
+    share::signing_request(&private_key, &data)
+}
+
+/// Signs such a request with the phone's key. Only after the owner has
+/// confirmed with a fingerprint. Refuses what [`signing_describe`] would
+/// not describe.
+#[frb(sync)]
+pub fn signing_sign(private_key: String, data: String) -> anyhow::Result<String> {
+    share::signing_signature(&private_key, &data)
+}
+
 /// Whether text is a web link the computer would open.
 #[frb(sync)]
 pub fn share_is_link(text: String) -> bool {
@@ -151,6 +171,10 @@ impl ShareLink {
             // The reason is shown to the owner: one tidy line.
             Ok(proto::LinkEvent::Approve { id, reason, challenge }) => match (proto::clean_id(&id), proto::clean_reason(&reason)) {
                 (Ok(id), Ok(reason)) => sink.add(ShareEvent::Approve { id, reason, challenge }).is_ok(),
+                _ => true,
+            },
+            Ok(proto::LinkEvent::Sign { id, data }) => match proto::clean_id(&id) {
+                Ok(id) if data.len() <= multiplex_proto::sign::MAX_SIGN * 2 => sink.add(ShareEvent::Sign { id, data }).is_ok(),
                 _ => true,
             },
             // Not an event (a notice from the shell, say): keep listening.

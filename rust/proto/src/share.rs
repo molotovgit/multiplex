@@ -53,6 +53,10 @@ pub enum LinkEvent {
     /// something. The phone answers by signing [`approval_message`] with
     /// its own key, which nothing on the computer can do in its place.
     Approve { id: String, reason: String, challenge: String },
+    /// The computer's SSH agent asks the phone to sign with its key: a
+    /// login, or an SSH signature (see [`crate::sign`]). `data` is the
+    /// request in base64; the phone reads it itself.
+    Sign { id: String, data: String },
 }
 
 /// What `multiplex share paste` prints.

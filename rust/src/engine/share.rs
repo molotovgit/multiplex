@@ -121,6 +121,35 @@ pub fn approval_signature(private_key: &str, id: &str, reason: &str, challenge: 
     Ok(STANDARD.encode(signer.sign(&proto::approval_message(&id, reason, challenge)).to_bytes()))
 }
 
+/// This phone's public key, from its private key as the app stores it.
+fn phone_keys(private_key: &str) -> anyhow::Result<(ed25519_dalek::SigningKey, [u8; 32])> {
+    use russh::keys::ssh_key::private::KeypairData;
+
+    let key = russh::keys::decode_secret_key(private_key.trim(), None).map_err(|_| anyhow::anyhow!("This phone's key could not be read."))?;
+    let KeypairData::Ed25519(pair) = key.key_data() else { anyhow::bail!("This phone's key is not of the kind this needs.") };
+    Ok((ed25519_dalek::SigningKey::from_bytes(&pair.private.to_bytes()), pair.public.0))
+}
+
+/// What a signing request from the computer's SSH agent is for, in words
+/// for the fingerprint prompt. `None` when it is not a login with this
+/// phone's key or an SSH signature: such a request is never signed.
+pub fn signing_request(private_key: &str, data: &str) -> Option<String> {
+    let (_, public) = phone_keys(private_key).ok()?;
+    multiplex_proto::sign::read_request_base64(data, &public).map(|(_, request)| request.describe())
+}
+
+/// Signs a request from the computer's SSH agent with the phone's key.
+/// Refuses anything [`signing_request`] would not describe.
+pub fn signing_signature(private_key: &str, data: &str) -> anyhow::Result<String> {
+    use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
+    use ed25519_dalek::Signer;
+
+    let (signer, public) = phone_keys(private_key)?;
+    let (bytes, _) = multiplex_proto::sign::read_request_base64(data, &public).ok_or_else(|| anyhow::anyhow!("This is not something an SSH key signs."))?;
+    Ok(STANDARD.encode(signer.sign(&bytes).to_bytes()))
+}
+
 /// Gives the computer the phone's answer to an approval: a signature, or
 /// "no".
 pub async fn approved(conn: &Connection, id: &str, answer: &str) -> anyhow::Result<()> {
@@ -159,6 +188,46 @@ mod tests {
         assert!(key.verify_strict(&proto::approval_message(id, "sudo rm -rf /", challenge), &signature).is_err());
         assert!(approval_signature("not a key", id, reason, challenge).is_err());
         assert!(approval_signature(&pem, "not an id", reason, challenge).is_err());
+    }
+
+    #[test]
+    fn the_phone_signs_logins_and_ssh_signatures_and_nothing_else() {
+        use base64::engine::general_purpose::STANDARD;
+        use base64::Engine;
+        use russh::keys::ssh_key::private::{Ed25519Keypair, KeypairData};
+        use russh::keys::ssh_key::LineEnding;
+        use russh::keys::PrivateKey;
+
+        let pair = Ed25519Keypair::from_seed(&[9u8; 32]);
+        let public = pair.public.0;
+        let pem = PrivateKey::new(KeypairData::Ed25519(pair), "multiplex-phone").unwrap().to_openssh(LineEnding::LF).unwrap().to_string();
+        let field = |out: &mut Vec<u8>, bytes: &[u8]| {
+            out.extend_from_slice(&(bytes.len() as u32).to_be_bytes());
+            out.extend_from_slice(bytes);
+        };
+        // What an SSH client signs to log in as "sam" with this key.
+        let mut login = Vec::new();
+        field(&mut login, &[7u8; 32]);
+        login.push(50);
+        for part in [&b"sam"[..], b"ssh-connection", b"publickey"] {
+            field(&mut login, part);
+        }
+        login.push(1);
+        field(&mut login, b"ssh-ed25519");
+        field(&mut login, &multiplex_proto::sign::ed25519_blob(&public));
+        let data = STANDARD.encode(&login);
+
+        assert_eq!(signing_request(&pem, &data).as_deref(), Some("Log in as sam with this phone's key"));
+        let signature: [u8; 64] = STANDARD.decode(signing_signature(&pem, &data).unwrap()).unwrap().try_into().unwrap();
+        let key = ed25519_dalek::VerifyingKey::from_bytes(&public).unwrap();
+        assert!(key.verify_strict(&login, &ed25519_dalek::Signature::from_bytes(&signature)).is_ok(), "an SSH server would accept it");
+
+        // An approval's words, or anything else, cannot be signed this way.
+        for other in [&b"multiplex-approve-v1\n00112233aabbccdd\nYw==\nsudo"[..], b"hello", &login[..login.len() - 1]] {
+            let data = STANDARD.encode(other);
+            assert_eq!(signing_request(&pem, &data), None);
+            assert!(signing_signature(&pem, &data).is_err());
+        }
     }
 
     #[test]

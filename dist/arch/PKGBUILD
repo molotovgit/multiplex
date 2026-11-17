@@ -34,4 +34,6 @@ check() {
 
 package() {
   install -Dm755 "$_repo/desktop/target/release/multiplex" "$pkgdir/usr/bin/multiplex"
+  # Not enabled by itself: `systemctl --user enable --now multiplex-agent`.
+  install -Dm644 "$_repo/dist/arch/multiplex-agent.service" "$pkgdir/usr/lib/systemd/user/multiplex-agent.service"
 }

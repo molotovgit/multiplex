@@ -190,6 +190,8 @@ void main() {
         return fingerprintOk;
       },
       sign: (key, id, reason, challenge) => 'signed($id|$reason|$challenge|${key.length})',
+      describeSigning: (key, data) => data == 'LOGIN' ? 'Log in as sam with this phone\'s key' : null,
+      signRequest: (key, data) => 'sshsig($data)',
       appInFront: () => inFront,
     );
   });
@@ -410,6 +412,35 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(asked, isEmpty);
       expect(computer.log, ['approval 00aa: no']);
+    });
+  });
+
+  group('the phone\'s key, used from the computer', () {
+    test('a login is shown as what it is and signed after a fingerprint', () async {
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(const ShareEvent.sign(id: '00bb', data: 'LOGIN'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(asked, ["Log in as sam with this phone's key (asked by Desk)"]);
+      expect(computer.log, ['approval 00bb: sshsig(LOGIN)']);
+    });
+
+    test('what is not a login or an SSH signature is refused without asking', () async {
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(const ShareEvent.sign(id: '00cc', data: 'SOMETHING ELSE'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(asked, isEmpty);
+      expect(computer.log, ['approval 00cc: no']);
+    });
+
+    test('a refused fingerprint signs nothing', () async {
+      fingerprintOk = false;
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(const ShareEvent.sign(id: '00dd', data: 'LOGIN'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(computer.log, ['approval 00dd: no']);
     });
   });
 

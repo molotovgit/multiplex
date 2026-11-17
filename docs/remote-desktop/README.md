@@ -115,6 +115,25 @@ The yes cannot be faked on the computer. Each request carries a fresh random cha
 
 This is the building block for approving `sudo` from the phone. It is not wired into `sudo` yet: that needs a PAM entry and a copy of the phone's key that only root can change, which should be set up with you at the keyboard.
 
+## An SSH key that lives on the phone
+
+The phone's key can be used from the computer without ever being on it: to log in to other servers, and to sign Git commits.
+
+```sh
+multiplex agent &                                  # or: systemctl --user enable --now multiplex-agent
+export SSH_AUTH_SOCK="$(multiplex agent --socket)"
+multiplex key                                      # the phone's public key: put it in a server's authorized_keys
+ssh you@server                                     # the phone asks: "Log in as you with this phone's key"
+
+git config --global gpg.format ssh                 # sign commits with it
+git config --global user.signingkey "key::$(multiplex key | cut -d' ' -f1,2)"
+git commit -S -m "signed on the phone"             # the phone asks: "Sign a Git commit or tag …"
+```
+
+`multiplex agent` is an ordinary SSH agent. It lists the paired phones' public keys; a signing request goes to the connected phone, which shows what it is for and wants a fingerprint, face or PIN each time.
+
+The phone does not sign whatever it is handed. It reads the request itself and signs only a real SSH login request (for its own key) or a real SSH signature request; what it shows comes from that reading, not from what the computer says. Anything else is refused without asking, so this path cannot be used to get an approval or any other signature out of the key. The computer checks the signature before handing it on.
+
 ## What a phone may do
 
 A paired phone logs in with its own key and, by default, may do what you may. On the computer you can narrow that, per phone:

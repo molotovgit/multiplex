@@ -26,6 +26,24 @@ String approvalSign({
   challenge: challenge,
 );
 
+/// What a signing request from the computer's SSH agent is for, as a
+/// line for the fingerprint prompt: a login as some user, or an SSH
+/// signature. `None` when it is neither; it must then be refused.
+String? signingDescribe({required String privateKey, required String data}) =>
+    RustLib.instance.api.crateApiShareSigningDescribe(
+      privateKey: privateKey,
+      data: data,
+    );
+
+/// Signs such a request with the phone's key. Only after the owner has
+/// confirmed with a fingerprint. Refuses what [`signing_describe`] would
+/// not describe.
+String signingSign({required String privateKey, required String data}) =>
+    RustLib.instance.api.crateApiShareSigningSign(
+      privateKey: privateKey,
+      data: data,
+    );
+
 /// Whether text is a web link the computer would open.
 bool shareIsLink({required String text}) =>
     RustLib.instance.api.crateApiShareShareIsLink(text: text);
@@ -80,4 +98,10 @@ sealed class ShareEvent with _$ShareEvent {
     required String reason,
     required String challenge,
   }) = ShareEvent_Approve;
+
+  /// The computer's SSH agent asks the phone to sign with its key.
+  /// [`signing_describe`] says what for; answer with
+  /// [`SshSession::share_approved`] and what [`signing_sign`] made.
+  const factory ShareEvent.sign({required String id, required String data}) =
+      ShareEvent_Sign;
 }

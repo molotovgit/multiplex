@@ -327,6 +327,8 @@ pub(crate) fn runtime_dir() -> PathBuf {
     });
     let dir = base.unwrap_or_else(state_dir).join("multiplex");
     let _ = std::fs::DirBuilder::new().recursive(true).mode(0o700).create(&dir);
+    // Also when it was there already, from an older version.
+    let _ = std::fs::set_permissions(&dir, std::os::unix::fs::PermissionsExt::from_mode(0o700));
     dir
 }
 
@@ -507,11 +509,26 @@ pub fn approve(args: &[&str]) -> Result<()> {
         _ => bail!("several phones are paired: say which with --to <name>"),
     };
     let key = Store::open()?.devices()?.into_iter().find(|d| d.name == phone).and_then(|d| ed25519_key_bytes(&d.key)).ok_or_else(|| anyhow!("{phone}'s key could not be read"))?;
-    let id = random_id()?;
     let mut challenge = [0u8; 32];
     std::fs::File::open("/dev/urandom")?.read_exact(&mut challenge)?;
     let challenge = STANDARD.encode(challenge);
+    eprintln!("Waiting for {phone} to approve: {reason}");
+    let (id, answer) = ask_and_wait(&phone, |id| LinkEvent::Approve { id: id.to_owned(), reason: reason.clone(), challenge: challenge.clone() })?;
+    let Some(answer) = answer else { bail!("not approved: {phone} did not answer in time") };
+    match check_answer(&key, &id, &reason, &challenge, &answer) {
+        Ok(()) => {
+            println!("Approved on {phone}.");
+            Ok(())
+        }
+        Err(why) => bail!("not approved: {why}"),
+    }
+}
 
+/// Asks a connected phone something that needs an answer, and waits for
+/// it. The answer (through `multiplex share approved <id>`) is only taken
+/// while the request waits. `None`: no answer in time.
+pub(crate) fn ask_and_wait(phone: &str, event: impl FnOnce(&str) -> LinkEvent) -> Result<(String, Option<String>)> {
+    let id = random_id()?;
     let dir = runtime_dir().join("approvals");
     std::fs::create_dir_all(&dir)?;
     let (pending, answered) = (dir.join(format!("{id}.pending")), dir.join(&id));
@@ -520,27 +537,20 @@ pub fn approve(args: &[&str]) -> Result<()> {
         let _ = std::fs::remove_file(&pending);
         let _ = std::fs::remove_file(&answered);
     };
-    if !ask(&phone, &LinkEvent::Approve { id: id.clone(), reason: reason.clone(), challenge: challenge.clone() })? {
+    if !ask(phone, &event(&id))? {
         finish();
-        bail!("{phone} is not connected right now, so it cannot approve anything");
+        bail!("{phone} is not connected right now");
     }
-    eprintln!("Waiting for {phone} to approve: {reason}");
     let until = Instant::now() + Duration::from_secs(APPROVE_SECONDS);
     while Instant::now() < until {
         if let Ok(answer) = std::fs::read_to_string(&answered) {
             finish();
-            return match check_answer(&key, &id, &reason, &challenge, &answer) {
-                Ok(()) => {
-                    println!("Approved on {phone}.");
-                    Ok(())
-                }
-                Err(why) => bail!("not approved: {why}"),
-            };
+            return Ok((id, Some(answer)));
         }
-        std::thread::sleep(Duration::from_millis(150));
+        std::thread::sleep(Duration::from_millis(100));
     }
     finish();
-    bail!("not approved: {phone} did not answer in time")
+    Ok((id, None))
 }
 
 /// What has been asked of a phone since the last look; each ask is handed
@@ -599,6 +609,12 @@ pub fn link(phone: &str) -> Result<()> {
         let here = runtime_dir().join("linked");
         std::fs::create_dir_all(&here)?;
         let here = here.join(file_name_of(phone));
+        // The newest link for a phone is the one that counts: it writes its
+        // process id here, and an older one (the phone reconnected before
+        // the old connection was noticed gone) then steps aside instead of
+        // taking requests it can no longer deliver.
+        let me = std::process::id().to_string();
+        std::fs::write(&here, &me)?;
         let _ = asks_for(phone);
         // What is on the clipboard when the phone connects is not news.
         let mut last_clip = session.as_ref().and_then(clipboard_text);
@@ -608,7 +624,10 @@ pub fn link(phone: &str) -> Result<()> {
         let mut agents: std::collections::HashMap<String, multiplex_proto::agents::AgentStatus> = std::collections::HashMap::new();
         let mut agents_at: Option<Instant> = None;
         loop {
-            std::fs::write(&here, b"")?;
+            if std::fs::read_to_string(&here).ok().as_deref() != Some(me.as_str()) {
+                return Ok(());
+            }
+            std::fs::write(&here, &me)?;
             if agents_at.is_none_or(|at| at.elapsed() > Duration::from_secs(3)) {
                 let now = crate::agents::list();
                 if agents_at.is_some() {
@@ -656,7 +675,11 @@ pub fn link(phone: &str) -> Result<()> {
         }
     };
     let result = run();
-    let _ = std::fs::remove_file(runtime_dir().join("linked").join(file_name_of(phone)));
+    // The marker goes with this link, unless a newer one has taken over.
+    let marker = runtime_dir().join("linked").join(file_name_of(phone));
+    if std::fs::read_to_string(&marker).ok().as_deref() == Some(std::process::id().to_string().as_str()) {
+        let _ = std::fs::remove_file(&marker);
+    }
     if let Some(mut watcher) = watcher {
         let _ = watcher.kill();
         let _ = watcher.wait();
