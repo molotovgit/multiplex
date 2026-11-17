@@ -73,6 +73,22 @@ pub async fn paste(conn: &Connection) -> anyhow::Result<Option<String>> {
     Ok(clipboard.text)
 }
 
+/// Has the computer read the text in a picture (a JPEG or PNG) and put it
+/// on its clipboard. An empty text: none could be read.
+pub async fn read_text(conn: &Connection, picture: &[u8]) -> anyhow::Result<proto::TextRead> {
+    if picture.is_empty() {
+        anyhow::bail!("There is no picture to read.");
+    }
+    if picture.len() > proto::MAX_PICTURE {
+        anyhow::bail!("That picture is too big to read.");
+    }
+    let out = conn.exec_with_input(&proto::read_command(), picture, MAX_CLIP * 2).await?;
+    if out.exit_code != Some(0) {
+        return Err(problem(&out));
+    }
+    serde_json::from_str(out.stdout.trim()).map_err(|_| anyhow::anyhow!("The computer's answer was not understood."))
+}
+
 /// Opens a web link in the computer's browser.
 pub async fn open(conn: &Connection, url: &str) -> anyhow::Result<()> {
     let command = proto::open_command(url).map_err(|_| anyhow::anyhow!("Only web links (http or https) can be opened on the computer."))?;

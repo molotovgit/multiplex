@@ -66,6 +66,7 @@ class MainActivity : FlutterFragmentActivity() {
         CameraCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MicCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         SpeakerPlay.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        TextScan.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
@@ -143,6 +144,7 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == ScreenCast.REQUEST) ScreenCast.onResult(this, resultCode, data)
+        if (requestCode == TextScan.REQUEST) TextScan.onResult(this, resultCode, data)
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

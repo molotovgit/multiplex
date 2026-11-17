@@ -42,6 +42,14 @@ pub enum ShareEvent {
     Sign { id: String, data: String },
 }
 
+/// The text a computer read in a picture.
+pub struct TextFound {
+    /// Empty: none could be read.
+    pub text: String,
+    /// The languages the computer reads (tesseract's names, such as `eng`).
+    pub languages: Vec<String>,
+}
+
 impl SshSession {
     /// The folder on the computer that files from the phone go to.
     pub async fn share_inbox(&self) -> anyhow::Result<String> {
@@ -65,6 +73,14 @@ impl SshSession {
     pub async fn share_paste(&self) -> anyhow::Result<Option<String>> {
         let conn = self.conn.clone();
         AsyncRuntime::run(async move { share::paste(&conn).await }).await?
+    }
+
+    /// Has the computer read the text in a picture (a JPEG or PNG) and
+    /// put it on its clipboard.
+    pub async fn share_read_text(&self, picture: Vec<u8>) -> anyhow::Result<TextFound> {
+        let conn = self.conn.clone();
+        let read = AsyncRuntime::run(async move { share::read_text(&conn, &picture).await }).await??;
+        Ok(TextFound { text: read.text, languages: read.languages })
     }
 
     /// Opens a web link in the computer's browser.

@@ -152,6 +152,10 @@ pub fn doctor() -> Vec<Check> {
         },
         check("Phone microphone", Some(crate::mic::available()), false, crate::mic::NEEDS),
         check("Phone speaker", Some(crate::speaker::available()), false, crate::speaker::NEEDS),
+        match crate::read::languages() {
+            languages if languages.is_empty() => check("Reading text", Some(false), false, crate::read::NEEDS),
+            languages => check("Reading text", Some(true), false, &format!("in pictures from the phone, in: {} (more: sudo pacman -S tesseract-data-<language>)", languages.join(", "))),
+        },
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }

@@ -19,6 +19,7 @@ import 'computer_card.dart';
 import 'computer_sharing_screen.dart';
 import 'computer_status.dart';
 import 'panel_screen.dart';
+import 'scan_text.dart';
 import 'screen_cast_screen.dart';
 import 'speaker_screen.dart';
 import 'touchpad_screen.dart';
@@ -84,6 +85,7 @@ class ComputerScreen extends StatelessWidget {
       _Tile(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
       _Tile(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
       _Tile(Icons.speaker_phone, 'Speaker', 'The computer\'s sound on this phone', () => SpeakerScreen.show(context, host)),
+      _Tile(Icons.document_scanner_outlined, 'Scan text', 'From paper to the computer\'s clipboard', () => ScanText.fromCamera(context, host)),
       _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host)),
       _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
       _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),

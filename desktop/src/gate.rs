@@ -226,7 +226,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             // The phone showing its own screen here opens a window: part of the desktop.
             ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
             ["share", "inbox" | "received" | "done", ..] => need(access.files, "files"),
-            ["share", "clip" | "paste" | "open", ..] => need(access.clipboard, "clipboard"),
+            ["share", "clip" | "paste" | "open" | "read", ..] => need(access.clipboard, "clipboard"),
             ["link", ..] => need(access.files || access.clipboard, "files"),
             // What the phone says about itself changes nothing here.
             ["phone", "status" | "notify" | "call", ..] => Ok(()),

@@ -138,6 +138,15 @@ On a computer's page, **Speaker** plays the computer's sound on the phone. The c
 - It plays what is current: sound that arrives in a clump after a pause in the network is thrown away, not played late.
 - Good for music and speech. With a film, the quarter second shows on the lips.
 
+## Text on paper to the computer's clipboard
+
+On a computer's page, **Scan text** opens the phone's page scanner (Google's: it finds the page's edges and straightens it). The picture goes to the computer, which reads the text in it and puts that on its clipboard. The phone shows the text too, with **Copy here too** for its own clipboard.
+
+- A picture you already have works the same way: share it to Multiplex and choose **Copy its text to** the computer.
+- The reading is done on the computer by `tesseract`, in the languages installed for it there: `sudo pacman -S tesseract tesseract-data-eng`, and one `tesseract-data-…` package for each further language (`tesseract-data-rus` for Russian, say). `multiplex doctor` lists the ones it has.
+- The picture is not kept on the computer.
+- The page scanner comes with Google Play services and needs no camera permission for Multiplex. On a phone without it, the shared-picture way still works.
+
 ## Coding agents
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
@@ -193,7 +202,7 @@ multiplex access "Sam's phone" everything      # back to no limits
 | `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, lending its camera or microphone, and playing the computer's sound |
 | `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
 | `files` | browsing, sending and fetching files |
-| `clipboard` | sharing the clipboard, opening links |
+| `clipboard` | sharing the clipboard, opening links, reading the text in a picture onto the clipboard |
 | `terminal` | a shell and any other command, including this command's own management (pairing, these switches) |
 | `tunnels` | forwarding ports |
 

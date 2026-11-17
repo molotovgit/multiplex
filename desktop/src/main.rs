@@ -16,6 +16,7 @@ mod gate;
 mod h264;
 mod input;
 mod mic;
+mod read;
 mod screen;
 mod share;
 mod speaker;

@@ -18,7 +18,7 @@ use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
 use multiplex_proto::share::{
     approval_message, clean_file_name, clean_id, clean_phone_number, clean_reason, clean_sms_text, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, APPROVE_SECONDS, MAX_CLIP,
-    RING_SECONDS,
+    RING_SECONDS, TextRead, MAX_PICTURE,
 };
 use multiplex_proto::ed25519_key_bytes;
 use multiplex_proto::clean_device_name;
@@ -292,6 +292,22 @@ pub fn share(args: &[&str]) -> Result<()> {
             println!("ok");
         }
         ["paste"] => println!("{}", serde_json::to_string(&Clipboard { text: clipboard_text(&Session::find()?) })?),
+        // A photo of a page from the phone: its text goes on the clipboard here.
+        ["read"] => {
+            let mut picture = Vec::new();
+            std::io::stdin().lock().take(MAX_PICTURE as u64 + 1).read_to_end(&mut picture)?;
+            if picture.is_empty() {
+                bail!("no picture came");
+            }
+            if picture.len() > MAX_PICTURE {
+                bail!("that picture is too big to read");
+            }
+            let (text, languages) = crate::read::text_in(&picture)?;
+            if !text.is_empty() {
+                set_clipboard(&Session::find()?, &text)?;
+            }
+            println!("{}", serde_json::to_string(&TextRead { text, languages })?);
+        }
         ["open", url] => {
             let url = clean_url(url).map_err(|err| anyhow!("{err}"))?;
             // Started by Hyprland, so the browser opens in the session.

@@ -22,6 +22,9 @@ pub const SHARE_COMMAND: &str = r#"PATH="$PATH:$HOME/.local/bin" multiplex"#;
 /// A clipboard's worth of text, not a file.
 pub const MAX_CLIP: usize = 256 * 1024;
 
+/// The biggest picture that is taken for reading its text.
+pub const MAX_PICTURE: usize = 20 * 1024 * 1024;
+
 /// A file waiting on the computer for the phone.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct OutFile {
@@ -64,6 +67,15 @@ pub enum LinkEvent {
 pub struct Clipboard {
     /// None: the clipboard is empty, or holds something that is not text.
     pub text: Option<String>,
+}
+
+/// What `multiplex share read` prints: the text found in a picture.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub struct TextRead {
+    /// Empty: no text could be read in the picture.
+    pub text: String,
+    /// The languages the computer read it in (tesseract's names).
+    pub languages: Vec<String>,
 }
 
 pub fn parse_link_event(line: &str) -> Result<LinkEvent, ProtoError> {
@@ -133,6 +145,12 @@ pub fn received_command(phone: &str, names: &[String]) -> String {
 /// Reads text from standard input onto the computer's clipboard.
 pub fn copy_command() -> String {
     command(&["share", "clip"])
+}
+
+/// Reads the text in the picture on standard input (a JPEG or PNG),
+/// puts it on the computer's clipboard, and prints it as [`TextRead`].
+pub fn read_command() -> String {
+    command(&["share", "read"])
 }
 
 /// Prints the computer's clipboard as [`Clipboard`].

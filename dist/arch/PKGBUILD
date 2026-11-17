@@ -20,6 +20,7 @@ optdepends=(
   "mpv: the phone's screen in a window"
   "ffmpeg: the phone as a webcam, a microphone and a speaker"
   "libpulse: the phone as a microphone and a speaker (pactl)"
+  "tesseract: reading the text in pictures from the phone (with tesseract-data-eng or another language)"
   "gst-plugin-pipewire: the phone's camera as a PipeWire camera (with gstreamer and gst-plugins-base)"
   "v4l2loopback-dkms: the phone's camera for every program that uses a webcam"
 )

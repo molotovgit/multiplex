@@ -12,6 +12,7 @@ import '../../sessions/phone_outbox.dart';
 import '../../sessions/session_manager.dart';
 import '../../src/rust/api/sftp.dart';
 import '../common/widgets.dart';
+import '../computers/scan_text.dart';
 import '../files/file_format.dart';
 import '../files/remote_paths.dart';
 import '../files/transfer_panel.dart';
@@ -358,6 +359,15 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
                 enabled: !_busy,
                 onTap: () => _sendTo(computer),
               ),
+              // One picture: the computer can also read what is written in it.
+              if (widget.files.length == 1 && ScanText.isPicture(widget.files.single.name))
+                ListTile(
+                  leading: const Icon(Icons.document_scanner_outlined),
+                  title: Text('Copy its text to ${computer.title}'),
+                  subtitle: const Text('The computer reads the picture; the text goes onto its clipboard'),
+                  enabled: !_busy,
+                  onTap: () => ScanText.fromPicture(context, computer, widget.files.single.path),
+                ),
               if (_unreached?.id == computer.id)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(72, 0, 16, 8),

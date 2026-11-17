@@ -80,6 +80,7 @@ void main() {
       'Camera',
       'Microphone',
       'Speaker',
+      'Scan text',
       'Agents',
       'Tunnels',
       'Status',

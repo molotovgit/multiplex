@@ -105,3 +105,25 @@ sealed class ShareEvent with _$ShareEvent {
   const factory ShareEvent.sign({required String id, required String data}) =
       ShareEvent_Sign;
 }
+
+/// The text a computer read in a picture.
+class TextFound {
+  /// Empty: none could be read.
+  final String text;
+
+  /// The languages the computer reads (tesseract's names, such as `eng`).
+  final List<String> languages;
+
+  const TextFound({required this.text, required this.languages});
+
+  @override
+  int get hashCode => text.hashCode ^ languages.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TextFound &&
+          runtimeType == other.runtimeType &&
+          text == other.text &&
+          languages == other.languages;
+}

@@ -702,6 +702,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TerminalPalette dco_decode_terminal_palette(dynamic raw);
 
   @protected
+  TextFound dco_decode_text_found(dynamic raw);
+
+  @protected
   TextRun dco_decode_text_run(dynamic raw);
 
   @protected
@@ -1368,6 +1371,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   TerminalPalette sse_decode_terminal_palette(SseDeserializer deserializer);
+
+  @protected
+  TextFound sse_decode_text_found(SseDeserializer deserializer);
 
   @protected
   TextRun sse_decode_text_run(SseDeserializer deserializer);
@@ -2181,6 +2187,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     TerminalPalette self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_text_found(TextFound self, SseSerializer serializer);
 
   @protected
   void sse_encode_text_run(TextRun self, SseSerializer serializer);
