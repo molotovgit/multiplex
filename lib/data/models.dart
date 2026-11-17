@@ -49,6 +49,8 @@ class Host {
     this.pins = const [],
     this.pairedAs,
     this.shareClipboard = true,
+    this.mirrorNotifications = false,
+    this.mutedApps = const [],
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -102,6 +104,13 @@ class Host {
   /// Keep this phone's clipboard and the computer's in step while they
   /// are connected.
   final bool shareClipboard;
+
+  /// Show this phone's notifications on the computer while connected.
+  final bool mirrorNotifications;
+
+  /// Apps (by the name the phone shows) whose notifications stay on the
+  /// phone.
+  final List<String> mutedApps;
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
@@ -157,6 +166,8 @@ class Host {
     List<String>? pins,
     String? Function()? pairedAs,
     bool? shareClipboard,
+    bool? mirrorNotifications,
+    List<String>? mutedApps,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -184,6 +195,8 @@ class Host {
         pins: pins ?? this.pins,
         pairedAs: pairedAs != null ? pairedAs() : this.pairedAs,
         shareClipboard: shareClipboard ?? this.shareClipboard,
+        mirrorNotifications: mirrorNotifications ?? this.mirrorNotifications,
+        mutedApps: mutedApps ?? this.mutedApps,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -212,6 +225,8 @@ class Host {
         'pins': pins,
         'pairedAs': pairedAs,
         'shareClipboard': shareClipboard,
+        'mirrorNotifications': mirrorNotifications,
+        'mutedApps': mutedApps,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -240,6 +255,8 @@ class Host {
         pins: [for (final p in (j['pins'] as List?) ?? const []) if (p is String) p],
         pairedAs: Json.strOrNull(j, 'pairedAs'),
         shareClipboard: Json.boolean(j, 'shareClipboard', true),
+        mirrorNotifications: Json.boolean(j, 'mirrorNotifications', false),
+        mutedApps: [for (final a in (j['mutedApps'] as List?) ?? const []) if (a is String) a],
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

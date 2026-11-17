@@ -24,6 +24,9 @@ pub enum ShareEvent {
     },
     /// The computer's clipboard now holds this text.
     Clip { text: String },
+    /// Someone at the computer is looking for the phone: ring, loudly, for
+    /// at most this long.
+    Ring { seconds: u32 },
 }
 
 impl SshSession {
@@ -63,6 +66,19 @@ impl SshSession {
         AsyncRuntime::run(async move { share::done(&conn, &id).await }).await?
     }
 
+    /// Tells the computer the phone's battery level (0 to 100) and whether
+    /// it is charging. `phone` is the name it paired under.
+    pub async fn phone_status(&self, phone: String, battery: u8, charging: bool) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { share::status(&conn, &phone, &proto::PhoneStatus { battery, charging }).await }).await?
+    }
+
+    /// Shows one of the phone's notifications on the computer's screen.
+    pub async fn phone_notice(&self, phone: String, app: String, title: String, text: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { share::notice(&conn, &phone, &proto::PhoneNotice { app, title, text }).await }).await?
+    }
+
     /// Hears what the computer has for this phone: files waiting (also
     /// ones sent while the phone was away) and clipboard changes. `phone`
     /// is the name this phone paired under; empty when it is the only one.
@@ -91,6 +107,7 @@ impl ShareLink {
         self.inner.lines.attach(Arc::new(move |line: String| match proto::parse_link_event(&line) {
             Ok(proto::LinkEvent::File(file)) => sink.add(ShareEvent::File { id: file.id, name: proto::clean_file_name(&file.name), size: file.size, path: file.path }).is_ok(),
             Ok(proto::LinkEvent::Clip { text }) => sink.add(ShareEvent::Clip { text }).is_ok(),
+            Ok(proto::LinkEvent::Ring { seconds }) => sink.add(ShareEvent::Ring { seconds: seconds.min(120) }).is_ok(),
             // Not an event (a notice from the shell, say): keep listening.
             Err(_) => true,
         }));

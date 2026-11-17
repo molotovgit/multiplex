@@ -39,4 +39,8 @@ sealed class ShareEvent with _$ShareEvent {
 
   /// The computer's clipboard now holds this text.
   const factory ShareEvent.clip({required String text}) = ShareEvent_Clip;
+
+  /// Someone at the computer is looking for the phone: ring, loudly, for
+  /// at most this long.
+  const factory ShareEvent.ring({required int seconds}) = ShareEvent_Ring;
 }

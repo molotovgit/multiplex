@@ -30,6 +30,14 @@ pub struct Session {
     signature: String,
 }
 
+/// Whether this process runs with a UTF-8 locale.
+pub(crate) fn utf8_locale() -> bool {
+    ["LC_ALL", "LC_CTYPE", "LANG"]
+        .iter()
+        .find_map(|name| std::env::var(name).ok().filter(|v| !v.is_empty()))
+        .is_some_and(|value| value.to_ascii_lowercase().replace('-', "").contains("utf8"))
+}
+
 fn home() -> PathBuf {
     PathBuf::from(std::env::var_os("HOME").unwrap_or_default())
 }
@@ -82,6 +90,11 @@ impl Session {
         command.env("XDG_RUNTIME_DIR", &self.runtime).env("HYPRLAND_INSTANCE_SIGNATURE", &self.signature);
         if std::env::var_os("WAYLAND_DISPLAY").is_none() {
             command.env("WAYLAND_DISPLAY", self.wayland_socket());
+        }
+        // Over SSH there may be no locale at all, and tools then refuse
+        // anything that is not ASCII (a name, a "·", an emoji).
+        if !utf8_locale() {
+            command.env("LC_ALL", "C.UTF-8");
         }
         if std::env::var_os("DBUS_SESSION_BUS_ADDRESS").is_none() {
             command.env("DBUS_SESSION_BUS_ADDRESS", format!("unix:path={}", self.runtime.join("bus").display()));

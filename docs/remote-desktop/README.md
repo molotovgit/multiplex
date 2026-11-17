@@ -84,6 +84,14 @@ The file waits in an outbox until the phone is connected to the computer (Multip
 
 Nothing new listens on the network for any of this: the phone runs `multiplex share …` and `multiplex link` on the computer over its SSH connection, and files travel by SFTP. The computer needs `wl-clipboard` for the clipboard and `libnotify` for its notices.
 
+## The phone, from the computer
+
+While the phone is connected to a paired computer:
+
+- `multiplex ring` makes the phone ring out loud, also when it is on silent, for up to 30 seconds or until its notification is tapped. For finding it.
+- `multiplex devices` shows each paired phone, whether it is connected, and its battery.
+- The phone's notifications can show on the computer's screen. This is off until you switch it on for that computer (its page, **⋮ → Sharing and notifications**) and give Multiplex notification access in Android's settings, which the app opens for you. Apps appear in that screen as they post; switch one off to keep it on the phone only. Nothing is stored on either side: a notification is passed on only while the computer is connected.
+
 ## Waking the computer
 
 A paired computer's page has a **Wake** tile: it broadcasts a Wake-on-LAN signal for the computer's network card, whose address the pairing code carried. Three things have to hold:

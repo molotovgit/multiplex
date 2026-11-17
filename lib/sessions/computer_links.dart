@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../data/models.dart';
 import '../data/vault_store.dart';
+import '../platform/phone_bridge.dart';
 import '../src/rust/api/sftp_types.dart';
 import '../src/rust/api/share.dart';
 import '../ui/files/transfer_queue.dart';
@@ -27,6 +28,12 @@ abstract class ShareChannel {
 
   /// Puts text on the computer's clipboard.
   Future<void> copy(String text);
+
+  /// Tells the computer the phone's battery level.
+  Future<void> status(String phone, {required int battery, required bool charging});
+
+  /// Shows one of the phone's notifications on the computer.
+  Future<void> notice(String phone, PhoneNotification notification);
 
   /// Uploads files that waited on the phone into the computer's inbox and
   /// has it say what arrived. The answer is the ones that got there.
@@ -87,6 +94,14 @@ class SshShareChannel implements ShareChannel {
 
   @override
   Future<void> copy(String text) => session.ssh.shareCopy(text: text);
+
+  @override
+  Future<void> status(String phone, {required int battery, required bool charging}) =>
+      session.ssh.phoneStatus(phone: phone, battery: battery, charging: charging);
+
+  @override
+  Future<void> notice(String phone, PhoneNotification notification) =>
+      session.ssh.phoneNotice(phone: phone, app: notification.app, title: notification.title, text: notification.text);
 
   @override
   Future<List<WaitingFile>> send(List<WaitingFile> files, {required String phone}) async {
@@ -150,14 +165,33 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     Future<String?> Function()? readClipboard,
     Future<void> Function(String text)? writeClipboard,
     PhoneOutbox? outbox,
+    PhoneBridge phone = const PhoneBridge(),
   }) : outbox = outbox ?? PhoneOutbox(),
+       // ignore: prefer_initializing_formals
+       _phone = phone,
        _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
        _readClipboard = readClipboard ?? _phoneClipboard,
        _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))) {
     _sessions.addListener(_sync);
     WidgetsBinding.instance.addObserver(this);
+    _phoneNotices = _phone.notifications().listen(_mirror);
     _sync();
+  }
+
+  final PhoneBridge _phone;
+  StreamSubscription<PhoneNotification>? _phoneNotices;
+
+  /// Apps that have posted a notification since the app started, for the
+  /// list where each can be kept off the computer.
+  final Set<String> seenApps = {};
+
+  /// A phone notification goes to every linked computer that wants it.
+  void _mirror(PhoneNotification notification) {
+    if (notification.app.isNotEmpty && seenApps.add(notification.app)) notifyListeners();
+    for (final link in _links.values) {
+      link.mirror(notification);
+    }
   }
 
   final SessionManager _sessions;
@@ -240,6 +274,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     _sessions.removeListener(_sync);
     WidgetsBinding.instance.removeObserver(this);
+    _phoneNotices?.cancel();
     for (final link in _links.values) {
       link.close();
     }
@@ -259,6 +294,7 @@ class _Link {
   final ShareChannel channel;
   StreamSubscription<ShareEvent>? _events;
   void Function()? _stop;
+  Timer? _status;
   bool _closed = false;
 
   /// The text both clipboards last agreed on, so nothing bounces back.
@@ -273,7 +309,7 @@ class _Link {
     // What is on the phone's clipboard now is not news for the computer.
     _lastClip = await owner._readClipboard();
     try {
-      final (events, stop) = await channel.link(host.pairedAs ?? '');
+      final (events, stop) = await channel.link(_name);
       if (_closed) {
         stop();
         return;
@@ -281,6 +317,8 @@ class _Link {
       _stop = stop;
       _events = events.listen(_on);
       unawaited(_sendWaiting());
+      unawaited(_reportStatus());
+      _status = Timer.periodic(const Duration(minutes: 5), (_) => _reportStatus());
     } catch (_) {
       // An older package without sharing, or the connection just dropped:
       // everything else about the computer still works.
@@ -295,7 +333,30 @@ class _Link {
         if (!host.shareClipboard || text == _lastClip) return;
         _lastClip = text;
         unawaited(owner._writeClipboard(text));
+      case ShareEvent_Ring(:final seconds):
+        unawaited(owner._phone.ring(seconds));
     }
+  }
+
+  /// The name this phone is paired under ('' when that was not kept: the
+  /// computer then takes the only paired phone).
+  String get _name => host.pairedAs ?? '';
+
+  /// Tells the computer the battery level, now and every few minutes.
+  Future<void> _reportStatus() async {
+    final battery = await owner._phone.battery();
+    if (battery == null || _closed) return;
+    try {
+      await channel.status(_name, battery: battery.level, charging: battery.charging);
+    } catch (_) {
+      // An older package: the rest still works.
+    }
+  }
+
+  void mirror(PhoneNotification notification) {
+    final host = this.host;
+    if (_closed || !host.mirrorNotifications || host.mutedApps.contains(notification.app)) return;
+    unawaited(channel.notice(_name, notification).catchError((Object _) {}));
   }
 
   Future<void> _fetch(ShareEvent_File file) async {
@@ -342,6 +403,7 @@ class _Link {
 
   void close() {
     _closed = true;
+    _status?.cancel();
     _events?.cancel();
     _stop?.call();
   }

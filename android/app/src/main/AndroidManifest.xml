@@ -69,6 +69,19 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps the user's open SSH terminal sessions and port forwards connected while the app is in the background." />
         </service>
+        <!-- Phone notifications for a paired computer. Android runs this only
+             after the user allows it under Settings > Notification access. -->
+        <service
+            android:name=".PhoneNotifications"
+            android:exported="true"
+            android:label="Multiplex: notifications for your computer"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <!-- Stops the ringing started by "find this phone". -->
+        <receiver android:name=".PhoneChannel$StopRing" android:exported="false" />
         <!-- The home-screen widget with favourite hosts. -->
         <receiver
             android:name=".FavouritesWidget"

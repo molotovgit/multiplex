@@ -36,6 +36,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex unpair <name>     Remove a paired phone
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
   multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
+  multiplex ring              Make the phone ring, to find it
   multiplex doctor            Check that everything is ready
 
 The paired phone uses these over SSH:
@@ -46,6 +47,7 @@ The paired phone uses these over SSH:
   multiplex input             A touchpad and keyboard, driven by lines on standard input
   multiplex share …           The inbox, the clipboard, opening a link
   multiplex link [<phone>]    What waits for the phone, and clipboard changes, as lines
+  multiplex phone …           The phone's battery, and its notifications for this screen
 ";
 
 fn main() {
@@ -62,6 +64,8 @@ fn main() {
         ["doctor"] => doctor(),
         ["desk", rest @ ..] => desk::run(rest),
         ["send", rest @ ..] => share::send(rest),
+        ["ring", rest @ ..] => share::ring(rest),
+        ["phone", rest @ ..] => share::phone(rest),
         ["share", rest @ ..] => share::share(rest),
         ["link"] => share::link(""),
         ["link", phone] => share::link(phone),
@@ -188,8 +192,14 @@ fn notify(text: &str) {
         let uid = std::process::Command::new("id").arg("-u").output().map(|o| String::from_utf8_lossy(&o.stdout).trim().to_owned()).unwrap_or_default();
         format!("/run/user/{uid}")
     });
-    let _ = std::process::Command::new("notify-send")
-        .args(["--app-name=Multiplex", "--icon=phone", "Multiplex", text])
+    let mut command = std::process::Command::new("notify-send");
+    // Reached over SSH (a phone pairing), there may be no locale, and the
+    // phone's name need not be ASCII.
+    if !desk::utf8_locale() {
+        command.env("LC_ALL", "C.UTF-8");
+    }
+    let _ = command
+        .args(["--app-name=Multiplex", "--icon=phone", "--", "Multiplex", text])
         .env("DBUS_SESSION_BUS_ADDRESS", format!("unix:path={runtime}/bus"))
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
@@ -202,7 +212,15 @@ fn devices() -> anyhow::Result<()> {
         println!("No phone is paired. Run `multiplex pair` and scan the code in the app.");
     }
     for d in devices {
-        println!("{}", d.name);
+        // With what the phone last said about itself, when that is recent.
+        let mut line = d.name.clone();
+        if share::linked(&d.name) {
+            line.push_str("  connected");
+        }
+        if let Some(seen) = share::seen(&d.name) {
+            line.push_str(&format!("  battery {}%{}", seen.battery, if seen.charging { ", charging" } else { "" }));
+        }
+        println!("{line}");
     }
     Ok(())
 }

@@ -15,6 +15,7 @@ import '../hosts/server_status_screen.dart';
 import '../settings/settings_widgets.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'computer_card.dart';
+import 'computer_sharing_screen.dart';
 import 'computer_status.dart';
 import 'panel_screen.dart';
 import 'touchpad_screen.dart';
@@ -87,8 +88,16 @@ class ComputerScreen extends StatelessWidget {
         actions: [
           PopupMenuButton<int>(
             tooltip: 'More for ${host.title}',
-            onSelected: (v) => v == 0 ? Navigator.of(context).push(MaterialPageRoute(builder: (_) => HostEditorScreen(host: host))) : _remove(context, host),
+            onSelected: (v) => switch (v) {
+              0 => Navigator.of(context).push(MaterialPageRoute(builder: (_) => HostEditorScreen(host: host))),
+              2 => ComputerSharingScreen.open(context, host.id),
+              _ => _remove(context, host),
+            },
             itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 2,
+                child: ListTile(leading: Icon(Icons.sync_alt), title: Text('Sharing and notifications')),
+              ),
               PopupMenuItem(
                 value: 0,
                 child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Connection details')),

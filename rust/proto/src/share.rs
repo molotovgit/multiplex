@@ -42,6 +42,9 @@ pub enum LinkEvent {
     File(OutFile),
     /// The computer's clipboard now holds this text.
     Clip { text: String },
+    /// Someone at the computer is looking for the phone: ring, loudly, for
+    /// at most this long.
+    Ring { seconds: u32 },
 }
 
 /// What `multiplex share paste` prints.
@@ -134,6 +137,55 @@ pub fn link_command(phone: &str) -> String {
     command(&["link", phone])
 }
 
+/// How long a phone rings at most when the computer looks for it.
+pub const RING_SECONDS: u32 = 30;
+
+/// What the phone tells the computer about itself now and then.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub struct PhoneStatus {
+    /// 0 to 100.
+    pub battery: u8,
+    pub charging: bool,
+}
+
+/// A notification from the phone, for the computer's screen.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub struct PhoneNotice {
+    /// The app it is from, as the phone names it ("Messages").
+    pub app: String,
+    pub title: String,
+    pub text: String,
+}
+
+/// One line of ordinary characters, cut to a length.
+fn one_line(text: &str, most: usize) -> String {
+    let flat: String = text.chars().map(|c| if c.is_control() { ' ' } else { c }).collect();
+    flat.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(most).collect()
+}
+
+impl PhoneNotice {
+    /// The notice as it may be shown: single lines, sensible lengths.
+    pub fn cleaned(&self) -> Self {
+        Self { app: one_line(&self.app, 60), title: one_line(&self.title, 120), text: one_line(&self.text, 500) }
+    }
+}
+
+impl PhoneStatus {
+    pub fn cleaned(&self) -> Self {
+        Self { battery: self.battery.min(100), charging: self.charging }
+    }
+}
+
+/// Reads the phone's status from standard input.
+pub fn status_command(phone: &str) -> String {
+    command(&["phone", "status", phone])
+}
+
+/// Reads a notification from standard input and shows it.
+pub fn notice_command(phone: &str) -> String {
+    command(&["phone", "notify", phone])
+}
+
 pub fn done_command(id: &str) -> Result<String, ProtoError> {
     Ok(command(&["share", "done", &clean_id(id)?]))
 }
@@ -151,6 +203,16 @@ mod tests {
         let clip = LinkEvent::Clip { text: "héllo\n".into() };
         assert_eq!(parse_link_event(&serde_json::to_string(&clip).unwrap()).unwrap(), clip);
         assert!(parse_link_event("").is_err() && parse_link_event("{\"other\":1}").is_err());
+    }
+
+    #[test]
+    fn a_ring_and_the_phones_news_read_back_and_are_tidied() {
+        let ring = LinkEvent::Ring { seconds: RING_SECONDS };
+        assert_eq!(serde_json::to_string(&ring).unwrap(), r#"{"ring":{"seconds":30}}"#);
+        assert_eq!(parse_link_event(r#"{"ring":{"seconds":30}}"#).unwrap(), ring);
+        let notice = PhoneNotice { app: "Messages\n".into(), title: "  Sam \t Lee ".into(), text: "x".repeat(900) }.cleaned();
+        assert_eq!((notice.app.as_str(), notice.title.as_str(), notice.text.chars().count()), ("Messages", "Sam Lee", 500));
+        assert_eq!(PhoneStatus { battery: 250, charging: true }.cleaned(), PhoneStatus { battery: 100, charging: true });
     }
 
     #[test]

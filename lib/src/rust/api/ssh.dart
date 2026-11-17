@@ -71,6 +71,22 @@ abstract class SshSession implements RustOpaqueInterface {
   /// this returns.
   Future<RemoteTouchpad> openTouchpad();
 
+  /// Shows one of the phone's notifications on the computer's screen.
+  Future<void> phoneNotice({
+    required String phone,
+    required String app,
+    required String title,
+    required String text,
+  });
+
+  /// Tells the computer the phone's battery level (0 to 100) and whether
+  /// it is charging. `phone` is the name it paired under.
+  Future<void> phoneStatus({
+    required String phone,
+    required int battery,
+    required bool charging,
+  });
+
   /// Joins a shell whose connection dropped to this (new) connection.
   /// Its screen and history stay; the new shell carries on below them.
   Future<void> reattachShell({

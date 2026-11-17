@@ -14,7 +14,7 @@ use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
-use multiplex_proto::share::{clean_file_name, clean_id, clean_url, Clipboard, LinkEvent, OutFile, MAX_CLIP};
+use multiplex_proto::share::{clean_file_name, clean_id, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, MAX_CLIP, RING_SECONDS};
 use multiplex_proto::clean_device_name;
 use serde::{Deserialize, Serialize};
 
@@ -161,6 +161,16 @@ fn phone_named(given: Option<&str>) -> Result<Vec<String>> {
     }
 }
 
+/// The paired phone that is speaking. A phone paired before names were
+/// kept says nothing, and is then the only one paired.
+fn the_phone(said: &str) -> Result<String> {
+    let phones = phone_named(if said.is_empty() { None } else { Some(said) })?;
+    match phones.as_slice() {
+        [one] => Ok(one.clone()),
+        _ => bail!("several phones are paired: this one has to say its name"),
+    }
+}
+
 /// `multiplex send [--to <phone>] <file or folder>…`, and with nothing to
 /// send, what is waiting.
 pub fn send(args: &[&str]) -> Result<()> {
@@ -194,7 +204,10 @@ fn notify(session: Option<&Session>, title: &str, body: &str) {
         Some(session) => session.command("notify-send"),
         None => std::process::Command::new("notify-send"),
     };
-    let _ = command.args(["--app-name=Multiplex", "--icon=phone", title, body]).stdout(Stdio::null()).stderr(Stdio::null()).status();
+    if !crate::desk::utf8_locale() {
+        command.env("LC_ALL", "C.UTF-8");
+    }
+    let _ = command.args(["--app-name=Multiplex", "--icon=phone", "--", title, body]).stdout(Stdio::null()).stderr(Stdio::null()).status();
 }
 
 /// The folder files from the phone go to.
@@ -280,13 +293,135 @@ pub fn share(args: &[&str]) -> Result<()> {
     Ok(())
 }
 
+/// Things that only matter while the session runs: which phones are
+/// linked, what they last said about themselves, what is asked of them.
+fn runtime_dir() -> PathBuf {
+    let base = std::env::var_os("XDG_RUNTIME_DIR").filter(|v| !v.is_empty()).map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
+    base.join("multiplex")
+}
+
+/// A phone's name as a file name.
+fn file_name_of(phone: &str) -> String {
+    phone.chars().map(|c| if c.is_alphanumeric() || matches!(c, '-' | '_' | '.') { c } else { '_' }).collect()
+}
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+}
+
+/// What a phone last said about itself, with when.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Seen {
+    pub battery: u8,
+    pub charging: bool,
+    /// Unix seconds.
+    pub at: u64,
+}
+
+/// The phone's last word about itself, if it was recent.
+pub fn seen(phone: &str) -> Option<Seen> {
+    let seen: Seen = serde_json::from_slice(&std::fs::read(runtime_dir().join("phones").join(format!("{}.json", file_name_of(phone)))).ok()?).ok()?;
+    (unix_now().saturating_sub(seen.at) < 15 * 60).then_some(seen)
+}
+
+/// Whether a `multiplex link` for this phone is running right now.
+pub fn linked(phone: &str) -> bool {
+    std::fs::metadata(runtime_dir().join("linked").join(file_name_of(phone)))
+        .and_then(|m| m.modified())
+        .is_ok_and(|at| at.elapsed().is_ok_and(|age| age < Duration::from_secs(5)))
+}
+
+fn read_json<T: serde::de::DeserializeOwned>(most: u64) -> Result<T> {
+    let mut text = String::new();
+    std::io::stdin().lock().take(most).read_to_string(&mut text)?;
+    serde_json::from_str(&text).map_err(|_| anyhow!("that was not understood"))
+}
+
+/// `multiplex phone …`: what the phone says about itself.
+pub fn phone(args: &[&str]) -> Result<()> {
+    match args {
+        ["status", phone] => {
+            let phone = the_phone(phone)?;
+            let status = read_json::<PhoneStatus>(4096)?.cleaned();
+            let dir = runtime_dir().join("phones");
+            std::fs::create_dir_all(&dir)?;
+            let seen = Seen { battery: status.battery, charging: status.charging, at: unix_now() };
+            std::fs::write(dir.join(format!("{}.json", file_name_of(&phone))), serde_json::to_vec(&seen)?)?;
+            println!("ok");
+        }
+        ["notify", phone] => {
+            let phone = the_phone(phone)?;
+            let notice = read_json::<PhoneNotice>(16 * 1024)?.cleaned();
+            if notice.title.is_empty() && notice.text.is_empty() {
+                bail!("an empty notification");
+            }
+            let from = if notice.app.is_empty() { phone } else { format!("{} · {phone}", notice.app) };
+            let session = Session::find().ok();
+            let mut command = match &session {
+                Some(session) => session.command("notify-send"),
+                None => std::process::Command::new("notify-send"),
+            };
+            if !crate::desk::utf8_locale() {
+                command.env("LC_ALL", "C.UTF-8");
+            }
+            // "--": the words that follow are never read as options.
+            let shown = command.arg(format!("--app-name={from}")).args(["--icon=phone", "--"]).arg(if notice.title.is_empty() { &from } else { &notice.title }).arg(&notice.text).stdout(Stdio::null()).stderr(Stdio::null()).status();
+            if !shown.is_ok_and(|s| s.success()) {
+                bail!("the notification could not be shown (is libnotify installed?)");
+            }
+            println!("ok");
+        }
+        _ => bail!("use: multiplex phone status <phone> | notify <phone>"),
+    }
+    Ok(())
+}
+
+/// `multiplex ring [--to <phone>]`: the phone rings, wherever it is lying.
+pub fn ring(args: &[&str]) -> Result<()> {
+    let to = match args {
+        [] => None,
+        ["--to", name] => Some(*name),
+        _ => bail!("use: multiplex ring [--to <phone>]"),
+    };
+    let mut rang = false;
+    for phone in phone_named(to)? {
+        if !linked(&phone) {
+            println!("{phone} is not connected right now, so it cannot be rung.");
+            continue;
+        }
+        let dir = runtime_dir().join("asks").join(file_name_of(&phone));
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join(format!("{}.json", random_id()?)), serde_json::to_vec(&LinkEvent::Ring { seconds: RING_SECONDS })?)?;
+        println!("Ringing {phone}…");
+        rang = true;
+    }
+    if !rang {
+        bail!("no phone could be rung");
+    }
+    Ok(())
+}
+
+/// What has been asked of a phone since the last look; each ask is handed
+/// over once.
+fn asks_for(phone: &str) -> Vec<LinkEvent> {
+    let dir = runtime_dir().join("asks").join(file_name_of(phone));
+    let mut files: Vec<PathBuf> = std::fs::read_dir(&dir).into_iter().flatten().flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x == "json")).collect();
+    files.sort();
+    files
+        .into_iter()
+        .filter_map(|path| {
+            let event = serde_json::from_slice(&std::fs::read(&path).ok()?).ok();
+            let _ = std::fs::remove_file(&path);
+            event
+        })
+        .collect()
+}
+
 /// `multiplex link <phone>`: prints what waits for the phone, now and as
 /// it comes, and the clipboard's text when it changes, one line of JSON
 /// each, until the phone hangs up.
 pub fn link(phone: &str) -> Result<()> {
-    let phones = phone_named(if phone.is_empty() { None } else { Some(phone) })?;
-    // An unnamed phone is the only one paired.
-    let [phone] = phones.as_slice() else { bail!("several phones are paired: this one has to say its name") };
+    let phone = &the_phone(phone)?;
     let outbox = Outbox::open()?;
     let session = Session::find().ok();
 
@@ -314,10 +449,21 @@ pub fn link(phone: &str) -> Result<()> {
             Ok(out.flush()?)
         };
         let mut told = HashSet::new();
+        // While this runs, the phone counts as connected (for `multiplex ring`
+        // and `multiplex devices`); asks from before it connected are stale.
+        let here = runtime_dir().join("linked");
+        std::fs::create_dir_all(&here)?;
+        let here = here.join(file_name_of(phone));
+        let _ = asks_for(phone);
         // What is on the clipboard when the phone connects is not news.
         let mut last_clip = session.as_ref().and_then(clipboard_text);
         let mut alive = Instant::now();
         loop {
+            std::fs::write(&here, b"")?;
+            for ask in asks_for(phone) {
+                say(Some(&ask))?;
+                alive = Instant::now();
+            }
             for w in outbox.waiting_for(phone) {
                 if told.insert(w.id.clone()) {
                     say(Some(&LinkEvent::File(OutFile { id: w.id, name: w.name, size: w.size, path: w.path })))?;
@@ -350,6 +496,7 @@ pub fn link(phone: &str) -> Result<()> {
         }
     };
     let result = run();
+    let _ = std::fs::remove_file(runtime_dir().join("linked").join(file_name_of(phone)));
     if let Some(mut watcher) = watcher {
         let _ = watcher.kill();
         let _ = watcher.wait();
@@ -409,6 +556,13 @@ mod tests {
         assert!(outbox.waiting_for("Phone").is_empty());
         assert!(outbox.all().is_empty());
         assert!(outbox.add("Phone", &file).is_err());
+    }
+
+    #[test]
+    fn a_phones_name_is_a_safe_file_name() {
+        assert_eq!(file_name_of("Sam's S21 FE"), "Sam_s_S21_FE");
+        assert_eq!(file_name_of("../../etc"), ".._.._etc");
+        assert!(!file_name_of("a/b").contains('/'));
     }
 
     #[test]

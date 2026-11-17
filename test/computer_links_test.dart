@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/data/models.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/platform/phone_bridge.dart';
 import 'package:multiplex/sessions/computer_links.dart';
 import 'package:multiplex/sessions/phone_outbox.dart';
 import 'package:multiplex/sessions/session_manager.dart';
@@ -25,6 +26,9 @@ class _Ssh implements SshSession {
 class _Computer implements ShareChannel {
   final events = StreamController<ShareEvent>.broadcast();
   final log = <String>[];
+
+  /// What the phone said about its battery (kept apart: it says so by itself).
+  final statuses = <String>[];
   String? linkedAs;
   bool stopped = false;
   bool failFetch = false;
@@ -48,6 +52,12 @@ class _Computer implements ShareChannel {
   @override
   Future<void> copy(String text) async => log.add('copy $text');
 
+  @override
+  Future<void> status(String phone, {required int battery, required bool charging}) async => statuses.add('$phone: $battery%${charging ? ' charging' : ''}');
+
+  @override
+  Future<void> notice(String phone, PhoneNotification notification) async => log.add('notice ${notification.app}: ${notification.title}');
+
   /// Names that do not make it across.
   final failing = <String>{};
 
@@ -59,6 +69,23 @@ class _Computer implements ShareChannel {
         if (!failing.contains(f.name)) f,
     ];
   }
+}
+
+/// The phone itself: its battery, its ringer, its notifications.
+class _Phone extends PhoneBridge {
+  _Phone();
+
+  final posted = StreamController<PhoneNotification>.broadcast();
+  final rang = <int>[];
+
+  @override
+  Future<void> ring(int seconds) async => rang.add(seconds);
+
+  @override
+  Future<({int level, bool charging})?> battery() async => (level: 82, charging: true);
+
+  @override
+  Stream<PhoneNotification> notifications() => posted.stream;
 }
 
 /// Sessions, without connecting anywhere.
@@ -84,6 +111,7 @@ void main() {
   String? phoneClipboard;
   late Directory temp;
   late PhoneOutbox outbox;
+  late _Phone phone;
   const desk = Host(id: 'c', label: 'Desk', address: 'desk', computer: true, pairedAs: 'My phone');
 
   Future<LiveSession> connect({Host host = desk}) async {
@@ -103,6 +131,7 @@ void main() {
     phoneClipboard = 'on the phone already';
     temp = Directory.systemTemp.createTempSync('outbox-test');
     outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
+    phone = _Phone();
     links = ComputerLinks(
       sessions,
       store,
@@ -111,6 +140,7 @@ void main() {
       readClipboard: () async => phoneClipboard,
       writeClipboard: (text) async => phoneClipboard = text,
       outbox: outbox,
+      phone: phone,
     );
   });
 
@@ -209,6 +239,31 @@ void main() {
     expect(computer.log, isEmpty);
     expect(await links.sendClipboardTo(session), isTrue);
     expect(computer.log, ['copy private']);
+  });
+
+  test('the computer hears the battery level, and can ring the phone', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(computer.statuses, ['My phone: 82% charging']);
+    computer.events.add(const ShareEvent.ring(seconds: 30));
+    await Future<void>.delayed(Duration.zero);
+    expect(phone.rang, [30]);
+  });
+
+  test('phone notifications go to the computer only when asked for, and not from muted apps', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    computer.log.clear();
+    phone.posted.add(const PhoneNotification(app: 'Messages', title: 'Sam', text: 'On my way'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, isEmpty, reason: 'off until switched on for this computer');
+    expect(links.seenApps, {'Messages'});
+
+    store.saveHost(desk.copyWith(mirrorNotifications: true, mutedApps: ['Games']));
+    phone.posted.add(const PhoneNotification(app: 'Messages', title: 'Sam', text: 'Nearly there'));
+    phone.posted.add(const PhoneNotification(app: 'Games', title: 'Come back!', text: 'Your crops are ready'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['notice Messages: Sam']);
   });
 
   test('the link ends with the connection', () async {

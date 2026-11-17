@@ -4,9 +4,11 @@ import 'package:multiplex/app/app_scope.dart';
 import 'package:multiplex/data/models.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/platform/phone_bridge.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/ui/computers/computer_card.dart';
 import 'package:multiplex/ui/computers/computer_screen.dart';
+import 'package:multiplex/ui/computers/computer_sharing_screen.dart';
 import 'package:multiplex/ui/hosts/host_arrangement.dart';
 import 'package:multiplex/ui/hosts/hosts_screen.dart';
 import 'package:multiplex/ui/pair/pair_screen.dart';
@@ -103,6 +105,35 @@ void main() {
     expect(find.text('Wake'), findsNothing);
   });
 
+  testWidgets('sharing: the clipboard and notification switches are saved; access is asked for', (tester) async {
+    store.saveHost(_desk);
+    final sessions = SessionManager(store);
+    addTearDown(sessions.dispose);
+    final phone = _NoAccessPhone();
+    await tester.pumpWidget(
+      AppScope(
+        vault: store,
+        manager: sessions,
+        child: MaterialApp(
+          home: ComputerSharingScreen(hostId: 'c', phone: phone),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(store.host('c')!.shareClipboard, isTrue);
+    await tester.tap(find.text('Share the clipboard'));
+    await tester.pump();
+    expect(store.host('c')!.shareClipboard, isFalse);
+
+    expect(find.text('Open Notification access'), findsNothing);
+    await tester.tap(find.textContaining("Show this phone's notifications"));
+    await tester.pumpAndSettle();
+    expect(store.host('c')!.mirrorNotifications, isTrue);
+    await tester.tap(find.text('Open Notification access'));
+    expect(phone.opened, 1);
+    await tester.pump(const Duration(milliseconds: 500));
+  });
+
   testWidgets('removing a computer takes it off Home', (tester) async {
     store.saveHost(_desk);
     await home(tester);
@@ -117,4 +148,17 @@ void main() {
     expect(store.hosts, isEmpty);
     expect(find.text('Pair your computer'), findsOneWidget);
   });
+}
+
+/// A phone where Android has not given notification access yet.
+class _NoAccessPhone extends PhoneBridge {
+  _NoAccessPhone();
+
+  int opened = 0;
+
+  @override
+  Future<bool> notificationAccess() async => false;
+
+  @override
+  Future<void> openNotificationAccess() async => opened++;
 }

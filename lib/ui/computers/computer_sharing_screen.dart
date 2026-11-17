@@ -1,0 +1,158 @@
+import 'package:flutter/material.dart';
+
+import '../../app/app_scope.dart';
+import '../../app/theme.dart';
+import '../../platform/phone_bridge.dart';
+import '../../sessions/computer_links.dart';
+import '../common/widgets.dart';
+import '../settings/settings_widgets.dart';
+
+/// What a paired computer and this phone share by themselves while they
+/// are connected: the clipboard, and the phone's notifications.
+class ComputerSharingScreen extends StatefulWidget {
+  const ComputerSharingScreen({super.key, required this.hostId, this.phone = const PhoneBridge(), this.links});
+
+  final String hostId;
+
+  /// Replaced in tests.
+  final PhoneBridge phone;
+  final ComputerLinks? links;
+
+  static Future<void> open(BuildContext context, String hostId) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => ComputerSharingScreen(hostId: hostId)));
+
+  @override
+  State<ComputerSharingScreen> createState() => _ComputerSharingScreenState();
+}
+
+class _ComputerSharingScreenState extends State<ComputerSharingScreen> with WidgetsBindingObserver {
+  /// Null until Android has answered.
+  bool? _access;
+
+  ComputerLinks? get _links => widget.links ?? ComputerLinks.app;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkAccess();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Back from Android's settings: the answer may have changed.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkAccess();
+  }
+
+  Future<void> _checkAccess() async {
+    final access = await widget.phone.notificationAccess();
+    if (mounted) setState(() => _access = access);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.watch(context);
+    final host = store.host(widget.hostId);
+    if (host == null) return const Scaffold(body: SizedBox.shrink());
+    final colors = AppColorsTheme.of(context);
+    final links = _links;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sharing')),
+      body: ContentWidth(
+        child: ListenableBuilder(
+          listenable: links ?? const _Never(),
+          builder: (context, _) {
+            // Apps seen since the app started, and the ones kept off before.
+            final apps = {...?links?.seenApps, ...host.mutedApps}.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+            return ListView(
+              children: [
+                const SectionHeader('Clipboard'),
+                SwitchListTile(
+                  title: const Text('Share the clipboard'),
+                  subtitle: Text('Text copied on ${host.title} lands on this phone, and the other way round, while they are connected'),
+                  value: host.shareClipboard,
+                  onChanged: (on) => store.saveHost(host.copyWith(shareClipboard: on)),
+                ),
+                const SectionHeader('Notifications'),
+                SwitchListTile(
+                  title: Text('Show this phone\'s notifications on ${host.title}'),
+                  subtitle: const Text('While they are connected. Nothing is kept on either side'),
+                  value: host.mirrorNotifications,
+                  onChanged: (on) => store.saveHost(host.copyWith(mirrorNotifications: on)),
+                ),
+                if (host.mirrorNotifications && _access == false)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 4, SettingsLayout.gutter, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const NoticeBox(
+                          tone: NoticeTone.warning,
+                          text: 'Android has not yet let Multiplex see notifications. Allow it under Notification access, then come back.',
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: FilledButton.tonal(onPressed: widget.phone.openNotificationAccess, child: const Text('Open Notification access')),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (host.mirrorNotifications) ...[
+                  const SectionHeader('Apps'),
+                  if (apps.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 12),
+                      child: Text(
+                        'Apps appear here as they post notifications. Switch one off to keep it on the phone only.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: colors.muted),
+                      ),
+                    ),
+                  for (final app in apps)
+                    SwitchListTile(
+                      title: Text(app),
+                      value: !host.mutedApps.contains(app),
+                      onChanged: (show) => store.saveHost(host.copyWith(mutedApps: show ? ([...host.mutedApps]..remove(app)) : [...host.mutedApps, app])),
+                    ),
+                ],
+                if (links != null && links.received.isNotEmpty) ...[
+                  const SectionHeader('Received'),
+                  for (final file in links.received.where((f) => f.from == host.title))
+                    ListTile(
+                      leading: const Icon(Icons.insert_drive_file_outlined),
+                      title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: MonoText(file.path, maxLines: 1),
+                    ),
+                ],
+                const Padding(
+                  padding: EdgeInsets.all(SettingsLayout.gutter),
+                  child: HelpText(
+                    'On the computer: `multiplex send <file>` sends a file to this phone, `multiplex ring` makes it ring, '
+                    'and `multiplex devices` shows its battery.',
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// A listenable that never changes, for when there are no links.
+class _Never implements Listenable {
+  const _Never();
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}

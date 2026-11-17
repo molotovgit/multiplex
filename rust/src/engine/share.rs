@@ -79,6 +79,25 @@ pub async fn open(conn: &Connection, url: &str) -> anyhow::Result<()> {
     run(conn, &command).await.map(|_| ())
 }
 
+async fn tell(conn: &Connection, command: &str, json: String) -> anyhow::Result<()> {
+    let out = conn.exec_with_input(command, json.as_bytes(), 4096).await?;
+    if out.exit_code == Some(0) {
+        Ok(())
+    } else {
+        Err(problem(&out))
+    }
+}
+
+/// Tells the computer how the phone is doing (for `multiplex devices`).
+pub async fn status(conn: &Connection, phone: &str, status: &proto::PhoneStatus) -> anyhow::Result<()> {
+    tell(conn, &proto::status_command(phone), serde_json::to_string(&status.cleaned())?).await
+}
+
+/// Shows one of the phone's notifications on the computer's screen.
+pub async fn notice(conn: &Connection, phone: &str, notice: &proto::PhoneNotice) -> anyhow::Result<()> {
+    tell(conn, &proto::notice_command(phone), serde_json::to_string(&notice.cleaned())?).await
+}
+
 /// The phone has fetched a waiting file: the computer forgets it.
 pub async fn done(conn: &Connection, id: &str) -> anyhow::Result<()> {
     let command = proto::done_command(id).map_err(|err| anyhow::anyhow!("{err}"))?;
