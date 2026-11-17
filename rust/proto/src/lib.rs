@@ -16,6 +16,7 @@
 
 pub mod agents;
 pub mod desk;
+pub mod herd;
 pub mod input;
 pub mod share;
 pub mod sign;

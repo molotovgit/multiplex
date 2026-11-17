@@ -222,6 +222,10 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["desk", "state" | "watch" | "binds"] => need(access.desktop || access.input, "desktop"),
             // Reading which agents run says what the user works on: like seeing the screen.
             ["agents"] => need(access.desktop || access.terminal, "desktop"),
+            // Seeing what runs in the terminals, as `agents`; typing into
+            // them and reading them is the terminal's own power.
+            ["herd", "state" | "watch"] => need(access.desktop || access.terminal, "desktop"),
+            ["herd", "do", ..] => need(access.terminal, "terminal"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
             ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
@@ -432,6 +436,16 @@ mod tests {
         assert_eq!(permits(&no_input, &multiplex(&["input"])), Err("input"));
         assert_eq!(permits(&no_input, &Wanted::Desktop(vec![])), Err("input"), "gliff would control too");
         assert!(permits(&no_input, &multiplex(&["desk", "watch"])).is_ok(), "looking is still allowed");
+        // The herd: seen with the desktop or the terminal, as the agents
+        // are; typed into and read only with the terminal.
+        assert!(permits(&no_terminal, &multiplex(&["herd", "watch"])).is_ok());
+        assert!(permits(&no_terminal, &multiplex(&["herd", "state"])).is_ok());
+        for typing in [&["herd", "do", "prompt", "default", "w1:p1", "aGk"][..], &["herd", "do", "keys", "default", "w1:p1", "enter"], &["herd", "do", "read", "default", "w1:p1", "40"]] {
+            assert_eq!(permits(&no_terminal, &multiplex(typing)), Err("terminal"), "{typing:?}");
+            assert!(permits(&all, &multiplex(typing)).is_ok());
+        }
+        assert_eq!(permits(&Access { desktop: false, terminal: false, ..all }, &multiplex(&["herd", "watch"])), Err("desktop"));
+        assert!(permits(&Access { desktop: false, ..all }, &multiplex(&["herd", "watch"])).is_ok());
 
         // The phone's own screen in a window here: that opens a window.
         let no_desktop = Access { desktop: false, terminal: false, ..all };
