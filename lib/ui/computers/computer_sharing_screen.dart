@@ -126,7 +126,7 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                 ),
                 SwitchListTile(
                   title: Text('Send text messages from ${host.title}'),
-                  subtitle: const Text('`multiplex sms <number> <text>` there sends through this phone. Off unless you want it'),
+                  subtitle: const Text('Its "multiplex sms" command then sends through this phone. Off unless you want it'),
                   value: host.allowSms,
                   onChanged: _setSms,
                 ),
@@ -181,13 +181,23 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                       subtitle: MonoText(file.path, maxLines: 1),
                     ),
                 ],
-                const Padding(
-                  padding: EdgeInsets.all(SettingsLayout.gutter),
-                  child: HelpText(
-                    'On the computer: `multiplex send <file>` sends a file to this phone, `multiplex ring` makes it ring, '
-                    'and `multiplex devices` shows its battery.',
+                const SectionHeader('On the computer'),
+                for (final (command, what) in const [
+                  ('multiplex send <file>', 'sends a file to this phone'),
+                  ('multiplex ring', 'makes this phone ring, to find it'),
+                  ('multiplex devices', 'shows its battery and whether it is connected'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        MonoText(command),
+                        Text(what, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.muted)),
+                      ],
+                    ),
                   ),
-                ),
+                const SizedBox(height: 12),
               ],
             );
           },

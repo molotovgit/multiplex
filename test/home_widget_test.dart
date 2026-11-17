@@ -95,6 +95,7 @@ void main() {
       expect(IncomingAction.parse({'type': 'connect', 'hostId': 'h1'}), isA<ConnectAction>().having((a) => a.hostId, 'hostId', 'h1'));
       expect(IncomingAction.parse({'type': 'connect', 'hostId': ''}), isNull);
       expect(IncomingAction.parse({'type': 'launch-missiles'}), isNull);
+      expect(IncomingAction.parse({'type': 'shareFailed'}), isA<ShareFailedAction>(), reason: 'a share that could not be read is said, not dropped');
       expect(IncomingAction.parse('connect'), isNull);
       final share = IncomingAction.parse({
         'type': 'share',

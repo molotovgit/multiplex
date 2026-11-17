@@ -412,7 +412,12 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                active ? 'Uploading to ${RemotePaths.name(_folder!)} on ${_host!.title}…' : 'Uploaded $done of ${_jobs.length} to $_folder on ${_host!.title}.',
+                // A computer needs no path: it is "its Downloads folder".
+                _host!.computer
+                    ? (active ? 'Sending to ${_host!.title}…' : 'Sent $done of ${_jobs.length} to ${_host!.title}, into its Downloads folder.')
+                    : (active
+                          ? 'Uploading to ${RemotePaths.name(_folder!)} on ${_host!.title}…'
+                          : 'Uploaded $done of ${_jobs.length} to $_folder on ${_host!.title}.'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),

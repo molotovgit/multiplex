@@ -22,6 +22,8 @@ sealed class IncomingAction {
         ];
         final text = raw['text'];
         return parsed.isEmpty ? null : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null);
+      case 'shareFailed':
+        return const ShareFailedAction();
     }
     return null;
   }
@@ -44,6 +46,11 @@ class ShareAction extends IncomingAction {
   /// Set when text (a link, a note) was shared rather than files; [files]
   /// then holds it as one text file, for servers.
   final String? text;
+}
+
+/// Something was shared, but none of it could be read.
+class ShareFailedAction extends IncomingAction {
+  const ShareFailedAction();
 }
 
 class SharedFile {

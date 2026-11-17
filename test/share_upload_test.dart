@@ -257,6 +257,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(remote.uploads, ['/home/ann/Downloads/photo.jpg', '/home/ann/Downloads/notes.txt']);
       expect(asked, ['inbox', 'received My phone: photo.jpg, notes.txt']);
+      expect(find.text('Sent 2 of 2 to Desk, into its Downloads folder.'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
     });
 
