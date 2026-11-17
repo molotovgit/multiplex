@@ -54,7 +54,7 @@ class SessionsScreen extends StatelessWidget {
               icon: Icons.terminal,
               title: 'Nothing open',
               message:
-                  'Connect to a host from the Hosts list. Its terminals, file browser and tunnels show up here '
+                  'Connect to a computer or server from Home. Its terminals, file browser and tunnels show up here '
                   'and keep running while you switch screens.',
             );
           }

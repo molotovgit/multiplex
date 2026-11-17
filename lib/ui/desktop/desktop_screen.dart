@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_motion.dart';
@@ -33,13 +34,21 @@ class DesktopScreen extends StatefulWidget {
   final LiveSession session;
   final DesktopController controller;
 
-  /// Opens a new desktop on [session].
-  static Future<void> open(BuildContext context, LiveSession session) {
+  /// Opens a new desktop on [session]. [screen] overrides the saved choice
+  /// for this one time (the "Extend screen" tile).
+  static Future<void> open(BuildContext context, LiveSession session, {DesktopScreenMode? screen}) {
     final sessions = AppScope.sessions(context);
-    final controller = sessions.openDesktop(session, DesktopSettings.of(AppScope.store(context)));
+    final controller = sessions.openDesktop(session, DesktopSettings.of(AppScope.store(context)).copyWith(screen: screen));
+    // The page fades in over the card that opened it. Only the page moves:
+    // the picture itself is never animated.
+    final motion = AppMotion.of(context);
     return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DesktopScreen(session: session, controller: controller),
+      PageRouteBuilder<void>(
+        transitionDuration: motion.page,
+        reverseTransitionDuration: motion.page * 0.75,
+        pageBuilder: (context, animation, secondary) => DesktopScreen(session: session, controller: controller),
+        transitionsBuilder: (context, animation, secondary, child) =>
+            FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
       ),
     );
   }
@@ -48,7 +57,7 @@ class DesktopScreen extends StatefulWidget {
   State<DesktopScreen> createState() => _DesktopScreenState();
 }
 
-class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserver {
+class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final _viewport = DesktopViewport();
   final _focus = FocusNode(debugLabel: 'desktop keyboard');
   bool _started = false;
@@ -65,9 +74,19 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   /// The keyboard was opened because a remote text field got the focus
   /// (so it closes again when the field loses it).
   bool _autoOpened = false;
-  final _panelKey = GlobalKey();
   double _panelHeight = 0;
+
+  /// A soft dip to black over the picture when the monitor changes. It is
+  /// drawn above the video; the video itself is not touched.
+  late final AnimationController _dip = AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
+  late final Animation<double> _dipOpacity = TweenSequence<double>([
+    TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.6).chain(CurveTween(curve: Curves.easeOut)), weight: 25),
+    TweenSequenceItem(tween: Tween(begin: 0.6, end: 0.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 75),
+  ]).animate(_dip);
   bool _toolbarShown = true;
+
+  /// The handle's height with the gap under it.
+  static const _handleZone = 32.0;
   Timer? _hideToolbar;
   Size _lastView = Size.zero;
   Size _lastRemote = Size.zero;
@@ -101,6 +120,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _hideToolbar?.cancel();
+    _dip.dispose();
     c.removeListener(_changed);
     c.copiedFromDesktop.removeListener(_copied);
     c.remoteTextFocus.removeListener(_remoteFocusChanged);
@@ -141,7 +161,9 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   void _scheduleHide() {
     _hideToolbar?.cancel();
     _hideToolbar = Timer(const Duration(seconds: 4), () {
-      if (mounted && c.live && !_keyboardOpen) setState(() => _toolbarShown = false);
+      // Also while typing: the keyboard has its own key to close it, and
+      // the bar would sit on the line being typed.
+      if (mounted && c.live) setState(() => _toolbarShown = false);
     });
   }
 
@@ -213,26 +235,12 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
 
   /// The built-in keyboard's height, once laid out, so the picture can move
   /// above it.
-  void _measurePanel() {
-    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    final h = box?.hasSize == true ? box!.size.height : 0.0;
-    if ((h - _panelHeight).abs() > 0.5) setState(() => _panelHeight = h);
+  void _panelMeasured(Size size) {
+    if (mounted && (size.height - _panelHeight).abs() > 0.5) setState(() => _panelHeight = size.height);
   }
 
   void _keepFocus() {
     if (_keyboardOpen && !_focus.hasFocus) _focus.requestFocus();
-  }
-
-  void _toggleTouchMode() {
-    final store = AppScope.store(context);
-    final next = c.settings.copyWith(touch: c.settings.touch == DesktopTouchMode.trackpad ? DesktopTouchMode.direct : DesktopTouchMode.trackpad);
-    next.saveTo(store);
-    c.applySettings(next);
-    Toast.show(
-      context,
-      next.touch == DesktopTouchMode.trackpad ? 'Trackpad: drag to move the pointer, tap to click' : 'Direct touch: tap where you want to click',
-    );
-    _scheduleHide();
   }
 
   Future<void> _more() async {
@@ -307,7 +315,14 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     next.saveTo(AppScope.store(context));
     c.showOutput(name);
     _viewport.layout(_view, c.remoteSize, zoom: 1);
-    Toast.show(context, name);
+    final motion = AppMotion.of(context);
+    if (motion.page > Duration.zero) {
+      _dip
+        ..duration = motion.page
+        ..forward(from: 0);
+    }
+    // With the bar open the chips already show which monitor it is.
+    if (!_toolbarShown) Toast.show(context, name);
   }
 
   /// Starts the desktop once the size is known; later sizes are resizes.
@@ -354,9 +369,20 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                 _lastRemote = remote;
               }
               final builtIn = _keyboardOpen && !_systemKeyboard;
-              if (builtIn) WidgetsBinding.instance.addPostFrameCallback((_) => _measurePanel());
               final bottomInset = builtIn ? _panelHeight : keyboardHeight + (showKeys ? 52 : 0);
-              final visible = bottomInset > 0 ? view.height - bottomInset : null;
+              // What sits at the bottom edge, below the bar.
+              final bottomKind = switch (c.phase) {
+                DesktopPhase.reconnecting => 'reconnecting',
+                DesktopPhase.ended => 'ended',
+                _ when builtIn => 'keyboard',
+                _ when showKeys => 'keys',
+                _ => 'none',
+              };
+              final slide = AppMotion.of(context).sheet.duration ?? Duration.zero;
+              // The picture stays clear of the keyboard and of the handle
+              // above it. (The bar, when called up, covers a strip for a
+              // few seconds; moving the picture for it would make it jump.)
+              final visible = bottomInset > 0 ? view.height - bottomInset - _handleZone : null;
               if (visible != null && c.live) {
                 _viewport.follow(c.cursor, view, remote, visibleHeight: visible);
               } else {
@@ -385,113 +411,138 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                         child: _RemoteView(controller: c, viewport: _viewport),
                       ),
                     ),
-                    if (c.phase == DesktopPhase.connecting) _Starting(title: widget.session.host.title),
-                    // The toolbar, or the handle that brings it back.
-                    Positioned(
-                      top: media.padding.top + 8,
-                      left: 12,
-                      right: 12,
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: AppMotion.of(context).page ~/ 2,
-                          child: _toolbarShown || !c.live
-                              ? ConstrainedBox(
-                                  key: const ValueKey('bar'),
-                                  constraints: const BoxConstraints(maxWidth: 560),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DesktopToolbar(
-                                        title: widget.session.host.title,
-                                        route: _route,
-                                        controller: c,
-                                        keyboardOpen: _keyboardOpen,
-                                        keysOpen: _keysOpen,
-                                        onBack: () => Navigator.of(context).maybePop(),
-                                        onKeyboard: _toggleKeyboard,
-                                        onKeys: () {
-                                          setState(() => _keysOpen = !_keysOpen);
-                                          _scheduleHide();
-                                        },
-                                        onTouchMode: _toggleTouchMode,
-                                        onScreens: () async {
-                                          _hideToolbar?.cancel();
-                                          await DesktopScreens.show(context, controller: c);
-                                          _scheduleHide();
-                                        },
-                                        onMore: _more,
-                                      ),
-                                      if (_screens.$1.length > 1) ...[
-                                        const SizedBox(height: 6),
-                                        DesktopScreenChips(
-                                          names: _screens.$1,
-                                          selected: _screens.$2,
-                                          onSelect: (name) {
-                                            _showScreen(name);
-                                            _scheduleHide();
-                                          },
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                )
-                              : _Handle(key: const ValueKey('handle'), onTap: _showToolbar),
-                        ),
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: FadeTransition(opacity: _dipOpacity, child: const ColoredBox(color: Colors.black)),
                       ),
                     ),
-                    // While zoomed in: zoom out, in, or back to the whole screen.
-                    if (c.live && _viewport.zoom > 1.05)
-                      Positioned(
-                        left: 12,
-                        bottom: bottomInset + 12 + (showKeys || _keyboardOpen ? 0 : media.padding.bottom),
-                        child: DesktopZoomPill(
-                          zoom: _viewport.zoom,
-                          onOut: () => _zoomBy(1 / 1.5),
-                          onIn: () => _zoomBy(1.5),
-                          onFit: () => _toggleZoom(Offset.zero),
-                        ),
-                      ),
-                    if (c.settings.showStats && c.live)
-                      Positioned(
-                        right: 8,
-                        bottom: bottomInset + 8 + (showKeys ? 0 : media.padding.bottom),
-                        child: DesktopStatsChip(controller: c),
-                      ),
-                    // Bottom: reconnect / ended banner, or the key bar.
+                    if (c.phase == DesktopPhase.connecting) _Starting(title: widget.session.host.title),
+                    // Everything you touch sits at the bottom, where thumbs
+                    // reach, stacked from the screen edge up: the keyboard
+                    // or a banner, the bar (or the handle that brings it
+                    // back) with the monitor chips, then zoom and speed.
                     Positioned(
                       left: 0,
                       right: 0,
                       bottom: keyboardHeight,
-                      child: switch (c.phase) {
-                        DesktopPhase.reconnecting => ReconnectBanner(
-                          note: c.note,
-                          onTryNow: () => AppScope.sessions(context).networkBack(),
-                          onStop: () => AppScope.sessions(context).stopReconnecting(widget.session),
-                        ),
-                        DesktopPhase.ended => EndedBanner(reason: c.note, onReconnect: c.restart, onClose: () => Navigator.of(context).maybePop()),
-                        // Multiplex's keyboard, with the desktop's Super key bar on top.
-                        _ when builtIn => Column(
-                          key: _panelKey,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            DesktopKeyBar(controller: c, keepFocus: _keepFocus, compact: true),
-                            TerminalKeyboardPanel.withSink(
-                              showCommands: false,
-                              sink: DesktopKeySink(c),
-                              onSnippets: () {},
-                              onHistory: () {},
-                              onHide: _closeKeyboard,
-                              onSwitchToSystem: () => _useSystemKeyboard(true),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: _FloatRow(
+                              // While zoomed in: zoom out, in, or back to the whole screen.
+                              zoom: c.live && _viewport.zoom > 1.05
+                                  ? DesktopZoomPill(
+                                      zoom: _viewport.zoom,
+                                      onOut: () => _zoomBy(1 / 1.5),
+                                      onIn: () => _zoomBy(1.5),
+                                      onFit: () => _toggleZoom(Offset.zero),
+                                    )
+                                  : null,
+                              stats: c.settings.showStats && c.live ? DesktopStatsChip(controller: c) : null,
                             ),
-                          ],
-                        ),
-                        _ when showKeys => DesktopKeyBar(
-                          controller: c,
-                          keepFocus: _keepFocus,
-                          onSwitchKeyboard: _keyboardOpen ? () => _useSystemKeyboard(false) : null,
-                        ),
-                        _ => const SizedBox.shrink(),
-                      },
+                          ),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Center(
+                              child: AnimatedSize(
+                                duration: slide,
+                                curve: Curves.easeOutCubic,
+                                alignment: Alignment.bottomCenter,
+                                child: AnimatedSwitcher(
+                                  duration: slide,
+                                  layoutBuilder: (current, previous) => Stack(alignment: Alignment.bottomCenter, children: [...previous, ?current]),
+                                  child: _toolbarShown || !c.live
+                                      ? ConstrainedBox(
+                                          key: const ValueKey('bar'),
+                                          constraints: const BoxConstraints(maxWidth: 560),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (_screens.$1.length > 1) ...[
+                                                DesktopScreenChips(
+                                                  names: _screens.$1,
+                                                  selected: _screens.$2,
+                                                  onSelect: (name) {
+                                                    _showScreen(name);
+                                                    _scheduleHide();
+                                                  },
+                                                ),
+                                                const SizedBox(height: 6),
+                                              ],
+                                              DesktopToolbar(
+                                                title: widget.session.host.title,
+                                                route: _route,
+                                                controller: c,
+                                                keyboardOpen: _keyboardOpen,
+                                                keysOpen: _keysOpen,
+                                                onBack: () => Navigator.of(context).maybePop(),
+                                                onKeyboard: _toggleKeyboard,
+                                                onKeys: () {
+                                                  setState(() => _keysOpen = !_keysOpen);
+                                                  _scheduleHide();
+                                                },
+                                                onMore: _more,
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : _Handle(key: const ValueKey('handle'), onTap: _showToolbar),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Nothing below the bar: keep it clear of the screen edge.
+                          AnimatedContainer(duration: slide, curve: Curves.easeOutCubic, height: bottomKind == 'none' ? media.padding.bottom + 8 : 6),
+                          // The keyboard, the key bar or a banner slides up from the edge.
+                          AnimatedSwitcher(
+                            duration: slide,
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) => SizeTransition(sizeFactor: animation, alignment: Alignment.topCenter, child: child),
+                            layoutBuilder: (current, previous) => Stack(alignment: Alignment.bottomCenter, children: [...previous, ?current]),
+                            child: SizedBox(
+                              key: ValueKey(bottomKind),
+                              width: double.infinity,
+                              child: switch (bottomKind) {
+                                'reconnecting' => ReconnectBanner(
+                                  note: c.note,
+                                  onTryNow: () => AppScope.sessions(context).networkBack(),
+                                  onStop: () => AppScope.sessions(context).stopReconnecting(widget.session),
+                                ),
+                                'ended' => EndedBanner(reason: c.note, onReconnect: c.restart, onClose: () => Navigator.of(context).maybePop()),
+                                // Multiplex's keyboard, with the desktop's Super key bar on top.
+                                'keyboard' => _Measured(
+                                  onSize: _panelMeasured,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DesktopKeyBar(controller: c, keepFocus: _keepFocus, compact: true),
+                                      TerminalKeyboardPanel.withSink(
+                                        showCommands: false,
+                                        sink: DesktopKeySink(c),
+                                        onSnippets: () {},
+                                        onHistory: () {},
+                                        onHide: _closeKeyboard,
+                                        onSwitchToSystem: () => _useSystemKeyboard(true),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                'keys' => DesktopKeyBar(
+                                  controller: c,
+                                  keepFocus: _keepFocus,
+                                  onSwitchKeyboard: _keyboardOpen ? () => _useSystemKeyboard(false) : null,
+                                ),
+                                _ => const SizedBox.shrink(),
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -615,5 +666,74 @@ class _Handle extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Zoom on the left, speed on the right; one above the other when the
+/// screen is too narrow for both.
+class _FloatRow extends StatelessWidget {
+  const _FloatRow({required this.zoom, required this.stats});
+
+  final Widget? zoom;
+  final Widget? stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final zoom = this.zoom;
+    final stats = this.stats == null ? null : FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: this.stats);
+    if (zoom == null && stats == null) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (zoom != null && stats != null && constraints.maxWidth < 560) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(alignment: Alignment.centerRight, child: stats),
+              const SizedBox(height: 6),
+              Align(alignment: Alignment.centerLeft, child: zoom),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            ?zoom,
+            if (zoom != null) const SizedBox(width: 12),
+            Expanded(child: stats == null ? const SizedBox.shrink() : Align(alignment: Alignment.centerRight, child: stats)),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Reports its child's size after each layout that changes it.
+class _Measured extends SingleChildRenderObjectWidget {
+  const _Measured({required this.onSize, required super.child});
+
+  final ValueChanged<Size> onSize;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderMeasured(onSize);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderMeasured renderObject) => renderObject.onSize = onSize;
+}
+
+class _RenderMeasured extends RenderProxyBox {
+  _RenderMeasured(this.onSize);
+
+  ValueChanged<Size> onSize;
+  Size? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (size == _reported) return;
+    _reported = size;
+    final now = size;
+    // After the frame: the listener rebuilds.
+    WidgetsBinding.instance.addPostFrameCallback((_) => onSize(now));
   }
 }

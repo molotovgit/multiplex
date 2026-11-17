@@ -139,9 +139,10 @@ class _Key extends StatelessWidget {
   }
 }
 
-/// The floating bar at the top of the desktop: back, where you are
-/// connected and how, and the controls used most. It fades away while
-/// you work and comes back with a tap on the handle.
+/// The floating bar at the bottom of the desktop, where thumbs reach: back,
+/// where you are connected and how, the keyboard, the shortcut keys, and
+/// More for everything else. It fades away while you work and comes back
+/// with a tap on the handle.
 class DesktopToolbar extends StatelessWidget {
   const DesktopToolbar({
     super.key,
@@ -153,8 +154,6 @@ class DesktopToolbar extends StatelessWidget {
     required this.onBack,
     required this.onKeyboard,
     required this.onKeys,
-    required this.onTouchMode,
-    required this.onScreens,
     required this.onMore,
   });
 
@@ -168,10 +167,6 @@ class DesktopToolbar extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onKeyboard;
   final VoidCallback onKeys;
-  final VoidCallback onTouchMode;
-
-  /// Switch between the remote's monitors.
-  final VoidCallback onScreens;
   final VoidCallback onMore;
 
   @override
@@ -186,7 +181,6 @@ class DesktopToolbar extends StatelessWidget {
       DesktopPhase.ended => 'Ended',
       DesktopPhase.live => route,
     };
-    final trackpad = c.settings.touch.name == 'trackpad';
     return Material(
       color: colors.surface.withValues(alpha: 0.94),
       elevation: 3,
@@ -246,12 +240,6 @@ class DesktopToolbar extends StatelessWidget {
               icon: const Icon(Icons.keyboard_command_key),
               onPressed: onKeys,
             ),
-            IconButton(
-              tooltip: trackpad ? 'Trackpad: switch to direct touch' : 'Direct touch: switch to trackpad',
-              icon: Icon(trackpad ? Icons.touch_app_outlined : Icons.ads_click),
-              onPressed: onTouchMode,
-            ),
-            IconButton(tooltip: 'Switch screen', icon: const Icon(Icons.screenshot_monitor_outlined), onPressed: onScreens),
             IconButton(tooltip: 'More', icon: const Icon(Icons.more_vert), onPressed: onMore),
           ],
         ),

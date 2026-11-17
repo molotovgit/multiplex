@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
+import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../common/widgets.dart';
 import '../update/update_card.dart';
@@ -8,6 +9,7 @@ import 'arranged_host_list.dart';
 import 'host_connector.dart';
 import 'host_editor_screen.dart';
 import 'host_tile.dart';
+import '../computers/computer_card.dart';
 import '../pair/pair_screen.dart';
 import 'quick_connect.dart';
 
@@ -48,7 +50,7 @@ class _HostsScreenState extends State<HostsScreen> {
     final sessions = AppScope.sessions(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hosts'),
+        title: const Text('Home'),
         actions: [IconButton(tooltip: 'Pair a computer', icon: const Icon(Icons.qr_code_scanner), onPressed: () => PairScreen.open(context))],
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _openEditor(), icon: const Icon(Icons.add), label: const Text('New host')),
@@ -57,12 +59,23 @@ class _HostsScreenState extends State<HostsScreen> {
         builder: (context, _) {
           final hosts = store.hosts;
           if (hosts.isEmpty && _query.isEmpty) {
-            return _EmptyHosts(
+            return _FirstRun(
+              onPair: () => PairScreen.open(context),
               onAdd: () => _openEditor(),
               searchField: _SearchField(controller: _search, onChanged: _onQuery),
             );
           }
-          final header = [const UpdateBanner(), _SearchField(controller: _search, onChanged: _onQuery), ..._recent(hosts)];
+          final computers = hosts.where((h) => h.computer).toList();
+          final servers = hosts.where((h) => !h.computer).toList();
+          final header = [
+            const UpdateBanner(),
+            _SearchField(controller: _search, onChanged: _onQuery),
+            if (computers.isNotEmpty) ...[
+              const SectionHeader('Computers'),
+              for (final computer in computers) ComputerCard(key: ValueKey('computer-${computer.id}'), host: computer),
+            ],
+            ..._recent(servers),
+          ];
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 840),
@@ -143,27 +156,50 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _EmptyHosts extends StatelessWidget {
-  const _EmptyHosts({required this.onAdd, required this.searchField});
+/// First run: one thing to do, pairing a computer. Plain SSH servers are
+/// still a tap away.
+class _FirstRun extends StatelessWidget {
+  const _FirstRun({required this.onPair, required this.onAdd, required this.searchField});
 
+  final VoidCallback onPair;
   final VoidCallback onAdd;
   final Widget searchField;
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final text = Theme.of(context).textTheme;
     return Column(
       children: [
         const UpdateBanner(),
         searchField,
         Expanded(
-          child: EmptyState(
-            icon: Icons.dns_outlined,
-            title: 'Add your first server',
-            message:
-                'Save a server once with its address and login, then connect with one tap. '
-                'Or type user@host above to connect right away.',
-            actionLabel: 'Add a host',
-            onAction: onAdd,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.qr_code_scanner, size: 48, color: colors.accent),
+                    const SizedBox(height: 16),
+                    Text('Pair your computer', style: text.titleLarge, textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Run `multiplex pair` on your Omarchy computer and scan the code it shows. '
+                      'Its desktop, terminal and files are then one tap away, at home or anywhere.',
+                      style: text.bodyMedium?.copyWith(color: colors.muted),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(onPressed: onPair, icon: const Icon(Icons.qr_code_scanner), label: const Text('Pair a computer')),
+                    const SizedBox(height: 8),
+                    TextButton(onPressed: onAdd, child: const Text('Add an SSH server instead')),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ],

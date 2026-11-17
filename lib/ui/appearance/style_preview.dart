@@ -114,7 +114,7 @@ class _MiniContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Hosts', style: text.titleMedium),
+              Text('Home', style: text.titleMedium),
               const SizedBox(height: 8),
               Card(
                 child: Padding(
@@ -198,7 +198,7 @@ class _MiniBar extends StatelessWidget {
   final bool floating;
 
   static const _icons = [AppIcons.hosts, AppIcons.sessions, AppIcons.snippets, AppIcons.settings];
-  static const _names = ['Hosts', 'Sessions', 'Snippets', 'Settings'];
+  static const _names = ['Home', 'Sessions', 'Snippets', 'Settings'];
 
   @override
   Widget build(BuildContext context) {

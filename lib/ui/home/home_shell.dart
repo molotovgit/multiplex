@@ -52,7 +52,7 @@ class _HomeShellState extends State<HomeShell> {
   static const _railBreakpoint = 720.0;
 
   static const _destinations = [
-    _Destination('Hosts', AppIcons.hosts),
+    _Destination('Home', AppIcons.hosts),
     _Destination('Sessions', AppIcons.sessions),
     _Destination('Snippets', AppIcons.snippets),
     _Destination('Keychain', AppIcons.keychain),

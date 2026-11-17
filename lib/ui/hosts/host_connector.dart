@@ -7,6 +7,7 @@ import '../../sessions/connect_flow.dart';
 import '../../sessions/session_manager.dart';
 import '../common/dialog_prompter.dart';
 import '../desktop/desktop_screen.dart';
+import '../desktop/desktop_settings.dart';
 import '../terminal/terminal_screen.dart';
 
 /// Connecting from anywhere in the app, the same way every time: a small
@@ -53,10 +54,10 @@ abstract final class HostConnector {
   }
 
   /// Connects and opens the remote desktop (gliff).
-  static Future<void> openDesktop(BuildContext context, Host host) async {
+  static Future<void> openDesktop(BuildContext context, Host host, {DesktopScreenMode? screen}) async {
     final session = await connect(context, host);
     if (session == null || !context.mounted) return;
-    await DesktopScreen.open(context, session);
+    await DesktopScreen.open(context, session, screen: screen);
   }
 
   /// Connects and opens a terminal, or shows the terminal already open.
