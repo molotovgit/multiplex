@@ -17,6 +17,7 @@ import '../ui/files/transfer_tasks.dart';
 import '../update/update_platform.dart';
 import 'phone_outbox.dart';
 import 'session_manager.dart';
+import 'shell_launch.dart';
 
 /// What a link needs from one connected computer. The real one is the
 /// SSH connection (commands in the Rust core, files by SFTP); tests pass
@@ -205,7 +206,13 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     String Function(String privateKey, String data)? signRequest,
     bool Function()? appInFront,
     UpdatePlatform updates = const AndroidUpdatePlatform(),
+    Future<void> Function(Host host)? connect,
+    Duration retryAfter = const Duration(seconds: 45),
   }) : outbox = outbox ?? PhoneOutbox(),
+       // ignore: prefer_initializing_formals
+       _connect = connect,
+       // ignore: prefer_initializing_formals
+       _retryAfter = retryAfter,
        // ignore: prefer_initializing_formals
        _updates = updates,
        _confirm = confirm ?? const DeviceUnlock().confirmTo,
@@ -220,7 +227,12 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
        _readClipboard = readClipboard ?? _phoneClipboard,
        _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))) {
     _sessions.addListener(_sync);
+    _store.addListener(_keepConnected);
     WidgetsBinding.instance.addObserver(this);
+    // A moment after start (Tailscale is still coming up), then now and
+    // again: a computer that was out of reach may be back.
+    _firstTry = Timer(const Duration(seconds: 2), _keepConnected);
+    _retry = Timer.periodic(const Duration(seconds: 60), (_) => _keepConnected());
     _phoneNotices = _phone.notifications().listen(_mirror);
     _phoneChanges = _phone.changes().listen((change) {
       for (final link in _links.values) {
@@ -232,6 +244,50 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   final PhoneBridge _phone;
+
+  // Staying connected.
+
+  /// Connects without asking anything. Replaced in tests.
+  final Future<void> Function(Host host)? _connect;
+  final Duration _retryAfter;
+  Timer? _firstTry;
+  Timer? _retry;
+
+  /// When each computer was last tried, so one that is out of reach is
+  /// not tried over and over.
+  final Map<String, DateTime> _tried = {};
+  final Set<String> _connecting = {};
+
+  /// Computers whose connection was closed on purpose: left alone until
+  /// the app is next brought to the front.
+  final Set<String> _leftAlone = {};
+
+  /// The computers that had a session at the last look.
+  Set<String> _hadSession = {};
+
+  /// Links every paired computer that wants it and has no connection.
+  /// Never asks anything: a computer that would need a question (an
+  /// unknown host key, a fingerprint first) is simply not connected here.
+  void _keepConnected() {
+    final now = DateTime.now();
+    for (final host in _store.hosts) {
+      if (!host.computer || !host.stayConnected || host.askUnlock) continue;
+      if (_leftAlone.contains(host.id) || _connecting.contains(host.id)) continue;
+      if (_sessions.sessions.any((s) => s.host.id == host.id)) continue;
+      final last = _tried[host.id];
+      if (last != null && now.difference(last) < _retryAfter) continue;
+      _tried[host.id] = now;
+      _connecting.add(host.id);
+      final connect = _connect ?? (Host h) => _sessions.connect(h, const SilentPrompter()).then((_) {});
+      unawaited(
+        connect(host)
+            .catchError((Object _) {
+              // Out of reach for now; tried again later.
+            })
+            .whenComplete(() => _connecting.remove(host.id)),
+      );
+    }
+  }
 
   /// Asks the owner to confirm with a fingerprint, face or PIN.
   final Future<bool> Function(String reason) _confirm;
@@ -366,6 +422,11 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   /// Starts a link for each connected computer, restarts it after a
   /// reconnect, and ends those whose connection is gone.
   void _sync() {
+    // A session that is gone from the list was closed on purpose (a lost
+    // connection stays listed while it is being restored).
+    final have = {for (final s in _sessions.sessions) s.host.id};
+    _leftAlone.addAll(_hadSession.difference(have));
+    _hadSession = have;
     final live = {
       for (final s in _sessions.sessions)
         if (s.host.computer && s.connected) s,
@@ -384,6 +445,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _front?.complete();
       _front = null;
+      // The owner is back: what they closed may connect again.
+      _leftAlone.clear();
+      _keepConnected();
       for (final link in _links.values) {
         link.sendPhoneClipboard();
       }
@@ -397,6 +461,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     _sessions.removeListener(_sync);
+    _store.removeListener(_keepConnected);
+    _firstTry?.cancel();
+    _retry?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _phoneNotices?.cancel();
     _phoneChanges?.cancel();

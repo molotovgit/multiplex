@@ -170,6 +170,8 @@ void main() {
   late PhoneOutbox outbox;
   late _Phone phone;
   late _Updater updater;
+  final dialled = <String>[];
+  var reachable = false;
   final asked = <String>[];
   var fingerprintOk = true;
   var inFront = true;
@@ -195,6 +197,8 @@ void main() {
     phone = _Phone();
     updater = _Updater(Directory('${temp.path}/updates'));
     asked.clear();
+    dialled.clear();
+    reachable = false;
     fingerprintOk = true;
     inFront = true;
     store.saveKey(
@@ -229,6 +233,12 @@ void main() {
       signRequest: (key, data) => 'sshsig($data)',
       appInFront: () => inFront,
       updates: updater,
+      connect: (host) async {
+        dialled.add(host.title);
+        if (!reachable) throw Exception('out of reach');
+        await connect(host: host);
+      },
+      retryAfter: const Duration(milliseconds: 120),
     );
   });
 
@@ -517,6 +527,51 @@ void main() {
       expect(await links.installNewerApp(), isFalse);
       expect(updater.permissionOpened, 1);
       expect(updater.installed_, isEmpty);
+    });
+  });
+
+  group('staying connected', () {
+    test('a paired computer is linked by itself; one out of reach is tried again later, not at once', () async {
+      // The first try comes two seconds after start.
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
+      expect(dialled, ['Desk']);
+      expect(computer.linkedAs, isNull, reason: 'it was out of reach');
+      // A change in the saved data looks again, but not before the wait is over.
+      store.saveHost(const Host(id: 'x', label: 'Web server', address: 'web'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(dialled, ['Desk']);
+      reachable = true;
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      store.saveHost(const Host(id: 'y', label: 'Another server', address: 'other'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(dialled, ['Desk', 'Desk']);
+      expect(computer.linkedAs, 'My phone', reason: 'connected and linked with nothing tapped');
+      // Connected: nothing more to do, and plain servers are never dialled.
+      store.saveHost(const Host(id: 'z', label: 'Third', address: 'third'));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(dialled, ['Desk', 'Desk']);
+    });
+
+    test('switched off, or after the owner closed the connection, it is left alone until they come back', () async {
+      reachable = true;
+      store.saveHost(desk.copyWith(keyId: () => 'k', stayConnected: false));
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
+      expect(dialled, isEmpty, reason: 'switched off for this computer');
+
+      store.saveHost(desk.copyWith(keyId: () => 'k', stayConnected: true));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(dialled, ['Desk']);
+      // The owner disconnects on purpose.
+      sessions.open.clear();
+      sessions.changed();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      store.saveHost(const Host(id: 'x', label: 'Web server', address: 'web'));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(dialled, ['Desk'], reason: 'not dialled again behind their back');
+      // They open the app again.
+      links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(dialled, ['Desk', 'Desk']);
     });
   });
 

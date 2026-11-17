@@ -54,6 +54,7 @@ class Host {
     this.pauseMediaOnCalls = true,
     this.syncDnd = false,
     this.allowSms = false,
+    this.stayConnected = true,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -125,6 +126,10 @@ class Host {
   /// This computer may send text messages from the phone (`multiplex sms`).
   final bool allowSms;
 
+  /// Link this phone to the computer whenever Multiplex runs, without
+  /// anything being opened (paired computers only).
+  final bool stayConnected;
+
   /// Typed automatically after the shell opens.
   final String? startupCommand;
 
@@ -184,6 +189,7 @@ class Host {
     bool? pauseMediaOnCalls,
     bool? syncDnd,
     bool? allowSms,
+    bool? stayConnected,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -216,6 +222,7 @@ class Host {
         pauseMediaOnCalls: pauseMediaOnCalls ?? this.pauseMediaOnCalls,
         syncDnd: syncDnd ?? this.syncDnd,
         allowSms: allowSms ?? this.allowSms,
+        stayConnected: stayConnected ?? this.stayConnected,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -249,6 +256,7 @@ class Host {
         'pauseMediaOnCalls': pauseMediaOnCalls,
         'syncDnd': syncDnd,
         'allowSms': allowSms,
+        'stayConnected': stayConnected,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -282,6 +290,7 @@ class Host {
         pauseMediaOnCalls: Json.boolean(j, 'pauseMediaOnCalls', true),
         syncDnd: Json.boolean(j, 'syncDnd', false),
         allowSms: Json.boolean(j, 'allowSms', false),
+        stayConnected: Json.boolean(j, 'stayConnected', true),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),
