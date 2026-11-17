@@ -6,20 +6,20 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use flutter_rust_bridge::frb;
-use multiplex_proto::share::screen_command;
+use multiplex_proto::share::{camera_command, screen_command};
 
 use super::ssh::SshSession;
 use crate::engine::events::EventRelay;
 use crate::engine::pipe::Pipe;
 use crate::engine::runtime::AsyncRuntime;
-use crate::engine::screen::{completed, kind, Pace, DELIMITER, TOP_BITRATE};
+use crate::engine::screen::{completed, kind, Pace, DELIMITER, START_BITRATE};
 use crate::frb_generated::StreamSink;
 
 /// The bitrate the encoder starts at, in bits per second (the stream's
 /// pacing starts from the same one).
 #[frb(sync)]
 pub fn screen_start_bitrate() -> u32 {
-    TOP_BITRATE
+    START_BITRATE
 }
 
 impl SshSession {
@@ -34,9 +34,23 @@ impl SshSession {
         let now = Instant::now();
         Ok(ScreenStream { inner, ended, state: Mutex::new(State { pace: Pace::new(now), last_sent: now }) })
     }
+
+    /// Makes the phone's camera a webcam of the computer. It is there
+    /// (once the first picture has arrived) for as long as the stream is
+    /// open. `turn`: degrees the picture is turned clockwise to stand
+    /// upright.
+    pub async fn open_camera(&self, phone: String, turn: u32) -> anyhow::Result<ScreenStream> {
+        let conn = self.conn.clone();
+        let ended = Arc::new(EventRelay::<String>::new());
+        let relay = ended.clone();
+        let inner = AsyncRuntime::run(async move { Pipe::open(conn, &camera_command(&phone, turn), relay).await }).await??;
+        let now = Instant::now();
+        Ok(ScreenStream { inner, ended, state: Mutex::new(State { pace: Pace::new(now), last_sent: now }) })
+    }
 }
 
-/// The stream to the computer's window: H.264, as the encoder gives it.
+/// A picture stream to the computer (the phone's screen for a window,
+/// its camera for a webcam): H.264, as the encoder gives it.
 #[frb(opaque)]
 pub struct ScreenStream {
     inner: Pipe,

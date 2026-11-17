@@ -224,7 +224,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["agents"] => need(access.desktop || access.terminal, "desktop"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
-            ["screen", ..] => need(access.desktop, "desktop"),
+            ["screen" | "camera", ..] => need(access.desktop, "desktop"),
             ["share", "inbox" | "received" | "done", ..] => need(access.files, "files"),
             ["share", "clip" | "paste" | "open", ..] => need(access.clipboard, "clipboard"),
             ["link", ..] => need(access.files || access.clipboard, "files"),
@@ -432,6 +432,8 @@ mod tests {
         let no_desktop = Access { desktop: false, terminal: false, ..all };
         assert_eq!(permits(&no_desktop, &multiplex(&["screen", "Phone"])), Err("desktop"));
         assert!(permits(&no_terminal, &multiplex(&["screen", "Phone"])).is_ok());
+        assert_eq!(permits(&no_desktop, &multiplex(&["camera", "--turn", "90", "Phone"])), Err("desktop"));
+        assert!(permits(&no_terminal, &multiplex(&["camera", "Phone"])).is_ok());
 
         let no_files = Access { files: false, terminal: false, ..all };
         assert_eq!(permits(&no_files, &Wanted::Sftp), Err("files"));

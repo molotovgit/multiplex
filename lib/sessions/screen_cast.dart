@@ -79,16 +79,52 @@ class ScreenCapture {
   Stream<Uint8List> pieces() => frames.receiveBroadcastStream().where((p) => p is Uint8List).cast<Uint8List>();
 }
 
-/// Shows this phone's screen in a window on a paired computer. One at a
-/// time; it carries on while the user leaves Multiplex to use the phone,
-/// which is the point.
-class ScreenCast extends ChangeNotifier {
-  ScreenCast({ScreenCapture capture = const ScreenCapture()})
+/// What only Android can do for the camera: ask the user, film and encode.
+class CameraCapture extends ScreenCapture {
+  CameraCapture({super.channel = const MethodChannel('multiplex/camcast'), super.frames = const EventChannel('multiplex/camcast/frames')});
+
+  /// The camera on the screen's side (for filming oneself), not the back one.
+  bool front = false;
+
+  @override
+  Future<bool> start({required int bitrate}) async {
+    try {
+      return await channel.invokeMethod<bool>('start', {'bitrate': bitrate, 'facing': front ? 'front' : 'back'}) ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  /// How far the picture has to be turned clockwise to stand upright, in
+  /// degrees. Known once [start] has returned true.
+  Future<int> turn() async {
+    try {
+      return await channel.invokeMethod<int>('turn') ?? 0;
+    } on MissingPluginException {
+      return 0;
+    } on PlatformException {
+      return 0;
+    }
+  }
+}
+
+/// Sends a picture from this phone to a paired computer: its screen, for
+/// a window there, or its camera, as a webcam there. One of each at a
+/// time; it carries on while the user leaves Multiplex, which for the
+/// screen is the point.
+class PhoneCast extends ChangeNotifier {
+  PhoneCast({ScreenCapture capture = const ScreenCapture()})
     // ignore: prefer_initializing_formals
     : _capture = capture;
 
-  /// The app's own.
-  static final ScreenCast app = ScreenCast();
+  /// The app's own: this phone's screen, for a window on a computer.
+  static final PhoneCast screen = PhoneCast();
+
+  /// The app's own: this phone's camera, as a webcam of a computer.
+  static final CameraCapture phoneCamera = CameraCapture();
+  static final PhoneCast camera = PhoneCast(capture: phoneCamera);
 
   final ScreenCapture _capture;
   ScreenWindow? _window;

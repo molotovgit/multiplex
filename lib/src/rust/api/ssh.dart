@@ -60,6 +60,12 @@ abstract class SshSession implements RustOpaqueInterface {
 
   bool isConnected();
 
+  /// Makes the phone's camera a webcam of the computer. It is there
+  /// (once the first picture has arrived) for as long as the stream is
+  /// open. `turn`: degrees the picture is turned clockwise to stand
+  /// upright.
+  Future<ScreenStream> openCamera({required String phone, required int turn});
+
   /// Starts a remote desktop (gliff) on this connection. The video is
   /// drawn into `options.texture_id`; listen to [`RemoteDesktop::events`]
   /// for everything else.

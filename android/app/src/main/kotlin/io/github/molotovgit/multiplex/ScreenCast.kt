@@ -11,23 +11,17 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.media.MediaCodec
-import android.media.MediaCodecInfo
-import android.media.MediaFormat
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
-import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Display
-import android.view.Surface
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
-import kotlin.concurrent.thread
 
 /**
  * This phone's screen as a video stream, for a window on a paired
@@ -114,9 +108,9 @@ class ScreenCastService : Service() {
     private var display: VirtualDisplay? = null
     private var size = 0 to 0
 
-    /** Counts encoders: only the newest one's pictures go out. */
+    /** The encoder whose pictures go out: only ever the newest one. */
     private val turn = Any()
-    private var newest = 0
+    private var current: PictureEncoder? = null
 
     private val turned = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {}
@@ -164,10 +158,10 @@ class ScreenCastService : Service() {
         }, main)
 
         val (width, height, dpi) = screen()
-        val (codec, surface) = encoder(width, height)
-        display = projection.createVirtualDisplay("multiplex-screen", width, height, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, surface, null, null)
+        val encoder = encoder(width, height)
+        display = projection.createVirtualDisplay("multiplex-screen", width, height, dpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, encoder.surface, null, null)
         size = width to height
-        follow(codec, surface)
+        follow(encoder)
         getSystemService(DisplayManager::class.java).registerDisplayListener(turned, main)
     }
 
@@ -182,11 +176,11 @@ class ScreenCastService : Service() {
         val (width, height, dpi) = screen()
         if (width to height == size) return
         try {
-            val (codec, surface) = encoder(width, height)
+            val encoder = encoder(width, height)
             display.resize(width, height, dpi)
-            display.surface = surface
+            display.surface = encoder.surface
             size = width to height
-            follow(codec, surface)
+            follow(encoder)
         } catch (_: Exception) {
             stopSelf()
         }
@@ -201,98 +195,32 @@ class ScreenCastService : Service() {
         return Triple(width, height, metrics.densityDpi)
     }
 
-    /** A started encoder for this size, and the surface it takes the screen from. */
-    private fun encoder(width: Int, height: Int): Pair<MediaCodec, Surface> {
-        val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
-            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
-            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
-            setInteger(MediaFormat.KEY_FRAME_RATE, 30)
-            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
-            setInteger(MediaFormat.KEY_PRIORITY, 0)
-            // Each key picture carries what a player needs to start, so the
-            // window can open at any moment.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) setInteger(MediaFormat.KEY_PREPEND_HEADER_TO_SYNC_FRAMES, 1)
-            // A still screen produces no pictures; repeat the last one now
-            // and then so the window is never empty for long.
-            setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 500_000L)
-        }
-        val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
-        try {
-            codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-            val surface = codec.createInputSurface()
-            codec.start()
-            return codec to surface
-        } catch (e: Exception) {
-            codec.release()
-            throw e
+    /** An encoder for this size. Its pictures go out only while it is the newest: never an old picture after a new one. */
+    private fun encoder(width: Int, height: Int) = PictureEncoder(width, height, bitrate, repeatStill = true) { from, bytes ->
+        synchronized(turn) {
+            if (current === from) ScreenCast.piece(bytes)
         }
     }
 
     /** From now on this encoder's pictures go out; the one before it winds down. */
-    private fun follow(codec: MediaCodec, surface: Surface) {
-        val mine = synchronized(turn) { ++newest }
-        live = codec
-        thread(name = "multiplex-screencast") { drain(codec, surface, mine) }
-    }
-
-    /** Hands each encoded piece to Flutter as it comes out, then lets the encoder go. */
-    private fun drain(codec: MediaCodec, surface: Surface, mine: Int) {
-        val info = MediaCodec.BufferInfo()
-        var lastPiece = System.nanoTime()
-        while (synchronized(turn) { newest == mine }) {
-            val index = try {
-                codec.dequeueOutputBuffer(info, 20_000)
-            } catch (_: IllegalStateException) {
-                break
-            }
-            if (index < 0) {
-                // A still screen may produce nothing for a while. The
-                // computer takes silence for the phone having gone, so say
-                // "still here" in the stream's own terms: an empty access
-                // unit delimiter, which a player skips.
-                if (System.nanoTime() - lastPiece > 1_000_000_000L) {
-                    send(STILL_HERE, mine)
-                    lastPiece = System.nanoTime()
-                }
-                continue
-            }
-            lastPiece = System.nanoTime()
-            try {
-                val buffer = codec.getOutputBuffer(index)
-                if (buffer != null && info.size > 0) {
-                    val bytes = ByteArray(info.size)
-                    buffer.position(info.offset)
-                    buffer.get(bytes)
-                    send(bytes, mine)
-                }
-                codec.releaseOutputBuffer(index, false)
-            } catch (_: IllegalStateException) {
-                break
-            }
-            if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) break
+    private fun follow(next: PictureEncoder) {
+        val before = synchronized(turn) {
+            val old = current
+            current = next
+            old
         }
-        if (live === codec) live = null
-        try {
-            codec.stop()
-        } catch (_: Exception) {
-        }
-        try {
-            codec.release()
-            surface.release()
-        } catch (_: Exception) {
-        }
-    }
-
-    /** A piece goes out only while its encoder is the newest: never an old picture after a new one. */
-    private fun send(bytes: ByteArray, mine: Int) {
-        synchronized(turn) {
-            if (newest == mine) ScreenCast.piece(bytes)
-        }
+        before?.stop()
+        live = next
+        next.start()
     }
 
     override fun onDestroy() {
-        // No encoder is the newest any more: each drain loop ends and lets its encoder go.
-        synchronized(turn) { newest = -1 }
+        val last = synchronized(turn) {
+            val old = current
+            current = null
+            old
+        }
+        last?.stop()
         live = null
         try {
             getSystemService(DisplayManager::class.java).unregisterDisplayListener(turned)
@@ -339,10 +267,7 @@ class ScreenCastService : Service() {
         private const val CHANNEL_ID = "screencast"
         private const val NOTIFICATION_ID = 4311
 
-        /** An H.264 access unit delimiter: valid in the stream, and nothing to show. */
-        private val STILL_HERE = byteArrayOf(0, 0, 0, 1, 9, 0xF0.toByte())
-
-        @Volatile private var live: MediaCodec? = null
+        @Volatile private var live: PictureEncoder? = null
 
         /** What the encoder is asked for, in bits per second. Kept across a turn of the phone. */
         @Volatile private var bitrate = 4_000_000
@@ -355,16 +280,7 @@ class ScreenCastService : Service() {
         /** Changes the running encoder: a new bitrate, a full picture now, or both. */
         fun adjust(bitrate: Int?, keyFrame: Boolean) {
             if (bitrate != null && bitrate > 0) this.bitrate = bitrate
-            val codec = live ?: return
-            val change = Bundle()
-            if (bitrate != null && bitrate > 0) change.putInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE, bitrate)
-            if (keyFrame) change.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0)
-            if (change.isEmpty) return
-            try {
-                codec.setParameters(change)
-            } catch (_: IllegalStateException) {
-                // It has just stopped.
-            }
+            live?.adjust(bitrate, keyFrame)
         }
 
         /** The screen scaled so its long side is at most 1600, in sizes an encoder takes. */

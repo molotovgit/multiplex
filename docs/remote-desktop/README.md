@@ -103,10 +103,21 @@ On a computer's page, **Phone screen** shows what is on the phone in a window on
 
 - The computer needs `mpv` (`sudo pacman -S mpv`); `multiplex doctor` says whether it is there.
 - The picture is the phone's screen, at most 1600 pixels on its long side, 30 pictures a second, sent as H.264 over the SSH connection that is already open. Nothing is stored on either side.
-- It stays live on a slow connection. The computer tells the phone how much of the picture it has taken; when about a second of it is still on its way, the phone stops sending, lets that arrive, and carries on from a fresh full picture at a lower bitrate (from 4 Mbit/s down to 0.5). After a while without trouble it tries a better picture again.
+- It stays live on a slow connection. The computer tells the phone how much of the picture it has taken, so the phone knows how far behind the window is. It starts at 1.5 Mbit/s and climbs to 4 within seconds when the connection carries that. When more than about half a second of picture is on its way it asks less of the connection; at a second it stops sending, lets that arrive, and carries on from a fresh full picture at a lower bitrate (down to 0.5 Mbit/s). It stays under the bitrate that caused trouble for a minute before trying higher again.
 - Turn the phone and the picture turns with it: the window takes the new shape and keeps its size (a window you made bigger stays that big).
 - It is the picture only: no sound, and clicking in the window does nothing (use the phone).
 - If the phone goes away without a word (out of range, the app closed), the window closes after 8 seconds.
+
+## The phone as a webcam
+
+On a computer's page, **Camera** makes the phone's camera a camera of the computer, named after the phone ("Sam's phone camera"). Choose the back or the front camera, hold the phone the way the picture should be, and start; Android asks for the camera the first time. The camera is there until you stop, also while Multiplex is in the background, and a notification on the phone says so.
+
+- How programs see it depends on the computer; `multiplex doctor` says which way it will be.
+  - As a PipeWire camera (needs `ffmpeg`, `gstreamer`, `gst-plugins-base` and `gst-plugin-pipewire`; no root). Programs that find cameras through PipeWire see it: browsers using the camera portal, OBS.
+  - Through a `v4l2loopback` device, when one exists (needs `ffmpeg`; the kernel module is yours to install and load). Then every program that can use a webcam sees it. This way is written but has not been tried.
+- 1280×720, 30 pictures a second, H.264 over the SSH connection that is already open, kept live the same way as the phone's screen above. Nothing is stored.
+- The picture is turned upright for how the phone is held when you start. Turn the phone afterwards and the picture lies on its side until you stop and start again.
+- The picture only: no sound.
 
 ## Coding agents
 
@@ -160,7 +171,7 @@ multiplex access "Sam's phone" everything      # back to no limits
 
 | Switch | Covers |
 |---|---|
-| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here |
+| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, and lending its camera |
 | `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
 | `files` | browsing, sending and fetching files |
 | `clipboard` | sharing the clipboard, opening links |

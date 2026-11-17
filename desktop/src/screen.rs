@@ -5,26 +5,21 @@
 //! Hyprland starts as a small floating window. Closing the window ends
 //! the capture on the phone; stopping on the phone closes the window.
 
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::Path;
 use std::sync::mpsc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
-use multiplex_proto::share::{fed_line, FEED_READY};
 
 use crate::desk::{lua_string, Session};
+use crate::feed::pump;
 use crate::h264::SizeWatch;
 use crate::share::runtime_dir;
-
-/// With no piece of the picture for this long, the phone is gone.
-const SILENCE: Duration = Duration::from_secs(8);
 
 /// The window's longer side when it opens, in pixels.
 const LONG_SIDE: u32 = 900;
 
-/// How often the phone is told how much of the picture has been taken.
-const TELL_EVERY: Duration = Duration::from_millis(200);
 
 /// One argument for a POSIX shell.
 fn quoted(arg: &str) -> String {
@@ -194,67 +189,28 @@ pub fn run(args: &[&str]) -> Result<()> {
             bail!("the player did not start");
         }
     };
-    println!("{FEED_READY}");
-    std::io::stdout().flush()?;
-
-    // The picture is read on its own thread, so that its stopping can be
-    // noticed: a phone that is still there sends a piece at least once a
-    // second (a still screen says "still here"). One that has gone without
-    // a word (out of range, app killed) would otherwise leave a frozen
-    // window until SSH itself gives up, a minute or more later.
-    let (pieces, arriving) = mpsc::sync_channel::<Vec<u8>>(8);
-    std::thread::spawn(move || {
-        let mut input = std::io::stdin().lock();
-        let mut buffer = vec![0u8; 64 * 1024];
-        while let Ok(n) = input.read(&mut buffer) {
-            if n == 0 || pieces.send(buffer[..n].to_vec()).is_err() {
-                break;
-            }
-        }
-    });
-    let mut out = std::io::stdout().lock();
-    let (mut taken, mut told) = (0u64, 0u64);
-    let (mut last_piece, mut last_told) = (Instant::now(), Instant::now());
     let mut watch = SizeWatch::default();
     let mut shape: Option<(u32, u32)> = None;
-    let result = loop {
-        match arriving.recv_timeout(TELL_EVERY) {
-            Ok(piece) => {
-                // The window was closed: that is how the user stops it here.
-                if stream.write_all(&piece).is_err() {
-                    break Ok(());
-                }
-                taken += piece.len() as u64;
-                last_piece = Instant::now();
-                // The stream says its picture's size at every full picture.
-                // The first one the player sizes its window for; a new one
-                // means the phone was turned.
-                for size in watch.feed(&piece) {
-                    if shape.is_some_and(|before| before != size) {
-                        // If it cannot be done the picture still shows, with bars.
-                        let _ = reshape(&session, &pipe, size);
-                    }
-                    shape = Some(size);
-                }
+    let result = pump(
+        |piece| {
+            // The window was closed: that is how the user stops it here.
+            if stream.write_all(piece).is_err() {
+                return Ok(false);
             }
-            // The phone stopped (the input ended).
-            Err(mpsc::RecvTimeoutError::Disconnected) => break Ok(()),
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                if last_piece.elapsed() > SILENCE {
-                    break Err(anyhow!("the phone stopped sending its screen"));
+            // The stream says its picture's size at every full picture.
+            // The first one the player sizes its window for; a new one
+            // means the phone was turned.
+            for size in watch.feed(piece) {
+                if shape.is_some_and(|before| before != size) {
+                    // If it cannot be done the picture still shows, with bars.
+                    let _ = reshape(&session, &pipe, size);
                 }
+                shape = Some(size);
             }
-        }
-        // The phone reads this to know how far behind the window is, and
-        // skips ahead when the connection cannot keep up.
-        if taken != told && last_told.elapsed() >= TELL_EVERY {
-            if writeln!(out, "{}", fed_line(taken)).and_then(|()| out.flush()).is_err() {
-                break Ok(());
-            }
-            told = taken;
-            last_told = Instant::now();
-        }
-    };
+            Ok(true)
+        },
+        "the phone stopped sending its screen",
+    );
     drop(stream);
     cleanup();
     result

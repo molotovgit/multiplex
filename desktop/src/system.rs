@@ -146,6 +146,10 @@ pub fn doctor() -> Vec<Check> {
         },
         check("Touchpad and keys", Some(crate::input::available()), false, "the phone's touchpad needs Hyprland running and xkbcli (from libxkbcommon)"),
         check("Phone screen", Some(on_path("mpv")), false, "showing the phone's screen in a window needs mpv: sudo pacman -S mpv"),
+        match crate::camera::Way::find().filter(|_| on_path("ffmpeg")) {
+            Some(way) => check("Phone camera", Some(true), false, &way.words()),
+            None => check("Phone camera", Some(false), false, crate::camera::NEEDS),
+        },
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }

@@ -13,6 +13,11 @@
     <!-- Showing this phone's screen in a window on a paired computer.
          Android asks the user each time before anything is captured. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    <!-- This phone's camera as a webcam for a paired computer. Asked for
+         when that is first started. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- A paired computer can send a text message through the phone
          (`multiplex sms`), once the user switches that on for it. -->
@@ -82,6 +87,10 @@
             android:name=".ScreenCastService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+        <service
+            android:name=".CameraCastService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
         <!-- Phone notifications for a paired computer. Android runs this only
              after the user allows it under Settings > Notification access. -->
         <service

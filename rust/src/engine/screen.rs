@@ -12,20 +12,47 @@ use std::time::{Duration, Instant};
 /// The best picture asked of the encoder, in bits per second.
 pub const TOP_BITRATE: u32 = 4_000_000;
 
-/// The least: below this the screen is not readable any more.
+/// Where it starts: low enough for a slow connection not to choke on the
+/// first seconds; a fast one is at the top a few seconds later.
+pub const START_BITRATE: u32 = 1_500_000;
+
+/// The least: below this the picture is not readable any more.
 pub const LOW_BITRATE: u32 = 500_000;
 
-/// This much of the picture on its way (in seconds of it) is too late.
+/// This much of the picture on its way (in seconds of it) is too late:
+/// skip ahead.
 const LATE: f64 = 1.0;
+
+/// This much is a warning: ask less of the connection, keep sending.
+const SLOW: f64 = 0.6;
+
+/// As little as this, and the connection could carry more.
+const CALM: f64 = 0.35;
 
 /// As little on its way as this (in bytes) counts as caught up.
 const CAUGHT_UP: u64 = 16 * 1024;
 
-/// A better picture is tried after this long without trouble.
+/// While nothing has gone wrong yet, a better picture is tried this often
+/// (a third more each time: bigger steps overshoot a slow connection so
+/// far that it comes to skipping before the warning can help).
+const CLIMB_EVERY: Duration = Duration::from_secs(2);
+
+/// After trouble, this often, and in small steps.
 const RAISE_AFTER: Duration = Duration::from_secs(8);
+
+/// The bitrate that caused trouble is stayed under for this long, so the
+/// picture does not run into the same wall every few seconds.
+const REMEMBER: Duration = Duration::from_secs(60);
+
+/// The bitrate is lowered as a warning at most this often.
+const EASE_EVERY: Duration = Duration::from_secs(2);
 
 /// A fresh full picture is asked for at most this often.
 const ASK_EVERY: Duration = Duration::from_secs(1);
+
+/// The first pictures go out in a burst (they were kept while the other
+/// end opened): for this long that is not taken for a warning.
+const SETTLING: Duration = Duration::from_secs(2);
 
 /// An H.264 access unit delimiter: valid anywhere in the stream, and
 /// nothing to show. It has two uses here.
@@ -96,17 +123,23 @@ pub struct Step {
 }
 
 pub struct Pace {
+    began: Instant,
     bitrate: u32,
     skipping: bool,
     /// When the bitrate last changed, or skipping last ended.
     settled: Instant,
     asked: Option<Instant>,
+    eased: Option<Instant>,
+    /// The bitrate that last proved too much, and when.
+    trouble: Option<(u32, Instant)>,
+    /// There has been trouble at some point: from then on, small steps.
+    troubled: bool,
     skipped: u64,
 }
 
 impl Pace {
     pub fn new(now: Instant) -> Self {
-        Self { bitrate: TOP_BITRATE, skipping: false, settled: now, asked: None, skipped: 0 }
+        Self { began: now, bitrate: START_BITRATE, skipping: false, settled: now, asked: None, eased: None, trouble: None, troubled: false, skipped: 0 }
     }
 
     pub fn bitrate(&self) -> u32 {
@@ -132,43 +165,69 @@ impl Pace {
         step
     }
 
+    /// Lowers the bitrate to `part` of what it is (never under the least)
+    /// and notes that the old one was too much. The new one, if it changed.
+    fn lower(&mut self, numerator: u32, denominator: u32, now: Instant) -> Option<u32> {
+        self.trouble = Some((self.bitrate, now));
+        self.troubled = true;
+        let lower = (self.bitrate / denominator * numerator).max(LOW_BITRATE);
+        let changed = (lower != self.bitrate).then_some(lower);
+        self.bitrate = lower;
+        self.settled = now;
+        changed
+    }
+
     fn decide(&mut self, in_flight: u64, piece: Piece, now: Instant) -> Step {
         // The settings are tiny and a player cannot do without them.
         let send_anyway = piece == Piece::Settings;
-        if !self.skipping {
-            let seconds_behind = in_flight as f64 * 8.0 / f64::from(self.bitrate);
-            if seconds_behind > LATE {
-                self.skipping = true;
-                self.asked = None;
-                let lower = (self.bitrate / 5 * 3).max(LOW_BITRATE);
-                let bitrate = (lower != self.bitrate).then_some(lower);
-                self.bitrate = lower;
-                self.settled = now;
-                return Step { send: send_anyway, bitrate, key_frame: false };
+        if self.skipping {
+            // Wait until what was under way has arrived, then start again
+            // from a full picture.
+            if in_flight > CAUGHT_UP {
+                return Step { send: send_anyway, ..Step::default() };
             }
-            let mut bitrate = None;
-            if self.bitrate < TOP_BITRATE && seconds_behind < LATE / 2.0 && now.duration_since(self.settled) >= RAISE_AFTER {
-                self.bitrate = (self.bitrate / 4 * 5).min(TOP_BITRATE);
+            if piece == Piece::Key {
+                self.skipping = false;
                 self.settled = now;
-                bitrate = Some(self.bitrate);
+                return Step { send: true, ..Step::default() };
             }
-            return Step { send: true, bitrate, key_frame: false };
+            let ask = self.asked.is_none_or(|at| now.duration_since(at) >= ASK_EVERY);
+            if ask {
+                self.asked = Some(now);
+            }
+            return Step { send: send_anyway, bitrate: None, key_frame: ask };
         }
-        // Skipping: wait until what was under way has arrived, then start
-        // again from a full picture.
-        if in_flight > CAUGHT_UP {
-            return Step { send: send_anyway, ..Step::default() };
+
+        let seconds_behind = in_flight as f64 * 8.0 / f64::from(self.bitrate);
+        if seconds_behind > LATE {
+            self.skipping = true;
+            self.asked = None;
+            let bitrate = self.lower(3, 5, now);
+            return Step { send: send_anyway, bitrate, key_frame: false };
         }
-        if piece == Piece::Key {
-            self.skipping = false;
-            self.settled = now;
+        if seconds_behind > SLOW {
+            // A warning: ask less before it comes to skipping.
+            if now.duration_since(self.began) >= SETTLING && self.eased.is_none_or(|at| now.duration_since(at) >= EASE_EVERY) {
+                self.eased = Some(now);
+                let bitrate = self.lower(4, 5, now);
+                return Step { send: true, bitrate, key_frame: false };
+            }
             return Step { send: true, ..Step::default() };
         }
-        let ask = self.asked.is_none_or(|at| now.duration_since(at) >= ASK_EVERY);
-        if ask {
-            self.asked = Some(now);
+        if seconds_behind < CALM && self.bitrate < TOP_BITRATE {
+            if self.trouble.is_some_and(|(_, at)| now.duration_since(at) >= REMEMBER) {
+                self.trouble = None;
+            }
+            let (wait, wanted) = if self.troubled { (RAISE_AFTER, self.bitrate / 8 * 9) } else { (CLIMB_EVERY, self.bitrate / 3 * 4) };
+            let most = self.trouble.map_or(TOP_BITRATE, |(too_much, _)| too_much / 10 * 9);
+            let next = wanted.min(most).min(TOP_BITRATE);
+            if next > self.bitrate && now.duration_since(self.settled) >= wait {
+                self.bitrate = next;
+                self.settled = now;
+                return Step { send: true, bitrate: Some(next), key_frame: false };
+            }
         }
-        Step { send: send_anyway, bitrate: None, key_frame: ask }
+        Step { send: true, ..Step::default() }
     }
 }
 
@@ -209,15 +268,19 @@ mod tests {
     }
 
     #[test]
-    fn a_connection_that_keeps_up_sends_everything_at_the_best_bitrate() {
+    fn a_connection_that_keeps_up_is_at_the_best_bitrate_within_seconds() {
         let start = Instant::now();
         let mut pace = Pace::new(start);
+        let mut changes = Vec::new();
         for i in 0..600u64 {
-            // A third of a second of picture on its way: ordinary.
-            let step = pace.next(160_000, if i % 60 == 0 { Piece::Key } else { Piece::Change }, start + Duration::from_millis(i * 33));
-            assert_eq!(step, Step { send: true, bitrate: None, key_frame: false });
+            // A fifth of a second of picture on its way: ordinary.
+            let on_its_way = u64::from(pace.bitrate()) / 8 / 5;
+            let step = pace.next(on_its_way, if i % 60 == 0 { Piece::Key } else { Piece::Change }, start + Duration::from_millis(i * 33));
+            assert!(step.send && !step.key_frame);
+            changes.extend(step.bitrate.map(|b| (i * 33 / 1000, b)));
         }
-        assert_eq!(pace.bitrate(), TOP_BITRATE);
+        // From the start value to the top in four steps, two seconds apart.
+        assert_eq!(changes, [(2, 2_000_000), (4, 2_666_664), (6, 3_555_552), (8, TOP_BITRATE)]);
         assert_eq!(pace.skipped(), 0);
     }
 
@@ -227,11 +290,11 @@ mod tests {
         let at = |ms: u64| start + Duration::from_millis(ms);
         let mut pace = Pace::new(start);
         // More than a second of picture on its way: too late.
-        let step = pace.next(600_000, Piece::Change, at(0));
-        assert_eq!(step, Step { send: false, bitrate: Some(2_400_000), key_frame: false });
+        let step = pace.next(300_000, Piece::Change, at(0));
+        assert_eq!(step, Step { send: false, bitrate: Some(900_000), key_frame: false });
         // While it is still arriving, nothing more is added, not even a full picture.
-        assert!(!pace.next(300_000, Piece::Change, at(100)).send);
-        assert!(!pace.next(200_000, Piece::Key, at(200)).send);
+        assert!(!pace.next(200_000, Piece::Change, at(100)).send);
+        assert!(!pace.next(100_000, Piece::Key, at(200)).send);
         // It has arrived: ask for a full picture, once, and wait for it.
         assert_eq!(pace.next(2_000, Piece::Change, at(300)), Step { send: false, bitrate: None, key_frame: true });
         assert_eq!(pace.next(2_000, Piece::Change, at(333)), Step { send: false, bitrate: None, key_frame: false });
@@ -239,9 +302,36 @@ mod tests {
         assert!(pace.next(2_000, Piece::Change, at(1_400)).key_frame);
         // There it is: carry on from it.
         assert_eq!(pace.next(2_000, Piece::Key, at(1_450)), Step { send: true, bitrate: None, key_frame: false });
-        assert!(pace.next(40_000, Piece::Change, at(1_480)).send);
+        assert!(pace.next(20_000, Piece::Change, at(1_480)).send);
         assert_eq!(pace.skipped(), 6);
         assert!(!pace.skipping());
+    }
+
+    #[test]
+    fn a_warning_lowers_the_bitrate_without_skipping() {
+        let start = Instant::now();
+        // (Past the first two seconds, whose burst is not a warning.)
+        let at = |ms: u64| start + Duration::from_millis(10_000 + ms);
+        let mut pace = Pace::new(start);
+        // 0.7 s of picture on its way: not yet too late, but more than it should be.
+        let warning = u64::from(START_BITRATE) / 8 * 7 / 10;
+        assert_eq!(pace.next(warning, Piece::Change, at(0)), Step { send: true, bitrate: Some(1_200_000), key_frame: false });
+        // Not again at once, even if it has not got better yet.
+        assert_eq!(pace.next(140_000, Piece::Change, at(500)), Step { send: true, bitrate: None, key_frame: false });
+        // Still so two seconds later: once more.
+        assert_eq!(pace.next(120_000, Piece::Change, at(2_100)), Step { send: true, bitrate: Some(960_000), key_frame: false });
+        assert_eq!(pace.skipped(), 0);
+    }
+
+    #[test]
+    fn the_burst_of_the_first_pictures_is_not_a_warning() {
+        let start = Instant::now();
+        let mut pace = Pace::new(start);
+        let burst = u64::from(START_BITRATE) / 8 * 7 / 10;
+        assert_eq!(pace.next(burst, Piece::Key, start + Duration::from_millis(300)), Step { send: true, bitrate: None, key_frame: false });
+        assert_eq!(pace.bitrate(), START_BITRATE);
+        // Far too much on its way is still skipped, also then.
+        assert!(!pace.next(u64::from(START_BITRATE), Piece::Change, start + Duration::from_millis(600)).send);
     }
 
     #[test]
@@ -256,30 +346,48 @@ mod tests {
     }
 
     #[test]
-    fn the_bitrate_stops_at_the_least_and_comes_back_when_things_go_well() {
+    fn the_bitrate_that_caused_trouble_is_stayed_under_for_a_while() {
         let start = Instant::now();
         let at = |ms: u64| start + Duration::from_millis(ms);
         let mut pace = Pace::new(start);
-        let mut now = 0;
-        // Trouble again and again: down to the least, never below.
-        for _ in 0..8 {
-            pace.next(10_000_000, Piece::Change, at(now));
-            pace.next(0, Piece::Key, at(now + 10));
-            now += 100;
+        // Up to 2.67 Mbit/s without trouble, then a skip there.
+        pace.next(5_000, Piece::Change, at(2_000));
+        pace.next(5_000, Piece::Change, at(4_000));
+        assert_eq!(pace.bitrate(), 2_666_664);
+        pace.next(600_000, Piece::Change, at(5_000));
+        pace.next(0, Piece::Key, at(5_500));
+        assert_eq!(pace.bitrate(), 1_599_996);
+        // From now on small steps, eight seconds apart...
+        assert_eq!(pace.next(5_000, Piece::Change, at(7_600)).bitrate, None);
+        assert_eq!(pace.next(5_000, Piece::Change, at(13_500)).bitrate, Some(1_799_991));
+        // ...and never back to what was too much, only to nine tenths of it.
+        let mut now = 13_500;
+        let mut most = 0;
+        while now < 60_000 {
+            now += 8_000;
+            pace.next(5_000, Piece::Change, at(now));
+            most = most.max(pace.bitrate());
         }
-        assert_eq!(pace.bitrate(), LOW_BITRATE);
-        // Going well: nothing changes at once...
-        assert_eq!(pace.next(5_000, Piece::Change, at(now + 1_000)).bitrate, None);
-        // ...but after a while a better picture is tried, step by step.
-        assert_eq!(pace.next(5_000, Piece::Change, at(now + 9_000)).bitrate, Some(625_000));
-        assert_eq!(pace.next(5_000, Piece::Change, at(now + 10_000)).bitrate, None);
-        assert_eq!(pace.next(5_000, Piece::Change, at(now + 17_500)).bitrate, Some(781_250));
-        let mut later = now + 17_500;
+        assert_eq!(most, 2_399_994);
+        // A minute after the trouble it may try higher again.
+        pace.next(5_000, Piece::Change, at(70_000));
+        assert!(pace.bitrate() > 2_399_994);
+        let mut later = 70_000;
         while pace.bitrate() < TOP_BITRATE {
             later += 8_000;
             pace.next(5_000, Piece::Change, at(later));
         }
-        assert_eq!(pace.bitrate(), TOP_BITRATE);
         assert_eq!(pace.next(5_000, Piece::Change, at(later + 60_000)).bitrate, None);
+    }
+
+    #[test]
+    fn the_bitrate_never_goes_under_the_least() {
+        let start = Instant::now();
+        let mut pace = Pace::new(start);
+        for i in 0..12u64 {
+            pace.next(10_000_000, Piece::Change, start + Duration::from_millis(i * 100));
+            pace.next(0, Piece::Key, start + Duration::from_millis(i * 100 + 10));
+        }
+        assert_eq!(pace.bitrate(), LOW_BITRATE);
     }
 }

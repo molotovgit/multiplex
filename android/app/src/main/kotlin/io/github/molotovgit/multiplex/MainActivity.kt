@@ -63,6 +63,7 @@ class MainActivity : FlutterFragmentActivity() {
         PhoneChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         ShareTargets.register(flutterEngine.dartExecutor.binaryMessenger, this)
         ScreenCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        CameraCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
@@ -140,6 +141,11 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == ScreenCast.REQUEST) ScreenCast.onResult(this, resultCode, data)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == CameraCast.REQUEST) CameraCast.onPermission(this, grantResults)
     }
 
     override fun onDestroy() {

@@ -18,6 +18,9 @@ optdepends=(
   'xdg-user-dirs: files from the phone go to the Downloads folder it names'
   'networkmanager: multiplex setup turns Wake-on-LAN on'
   "mpv: the phone's screen in a window"
+  "ffmpeg: the phone's camera as a webcam"
+  "gst-plugin-pipewire: the phone's camera as a PipeWire camera (with gstreamer and gst-plugins-base)"
+  "v4l2loopback-dkms: the phone's camera for every program that uses a webcam"
 )
 options=('!debug')
 

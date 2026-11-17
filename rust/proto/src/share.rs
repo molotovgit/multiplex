@@ -265,6 +265,19 @@ pub fn screen_command(phone: &str) -> String {
     }
 }
 
+/// Offers the picture the phone then writes to standard input (its
+/// camera, as H.264) to the computer's programs as a webcam. `turn` is
+/// how far the picture has to be turned clockwise to stand upright, in
+/// degrees; `phone` names the camera.
+pub fn camera_command(phone: &str, turn: u32) -> String {
+    let turn = (turn % 360 / 90 * 90).to_string();
+    if phone.is_empty() {
+        command(&["camera", "--turn", &turn])
+    } else {
+        command(&["camera", "--turn", &turn, phone])
+    }
+}
+
 /// What a command that is fed bytes says once it can take them.
 pub const FEED_READY: &str = "ready";
 
@@ -292,6 +305,16 @@ pub fn done_command(id: &str) -> Result<String, ProtoError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_camera_is_asked_for_with_its_turn_in_quarter_turns() {
+        assert!(camera_command("", 90).ends_with("multiplex 'camera' '--turn' '90'"), "{}", camera_command("", 90));
+        assert!(camera_command("Sam's phone", 270).ends_with(r"'--turn' '270' 'Sam'\''s phone'"), "{}", camera_command("Sam's phone", 270));
+        // Anything else is brought to a quarter turn.
+        assert!(camera_command("", 450).contains("'--turn' '90'"));
+        assert!(camera_command("", 100).contains("'--turn' '90'"));
+        assert!(camera_command("", 0).contains("'--turn' '0'"));
+    }
 
     #[test]
     fn the_count_of_bytes_taken_reads_back() {
