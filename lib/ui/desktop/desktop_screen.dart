@@ -83,6 +83,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     c.addListener(_changed);
     c.copiedFromDesktop.addListener(_copied);
     c.remoteTextFocus.addListener(_remoteFocusChanged);
+    c.remoteTextFocusEvents.addListener(_remoteFocusGained);
     // Over Tailscale, keep the route label current: a connection often
     // starts on a relay and turns direct a few seconds later.
     if (widget.session.host.viaTailscale) {
@@ -99,6 +100,8 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     c.removeListener(_changed);
     c.copiedFromDesktop.removeListener(_copied);
     c.remoteTextFocus.removeListener(_remoteFocusChanged);
+    c.remoteTextFocusEvents.removeListener(_remoteFocusGained);
+    _clickCheck?.cancel();
     if (widget.session.host.viaTailscale) {
       TailscaleNode.instance.removeListener(_changed);
       TailscaleNode.instance.unwatch();
@@ -167,15 +170,32 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     _focus.unfocus();
   }
 
-  /// A text field on the remote got or lost the focus.
+  /// The remote's text focus went away: a keyboard that opened by itself
+  /// closes again.
   void _remoteFocusChanged() {
     if (!mounted || !c.settings.autoKeyboard) return;
-    if (c.remoteTextFocus.value && !_keyboardOpen) {
-      _openKeyboard();
-      _autoOpened = true;
-    } else if (!c.remoteTextFocus.value && _keyboardOpen && _autoOpened) {
-      _closeKeyboard();
-    }
+    if (!c.remoteTextFocus.value && _keyboardOpen && _autoOpened) _closeKeyboard();
+  }
+
+  /// A text field on the remote newly got the focus (also another field
+  /// than before): the keyboard opens.
+  void _remoteFocusGained() => _openForText();
+
+  void _openForText() {
+    if (!mounted || !c.settings.autoKeyboard || _keyboardOpen || !c.remoteTextFocus.value) return;
+    _openKeyboard();
+    _autoOpened = true;
+  }
+
+  Timer? _clickCheck;
+
+  /// After a tap on the picture: if a text field has the focus by then
+  /// (also one that already had it, after the keyboard was hidden), the
+  /// keyboard opens, as tapping into a field does on a phone. The wait
+  /// covers the remote noticing the click and the watcher reporting it.
+  void _afterClick() {
+    _clickCheck?.cancel();
+    _clickCheck = Timer(const Duration(milliseconds: 450), _openForText);
   }
 
   /// Between Multiplex's keyboard and the phone's (voice, other languages).
@@ -357,6 +377,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                         onTapEmpty: () {},
                         onToggleZoom: _toggleZoom,
                         onSwitchScreen: _switchScreen,
+                        onClicked: _afterClick,
                         child: _RemoteView(controller: c, viewport: _viewport),
                       ),
                     ),

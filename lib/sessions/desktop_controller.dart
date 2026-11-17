@@ -161,10 +161,26 @@ class DesktopController extends ChangeNotifier {
   /// type through the input method (browsers, terminals, chat, editors)
   /// all show up; without fcitx5 nothing is reported and the keyboard
   /// stays manual.
-  static const _textFocusWatcher = r'command -v busctl >/dev/null || exit 0; '
-      r'prev=; while :; do '
-      r'f=$(busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 DebugInfo 2>/dev/null | grep -c "focus:1"); '
-      r'[ "$f" != "$prev" ] && echo "text $f" && prev=$f; sleep 0.15; done';
+  static const _textFocusScript = r'''
+command -v busctl >/dev/null || exit 0
+prev=unset
+while :; do
+  d=$(busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 DebugInfo 2>/dev/null)
+  f=$(printf %s "$d" | grep -o 'IC \[[0-9a-f]*\][^\\]*focus:1' | head -1 | sed 's/IC \[\([0-9a-f]*\)\].*/\1/')
+  [ "$f" != "$prev" ] && echo "text ${f:-0}" && prev=$f
+  sleep 0.15
+done
+''';
+
+  /// The script travels base64-encoded, so it runs the same whatever the
+  /// login shell is. It prints "text" and the id of the focused field, or
+  /// "text 0", and only when that changes.
+  static String get _textFocusWatcher => 'echo ${base64.encode(utf8.encode(_textFocusScript))} | base64 -d | sh';
+
+  /// Counts up whenever a text field on the remote newly gets the focus
+  /// (also when it moves from one field to another), so the screen can
+  /// tell a new focus from an unchanged one.
+  final ValueNotifier<int> remoteTextFocusEvents = ValueNotifier(0);
 
   Future<void> _watchTextFocus() async {
     if (_textWatch != null || !_settings.autoKeyboard) return;
@@ -176,7 +192,10 @@ class DesktopController extends ChangeNotifier {
       }
       _textWatch = watch;
       _textLines = watch.lines().listen((line) {
-        if (line.startsWith('text ')) remoteTextFocus.value = line != 'text 0';
+        if (!line.startsWith('text ')) return;
+        final focused = line != 'text 0';
+        remoteTextFocus.value = focused;
+        if (focused) remoteTextFocusEvents.value++;
       });
     } catch (_) {
       // No watcher: the keyboard stays manual.
@@ -732,6 +751,7 @@ class DesktopController extends ChangeNotifier {
     _netProbe?.cancel();
     _stopTextWatch();
     remoteTextFocus.dispose();
+    remoteTextFocusEvents.dispose();
     _releaseHeld();
     _events?.cancel();
     _desktop?.close();

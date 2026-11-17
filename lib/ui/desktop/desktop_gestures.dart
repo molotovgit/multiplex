@@ -100,6 +100,7 @@ class DesktopGestures extends StatefulWidget {
     required this.onTapEmpty,
     required this.onToggleZoom,
     required this.onSwitchScreen,
+    required this.onClicked,
     this.visibleHeight,
     required this.child,
   });
@@ -119,6 +120,9 @@ class DesktopGestures extends StatefulWidget {
 
   /// Three-finger swipe while not zoomed: +1 = next monitor, -1 = previous.
   final ValueChanged<int> onSwitchScreen;
+
+  /// A click went to the remote (a tap, or a mouse button).
+  final VoidCallback onClicked;
 
   /// Height above the phone keyboard while it is open.
   final double? visibleHeight;
@@ -347,6 +351,7 @@ class _DesktopGesturesState extends State<DesktopGestures> {
       if (!_trackpad) c.moveTo(widget.viewport.toRemote(_start!));
       c.click(DesktopButton.left);
       _haptic();
+      widget.onClicked();
     }
     c.steering = false;
     _maxTouches = 0;
