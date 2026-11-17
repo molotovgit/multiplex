@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -456,6 +457,8 @@ class _Link {
       case ShareEvent_Clip(:final text):
         if (!host.shareClipboard || text == _lastClip) return;
         _lastClip = text;
+        // Sizes only: what is on a clipboard is nobody's business.
+        if (kDebugMode) debugPrint('mpxlink clipboard to the phone (${text.length} characters)');
         unawaited(owner._writeClipboard(text));
       case ShareEvent_Ring(:final seconds):
         unawaited(owner._phone.ring(seconds));
@@ -591,6 +594,7 @@ class _Link {
     _lastClip = text;
     try {
       await channel.copy(text);
+      if (kDebugMode) debugPrint('mpxlink clipboard to the computer (${text.length} characters)');
       return true;
     } catch (_) {
       return false;

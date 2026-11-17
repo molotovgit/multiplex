@@ -189,11 +189,11 @@ void main() {
 
   testWidgets('the clipboard goes either way on request', (tester) async {
     await pump(tester);
-    phoneClipboard = 'copied on the phone';
+    phoneClipboard = '  copied on the phone\n';
     await tester.ensureVisible(find.text('Phone to computer'));
     await tester.tap(find.text('Phone to computer'));
     await tester.pumpAndSettle();
-    expect(link.clipboard, 'copied on the phone');
+    expect(link.clipboard, '  copied on the phone\n', reason: 'exactly as it was, spaces and line end included');
     expect(find.text("On the computer's clipboard now"), findsOneWidget);
 
     link.clipboard = 'fresh from the desk';

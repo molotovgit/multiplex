@@ -72,9 +72,10 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
 
   /// What is on the phone's clipboard goes onto the computer's.
   Future<void> _sendClipboard() async {
-    final text = (await (widget.readClipboard ?? _phoneClipboard)())?.trim() ?? '';
+    // Sent exactly as it is: a clipboard's spaces and line ends are its own.
+    final text = await (widget.readClipboard ?? _phoneClipboard)() ?? '';
     if (!mounted) return;
-    if (text.isEmpty) {
+    if (text.trim().isEmpty) {
       Toast.show(context, 'The phone\'s clipboard has no text');
       return;
     }
