@@ -314,10 +314,20 @@ pub fn share(args: &[&str]) -> Result<()> {
 }
 
 /// Things that only matter while the session runs: which phones are
-/// linked, what they last said about themselves, what is asked of them.
-fn runtime_dir() -> PathBuf {
-    let base = std::env::var_os("XDG_RUNTIME_DIR").filter(|v| !v.is_empty()).map(PathBuf::from).unwrap_or_else(std::env::temp_dir);
-    base.join("multiplex")
+/// linked, what they last said about themselves, what is asked of them,
+/// their answers. Always a folder only this user can reach: an answer to
+/// an approval is read from here.
+pub(crate) fn runtime_dir() -> PathBuf {
+    use std::os::unix::fs::{DirBuilderExt, MetadataExt};
+    let base = std::env::var_os("XDG_RUNTIME_DIR").filter(|v| !v.is_empty()).map(PathBuf::from).or_else(|| {
+        // Without a session's variables (some SSH setups), the user's own
+        // runtime folder is still where systemd keeps it.
+        let uid = std::fs::metadata("/proc/self").ok()?.uid();
+        Some(PathBuf::from(format!("/run/user/{uid}"))).filter(|p| p.is_dir())
+    });
+    let dir = base.unwrap_or_else(state_dir).join("multiplex");
+    let _ = std::fs::DirBuilder::new().recursive(true).mode(0o700).create(&dir);
+    dir
 }
 
 /// A phone's name as a file name.
