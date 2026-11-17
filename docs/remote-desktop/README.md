@@ -95,6 +95,30 @@ While the phone is connected to a paired computer:
 - `multiplex sms <number> <text>` sends a text message through the phone. It is off until you switch on **Send text messages from <computer>** in that computer's **Sharing and notifications** (Android then asks for its permission once). The computer is told what became of each message: sent, or why not.
 - The phone's notifications can show on the computer's screen. This is off until you switch it on for that computer (its page, **⋮ → Sharing and notifications**) and give Multiplex notification access in Android's settings, which the app opens for you. Apps appear in that screen as they post; switch one off to keep it on the phone only. Nothing is stored on either side: a notification is passed on only while the computer is connected.
 
+## What a phone may do
+
+A paired phone logs in with its own key and, by default, may do what you may. On the computer you can narrow that, per phone:
+
+```sh
+multiplex access                               # every phone and what is switched off for it
+multiplex access "Sam's phone"                 # its six switches
+multiplex access "Sam's phone" terminal off    # no shell, no arbitrary commands
+multiplex access "Sam's phone" everything      # back to no limits
+```
+
+| Switch | Covers |
+|---|---|
+| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop |
+| `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
+| `files` | browsing, sending and fetching files |
+| `clipboard` | sharing the clipboard, opening links |
+| `terminal` | a shell and any other command, including this command's own management (pairing, these switches) |
+| `tunnels` | forwarding ports |
+
+How it works: when anything is off, the phone's line in `~/.ssh/authorized_keys` gets `restrict` and a forced command, `multiplex gate`. The SSH server then runs the gate instead of what the phone asked for; the gate lets through only requests it recognises exactly (what the app sends for each feature), and everything else counts as `terminal`. So a limited phone cannot switch its own limits off. The app shows the computer's refusal as it is.
+
+With `terminal` off, things the app does through a shell stop too: the server status page, snippets, and the keyboard opening by itself in the remote desktop (open it with its button).
+
 ## Waking the computer
 
 A paired computer's page has a **Wake** tile: it broadcasts a Wake-on-LAN signal for the computer's network card, whose address the pairing code carried. Three things have to hold:

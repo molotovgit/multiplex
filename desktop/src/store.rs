@@ -192,8 +192,33 @@ impl Store {
         Ok(self
             .lines()?
             .iter()
-            .filter_map(|l| Some(Device { name: device_name(l)?.to_owned(), key: ed25519_line(&ed25519_key_bytes(l)?) }))
+            .filter_map(|l| Some(Device { name: device_name(l)?.to_owned(), key: ed25519_line(&ed25519_key_bytes(key_part(l)?)?) }))
             .collect())
+    }
+
+    /// Sets the options a phone's key carries in authorized_keys (what it
+    /// may do), or with `None` removes them. Returns whether the phone
+    /// is paired.
+    pub fn set_options(&self, name: &str, options: Option<&str>) -> anyhow::Result<bool> {
+        let mut found = false;
+        let lines: Vec<String> = self
+            .lines()?
+            .into_iter()
+            .map(|line| match (device_name(&line) == Some(name), key_part(&line)) {
+                (true, Some(key)) => {
+                    found = true;
+                    match options {
+                        Some(options) => format!("{options} {key}"),
+                        None => key.to_owned(),
+                    }
+                }
+                _ => line,
+            })
+            .collect();
+        if found {
+            self.write(&lines)?;
+        }
+        Ok(found)
     }
 
     /// Removes a paired phone by name. Returns how many keys went.
@@ -214,12 +239,30 @@ fn is_device_line(line: &str) -> bool {
 
 /// The phone's name when the line is one of ours: `ssh-ed25519 <key> multiplex:<name>`.
 fn device_name(line: &str) -> Option<&str> {
-    let line = line.trim();
-    if !line.starts_with("ssh-ed25519 ") {
-        return None;
-    }
-    let comment = line.splitn(3, ' ').nth(2)?;
+    let comment = key_part(line)?.splitn(3, ' ').nth(2)?;
     comment.strip_prefix(DEVICE).filter(|n| !n.is_empty())
+}
+
+/// The key itself (`ssh-ed25519 AAAA… comment`), without the options a
+/// line may start with (a phone whose access is limited has some).
+fn key_part(line: &str) -> Option<&str> {
+    let line = line.trim();
+    if line.starts_with("ssh-ed25519 ") {
+        return Some(line);
+    }
+    // Options may hold spaces inside quotes; the key type follows the
+    // last unquoted one.
+    let mut quoted = false;
+    let mut previous = '\0';
+    for (at, c) in line.char_indices() {
+        match c {
+            '"' if previous != '\\' => quoted = !quoted,
+            ' ' if !quoted && line[at + 1..].starts_with("ssh-ed25519 ") => return Some(&line[at + 1..]),
+            _ => {}
+        }
+        previous = c;
+    }
+    None
 }
 
 /// `YYYYMMDDHHMMSSZ` (UTC), as sshd's `expiry-time` wants it.
@@ -252,6 +295,27 @@ mod tests {
     }
 
     const OTHER: &str = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7 me@laptop";
+
+    #[test]
+    fn a_phones_options_come_and_go_and_it_stays_a_phone() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::at(dir.path().join("ssh"), dir.path().join("state"));
+        let key = ed25519_line(&[7u8; 32]);
+        store.write(&["ssh-rsa AAAA someone-else".to_owned(), format!("{key} multiplex:Sam's phone")]).unwrap();
+        let options = r#"restrict,pty,command="/usr/bin/multiplex gate 'Sam'\''s phone'""#;
+        assert!(store.set_options("Sam's phone", Some(options)).unwrap());
+        let lines = store.lines().unwrap();
+        assert_eq!(lines[0], "ssh-rsa AAAA someone-else");
+        assert_eq!(lines[1], format!("{options} {key} multiplex:Sam's phone"));
+        // Still listed, still removable, and the key is read through the options.
+        assert_eq!(store.devices().unwrap().iter().map(|d| (d.name.as_str(), d.key.as_str())).collect::<Vec<_>>(), [("Sam's phone", key.as_str())]);
+        assert!(store.set_options("Sam's phone", None).unwrap());
+        assert_eq!(store.lines().unwrap()[1], format!("{key} multiplex:Sam's phone"));
+        assert!(!store.set_options("Nobody", Some("restrict")).unwrap());
+        store.set_options("Sam's phone", Some(options)).unwrap();
+        assert_eq!(store.unpair("Sam's phone").unwrap(), 1);
+        assert_eq!(store.lines().unwrap(), ["ssh-rsa AAAA someone-else"]);
+    }
 
     #[test]
     fn expiry_time_is_utc_in_sshd_form() {

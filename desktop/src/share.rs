@@ -472,7 +472,10 @@ fn asks_for(phone: &str) -> Vec<LinkEvent> {
 pub fn link(phone: &str) -> Result<()> {
     let phone = &the_phone(phone)?;
     let outbox = Outbox::open()?;
-    let session = Session::find().ok();
+    // A phone whose access is limited gets only what it may have.
+    let allowed = |what: &str| std::env::var(format!("MULTIPLEX_LINK_{what}")).map_or(true, |v| v != "off");
+    let (files, clipboard) = (allowed("FILES"), allowed("CLIPBOARD"));
+    let session = Session::find().ok().filter(|_| clipboard);
 
     // The clipboard is watched by wl-paste, which says a word per change.
     let (changes, changed) = mpsc::channel::<()>();
@@ -513,7 +516,7 @@ pub fn link(phone: &str) -> Result<()> {
                 say(Some(&ask))?;
                 alive = Instant::now();
             }
-            for w in outbox.waiting_for(phone) {
+            for w in outbox.waiting_for(phone).into_iter().filter(|_| files) {
                 if told.insert(w.id.clone()) {
                     say(Some(&LinkEvent::File(OutFile { id: w.id, name: w.name, size: w.size, path: w.path })))?;
                     alive = Instant::now();

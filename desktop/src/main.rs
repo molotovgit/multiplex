@@ -8,6 +8,7 @@
 //!   checks it.
 
 mod desk;
+mod gate;
 mod input;
 mod share;
 mod store;
@@ -34,6 +35,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex pair --code-only  Print only the pairing code, for scripts
   multiplex devices           List the paired phones
   multiplex unpair <name>     Remove a paired phone
+  multiplex access [<name>]   What each phone may do here; `multiplex access <name> <what> on|off`
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
   multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
   multiplex ring              Make the phone ring, to find it
@@ -64,6 +66,8 @@ fn main() {
         ["setup", "--dry-run"] => setup(true),
         ["doctor"] => doctor(),
         ["desk", rest @ ..] => desk::run(rest),
+        ["access", rest @ ..] => gate::access(rest),
+        ["gate", phone] => gate::gate(phone),
         ["send", rest @ ..] => share::send(rest),
         ["ring", rest @ ..] => share::ring(rest),
         ["sms", rest @ ..] => share::sms(rest),
@@ -230,7 +234,10 @@ fn devices() -> anyhow::Result<()> {
 fn unpair(name: &str) -> anyhow::Result<()> {
     match Store::open()?.unpair(name)? {
         0 => bail!("no paired phone is called \"{name}\" (see `multiplex devices`)"),
-        _ => println!("{name} can no longer log in. Connections it has open stay until they close."),
+        _ => {
+            gate::forget(name);
+            println!("{name} can no longer log in. Connections it has open stay until they close.");
+        }
     }
     Ok(())
 }
