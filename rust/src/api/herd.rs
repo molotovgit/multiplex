@@ -53,6 +53,14 @@ impl SshSession {
     }
 }
 
+/// What to type in a terminal on the computer to sit in front of one
+/// pane, drawn at that terminal's own size while the pane keeps its own on
+/// the computer; `None` for a session or pane that is not one.
+#[frb(sync)]
+pub fn herd_pane_command(session: String, pane: String) -> Option<String> {
+    proto::pane_command(&session, &pane).ok()
+}
+
 /// The herd as it changes.
 #[frb(opaque)]
 pub struct HerdWatch {

@@ -9,6 +9,15 @@ import 'herd_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+/// What to type in a terminal on the computer to sit in front of one
+/// pane, drawn at that terminal's own size while the pane keeps its own on
+/// the computer; `None` for a session or pane that is not one.
+String? herdPaneCommand({required String session, required String pane}) =>
+    RustLib.instance.api.crateApiHerdHerdPaneCommand(
+      session: session,
+      pane: pane,
+    );
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<HerdWatch>>
 abstract class HerdWatch implements RustOpaqueInterface {
   /// Each new state. Listen once.

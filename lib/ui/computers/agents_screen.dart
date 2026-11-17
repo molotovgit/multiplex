@@ -9,6 +9,7 @@ import '../../sessions/error_text.dart';
 import '../../sessions/herd_controller.dart';
 import '../../sessions/session_manager.dart';
 import '../../src/rust/api/agents.dart';
+import '../../src/rust/api/herd.dart';
 import '../../src/rust/api/herd_types.dart';
 import '../../src/rust/api/terminal_types.dart';
 import '../common/widgets.dart';
@@ -30,7 +31,7 @@ import '../terminal/terminal_screen.dart';
 /// busy, the idle. The computer tells of every change, so the list is
 /// always the present. A tap opens an agent to read and answer it.
 class AgentsScreen extends StatefulWidget {
-  const AgentsScreen({super.key, required this.title, required this.link, required this.onOpenTerminal});
+  const AgentsScreen({super.key, required this.title, required this.link, required this.onOpenTerminal, required this.onOpenHerdr});
 
   /// The computer's name.
   final String title;
@@ -38,8 +39,12 @@ class AgentsScreen extends StatefulWidget {
   /// The computer's herdr. Tests pass a stand-in.
   final HerdLink link;
 
-  /// Opens a terminal attached to an agent's herdr session.
+  /// Opens a terminal in front of one agent: its pane alone, drawn at the
+  /// phone's size.
   final Future<void> Function(BuildContext context, HerdAgent agent) onOpenTerminal;
+
+  /// Opens a terminal with a herdr session's whole screen.
+  final Future<void> Function(BuildContext context, String session) onOpenHerdr;
 
   /// Connects (if needed) and opens the inbox.
   static Future<void> show(BuildContext context, Host host) async {
@@ -47,16 +52,21 @@ class AgentsScreen extends StatefulWidget {
     if (session == null || !context.mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            AgentsScreen(title: host.title, link: SshHerdLink(() => session.ssh), onOpenTerminal: (context, agent) => _attach(context, session, agent)),
+        builder: (_) => AgentsScreen(
+          title: host.title,
+          link: SshHerdLink(() => session.ssh),
+          onOpenTerminal: (context, agent) => _run(context, session, herdPaneCommand(session: agent.session, pane: agent.pane)),
+          onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
+        ),
       ),
     );
   }
 
-  static Future<void> _attach(BuildContext context, LiveSession session, HerdAgent agent) async {
-    final command = agentAttachCommand(session: agent.session);
+  /// Opens a terminal on the computer and types [command] there; the
+  /// core gives none for a session or pane that is not one.
+  static Future<void> _run(BuildContext context, LiveSession session, String? command) async {
     if (command == null) {
-      Toast.show(context, 'That session cannot be opened from here.');
+      Toast.show(context, 'That cannot be opened from here.');
       return;
     }
     final sessions = AppScope.sessions(context);
@@ -97,7 +107,28 @@ class _AgentsScreenState extends State<AgentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Agents on ${widget.title}')),
+      appBar: AppBar(
+        title: Text('Agents on ${widget.title}'),
+        actions: [
+          ListenableBuilder(
+            listenable: _herd,
+            builder: (context, _) {
+              final sessions = [for (final session in _herd.state?.sessions ?? const <HerdSession>[]) session.name];
+              if (sessions.isEmpty) return const SizedBox.shrink();
+              const tip = "Open herdr's own screen";
+              if (sessions.length == 1) {
+                return IconButton(tooltip: tip, icon: const Icon(Icons.dashboard_outlined), onPressed: () => widget.onOpenHerdr(context, sessions.single));
+              }
+              return PopupMenuButton<String>(
+                tooltip: tip,
+                icon: const Icon(Icons.dashboard_outlined),
+                onSelected: (name) => widget.onOpenHerdr(context, name),
+                itemBuilder: (_) => [for (final name in sessions) PopupMenuItem(value: name, child: Text(name))],
+              );
+            },
+          ),
+        ],
+      ),
       body: ContentWidth(
         child: ListenableBuilder(
           listenable: _herd,
@@ -193,7 +224,8 @@ class _AgentTile extends StatelessWidget {
 }
 
 /// One agent, to read and to answer without a terminal: what it last
-/// wrote, the keys its questions take, and a line to write to it.
+/// wrote, the keys its questions take, and a line to write to it. Its own
+/// terminal, at the phone's size, is one tap further.
 class AgentSheet extends StatefulWidget {
   const AgentSheet({super.key, required this.herd, required this.session, required this.pane, required this.onOpenTerminal});
 
@@ -347,7 +379,7 @@ class _AgentSheetState extends State<AgentSheet> {
                 ),
               ),
               IconButton(tooltip: 'Read again', icon: const Icon(Icons.refresh), onPressed: _read),
-              IconButton(tooltip: 'Open in a terminal', icon: const Icon(Icons.terminal), onPressed: widget.onOpenTerminal),
+              IconButton(tooltip: 'Open its terminal', icon: const Icon(Icons.terminal), onPressed: widget.onOpenTerminal),
             ],
           ),
           const SizedBox(height: 8),

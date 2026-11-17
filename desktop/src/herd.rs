@@ -3,7 +3,8 @@
 //! `state` prints it once; `watch` prints it and then again whenever it
 //! changes, told by herdr itself over its socket (never by looking again
 //! and again); `do` passes on what the phone asks: text for an agent,
-//! keys for a pane, a pane's recent output.
+//! keys for a pane, a pane's recent output; `pane` (in `pane.rs`) puts one
+//! pane into the terminal it runs in.
 //!
 //! herdr's socket speaks one line of JSON per request, answer and event.
 //! A connection that subscribed to events can ask nothing else, and
@@ -354,7 +355,8 @@ pub fn run(args: &[&str]) -> Result<()> {
         ["state"] => println!("{}", serde_json::to_string(&state())?),
         ["watch"] => watch()?,
         ["do", rest @ ..] => act(&HerdAction::parse(rest).map_err(|e| anyhow!("{e}"))?)?,
-        _ => bail!("usage: multiplex herd state | watch | do <action>"),
+        ["pane", rest @ ..] => crate::pane::run(rest)?,
+        _ => bail!("usage: multiplex herd state | watch | do <action> | pane <session> <pane>"),
     }
     Ok(())
 }

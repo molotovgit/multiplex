@@ -18,6 +18,7 @@ mod h264;
 mod herd;
 mod input;
 mod mic;
+mod pane;
 mod read;
 mod screen;
 mod share;
@@ -72,6 +73,7 @@ The paired phone uses these over SSH:
   multiplex phone …           The phone's battery, and its notifications for this screen
   multiplex agents            Coding agents under herdr, with their state
   multiplex herd …            herdr's sessions, tabs and panes: state, watch (again on every change), do
+  multiplex herd pane <session> <pane>   One pane in this terminal, at this terminal's size (Ctrl+\\ leaves)
   multiplex screen            The phone's screen in a window (the phone sends the picture)
   multiplex camera            The phone's camera as a camera of this computer (the phone sends the picture)
   multiplex mic               The phone's microphone as a microphone of this computer (the phone sends the sound)

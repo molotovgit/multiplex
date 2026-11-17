@@ -190,7 +190,7 @@ A tap opens an agent without a terminal:
 - what it last wrote, read again whenever its state changes (and every two seconds while it works);
 - the keys its questions take: Esc, 1, 2, 3, the arrows, Tab, Enter;
 - a line to answer it or ask for more, sent as one piece with Enter;
-- **Open in a terminal** for the whole herdr screen, as before.
+- **Open its terminal**: that agent's pane alone in Multiplex's terminal, drawn at the phone's own columns and rows. Nothing on the computer is resized by it: herdr draws the pane a second time for the phone. herdr's whole screen is the button at the top of the inbox.
 
 While the phone is connected it is also told when an agent starts waiting for an answer or finishes: a notification, "Claude needs you" or "Claude is done", with what it was doing.
 
@@ -202,11 +202,14 @@ multiplex herd watch      # the same, and again whenever something changes
 multiplex herd do prompt <session> <pane> <text as base64>   # text and Enter for a pane's agent
 multiplex herd do keys <session> <pane> esc 2 enter          # keys, by herdr's names
 multiplex herd do read <session> <pane> 80                   # a pane's recent output
+multiplex herd pane <session> <pane>                         # that pane in this terminal, at this terminal's size
 ```
+
+`multiplex herd pane` works in any terminal, not only the phone's: Ctrl+\\ leaves (the pane keeps running), Shift+PageUp and Shift+PageDown move through the pane's earlier output, `--watch` only looks.
 
 Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly herdr's shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-More of the way [Herdr](https://herdr.dev) works is on its way: an agent's live terminal at the phone's own size, starting agents and tabs from the phone, and resuming sessions and earlier conversations.
+More of the way [Herdr](https://herdr.dev) works is on its way: starting agents and tabs from the phone, all computers in one inbox, and resuming sessions and earlier conversations.
 
 ## A yes from the phone
 

@@ -277,6 +277,13 @@ pub fn watch_command() -> String {
     format!("{SHARE_COMMAND} herd watch")
 }
 
+/// What to type in a terminal on the computer to sit in front of one
+/// pane, at that terminal's own size. Plain words, so it is the same in
+/// whichever shell the terminal runs.
+pub fn pane_command(session: &str, pane: &str) -> Result<String, ProtoError> {
+    Ok(format!("multiplex herd pane {} {}", clean_session_name(session)?, clean_pane_id(pane)?))
+}
+
 /// Reads a line the state or watch command printed.
 pub fn parse_state(line: &str) -> Result<Herd, ProtoError> {
     serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)
@@ -423,6 +430,15 @@ mod tests {
         // A session or pane the phone was handed that is not one: refused before any command line exists.
         assert!(HerdAction::Keys { session: "a b".into(), pane: "w1:p1".into(), keys: vec!["esc".into()] }.command_line().is_err());
         assert!(HerdAction::Read { session: "default".into(), pane: "w1:p1; reboot".into(), lines: 10 }.command_line().is_err());
+    }
+
+    #[test]
+    fn the_command_for_one_pane_is_plain_words_or_nothing() {
+        assert_eq!(pane_command("default", "w1:p3").unwrap(), "multiplex herd pane default w1:p3");
+        assert_eq!(pane_command("work.api", "w12:p4").unwrap(), "multiplex herd pane work.api w12:p4");
+        for (session, pane) in [("default; reboot", "w1:p1"), ("default", "w1:p1; reboot"), ("", "w1:p1"), ("default", "w1:t1"), ("$(x)", "w1:p1")] {
+            assert!(pane_command(session, pane).is_err(), "{session:?} {pane:?}");
+        }
     }
 
     #[test]

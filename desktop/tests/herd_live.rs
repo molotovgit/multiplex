@@ -143,6 +143,44 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
         std::thread::sleep(Duration::from_millis(100));
     }
 
+    // One pane in a terminal of another size: what is typed there runs in
+    // the pane, its picture is drawn, and the pane itself is not resized.
+    let size_of = |own: &OwnSession| {
+        let layout: serde_json::Value = serde_json::from_str(&own.herdr(&["pane", "layout", "--pane", &pane])).unwrap();
+        let rect = &layout["result"]["layout"]["panes"][0]["rect"];
+        (rect["width"].as_u64().unwrap(), rect["height"].as_u64().unwrap())
+    };
+    let before = size_of(&own);
+    let mut view = Command::new(env!("CARGO_BIN_EXE_multiplex"))
+        .env("MULTIPLEX_HERD_SESSION", &name)
+        .args(["herd", "pane", &name, &pane, "--cols", "44", "--rows", "12"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("multiplex runs");
+    let mut keys = view.stdin.take().unwrap();
+    std::thread::sleep(Duration::from_millis(400));
+    use std::io::Write;
+    keys.write_all(b"echo view-$((30+3))\r").unwrap();
+    keys.flush().unwrap();
+    std::thread::sleep(Duration::from_millis(700));
+    assert_eq!(size_of(&own), before, "the pane kept its size while it was viewed at 44 by 12");
+    // Ctrl+\ leaves; what follows it in the same breath is not typed.
+    keys.write_all(b"\x1cecho never\r").unwrap();
+    keys.flush().unwrap();
+    let drawn = view.wait_with_output().expect("the view ends");
+    assert!(drawn.status.success());
+    let picture = String::from_utf8_lossy(&drawn.stdout).into_owned();
+    assert!(picture.contains("view-33"), "the pane's answer was drawn");
+    assert!(picture.ends_with("\x1b[?25h\x1b[0m\x1b[2J\x1b[H"), "the terminal is left as a terminal");
+    let (_, printed) = own.multiplex(&["herd", "do", "read", &name, &pane, "40"]);
+    let seen = parse_text(&printed).unwrap().text;
+    assert!(seen.contains("view-33") && !seen.contains("never"), "{seen}");
+    // A pane that is not there: herdr's own reason, and a failure.
+    let none = Command::new(env!("CARGO_BIN_EXE_multiplex")).args(["herd", "pane", &name, "w9:p9", "--cols", "40", "--rows", "10"]).stdin(Stdio::null()).output().unwrap();
+    assert!(!none.status.success());
+    assert!(String::from_utf8_lossy(&none.stderr).contains("not found"));
+
     // What is not there, or not an id, is refused.
     assert!(!own.multiplex(&["herd", "do", "keys", &name, "w9:p9", "enter"]).0);
     assert!(!own.multiplex(&["herd", "do", "read", &name, "w1:p1;ls", "5"]).0);

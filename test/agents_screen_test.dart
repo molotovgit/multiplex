@@ -87,7 +87,12 @@ void main() {
   Future<void> open(WidgetTester tester, _Herd herd, {List<String>? terminals}) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: AgentsScreen(title: 'Desk', link: herd, onOpenTerminal: (_, agent) async => terminals?.add('${agent.session}/${agent.pane}')),
+        home: AgentsScreen(
+          title: 'Desk',
+          link: herd,
+          onOpenTerminal: (_, agent) async => terminals?.add('${agent.session}/${agent.pane}'),
+          onOpenHerdr: (_, session) async => terminals?.add('herdr of $session'),
+        ),
       ),
     );
     await tester.pump();
@@ -139,6 +144,32 @@ void main() {
     await open(tester, herd);
     expect(find.text('Idle · 1'), findsOneWidget);
     expect(find.text('Claude · api · server · night'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets("herdr's own screen is one tap away: at once with one session, by name with several", (tester) async {
+    final terminals = <String>[];
+    final one = _Herd(_state([_agent('w1:p1', AgentStatus.idle, 'Waiting for work')], sessions: [_session('default')]));
+    await open(tester, one, terminals: terminals);
+    await tester.tap(find.byTooltip("Open herdr's own screen"));
+    expect(terminals, ['herdr of default']);
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    terminals.clear();
+    final two = _Herd(_state([_agent('w1:p1', AgentStatus.idle, 'Waiting for work')], sessions: [_session('default'), _session('night')]));
+    await open(tester, two, terminals: terminals);
+    await tester.tap(find.byTooltip("Open herdr's own screen"));
+    await tester.pumpAndSettle();
+    expect(terminals, isEmpty, reason: 'which one is asked first');
+    await tester.tap(find.text('night'));
+    await tester.pumpAndSettle();
+    expect(terminals, ['herdr of night']);
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    // Nothing to open where herdr runs nothing.
+    final none = _Herd(_state([], available: false));
+    await open(tester, none);
+    expect(find.byTooltip("Open herdr's own screen"), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -223,7 +254,7 @@ void main() {
     expect(find.text('Done · codex · server'), findsOneWidget);
 
     // The terminal is one tap away.
-    await tester.tap(find.byTooltip('Open in a terminal'));
+    await tester.tap(find.byTooltip('Open its terminal'));
     expect(terminals, ['default/w1:p3']);
 
     // It left: said, and nothing more can be sent to it.
