@@ -21,6 +21,7 @@ mod screen;
 mod share;
 mod speaker;
 mod store;
+mod sudo;
 mod system;
 
 use std::io::Write;
@@ -49,6 +50,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
   multiplex ring              Make the phone ring, to find it
   multiplex approve <what>    Ask for a yes on the phone (fingerprint there); succeeds only with it
+  multiplex setup --sudo      Have sudo ask the phone first (shows a plan with --dry-run; --sudo-off undoes it)
   multiplex agent             An SSH agent whose key lives on the phone (each use confirmed there)
   multiplex key [<name>]      The phones' public keys, for servers and for Git signing
   multiplex sms <number> <text>  Send a text message from the phone (it has to allow this computer to)
@@ -81,6 +83,15 @@ fn main() {
         ["unpair", name] => unpair(name),
         ["setup"] => setup(false),
         ["setup", "--dry-run"] => setup(true),
+        // sudo approved on the phone: asked for by name, never part of plain setup.
+        ["setup", "--sudo"] => sudo::setup(true, None, false),
+        ["setup", "--sudo", "--dry-run"] => sudo::setup(true, None, true),
+        ["setup", "--sudo", phone] => sudo::setup(true, Some(phone), false),
+        ["setup", "--sudo", phone, "--dry-run"] => sudo::setup(true, Some(phone), true),
+        ["setup", "--sudo-off"] => sudo::setup(false, None, false),
+        ["setup", "--sudo-off", "--dry-run"] => sudo::setup(false, None, true),
+        // What sudo's PAM file runs. It says nothing and only ever answers yes or no.
+        ["approve", "--pam", rest @ ..] => std::process::exit(if sudo::pam(rest) { 0 } else { 1 }),
         ["doctor"] => doctor(),
         ["desk", rest @ ..] => desk::run(rest),
         ["access", rest @ ..] => gate::access(rest),

@@ -167,7 +167,24 @@ multiplex approve deploy to production && ./deploy.sh
 
 The yes cannot be faked on the computer. Each request carries a fresh random challenge, and the phone answers by signing the request (its id, the challenge, the words shown) with its own key, which never leaves the phone. The computer checks the signature against the key the phone paired with. A no, a wrong or old signature, another reason, or silence all fail.
 
-This is the building block for approving `sudo` from the phone. It is not wired into `sudo` yet: that needs a PAM entry and a copy of the phone's key that only root can change, which should be set up with you at the keyboard.
+### sudo with the phone's fingerprint
+
+```sh
+multiplex setup --sudo --dry-run     # shows what it would do, and does nothing
+multiplex setup --sudo               # asks for your password once, then for a yes on the phone
+multiplex setup --sudo-off           # back to the password only
+```
+
+After `multiplex setup --sudo`, `sudo` asks the linked phone first: "Use sudo on <computer>", a fingerprint, and it goes through. With no phone linked it asks for the password at once, as before; with a no, or no answer in 30 seconds, it asks for the password then. The phone can never refuse you sudo, only save you the typing.
+
+This has not been tried with root yet: everything up to the last step is tested (the asking, the checking, the refusals), installing it into `sudo` is yours to do. The setup makes that safe to try. It changes `/etc/pam.d/sudo` (keeping a copy), then asks you to try `sudo` in another terminal, and puts the file back unless you answer that it worked.
+
+What it rests on:
+
+- The key your phone's yes is checked against is a copy in `/etc/multiplex/sudo-keys`, which only root can change. The copy in your own `authorized_keys` is not used for this: anything running as you could put another key there.
+- The request is made up by the helper itself (a fresh challenge and the words shown), and the signature is checked over exactly that. Whatever changes the request or the answer on their way only makes the check fail.
+- The command `sudo` runs for this has to be one that only root can change. When Multiplex is installed in your home folder, the setup puts a root-owned copy in `/usr/local/lib/multiplex/`; run the setup again after updating.
+- A yes on the phone is a yes to *a* sudo on that computer, not to a particular command: `sudo` does not tell the helper what will be run. A request you did not start is one to refuse.
 
 ## An SSH key that lives on the phone
 

@@ -600,7 +600,7 @@ pub fn sms(args: &[&str]) -> Result<()> {
 
 /// Whether an answer approves this request: a signature over exactly
 /// this request, made with the paired phone's own key.
-fn check_answer(phone_key: &[u8; 32], id: &str, reason: &str, challenge: &str, answer: &str) -> std::result::Result<(), &'static str> {
+pub(crate) fn check_answer(phone_key: &[u8; 32], id: &str, reason: &str, challenge: &str, answer: &str) -> std::result::Result<(), &'static str> {
     let answer = answer.trim();
     if answer == "no" {
         return Err("it was refused on the phone");
@@ -644,6 +644,11 @@ pub fn approve(args: &[&str]) -> Result<()> {
 /// it. The answer (through `multiplex share approved <id>`) is only taken
 /// while the request waits. `None`: no answer in time.
 pub(crate) fn ask_and_wait(phone: &str, event: impl FnOnce(&str) -> LinkEvent) -> Result<(String, Option<String>)> {
+    ask_and_wait_for(phone, APPROVE_SECONDS, event)
+}
+
+/// The same, waiting at most `seconds` for the answer.
+pub(crate) fn ask_and_wait_for(phone: &str, seconds: u64, event: impl FnOnce(&str) -> LinkEvent) -> Result<(String, Option<String>)> {
     let id = random_id()?;
     let dir = runtime_dir().join("approvals");
     std::fs::create_dir_all(&dir)?;
@@ -657,7 +662,7 @@ pub(crate) fn ask_and_wait(phone: &str, event: impl FnOnce(&str) -> LinkEvent) -
         finish();
         bail!("{phone} is not connected right now");
     }
-    let until = Instant::now() + Duration::from_secs(APPROVE_SECONDS);
+    let until = Instant::now() + Duration::from_secs(seconds);
     while Instant::now() < until {
         if let Ok(answer) = std::fs::read_to_string(&answered) {
             finish();

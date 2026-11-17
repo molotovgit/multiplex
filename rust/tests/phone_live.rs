@@ -139,6 +139,81 @@ async fn a_fingerprint_yes_reaches_the_computer_and_nothing_else_passes() {
     assert!(share::approved(&conn, &id, &other).await.is_err());
 }
 
+/// What sudo's PAM file would run (`multiplex approve --pam`), tried
+/// without root: the keys file root would keep is a test file here.
+/// Needs `MPX_PHONE_KEY`'s public half next to it (`<key file>.pub`).
+#[tokio::test(flavor = "multi_thread")]
+async fn sudo_takes_only_a_yes_signed_by_the_enrolled_phone() {
+    let _alone = ONE_AT_A_TIME.lock().await;
+    let Some(Setup { conn, key, name, bin }) = setup().await else {
+        return;
+    };
+    let user = std::env::var("MPX_PHONE_USER").unwrap();
+    let Ok(public) = std::fs::read_to_string(format!("{}.pub", std::env::var("MPX_PHONE_KEY").unwrap())) else {
+        eprintln!("sudo test skipped: no public key file next to MPX_PHONE_KEY");
+        return;
+    };
+    let public: Vec<&str> = public.split_whitespace().take(2).collect();
+    let dir = std::env::temp_dir().join(format!("mpx-sudo-test-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let keys = dir.join("sudo-keys");
+    let enrol = |key_line: &str| std::fs::write(&keys, format!("# test\n{user} {key_line} multiplex:{name}\n")).unwrap();
+    enrol(&public.join(" "));
+    let mut heard = link(&conn, &name).await;
+    let sudo = || {
+        Command::new(&bin)
+            .args(["approve", "--pam", "--test-keys", keys.to_str().unwrap()])
+            .env("PAM_TYPE", "auth")
+            .env("PAM_USER", &user)
+            .env("PAM_TTY", "/dev/pts/9")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("the computer's command runs")
+    };
+
+    // Yes, signed by the enrolled phone for exactly what was asked.
+    let waiting = sudo();
+    let (id, reason, challenge) = next_approval(&mut heard).await;
+    assert!(reason.starts_with("Use sudo on ") && reason.ends_with("(pts/9)"), "{reason}");
+    share::approved(&conn, &id, &share::approval_signature(&key, &id, &reason, &challenge).unwrap()).await.unwrap();
+    let out = waiting.wait_with_output().unwrap();
+    assert!(out.status.success(), "approved: {}", String::from_utf8_lossy(&out.stderr));
+    assert!(String::from_utf8_lossy(&out.stdout).contains(&format!("Waiting for {name} to approve")));
+
+    // No.
+    let waiting = sudo();
+    let (id, _, _) = next_approval(&mut heard).await;
+    share::approved(&conn, &id, "no").await.unwrap();
+    assert_eq!(waiting.wait_with_output().unwrap().status.code(), Some(1));
+
+    // A yes to other words than those asked.
+    let waiting = sudo();
+    let (id, _, challenge) = next_approval(&mut heard).await;
+    share::approved(&conn, &id, &share::approval_signature(&key, &id, "Use sudo on another computer", &challenge).unwrap()).await.unwrap();
+    assert_eq!(waiting.wait_with_output().unwrap().status.code(), Some(1));
+
+    // The phone is paired and signs correctly, but root's file names
+    // another key for it: its yes does not count.
+    enrol(&multiplex_proto::ed25519_line(&[9u8; 32]));
+    let waiting = sudo();
+    let (id, reason, challenge) = next_approval(&mut heard).await;
+    share::approved(&conn, &id, &share::approval_signature(&key, &id, &reason, &challenge).unwrap()).await.unwrap();
+    assert_eq!(waiting.wait_with_output().unwrap().status.code(), Some(1));
+
+    // Nobody enrolled for this user: no at once, without asking anyone.
+    std::fs::write(&keys, format!("someone-else {} multiplex:{name}\n", public.join(" "))).unwrap();
+    let started = std::time::Instant::now();
+    assert_eq!(sudo().wait_with_output().unwrap().status.code(), Some(1));
+    assert!(started.elapsed() < Duration::from_secs(2));
+    assert!(tokio::time::timeout(Duration::from_millis(500), heard.recv()).await.is_err(), "the phone was not asked");
+
+    // Not asked by PAM to check who it is: no.
+    let out = Command::new(&bin).args(["approve", "--pam", "--test-keys", keys.to_str().unwrap()]).env_remove("PAM_TYPE").output().unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 /// The phone's key used from the computer through `multiplex agent`: ssh
 /// lists it, logs in with it and signs with it, and each use is a
 /// request the phone reads, shows and signs itself.
