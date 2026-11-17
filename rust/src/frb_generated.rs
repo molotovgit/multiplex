@@ -45,7 +45,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 107243934;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1714856666;
 
 // Section: executor
 
@@ -5010,6 +5010,45 @@ fn wire__crate__api__tailscale__tailscale_logout_impl(
         },
     )
 }
+fn wire__crate__api__tailscale__tailscale_ping_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "tailscale_ping",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_ip = <String>::sse_decode(&mut deserializer);
+            let api_kind = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Ok::<_, ()>(
+                            crate::api::tailscale::tailscale_ping(api_ip, api_kind).await,
+                        )?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__tailscale__tailscale_start_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -6814,30 +6853,31 @@ fn pde_ffi_dispatcher_primary_impl(
         ),
         97 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
         98 => wire__crate__api__tailscale__tailscale_logout_impl(port, ptr, rust_vec_len, data_len),
-        99 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
-        100 => {
+        99 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
+        100 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
+        101 => {
             wire__crate__api__tailscale__tailscale_status_impl(port, ptr, rust_vec_len, data_len)
         }
-        101 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
+        102 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        102 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        103 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        103 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        104 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        104 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        106 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        105 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        107 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -6936,7 +6976,7 @@ fn pde_ffi_dispatcher_sync_impl(
         91 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
         92 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
         95 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
-        105 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        106 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

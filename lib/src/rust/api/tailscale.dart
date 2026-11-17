@@ -33,3 +33,8 @@ Future<void> tailscaleLogin() =>
 /// Signs this phone out of the tailnet.
 Future<void> tailscaleLogout() =>
     RustLib.instance.api.crateApiTailscaleTailscaleLogout();
+
+/// Pings a tailnet IP for diagnosis: `kind` is "disco" (network path only),
+/// "TSMP" (WireGuard and IP stacks, no TCP) or "ICMP". Milliseconds, or -1.
+Future<double> tailscalePing({required String ip, required String kind}) =>
+    RustLib.instance.api.crateApiTailscaleTailscalePing(ip: ip, kind: kind);

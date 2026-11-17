@@ -268,7 +268,8 @@ class DesktopStatsChip extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Text(
-            '${s.fps.toStringAsFixed(0)} fps · ping ${s.rttMs.toStringAsFixed(0)} ms · '
+            '${s.fps.toStringAsFixed(0)} fps · ping ${s.rttMs.toStringAsFixed(0)} ms'
+            '${controller.netPingMs != null ? ' (net ${controller.netPingMs!.toStringAsFixed(0)})' : ''} · '
             'delay ${s.frameAgeMs > 0 ? s.frameAgeMs.toStringAsFixed(0) : '–'} ms · '
             '${(s.kbps / 1000).toStringAsFixed(1)} Mbit/s · ${controller.streamWidth}×${controller.streamHeight} $encoder',
             style: text,

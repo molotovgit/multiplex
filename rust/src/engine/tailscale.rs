@@ -22,6 +22,7 @@ struct Api {
     login: unsafe extern "C" fn() -> c_int,
     logout: unsafe extern "C" fn() -> c_int,
     dial: unsafe extern "C" fn(*const c_char, c_int, c_int) -> c_int,
+    ping: unsafe extern "C" fn(*const c_char, *const c_char) -> f64,
     last_error: unsafe extern "C" fn() -> *mut c_char,
     free: unsafe extern "C" fn(*mut c_char),
 }
@@ -48,6 +49,7 @@ fn load() -> Result<Api, String> {
             login: sym!(b"mpx_ts_login\0"),
             logout: sym!(b"mpx_ts_logout\0"),
             dial: sym!(b"mpx_ts_dial\0"),
+            ping: sym!(b"mpx_ts_ping\0"),
             last_error: sym!(b"mpx_ts_last_error\0"),
             free: sym!(b"mpx_ts_free\0"),
             _lib: lib,
@@ -111,6 +113,16 @@ pub fn logout() -> anyhow::Result<()> {
     // SAFETY: plain call into the loaded library.
     check(api, unsafe { (api.logout)() })?;
     Ok(())
+}
+
+/// Pings a tailnet IP: `kind` is "disco", "TSMP" or "ICMP". Round trip in
+/// ms, or None. Blocks for up to 3 s.
+pub fn ping(ip: &str, kind: &str) -> Option<f64> {
+    let api = api().ok()?;
+    let (ip, kind) = (CString::new(ip).ok()?, CString::new(kind).ok()?);
+    // SAFETY: valid C strings for the duration of the call.
+    let ms = unsafe { (api.ping)(ip.as_ptr(), kind.as_ptr()) };
+    (ms >= 0.0).then_some(ms)
 }
 
 /// Connects to `host:port` on the tailnet. Blocks until connected, so

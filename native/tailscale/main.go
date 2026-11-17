@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -36,6 +37,7 @@ import (
 	// which may not list network interfaces or read /proc/net.
 	_ "tailscale.com/feature/androidbin"
 	"tailscale.com/ipn"
+	"tailscale.com/tailcfg"
 	"tailscale.com/tsnet"
 )
 
@@ -292,6 +294,34 @@ func pump(a, b net.Conn) {
 	<-done
 	a.Close()
 	b.Close()
+}
+
+// mpx_ts_ping pings a tailnet address and returns the round trip in
+// milliseconds, or a negative number. kind is "disco" (the network path
+// only), "TSMP" (through WireGuard and the IP stacks, no TCP) or "ICMP".
+// For diagnosing where delay comes from.
+//
+//export mpx_ts_ping
+func mpx_ts_ping(ip *C.char, kind *C.char) C.double {
+	s, err := client()
+	if err != nil {
+		return -1
+	}
+	lc, err := s.LocalClient()
+	if err != nil {
+		return -1
+	}
+	addr, err := netip.ParseAddr(C.GoString(ip))
+	if err != nil {
+		return -2
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	res, err := lc.Ping(ctx, addr, tailcfg.PingType(C.GoString(kind)))
+	if err != nil || res.Err != "" {
+		return -3
+	}
+	return C.double(res.LatencySeconds * 1000)
 }
 
 // mpx_ts_last_error returns the last error message. Free with mpx_ts_free.

@@ -35,3 +35,13 @@ pub async fn tailscale_login() -> anyhow::Result<()> {
 pub async fn tailscale_logout() -> anyhow::Result<()> {
     AsyncRuntime::run(async { tokio::task::spawn_blocking(tailscale::logout).await? }).await?
 }
+
+/// Pings a tailnet IP for diagnosis: `kind` is "disco" (network path only),
+/// "TSMP" (WireGuard and IP stacks, no TCP) or "ICMP". Milliseconds, or -1.
+pub async fn tailscale_ping(ip: String, kind: String) -> f64 {
+    AsyncRuntime::run(async move { tokio::task::spawn_blocking(move || tailscale::ping(&ip, &kind)).await.ok().flatten() })
+        .await
+        .ok()
+        .flatten()
+        .unwrap_or(-1.0)
+}

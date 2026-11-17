@@ -7,9 +7,11 @@ import 'package:flutter/services.dart';
 
 import '../src/rust/api/desktop.dart';
 import '../src/rust/api/desktop_types.dart';
+import '../src/rust/api/tailscale.dart';
 import '../ui/desktop/desktop_keys.dart';
 import '../ui/desktop/desktop_settings.dart';
 import 'session_manager.dart';
+import 'tailscale_node.dart';
 
 /// One monitor of the remote machine, as Hyprland reports it.
 class RemoteMonitor {
@@ -147,6 +149,41 @@ class DesktopController extends ChangeNotifier {
 
   DesktopStats? stats;
 
+  /// Over Tailscale: the network's own round trip (disco ping) and one
+  /// through WireGuard and the IP stacks (TSMP), measured every 2 s, to
+  /// compare with the stream's ping. Null until measured.
+  double? netPingMs;
+  double? tsmpPingMs;
+  Timer? _netProbe;
+
+  void _startNetProbe() {
+    if (_netProbe != null || !session.host.viaTailscale) return;
+    _netProbe = Timer.periodic(const Duration(seconds: 2), (_) => _probeNet());
+  }
+
+  bool _probing = false;
+
+  Future<void> _probeNet() async {
+    if (_probing || !live) return;
+    final ip = TailscaleNode.instance.deviceFor(session.host.address)?.ips.where((i) => !i.contains(':')).firstOrNull;
+    if (ip == null) return;
+    _probing = true;
+    try {
+      final disco = await tailscalePing(ip: ip, kind: 'disco');
+      final tsmp = await tailscalePing(ip: ip, kind: 'TSMP');
+      netPingMs = disco >= 0 ? disco : null;
+      tsmpPingMs = tsmp >= 0 ? tsmp : null;
+      // One line per sample in the device log, for diagnosis.
+      debugPrint(
+        'MPXLAT disco=${disco.toStringAsFixed(1)} tsmp=${tsmp.toStringAsFixed(1)} '
+        'stream=${stats?.rttMs.toStringAsFixed(0)} delay=${stats?.frameAgeMs.toStringAsFixed(0)} fps=${stats?.fps.toStringAsFixed(0)}',
+      );
+    } catch (_) {
+    } finally {
+      _probing = false;
+    }
+  }
+
   /// The remote pointer, in logical remote pixels.
   Offset cursor = const Offset(100, 100);
   bool cursorVisible = true;
@@ -271,6 +308,7 @@ class DesktopController extends ChangeNotifier {
         unawaited(refreshMonitors());
         phase = DesktopPhase.live;
         note = '';
+        _startNetProbe();
         _quickRetries = 0;
         // Put the pointer where the user will look for it.
         if (streamWidth == 0) cursor = Offset(remoteSize.width / 2, remoteSize.height / 2);
@@ -646,6 +684,7 @@ class DesktopController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _resizeDebounce?.cancel();
+    _netProbe?.cancel();
     _releaseHeld();
     _events?.cancel();
     _desktop?.close();
