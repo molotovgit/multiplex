@@ -59,6 +59,7 @@ class AppSettings {
     this.autoCheckUpdates = true,
     this.lastUpdateCheckMs = 0,
     this.skippedUpdateVersion = '',
+    this.resume = const {},
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -128,6 +129,10 @@ class AppSettings {
   /// A version the user chose to skip: no banner is shown for it.
   final String skippedUpdateVersion;
 
+  /// Where the owner last was with an agent or a terminal (a
+  /// `ResumePlace` as JSON); empty when nowhere yet.
+  final Map<String, dynamic> resume;
+
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
   static const minLineHeight = 1.0;
@@ -162,6 +167,7 @@ class AppSettings {
     bool? autoCheckUpdates,
     int? lastUpdateCheckMs,
     String? skippedUpdateVersion,
+    Map<String, dynamic>? resume,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -187,6 +193,7 @@ class AppSettings {
         autoCheckUpdates: autoCheckUpdates ?? this.autoCheckUpdates,
         lastUpdateCheckMs: lastUpdateCheckMs ?? this.lastUpdateCheckMs,
         skippedUpdateVersion: skippedUpdateVersion ?? this.skippedUpdateVersion,
+        resume: resume ?? this.resume,
       );
 
   Map<String, dynamic> toJson() => {
@@ -213,6 +220,7 @@ class AppSettings {
         'autoCheckUpdates': autoCheckUpdates,
         'lastUpdateCheckMs': lastUpdateCheckMs,
         'skippedUpdateVersion': skippedUpdateVersion,
+        'resume': resume,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -245,6 +253,7 @@ class AppSettings {
       autoCheckUpdates: Json.boolean(j, 'autoCheckUpdates', true),
       lastUpdateCheckMs: Json.integer(j, 'lastUpdateCheckMs', 0),
       skippedUpdateVersion: Json.str(j, 'skippedUpdateVersion'),
+      resume: j['resume'] is Map ? (j['resume'] as Map).cast<String, dynamic>() : const {},
     );
   }
 }

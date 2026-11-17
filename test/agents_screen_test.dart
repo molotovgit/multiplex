@@ -85,7 +85,7 @@ HerdSession _session(String name, {int panes = 0}) => HerdSession(
 );
 
 void main() {
-  Future<void> open(WidgetTester tester, _Herd herd, {List<String>? terminals}) async {
+  Future<void> open(WidgetTester tester, _Herd herd, {List<String>? terminals, List<String>? visited, ({String session, String pane})? openAt}) async {
     await tester.pumpWidget(
       MaterialApp(
         home: AgentsScreen(
@@ -93,6 +93,8 @@ void main() {
           link: herd,
           onOpenTerminal: (_, session, pane) async => terminals?.add('$session/$pane'),
           onOpenHerdr: (_, session) async => terminals?.add('herdr of $session'),
+          openAt: openAt,
+          onVisited: (session, pane, title, agent) => visited?.add('$session/$pane "$title" ${agent.isEmpty ? '(terminal)' : agent}'),
         ),
       ),
     );
@@ -258,6 +260,97 @@ void main() {
     expect(find.text('Nothing is open in it.'), findsOneWidget);
     expect(find.text('default'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  group('continuing', () {
+    HerdState herdWith({bool agentThere = true}) => _state(
+      [if (agentThere) _agent('w1:p3', AgentStatus.blocked, 'Allow this command?', name: 'codex')],
+      sessions: [
+        HerdSession(
+          name: 'default',
+          running: true,
+          workspaces: [
+            HerdWorkspace(
+              id: 'w1',
+              label: 'api',
+              tabs: [
+                HerdTab(
+                  id: 'w1:t1',
+                  label: '1',
+                  panes: [
+                    const HerdPane(id: 'w1:p2', title: 'sam@desk:~', folder: '/home/sam', folderName: 'sam', focused: true, status: AgentStatus.unknown),
+                    if (agentThere)
+                      const HerdPane(
+                        id: 'w1:p3',
+                        title: 'Allow this command?',
+                        folder: '/srv/web',
+                        folderName: 'web',
+                        focused: false,
+                        agent: 'codex',
+                        status: AgentStatus.blocked,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+
+    testWidgets('each agent or terminal opened is told, as the place to continue from', (tester) async {
+      final visited = <String>[];
+      final herd = _Herd(herdWith());
+      await open(tester, herd, visited: visited, terminals: []);
+      await tester.tap(find.text('Allow this command?'));
+      await tester.pumpAndSettle();
+      expect(visited, ['default/w1:p3 "Allow this command?" codex']);
+      Navigator.of(tester.element(find.byTooltip('Send'))).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Everything'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('sam@desk:~'));
+      await tester.pump();
+      expect(visited.last, 'default/w1:p2 "sam@desk:~" (terminal)');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('asked to continue with an agent, it opens that agent by itself', (tester) async {
+      final herd = _Herd(herdWith())..output = 'Run `make test`?';
+      await open(tester, herd, openAt: (session: 'default', pane: 'w1:p3'));
+      await tester.pumpAndSettle();
+      expect(find.text('Run `make test`?'), findsOneWidget);
+      expect(find.byTooltip('Send'), findsOneWidget);
+      // Only once: a later change of the herd does not open it again.
+      Navigator.of(tester.element(find.byTooltip('Send'))).pop();
+      await tester.pumpAndSettle();
+      herd.tell(herdWith());
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Send'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('asked to continue with a plain terminal, it opens that terminal', (tester) async {
+      final terminals = <String>[];
+      await open(tester, _Herd(herdWith()), terminals: terminals, openAt: (session: 'default', pane: 'w1:p2'));
+      await tester.pumpAndSettle();
+      expect(terminals, ['default/w1:p2']);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('what is no longer there is said, and the list is shown instead', (tester) async {
+      final terminals = <String>[];
+      await open(tester, _Herd(herdWith(agentThere: false)), terminals: terminals, openAt: (session: 'default', pane: 'w1:p3'));
+      await tester.pump();
+      expect(find.text('That one is no longer running. Here is what is.'), findsOneWidget);
+      expect(find.text('No agents are running'), findsOneWidget);
+      expect(terminals, isEmpty);
+      expect(find.byTooltip('Send'), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 5));
+    });
   });
 
   testWidgets('a computer without herdr, and one that does not answer', (tester) async {

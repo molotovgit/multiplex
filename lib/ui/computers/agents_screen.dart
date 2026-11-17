@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
+import '../../data/resume_place.dart';
 import '../../sessions/error_text.dart';
 import '../../sessions/herd_controller.dart';
 import '../../sessions/session_manager.dart';
@@ -31,7 +32,15 @@ import '../terminal/terminal_screen.dart';
 /// busy, the idle. The computer tells of every change, so the list is
 /// always the present. A tap opens an agent to read and answer it.
 class AgentsScreen extends StatefulWidget {
-  const AgentsScreen({super.key, required this.title, required this.link, required this.onOpenTerminal, required this.onOpenHerdr});
+  const AgentsScreen({
+    super.key,
+    required this.title,
+    required this.link,
+    required this.onOpenTerminal,
+    required this.onOpenHerdr,
+    this.openAt,
+    this.onVisited,
+  });
 
   /// The computer's name.
   final String title;
@@ -46,10 +55,21 @@ class AgentsScreen extends StatefulWidget {
   /// Opens a terminal with a herdr session's whole screen.
   final Future<void> Function(BuildContext context, String session) onOpenHerdr;
 
-  /// Connects (if needed) and opens the inbox.
-  static Future<void> show(BuildContext context, Host host) async {
+  /// A pane to go straight to once the herd is known: where the owner
+  /// was last (Home's "Continue").
+  final ({String session, String pane})? openAt;
+
+  /// Told each time an agent or a terminal is opened, so it can be
+  /// remembered as the place to continue from. [agent] is empty for a
+  /// plain terminal.
+  final void Function(String session, String pane, String title, String agent)? onVisited;
+
+  /// Connects (if needed) and opens the inbox, or with [place] goes
+  /// straight to where the owner was.
+  static Future<void> show(BuildContext context, Host host, {ResumePlace? place}) async {
     final LiveSession? session = await HostConnector.connect(context, host);
     if (session == null || !context.mounted) return;
+    final store = AppScope.store(context);
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => AgentsScreen(
@@ -57,6 +77,12 @@ class AgentsScreen extends StatefulWidget {
           link: SshHerdLink(() => session.ssh),
           onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane)),
           onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
+          openAt: place == null ? null : (session: place.session, pane: place.pane),
+          onVisited: (name, pane, title, agent) => store.updateSettings(
+            store.settings.copyWith(
+              resume: ResumePlace(hostId: host.id, session: name, pane: pane, title: title, agent: agent).toJson(),
+            ),
+          ),
         ),
       ),
     );
@@ -88,10 +114,55 @@ class AgentsScreen extends StatefulWidget {
 class _AgentsScreenState extends State<AgentsScreen> {
   late final HerdController _herd = HerdController(widget.link);
 
+  /// Still to go to: the place asked for, until the herd is known.
+  late ({String session, String pane})? _goTo = widget.openAt;
+
   @override
   void initState() {
     super.initState();
+    _herd.addListener(_arrive);
     unawaited(_herd.start());
+  }
+
+  /// Once the herd is known, goes where the owner was: its agent, its
+  /// terminal, or, when it is gone, says so and stays on the list.
+  void _arrive() {
+    final place = _goTo;
+    final state = _herd.state;
+    if (place == null || state == null) return;
+    _goTo = null;
+    _herd.removeListener(_arrive);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pane = _pane(state, place.session, place.pane);
+      if (pane == null) {
+        Toast.show(context, 'That one is no longer running. Here is what is.');
+      } else {
+        _openPane(place.session, pane);
+      }
+    });
+  }
+
+  static HerdPane? _pane(HerdState state, String session, String id) {
+    for (final one in state.sessions) {
+      if (one.name != session) continue;
+      for (final pane in one.workspaces.expand((w) => w.tabs).expand((t) => t.panes)) {
+        if (pane.id == id) return pane;
+      }
+    }
+    return null;
+  }
+
+  /// An agent's pane opens the agent; a plain terminal opens as itself.
+  /// Either way it is the place to continue from next time.
+  void _openPane(String session, HerdPane pane) {
+    final agent = _herd.agent(session, pane.id);
+    widget.onVisited?.call(session, pane.id, pane.title, pane.agent ?? '');
+    if (agent != null) {
+      _show(agent);
+    } else {
+      unawaited(widget.onOpenTerminal(context, session, pane.id));
+    }
   }
 
   @override
@@ -101,6 +172,11 @@ class _AgentsScreenState extends State<AgentsScreen> {
   }
 
   void _open(HerdAgent agent) {
+    widget.onVisited?.call(agent.session, agent.pane, agent.title, agent.name);
+    _show(agent);
+  }
+
+  void _show(HerdAgent agent) {
     unawaited(AgentSheet.show(context, herd: _herd, agent: agent, onOpenTerminal: () => widget.onOpenTerminal(context, agent.session, agent.pane)));
   }
 
@@ -183,14 +259,9 @@ class _AgentsScreenState extends State<AgentsScreen> {
                 _inbox(context, state, problem),
                 _Everything(
                   state: state,
-                  onPane: (session, pane) {
-                    // An agent opens as an agent; a plain terminal as itself.
-                    final agent = _herd.agent(session, pane);
-                    if (agent != null) {
-                      _open(agent);
-                    } else {
-                      unawaited(widget.onOpenTerminal(context, session, pane));
-                    }
+                  onPane: (session, id) {
+                    final pane = _pane(state, session, id);
+                    if (pane != null) _openPane(session, pane);
                   },
                   onStart: (session) => widget.onOpenHerdr(context, session),
                 ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
+import '../../data/resume_place.dart';
+import '../computers/agents_screen.dart';
 import '../common/widgets.dart';
 import '../update/update_card.dart';
 import 'arranged_host_list.dart';
@@ -70,6 +72,7 @@ class _HostsScreenState extends State<HostsScreen> {
           final header = [
             const UpdateBanner(),
             _SearchField(controller: _search, onChanged: _onQuery),
+            ..._continue(context, store.settings.resume, computers),
             if (computers.isNotEmpty) ...[
               const SectionHeader('Computers'),
               for (final computer in computers) ComputerCard(key: ValueKey('computer-${computer.id}'), host: computer),
@@ -96,6 +99,25 @@ class _HostsScreenState extends State<HostsScreen> {
   }
 
   void _onQuery(String value) => setState(() => _query = value.trim());
+
+  /// Where the owner last was with an agent or a terminal, one tap away:
+  /// nothing when there is no such place, or its computer is gone.
+  List<Widget> _continue(BuildContext context, Map<String, dynamic> saved, List<Host> computers) {
+    final place = ResumePlace.fromJson(saved);
+    final host = place == null ? null : computers.where((h) => h.id == place.hostId).firstOrNull;
+    if (place == null || host == null) return const [];
+    return [
+      const SectionHeader('Continue'),
+      ListTile(
+        key: const ValueKey('continue'),
+        leading: Icon(place.agent.isEmpty ? Icons.terminal : Icons.smart_toy_outlined),
+        title: Text(place.label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Text('${place.agent.isEmpty ? 'Terminal' : place.agent} on ${host.title}', maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => AgentsScreen.show(context, host, place: place),
+      ),
+    ];
+  }
 
   /// Hosts matching the search, plus "connect to user@host" when the text
   /// looks like an address.

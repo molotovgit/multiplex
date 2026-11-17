@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/app/app_scope.dart';
+import 'package:multiplex/data/app_settings.dart';
 import 'package:multiplex/data/models.dart';
+import 'package:multiplex/data/resume_place.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/platform/phone_bridge.dart';
@@ -161,6 +163,58 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Open Notification access'));
     expect(phone.opened, 1);
+    await tester.pump(const Duration(milliseconds: 500));
+  });
+
+  testWidgets('Home offers to continue where the owner last was, while that computer is paired', (tester) async {
+    store.saveHost(_desk);
+    await home(tester);
+    expect(find.text('Continue'), findsNothing, reason: 'nowhere yet');
+
+    store.updateSettings(
+      store.settings.copyWith(
+        resume: const ResumePlace(hostId: 'c', session: 'default', pane: 'w1:p3', title: 'Fix the tests', agent: 'Claude').toJson(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Fix the tests'), findsOneWidget);
+    expect(find.text('Claude on Desk'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Continue')).dy, lessThan(tester.getTopLeft(find.text('Computers')).dy), reason: 'before everything else');
+
+    // A plain terminal is called what it is, and one without a title too.
+    store.updateSettings(
+      store.settings.copyWith(
+        resume: const ResumePlace(hostId: 'c', session: 'default', pane: 'w1:p2', title: '').toJson(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Terminal on Desk'), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const ValueKey('continue')), matching: find.text('Terminal')), findsOneWidget);
+
+    // It survives being saved and read back, and what is not a place is none.
+    final again = AppSettings.fromJson(store.settings.toJson());
+    expect(ResumePlace.fromJson(again.resume)!.pane, 'w1:p2');
+    expect(ResumePlace.fromJson(const {}), isNull);
+    expect(ResumePlace.fromJson(const {'hostId': 'c', 'session': 'default'}), isNull);
+    expect(AppSettings.fromJson(const {'resume': 'nonsense'}).resume, isEmpty);
+
+    // A place on a computer that is not paired (any more) is not offered,
+    // and removing the computer forgets it.
+    store.updateSettings(
+      store.settings.copyWith(
+        resume: const ResumePlace(hostId: 'gone', session: 'default', pane: 'w1:p1', title: 'Old work').toJson(),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Continue'), findsNothing);
+    store.updateSettings(
+      store.settings.copyWith(
+        resume: const ResumePlace(hostId: 'c', session: 'default', pane: 'w1:p1', title: 'Work').toJson(),
+      ),
+    );
+    store.deleteHost('c');
+    expect(store.settings.resume, isEmpty);
     await tester.pump(const Duration(milliseconds: 500));
   });
 

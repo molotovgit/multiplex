@@ -194,6 +194,8 @@ A tap on an agent opens it without a terminal:
 - a line to answer it or ask for more, sent as one piece with Enter;
 - **Open its terminal**: that agent's pane alone in Multiplex's terminal, drawn at the phone's own columns and rows. Nothing on the computer is resized by it: herdr draws the pane a second time for the phone. herdr's whole screen is the button at the top of the inbox.
 
+The app remembers the agent or terminal you opened last. Home offers it first, under **Continue**: one tap connects and puts you back in front of it (or says that it is no longer running, and shows what is).
+
 While the phone is connected it is also told when an agent starts waiting for an answer or finishes: a notification, "Claude needs you" or "Claude is done", with what it was doing.
 
 On the computer this is `multiplex herd`:
