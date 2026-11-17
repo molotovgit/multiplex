@@ -19,6 +19,7 @@ import 'computer_card.dart';
 import 'computer_sharing_screen.dart';
 import 'computer_status.dart';
 import 'panel_screen.dart';
+import 'screen_cast_screen.dart';
 import 'touchpad_screen.dart';
 
 /// Everything one paired computer can do, as a grid of tiles. New
@@ -78,6 +79,7 @@ class ComputerScreen extends StatelessWidget {
         'The phone as one more monitor',
         () => HostConnector.openDesktop(context, host, screen: DesktopScreenMode.fitted),
       ),
+      _Tile(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
       _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host)),
       _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
       _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),

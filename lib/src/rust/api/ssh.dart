@@ -12,6 +12,7 @@ import 'desktop_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+import 'screen.dart';
 import 'sftp.dart';
 import 'share.dart';
 import 'ssh_types.dart';
@@ -66,6 +67,11 @@ abstract class SshSession implements RustOpaqueInterface {
 
   /// Opens a file browser on this connection.
   Future<RemoteFiles> openFiles();
+
+  /// Opens the window on the computer. It is there when this returns.
+  /// `phone` (the name this phone paired under, or empty) goes in its
+  /// title.
+  Future<ScreenStream> openScreen({required String phone});
 
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.

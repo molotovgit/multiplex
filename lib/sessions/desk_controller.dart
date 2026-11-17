@@ -86,7 +86,8 @@ class DeskController extends ChangeNotifier {
     _starting = true;
     try {
       _set(await _link.state());
-      await _states?.cancel();
+      // Not waited for: the old stream lets go when it has ended.
+      unawaited(_states?.cancel());
       _stopWatch?.call();
       final (states, stop) = await _link.watch();
       if (_disposed) {

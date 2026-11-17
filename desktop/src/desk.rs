@@ -120,7 +120,7 @@ impl Session {
         out.status.success().then(|| String::from_utf8_lossy(&out.stdout).into_owned())
     }
 
-    fn json(&self, what: &str) -> Result<Value> {
+    pub(crate) fn json(&self, what: &str) -> Result<Value> {
         let text = self.output("hyprctl", &["-j", what]).ok_or_else(|| anyhow!("hyprctl could not be asked for {what}"))?;
         serde_json::from_str(&text).with_context(|| format!("hyprctl's answer for {what} was not understood"))
     }

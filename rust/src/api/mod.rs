@@ -13,6 +13,7 @@ pub mod desktop_types;
 pub mod keys;
 pub mod pairing;
 pub mod share;
+pub mod screen;
 pub mod sftp;
 pub mod sftp_types;
 pub mod ssh;

@@ -520,7 +520,9 @@ class _Link {
       _events = events.listen(_on);
       unawaited(_sendWaiting());
       unawaited(_reportStatus());
-      _status = Timer.periodic(const Duration(minutes: 5), (_) => _reportStatus());
+      // Also the phone's sign of life: without one for a while the
+      // computer takes the phone for gone.
+      _status = Timer.periodic(const Duration(seconds: 30), (_) => _reportStatus());
     } catch (_) {
       // An older package without sharing, or the connection just dropped:
       // everything else about the computer still works.
@@ -557,7 +559,7 @@ class _Link {
   /// computer then takes the only paired phone).
   String get _name => host.pairedAs ?? '';
 
-  /// Tells the computer the battery level, now and every few minutes.
+  /// Tells the computer the battery level, now and every half minute.
   Future<void> _reportStatus() async {
     final battery = await owner._phone.battery();
     if (battery == null || _closed) return;

@@ -24,3 +24,5 @@ pub mod vault;
 pub mod wol;
 pub mod touchpad;
 pub mod share;
+pub mod pipe;
+pub mod screen;

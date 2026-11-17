@@ -169,7 +169,7 @@ fn phone_named(given: Option<&str>) -> Result<Vec<String>> {
 
 /// The paired phone that is speaking. A phone paired before names were
 /// kept says nothing, and is then the only one paired.
-fn the_phone(said: &str) -> Result<String> {
+pub(crate) fn the_phone(said: &str) -> Result<String> {
     let phones = phone_named(if said.is_empty() { None } else { Some(said) })?;
     match phones.as_slice() {
         [one] => Ok(one.clone()),
@@ -365,11 +365,32 @@ pub fn seen(phone: &str) -> Option<Seen> {
     (unix_now().saturating_sub(seen.at) < 15 * 60).then_some(seen)
 }
 
-/// Whether a `multiplex link` for this phone is running right now.
+/// A phone says how it is doing every half minute while it is linked.
+/// Without a word for this long it has gone, even if its connection has
+/// not been noticed dropped yet (SSH takes a minute or more for that).
+const GONE_AFTER: u64 = 100;
+
+/// Whether the phone has gone quiet. A phone that never reports (an
+/// older app) is not judged by this.
+fn gone_quiet(phone: &str) -> bool {
+    let file = runtime_dir().join("phones").join(format!("{}.json", file_name_of(phone)));
+    let last = std::fs::read(file).ok().and_then(|bytes| serde_json::from_slice::<Seen>(&bytes).ok()).map(|seen| seen.at);
+    quiet_too_long(last, unix_now())
+}
+
+/// The rule itself: `last` is when the phone last said how it is doing
+/// (never, for an older app), in Unix seconds.
+fn quiet_too_long(last: Option<u64>, now: u64) -> bool {
+    last.is_some_and(|at| now.saturating_sub(at) > GONE_AFTER)
+}
+
+/// Whether this phone is linked right now: a `multiplex link` for it is
+/// running, and the phone has been heard from lately.
 pub fn linked(phone: &str) -> bool {
-    std::fs::metadata(runtime_dir().join("linked").join(file_name_of(phone)))
+    let running = std::fs::metadata(runtime_dir().join("linked").join(file_name_of(phone)))
         .and_then(|m| m.modified())
-        .is_ok_and(|at| at.elapsed().is_ok_and(|age| age < Duration::from_secs(5)))
+        .is_ok_and(|at| at.elapsed().is_ok_and(|age| age < Duration::from_secs(5)));
+    running && !gone_quiet(phone)
 }
 
 fn read_json<T: serde::de::DeserializeOwned>(most: u64) -> Result<T> {
@@ -624,6 +645,7 @@ pub fn link(phone: &str) -> Result<()> {
         // taking requests it can no longer deliver.
         let me = std::process::id().to_string();
         std::fs::write(&here, &me)?;
+        let started = Instant::now();
         let _ = asks_for(phone);
         // What is on the clipboard when the phone connects is not news.
         let mut last_clip = session.as_ref().and_then(clipboard_text);
@@ -634,6 +656,10 @@ pub fn link(phone: &str) -> Result<()> {
         let mut agents_at: Option<Instant> = None;
         loop {
             if std::fs::read_to_string(&here).ok().as_deref() != Some(me.as_str()) {
+                return Ok(());
+            }
+            // The phone went without a word: this link is a leftover.
+            if started.elapsed() > Duration::from_secs(GONE_AFTER) && gone_quiet(phone) {
                 return Ok(());
             }
             std::fs::write(&here, &me)?;
@@ -703,6 +729,17 @@ pub fn link(phone: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_phone_that_stopped_reporting_is_taken_for_gone() {
+        // It reports every half minute: two missed ones are forgiven.
+        assert!(!quiet_too_long(Some(1_000), 1_000 + 70));
+        assert!(quiet_too_long(Some(1_000), 1_000 + GONE_AFTER + 1));
+        // An older app never reports: it is not judged by this.
+        assert!(!quiet_too_long(None, 5_000));
+        // A clock that jumped back is not a reason either.
+        assert!(!quiet_too_long(Some(1_000), 900));
+    }
 
     #[test]
     fn a_file_waits_for_its_phone_until_it_is_done() {

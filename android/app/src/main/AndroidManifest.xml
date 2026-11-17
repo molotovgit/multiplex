@@ -10,6 +10,9 @@
     <!-- Keep connections alive in the background (see SessionService). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <!-- Showing this phone's screen in a window on a paired computer.
+         Android asks the user each time before anything is captured. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- A paired computer can send a text message through the phone
          (`multiplex sms`), once the user switches that on for it. -->
@@ -75,6 +78,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps the user's open SSH terminal sessions and port forwards connected while the app is in the background." />
         </service>
+        <service
+            android:name=".ScreenCastService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
         <!-- Phone notifications for a paired computer. Android runs this only
              after the user allows it under Settings > Notification access. -->
         <service

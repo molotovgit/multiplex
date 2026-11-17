@@ -16,7 +16,7 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
     out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().to_owned())
 }
 
-fn on_path(program: &str) -> bool {
+pub(crate) fn on_path(program: &str) -> bool {
     std::env::var_os("PATH").is_some_and(|p| std::env::split_paths(&p).any(|d| d.join(program).is_file()))
 }
 
@@ -145,6 +145,7 @@ pub fn doctor() -> Vec<Check> {
             None => check("Wake-on-LAN", None, false, "needs a wired network card managed by NetworkManager"),
         },
         check("Touchpad and keys", Some(crate::input::available()), false, "the phone's touchpad needs Hyprland running and xkbcli (from libxkbcommon)"),
+        check("Phone screen", Some(on_path("mpv")), false, "showing the phone's screen in a window needs mpv: sudo pacman -S mpv"),
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }

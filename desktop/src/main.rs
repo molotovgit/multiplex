@@ -11,7 +11,9 @@ mod agent;
 mod agents;
 mod desk;
 mod gate;
+mod h264;
 mod input;
+mod screen;
 mod share;
 mod store;
 mod system;
@@ -57,6 +59,7 @@ The paired phone uses these over SSH:
   multiplex link [<phone>]    What waits for the phone, and clipboard changes, as lines
   multiplex phone …           The phone's battery, and its notifications for this screen
   multiplex agents            Coding agents under herdr, with their state
+  multiplex screen            The phone's screen in a window (the phone sends the picture)
 ";
 
 fn main() {
@@ -75,6 +78,7 @@ fn main() {
         ["access", rest @ ..] => gate::access(rest),
         ["gate", phone] => gate::gate(phone),
         ["agents"] => agents::run(),
+        ["screen", rest @ ..] => screen::run(rest),
         ["agent", rest @ ..] => agent::run(rest),
         ["key", rest @ ..] => agent::key(rest),
         ["send", rest @ ..] => share::send(rest),

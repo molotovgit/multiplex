@@ -97,6 +97,17 @@ While the phone is connected to a paired computer:
 - `multiplex sms <number> <text>` sends a text message through the phone. It is off until you switch on **Send text messages from <computer>** in that computer's **Sharing and notifications** (Android then asks for its permission once). The computer is told what became of each message: sent, or why not.
 - The phone's notifications can show on the computer's screen. This is off until you switch it on for that computer (its page, **⋮ → Sharing and notifications**) and give Multiplex notification access in Android's settings, which the app opens for you. Apps appear in that screen as they post; switch one off to keep it on the phone only. Nothing is stored on either side: a notification is passed on only while the computer is connected.
 
+## The phone's screen in a window
+
+On a computer's page, **Phone screen** shows what is on the phone in a window on the computer: floating, in the shape of the phone's screen, in the middle of the screen. Android asks before anything is captured, every time, and shows that the screen is being shared for as long as it is. Then leave Multiplex and use the phone: the window follows. To stop, tap **Stop showing** in the app, use Android's own stop, or close the window on the computer.
+
+- The computer needs `mpv` (`sudo pacman -S mpv`); `multiplex doctor` says whether it is there.
+- The picture is the phone's screen, at most 1600 pixels on its long side, 30 pictures a second, sent as H.264 over the SSH connection that is already open. Nothing is stored on either side.
+- It stays live on a slow connection. The computer tells the phone how much of the picture it has taken; when about a second of it is still on its way, the phone stops sending, lets that arrive, and carries on from a fresh full picture at a lower bitrate (from 4 Mbit/s down to 0.5). After a while without trouble it tries a better picture again.
+- Turn the phone and the picture turns with it: the window takes the new shape and keeps its size (a window you made bigger stays that big).
+- It is the picture only: no sound, and clicking in the window does nothing (use the phone).
+- If the phone goes away without a word (out of range, the app closed), the window closes after 8 seconds.
+
 ## Coding agents
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
@@ -149,7 +160,7 @@ multiplex access "Sam's phone" everything      # back to no limits
 
 | Switch | Covers |
 |---|---|
-| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop |
+| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here |
 | `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
 | `files` | browsing, sending and fetching files |
 | `clipboard` | sharing the clipboard, opening links |

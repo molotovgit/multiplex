@@ -17,6 +17,7 @@ optdepends=(
   'wl-clipboard: the clipboard shared with the phone, and typing outside the US keyboard from its touchpad'
   'xdg-user-dirs: files from the phone go to the Downloads folder it names'
   'networkmanager: multiplex setup turns Wake-on-LAN on'
+  "mpv: the phone's screen in a window"
 )
 options=('!debug')
 

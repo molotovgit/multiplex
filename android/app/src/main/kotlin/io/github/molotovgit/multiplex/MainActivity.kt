@@ -62,6 +62,7 @@ class MainActivity : FlutterFragmentActivity() {
         PairChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         PhoneChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         ShareTargets.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        ScreenCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
@@ -133,6 +134,12 @@ class MainActivity : FlutterFragmentActivity() {
         ) {
             requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         }
+    }
+
+    @Deprecated("Android's own way of answering the screen-capture question")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == ScreenCast.REQUEST) ScreenCast.onResult(this, resultCode, data)
     }
 
     override fun onDestroy() {

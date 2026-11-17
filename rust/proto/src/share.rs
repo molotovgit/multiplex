@@ -254,6 +254,31 @@ pub fn notice_command(phone: &str) -> String {
     command(&["phone", "notify", phone])
 }
 
+/// Shows the picture the phone then writes to standard input (its own
+/// screen, as H.264) in a window on the computer. `phone` names it in
+/// the window's title.
+pub fn screen_command(phone: &str) -> String {
+    if phone.is_empty() {
+        command(&["screen"])
+    } else {
+        command(&["screen", phone])
+    }
+}
+
+/// What a command that is fed bytes says once it can take them.
+pub const FEED_READY: &str = "ready";
+
+/// What it says now and then after that: how many bytes it has taken so
+/// far. The sender knows from this how far behind the other end is.
+pub fn fed_line(bytes: u64) -> String {
+    format!("got {bytes}")
+}
+
+/// Reads a [`fed_line`].
+pub fn parse_fed(line: &str) -> Option<u64> {
+    line.trim().strip_prefix("got ")?.parse().ok()
+}
+
 /// A call on the phone began or ended (the computer pauses what is
 /// playing, and carries on afterwards).
 pub fn call_command(phone: &str, active: bool) -> String {
@@ -267,6 +292,15 @@ pub fn done_command(id: &str) -> Result<String, ProtoError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_count_of_bytes_taken_reads_back() {
+        assert_eq!(parse_fed(&fed_line(0)), Some(0));
+        assert_eq!(parse_fed("got 1234567\n"), Some(1_234_567));
+        for wrong in ["ready", "got", "got x", "got -1", ""] {
+            assert_eq!(parse_fed(wrong), None, "{wrong}");
+        }
+    }
 
     #[test]
     fn link_lines_read_back() {
