@@ -95,6 +95,14 @@ While the phone is connected to a paired computer:
 - `multiplex sms <number> <text>` sends a text message through the phone. It is off until you switch on **Send text messages from <computer>** in that computer's **Sharing and notifications** (Android then asks for its permission once). The computer is told what became of each message: sent, or why not.
 - The phone's notifications can show on the computer's screen. This is off until you switch it on for that computer (its page, **⋮ → Sharing and notifications**) and give Multiplex notification access in Android's settings, which the app opens for you. Apps appear in that screen as they post; switch one off to keep it on the phone only. Nothing is stored on either side: a notification is passed on only while the computer is connected.
 
+## Coding agents
+
+If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
+
+While the phone is connected it is also told when an agent starts waiting for an answer or finishes: a notification, "Claude needs you" or "Claude is done", with what it was doing.
+
+On the computer this is `multiplex agents`, which reads `herdr api snapshot`; it changes nothing there.
+
 ## What a phone may do
 
 A paired phone logs in with its own key and, by default, may do what you may. On the computer you can narrow that, per phone:

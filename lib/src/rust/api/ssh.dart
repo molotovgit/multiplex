@@ -4,6 +4,7 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'agents.dart';
 import 'desk.dart';
 import 'desk_types.dart';
 import 'desktop.dart';
@@ -23,6 +24,9 @@ import 'watch.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 abstract class SshSession implements RustOpaqueInterface {
+  /// The agents running on the computer now. Empty without herdr.
+  Future<List<Agent>> agents();
+
   /// True when the server answers within `timeout_secs`.
   Future<bool> checkAlive({required int timeoutSecs});
 

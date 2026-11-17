@@ -48,4 +48,13 @@ sealed class ShareEvent with _$ShareEvent {
   /// checked).
   const factory ShareEvent.sms({required String to, required String text}) =
       ShareEvent_Sms;
+
+  /// A coding agent on the computer now waits for an answer
+  /// (`waiting`), or has finished.
+  const factory ShareEvent.agent({
+    required String name,
+    required String title,
+    required String workspace,
+    required bool waiting,
+  }) = ShareEvent_Agent;
 }

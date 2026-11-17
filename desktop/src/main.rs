@@ -7,6 +7,7 @@
 //! - `multiplex setup` prepares the computer once; `multiplex doctor`
 //!   checks it.
 
+mod agents;
 mod desk;
 mod gate;
 mod input;
@@ -51,6 +52,7 @@ The paired phone uses these over SSH:
   multiplex share …           The inbox, the clipboard, opening a link
   multiplex link [<phone>]    What waits for the phone, and clipboard changes, as lines
   multiplex phone …           The phone's battery, and its notifications for this screen
+  multiplex agents            Coding agents under herdr, with their state
 ";
 
 fn main() {
@@ -68,6 +70,7 @@ fn main() {
         ["desk", rest @ ..] => desk::run(rest),
         ["access", rest @ ..] => gate::access(rest),
         ["gate", phone] => gate::gate(phone),
+        ["agents"] => agents::run(),
         ["send", rest @ ..] => share::send(rest),
         ["ring", rest @ ..] => share::ring(rest),
         ["sms", rest @ ..] => share::sms(rest),

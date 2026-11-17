@@ -4,6 +4,7 @@
 //! Files ending in `_types` hold plain data (Dart gets ordinary classes).
 //! The others hold the live objects Flutter keeps a handle to.
 
+pub mod agents;
 pub mod app;
 pub mod desk;
 pub mod desk_types;

@@ -14,6 +14,7 @@ import '../hosts/host_editor_screen.dart';
 import '../hosts/server_status_screen.dart';
 import '../settings/settings_widgets.dart';
 import '../tunnels/tunnels_screen.dart';
+import 'agents_screen.dart';
 import 'computer_card.dart';
 import 'computer_sharing_screen.dart';
 import 'computer_status.dart';
@@ -77,6 +78,7 @@ class ComputerScreen extends StatelessWidget {
         'The phone as one more monitor',
         () => HostConnector.openDesktop(context, host, screen: DesktopScreenMode.fitted),
       ),
+      _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host)),
       _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
       _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
       // Wake-on-LAN, with the network card's address saved at pairing.
@@ -133,12 +135,16 @@ class ComputerScreen extends StatelessWidget {
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 24),
-                  sliver: SliverGrid.extent(
-                    maxCrossAxisExtent: 220,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.25,
-                    children: [for (final t in tiles) _TileCard(tile: t)],
+                  // A fixed height, not a ratio: with three or four tiles in
+                  // a row they get narrow, and a ratio would squeeze the text.
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 220,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      mainAxisExtent: 132,
+                    ),
+                    delegate: SliverChildListDelegate([for (final t in tiles) _TileCard(tile: t)]),
                   ),
                 ),
               ],

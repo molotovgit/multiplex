@@ -327,6 +327,15 @@ void main() {
     expect(computer.log, ['notice Messages: Not sent to +15550100']);
   });
 
+  test('an agent that wants an answer, or is done, is announced on the phone', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    computer.events.add(const ShareEvent.agent(name: 'Claude', title: 'Fix the tests', workspace: 'api', waiting: true));
+    computer.events.add(const ShareEvent.agent(name: 'codex', title: '', workspace: '', waiting: false));
+    await Future<void>.delayed(Duration.zero);
+    expect(notices, ['Claude needs you | Fix the tests · api · Desk', 'codex is done | Desk']);
+  });
+
   test('the link ends with the connection', () async {
     await connect();
     sessions.open.clear();

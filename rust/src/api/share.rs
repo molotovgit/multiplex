@@ -30,6 +30,9 @@ pub enum ShareEvent {
     /// Send this text message from the phone (number and words already
     /// checked).
     Sms { to: String, text: String },
+    /// A coding agent on the computer now waits for an answer
+    /// (`waiting`), or has finished.
+    Agent { name: String, title: String, workspace: String, waiting: bool },
 }
 
 impl SshSession {
@@ -123,6 +126,10 @@ impl ShareLink {
                 (Ok(to), Ok(text)) => sink.add(ShareEvent::Sms { to, text }).is_ok(),
                 _ => true,
             },
+            Ok(proto::LinkEvent::Agent(agent)) => {
+                let waiting = agent.status == multiplex_proto::agents::AgentStatus::Blocked;
+                sink.add(ShareEvent::Agent { name: agent.name, title: agent.title, workspace: agent.workspace, waiting }).is_ok()
+            }
             // Not an event (a notice from the shell, say): keep listening.
             Err(_) => true,
         }));

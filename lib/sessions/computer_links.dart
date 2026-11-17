@@ -358,6 +358,10 @@ class _Link {
         unawaited(owner._phone.ring(seconds));
       case ShareEvent_Sms(:final to, :final text):
         unawaited(_sendSms(to, text));
+      case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting):
+        // A coding agent on the computer wants an answer, or is done.
+        final where = [if (title.isNotEmpty) title, if (workspace.isNotEmpty) workspace, host.title].join(' · ');
+        unawaited(owner._notify(waiting ? '$name needs you' : '$name is done', where));
     }
   }
 

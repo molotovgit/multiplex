@@ -47,6 +47,8 @@ pub enum LinkEvent {
     Ring { seconds: u32 },
     /// Send this text message from the phone.
     Sms { to: String, text: String },
+    /// A coding agent on the computer now waits for an answer, or is done.
+    Agent(crate::agents::Agent),
 }
 
 /// What `multiplex share paste` prints.

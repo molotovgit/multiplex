@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/agents.dart';
 import 'api/app.dart';
 import 'api/desk.dart';
 import 'api/desk_types.dart';
@@ -317,6 +318,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  Agent dco_decode_agent(dynamic raw);
+
+  @protected
+  AgentStatus dco_decode_agent_status(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
@@ -474,6 +481,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
+  List<Agent> dco_decode_list_agent(dynamic raw);
 
   @protected
   List<DeskBinding> dco_decode_list_desk_binding(dynamic raw);
@@ -881,6 +891,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  Agent sse_decode_agent(SseDeserializer deserializer);
+
+  @protected
+  AgentStatus sse_decode_agent_status(SseDeserializer deserializer);
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
@@ -1054,6 +1070,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
+  List<Agent> sse_decode_list_agent(SseDeserializer deserializer);
 
   @protected
   List<DeskBinding> sse_decode_list_desk_binding(SseDeserializer deserializer);
@@ -1517,6 +1536,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_agent(Agent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_agent_status(AgentStatus self, SseSerializer serializer);
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
@@ -1728,6 +1753,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_agent(List<Agent> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_desk_binding(

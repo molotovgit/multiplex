@@ -14,6 +14,7 @@
 //! Nothing here does I/O or cryptography; both sides share only the shapes
 //! and the checks.
 
+pub mod agents;
 pub mod desk;
 pub mod input;
 pub mod share;

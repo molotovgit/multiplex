@@ -510,8 +510,23 @@ pub fn link(phone: &str) -> Result<()> {
         // What is on the clipboard when the phone connects is not news.
         let mut last_clip = session.as_ref().and_then(clipboard_text);
         let mut alive = Instant::now();
+        // Coding agents (under herdr): the phone hears when one starts
+        // waiting for an answer or finishes. Looked at every few seconds.
+        let mut agents: std::collections::HashMap<String, multiplex_proto::agents::AgentStatus> = std::collections::HashMap::new();
+        let mut agents_at: Option<Instant> = None;
         loop {
             std::fs::write(&here, b"")?;
+            if agents_at.is_none_or(|at| at.elapsed() > Duration::from_secs(3)) {
+                let now = crate::agents::list();
+                if agents_at.is_some() {
+                    for agent in crate::agents::news(&agents, &now) {
+                        say(Some(&LinkEvent::Agent(agent)))?;
+                        alive = Instant::now();
+                    }
+                }
+                agents = now.into_iter().map(|a| (a.id, a.status)).collect();
+                agents_at = Some(Instant::now());
+            }
             for ask in asks_for(phone) {
                 say(Some(&ask))?;
                 alive = Instant::now();

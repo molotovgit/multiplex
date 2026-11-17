@@ -220,6 +220,8 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
         Wanted::Desktop(_) => need(access.desktop, "desktop").and(need(access.input, "input")),
         Wanted::Multiplex(words) => match words.iter().map(String::as_str).collect::<Vec<_>>().as_slice() {
             ["desk", "state" | "watch" | "binds"] => need(access.desktop || access.input, "desktop"),
+            // Reading which agents run says what the user works on: like seeing the screen.
+            ["agents"] => need(access.desktop || access.terminal, "desktop"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             ["share", "inbox" | "received" | "done", ..] => need(access.files, "files"),
             ["share", "clip" | "paste" | "open", ..] => need(access.clipboard, "clipboard"),
