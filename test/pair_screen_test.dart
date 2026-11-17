@@ -22,7 +22,7 @@ class _Flow extends PairingFlow {
   @override
   PairingInfo read(String code) {
     if (!code.startsWith('MPX1.')) throw Exception('This is not a Multiplex pairing code');
-    return const PairingInfo(name: 'desk', user: 'me', port: 22, addresses: ['192.168.1.20'], tailscale: 'desk', hostKey: 'ssh-ed25519 AAAA', secondsLeft: 200);
+    return const PairingInfo(name: 'desk', user: 'me', port: 22, addresses: ['192.168.0.10'], tailscale: 'desk', hostKey: 'ssh-ed25519 AAAA', secondsLeft: 200);
   }
 
   @override
@@ -30,7 +30,7 @@ class _Flow extends PairingFlow {
     pairs++;
     await Future<void>.delayed(const Duration(milliseconds: 50));
     if (code.contains('used')) throw Exception('The computer no longer accepts this code (it was used, or it expired). Show a new one with `multiplex pair`.');
-    return const Host(id: 'c', label: 'desk', address: '192.168.1.20', computer: true, tailscaleName: 'desk');
+    return const Host(id: 'c', label: 'desk', address: '192.168.0.10', computer: true, tailscaleName: 'desk');
   }
 }
 

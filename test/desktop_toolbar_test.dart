@@ -17,7 +17,7 @@ class _Ssh implements SshSession {
 }
 
 void main() {
-  testWidgets('the bar keeps to four controls; the rest lives in More', (tester) async {
+  testWidgets('the bar keeps to five controls; the rest lives in More', (tester) async {
     final session = LiveSession(id: 's', host: const Host(id: 'h', label: 'Desk', address: 'desk'), ssh: _Ssh());
     final controller = DesktopController(session: session, settings: const DesktopSettings(haptics: false), onConnectionLost: () {});
     final taps = <String>[];
@@ -34,17 +34,18 @@ void main() {
               onBack: () => taps.add('back'),
               onKeyboard: () => taps.add('keyboard'),
               onKeys: () => taps.add('keys'),
+              onPanel: () => taps.add('panel'),
               onMore: () => taps.add('more'),
             ),
           ),
         ),
       ),
     );
-    expect(find.byType(IconButton), findsNWidgets(4));
-    for (final tip in ['Back', 'Keyboard', 'Shortcut keys (Super, Ctrl, Esc…)', 'More']) {
+    expect(find.byType(IconButton), findsNWidgets(5));
+    for (final tip in ['Back', 'Keyboard', 'Shortcut keys (Super, Ctrl, Esc…)', 'Panel: workspaces, windows, media', 'More']) {
       await tester.tap(find.byTooltip(tip));
     }
-    expect(taps, ['back', 'keyboard', 'keys', 'more']);
+    expect(taps, ['back', 'keyboard', 'keys', 'panel', 'more']);
     // Touch mode and the monitor list moved into More; the chips switch monitors.
     expect(find.byTooltip('Switch screen'), findsNothing);
     expect(find.text('Desk'), findsOneWidget);

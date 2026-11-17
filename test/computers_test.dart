@@ -11,7 +11,7 @@ import 'package:multiplex/ui/hosts/host_arrangement.dart';
 import 'package:multiplex/ui/hosts/hosts_screen.dart';
 import 'package:multiplex/ui/pair/pair_screen.dart';
 
-const _desk = Host(id: 'c', label: 'Desk', address: '192.168.1.20', username: 'me', computer: true, tailscaleName: 'desk');
+const _desk = Host(id: 'c', label: 'Desk', address: '192.168.0.10', username: 'me', computer: true, tailscaleName: 'desk');
 const _server = Host(id: 's', label: 'Web server', address: 'web.example.com', username: 'me');
 
 void main() {

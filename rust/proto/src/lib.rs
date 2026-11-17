@@ -14,6 +14,8 @@
 //! Nothing here does I/O or cryptography; both sides share only the shapes
 //! and the checks.
 
+pub mod desk;
+
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use base64::Engine;
 use serde::{Deserialize, Serialize};
@@ -258,7 +260,7 @@ mod tests {
             n: "desk".into(),
             u: "me".into(),
             p: 22,
-            a: vec!["192.168.1.20".into()],
+            a: vec!["192.168.0.10".into()],
             t: Some("desk".into()),
             h: STANDARD.encode([7u8; 32]),
             k: STANDARD.encode([9u8; 32]),

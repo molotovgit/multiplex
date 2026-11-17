@@ -10,6 +10,7 @@ import '../files/files_screen.dart';
 import '../hosts/host_connector.dart';
 import 'computer_screen.dart';
 import 'computer_status.dart';
+import 'panel_screen.dart';
 
 /// A paired computer on Home: its name and state, one big button for the
 /// thing done most (the desktop), and the next most used a tap away.
@@ -103,6 +104,12 @@ class ComputerCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           IconButton.filledTonal(tooltip: 'Files', icon: const Icon(Icons.folder_outlined), onPressed: () => openFiles(context, host)),
+                          const SizedBox(width: 4),
+                          IconButton.filledTonal(
+                            tooltip: 'Panel',
+                            icon: const Icon(Icons.space_dashboard_outlined),
+                            onPressed: () => PanelScreen.open(context, host),
+                          ),
                         ],
                       ),
                     ),

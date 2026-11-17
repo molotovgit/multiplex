@@ -14,6 +14,7 @@ import '../settings/settings_widgets.dart';
 import '../tunnels/tunnels_screen.dart';
 import 'computer_card.dart';
 import 'computer_status.dart';
+import 'panel_screen.dart';
 
 /// Everything one paired computer can do, as a grid of tiles. New
 /// features arrive as one more tile here.
@@ -49,6 +50,7 @@ class ComputerScreen extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final tiles = <_Tile>[
       _Tile(Icons.desktop_windows_outlined, 'Desktop', 'See and control the screen', () => HostConnector.openDesktop(context, host), primary: true),
+      _Tile(Icons.space_dashboard_outlined, 'Panel', 'Workspaces, windows, media', () => PanelScreen.open(context, host)),
       _Tile(Icons.terminal, 'Terminal', 'A shell on the computer', () => HostConnector.openTerminal(context, host)),
       _Tile(Icons.folder_outlined, 'Files', 'Browse, send and fetch', () => ComputerCard.openFiles(context, host)),
       _Tile(

@@ -25,7 +25,7 @@ use crate::engine::tunnel::Tunnel;
 /// One logged-in connection to a server.
 #[frb(opaque)]
 pub struct SshSession {
-    conn: Arc<Connection>,
+    pub(crate) conn: Arc<Connection>,
 }
 
 impl SshSession {

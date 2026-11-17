@@ -7,6 +7,8 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/app.dart';
+import 'api/desk.dart';
+import 'api/desk_types.dart';
 import 'api/desktop.dart';
 import 'api/desktop_types.dart';
 import 'api/keys.dart';
@@ -48,6 +50,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_DeskWatchPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_FileSidePtr => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide;
 
@@ -81,6 +87,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  DeskWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     dynamic raw,
   );
 
@@ -133,6 +145,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    dynamic raw,
+  );
+
+  @protected
   FileSide
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     dynamic raw,
@@ -177,6 +195,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  DeskWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     dynamic raw,
   );
 
@@ -226,6 +250,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw);
 
   @protected
+  RustStreamSink<DeskState> dco_decode_StreamSink_desk_state_Sse(dynamic raw);
+
+  @protected
   RustStreamSink<DesktopEvent> dco_decode_StreamSink_desktop_event_Sse(
     dynamic raw,
   );
@@ -246,6 +273,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw);
+
+  @protected
+  DeskAction dco_decode_box_autoadd_desk_action(dynamic raw);
+
+  @protected
+  DeskMedia dco_decode_box_autoadd_desk_media(dynamic raw);
+
+  @protected
+  DeskVolume dco_decode_box_autoadd_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow dco_decode_box_autoadd_desk_window(dynamic raw);
 
   @protected
   DesktopOptions dco_decode_box_autoadd_desktop_options(dynamic raw);
@@ -300,6 +339,33 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   CursorShape dco_decode_cursor_shape(dynamic raw);
+
+  @protected
+  DeskAction dco_decode_desk_action(dynamic raw);
+
+  @protected
+  DeskBinding dco_decode_desk_binding(dynamic raw);
+
+  @protected
+  DeskDirection dco_decode_desk_direction(dynamic raw);
+
+  @protected
+  DeskMedia dco_decode_desk_media(dynamic raw);
+
+  @protected
+  DeskMonitor dco_decode_desk_monitor(dynamic raw);
+
+  @protected
+  DeskSlot dco_decode_desk_slot(dynamic raw);
+
+  @protected
+  DeskState dco_decode_desk_state(dynamic raw);
+
+  @protected
+  DeskVolume dco_decode_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow dco_decode_desk_window(dynamic raw);
 
   @protected
   DesktopButton dco_decode_desktop_button(dynamic raw);
@@ -359,6 +425,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<DeskBinding> dco_decode_list_desk_binding(dynamic raw);
+
+  @protected
+  List<DeskMonitor> dco_decode_list_desk_monitor(dynamic raw);
+
+  @protected
+  List<DeskSlot> dco_decode_list_desk_slot(dynamic raw);
+
+  @protected
   List<DesktopOutput> dco_decode_list_desktop_output(dynamic raw);
 
   @protected
@@ -396,6 +471,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  DeskMedia? dco_decode_opt_box_autoadd_desk_media(dynamic raw);
+
+  @protected
+  DeskVolume? dco_decode_opt_box_autoadd_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow? dco_decode_opt_box_autoadd_desk_window(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
@@ -512,6 +596,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FileSide
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -556,6 +646,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     SseDeserializer deserializer,
   );
 
@@ -608,6 +704,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FileSide
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -655,6 +757,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RustStreamSink<DeskState> sse_decode_StreamSink_desk_state_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RustStreamSink<DesktopEvent> sse_decode_StreamSink_desktop_event_Sse(
     SseDeserializer deserializer,
   );
@@ -679,6 +786,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ConnectOptions sse_decode_box_autoadd_connect_options(
     SseDeserializer deserializer,
   );
+
+  @protected
+  DeskAction sse_decode_box_autoadd_desk_action(SseDeserializer deserializer);
+
+  @protected
+  DeskMedia sse_decode_box_autoadd_desk_media(SseDeserializer deserializer);
+
+  @protected
+  DeskVolume sse_decode_box_autoadd_desk_volume(SseDeserializer deserializer);
+
+  @protected
+  DeskWindow sse_decode_box_autoadd_desk_window(SseDeserializer deserializer);
 
   @protected
   DesktopOptions sse_decode_box_autoadd_desktop_options(
@@ -749,6 +868,33 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CursorShape sse_decode_cursor_shape(SseDeserializer deserializer);
 
   @protected
+  DeskAction sse_decode_desk_action(SseDeserializer deserializer);
+
+  @protected
+  DeskBinding sse_decode_desk_binding(SseDeserializer deserializer);
+
+  @protected
+  DeskDirection sse_decode_desk_direction(SseDeserializer deserializer);
+
+  @protected
+  DeskMedia sse_decode_desk_media(SseDeserializer deserializer);
+
+  @protected
+  DeskMonitor sse_decode_desk_monitor(SseDeserializer deserializer);
+
+  @protected
+  DeskSlot sse_decode_desk_slot(SseDeserializer deserializer);
+
+  @protected
+  DeskState sse_decode_desk_state(SseDeserializer deserializer);
+
+  @protected
+  DeskVolume sse_decode_desk_volume(SseDeserializer deserializer);
+
+  @protected
+  DeskWindow sse_decode_desk_window(SseDeserializer deserializer);
+
+  @protected
   DesktopButton sse_decode_desktop_button(SseDeserializer deserializer);
 
   @protected
@@ -806,6 +952,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<DeskBinding> sse_decode_list_desk_binding(SseDeserializer deserializer);
+
+  @protected
+  List<DeskMonitor> sse_decode_list_desk_monitor(SseDeserializer deserializer);
+
+  @protected
+  List<DeskSlot> sse_decode_list_desk_slot(SseDeserializer deserializer);
+
+  @protected
   List<DesktopOutput> sse_decode_list_desktop_output(
     SseDeserializer deserializer,
   );
@@ -849,6 +1004,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  DeskMedia? sse_decode_opt_box_autoadd_desk_media(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskVolume? sse_decode_opt_box_autoadd_desk_volume(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskWindow? sse_decode_opt_box_autoadd_desk_window(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
@@ -972,6 +1142,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -1023,6 +1200,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
     ActiveTunnel self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
     SseSerializer serializer,
   );
 
@@ -1084,6 +1268,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -1138,6 +1329,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_StreamSink_desk_state_Sse(
+    RustStreamSink<DeskState> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_StreamSink_desktop_event_Sse(
     RustStreamSink<DesktopEvent> self,
     SseSerializer serializer,
@@ -1164,6 +1361,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_box_autoadd_connect_options(
     ConnectOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_action(
+    DeskAction self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_media(
+    DeskMedia self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_volume(
+    DeskVolume self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_window(
+    DeskWindow self,
     SseSerializer serializer,
   );
 
@@ -1258,6 +1479,33 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_cursor_shape(CursorShape self, SseSerializer serializer);
 
   @protected
+  void sse_encode_desk_action(DeskAction self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_binding(DeskBinding self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_direction(DeskDirection self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_media(DeskMedia self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_monitor(DeskMonitor self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_slot(DeskSlot self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_state(DeskState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_volume(DeskVolume self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_window(DeskWindow self, SseSerializer serializer);
+
+  @protected
   void sse_encode_desktop_button(DesktopButton self, SseSerializer serializer);
 
   @protected
@@ -1316,6 +1564,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_desk_binding(
+    List<DeskBinding> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_desk_monitor(
+    List<DeskMonitor> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_desk_slot(List<DeskSlot> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_desktop_output(
@@ -1382,6 +1645,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_media(
+    DeskMedia? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_volume(
+    DeskVolume? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_window(
+    DeskWindow? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
@@ -1541,6 +1822,22 @@ class RustLibWire implements BaseWire {
       );
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+        ptr,
+      );
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     int ptr,
   ) => wasmModule
@@ -1666,6 +1963,16 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     int ptr,
   );
 

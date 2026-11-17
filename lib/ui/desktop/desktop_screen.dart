@@ -9,10 +9,12 @@ import '../../app/app_scope.dart';
 import '../../app/screen_awake.dart';
 import '../../app/screen_privacy.dart';
 import '../../app/theme.dart';
+import '../../sessions/desk_controller.dart';
 import '../../sessions/desktop_controller.dart';
 import '../../sessions/session_manager.dart';
 import '../../sessions/tailscale_node.dart';
 import '../common/widgets.dart';
+import '../computers/omarchy_panel.dart';
 import '../terminal/ended_banner.dart';
 import '../terminal/reconnect_banner.dart';
 import 'desktop_controls.dart';
@@ -47,8 +49,10 @@ class DesktopScreen extends StatefulWidget {
         transitionDuration: motion.page,
         reverseTransitionDuration: motion.page * 0.75,
         pageBuilder: (context, animation, secondary) => DesktopScreen(session: session, controller: controller),
-        transitionsBuilder: (context, animation, secondary, child) =>
-            FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),
+        transitionsBuilder: (context, animation, secondary, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          child: child,
+        ),
       ),
     );
   }
@@ -84,6 +88,15 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     TweenSequenceItem(tween: Tween(begin: 0.6, end: 0.0).chain(CurveTween(curve: Curves.easeInOut)), weight: 75),
   ]).animate(_dip);
   bool _toolbarShown = true;
+
+  /// The panel (workspaces, windows, media): at the bottom in portrait,
+  /// at the side in landscape. Made the first time it is opened.
+  bool _panelOpen = false;
+  DeskController? _desk;
+  double _deskHeight = 0;
+
+  /// The side panel's width in landscape.
+  static const _sidePanel = 340.0;
 
   /// The handle's height with the gap under it.
   static const _handleZone = 32.0;
@@ -121,6 +134,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     WidgetsBinding.instance.removeObserver(this);
     _hideToolbar?.cancel();
     _dip.dispose();
+    _desk?.dispose();
     c.removeListener(_changed);
     c.copiedFromDesktop.removeListener(_copied);
     c.remoteTextFocus.removeListener(_remoteFocusChanged);
@@ -178,8 +192,72 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     _scheduleHide();
   }
 
+  void _togglePanel() {
+    if (!_panelOpen) {
+      // One thing at the bottom at a time.
+      if (_keyboardOpen) _closeKeyboard();
+      _desk ??= DeskController(SshDeskLink(() => widget.session.ssh));
+      _desk!.start();
+    }
+    setState(() {
+      _panelOpen = !_panelOpen;
+      if (_panelOpen) _keysOpen = false;
+    });
+    _scheduleHide();
+  }
+
+  void _deskMeasured(Size size) {
+    if (mounted && (size.height - _deskHeight).abs() > 0.5) setState(() => _deskHeight = size.height);
+  }
+
+  /// The panel with its heading and the button that puts it away.
+  Widget _panel(BuildContext context, {required double maxHeight, required bool side}) {
+    final colors = AppColorsTheme.of(context);
+    final store = AppScope.watch(context);
+    final host = store.host(widget.session.host.id) ?? widget.session.host;
+    return Material(
+      color: colors.surface.withValues(alpha: side ? 0.97 : 1),
+      child: SafeArea(
+        top: side,
+        left: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Column(
+            mainAxisSize: side ? MainAxisSize.max : MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 4),
+                child: Row(
+                  children: [
+                    Expanded(child: Text('Panel', style: Theme.of(context).textTheme.titleSmall)),
+                    IconButton(tooltip: 'Hide the panel', icon: Icon(side ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_down), onPressed: _togglePanel),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  child: OmarchyPanel(
+                    controller: _desk!,
+                    dense: true,
+                    pins: host.pins,
+                    onPinsChanged: (pins) {
+                      if (store.host(host.id) != null) store.saveHost(host.copyWith(pins: pins));
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openKeyboard() {
     setState(() {
+      _panelOpen = false;
       _keyboardOpen = true;
       _keyboardSeen = false;
     });
@@ -369,12 +447,20 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                 _lastRemote = remote;
               }
               final builtIn = _keyboardOpen && !_systemKeyboard;
-              final bottomInset = builtIn ? _panelHeight : keyboardHeight + (showKeys ? 52 : 0);
+              // The panel: under the picture on a tall screen, beside it on a wide one.
+              final panelBelow = _panelOpen && _desk != null && view.height >= view.width;
+              final panelBeside = _panelOpen && _desk != null && !panelBelow;
+              final bottomInset = builtIn
+                  ? _panelHeight
+                  : panelBelow && !_keyboardOpen
+                  ? _deskHeight
+                  : keyboardHeight + (showKeys ? 52 : 0);
               // What sits at the bottom edge, below the bar.
               final bottomKind = switch (c.phase) {
                 DesktopPhase.reconnecting => 'reconnecting',
                 DesktopPhase.ended => 'ended',
                 _ when builtIn => 'keyboard',
+                _ when panelBelow && !_keyboardOpen => 'panel',
                 _ when showKeys => 'keys',
                 _ => 'none',
               };
@@ -413,7 +499,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                     ),
                     Positioned.fill(
                       child: IgnorePointer(
-                        child: FadeTransition(opacity: _dipOpacity, child: const ColoredBox(color: Colors.black)),
+                        child: FadeTransition(
+                          opacity: _dipOpacity,
+                          child: const ColoredBox(color: Colors.black),
+                        ),
                       ),
                     ),
                     if (c.phase == DesktopPhase.connecting) _Starting(title: widget.session.host.title),
@@ -421,9 +510,21 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                     // reach, stacked from the screen edge up: the keyboard
                     // or a banner, the bar (or the handle that brings it
                     // back) with the monitor chips, then zoom and speed.
+                    // In landscape the panel slides in from the right edge.
+                    AnimatedPositioned(
+                      duration: slide,
+                      curve: Curves.easeOutCubic,
+                      top: 0,
+                      bottom: 0,
+                      right: panelBeside ? 0 : -_sidePanel,
+                      width: _sidePanel,
+                      child: panelBeside || _desk != null && view.width > view.height
+                          ? _panel(context, maxHeight: view.height, side: true)
+                          : const SizedBox.shrink(),
+                    ),
                     Positioned(
                       left: 0,
-                      right: 0,
+                      right: panelBeside ? _sidePanel : 0,
                       bottom: keyboardHeight,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -479,6 +580,8 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                                                 controller: c,
                                                 keyboardOpen: _keyboardOpen,
                                                 keysOpen: _keysOpen,
+                                                panelOpen: _panelOpen,
+                                                onPanel: _togglePanel,
                                                 onBack: () => Navigator.of(context).maybePop(),
                                                 onKeyboard: _toggleKeyboard,
                                                 onKeys: () {
@@ -531,6 +634,10 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                                       ),
                                     ],
                                   ),
+                                ),
+                                'panel' => _Measured(
+                                  onSize: _deskMeasured,
+                                  child: _panel(context, maxHeight: view.height * 0.58, side: false),
                                 ),
                                 'keys' => DesktopKeyBar(
                                   controller: c,
@@ -700,7 +807,9 @@ class _FloatRow extends StatelessWidget {
           children: [
             ?zoom,
             if (zoom != null) const SizedBox(width: 12),
-            Expanded(child: stats == null ? const SizedBox.shrink() : Align(alignment: Alignment.centerRight, child: stats)),
+            Expanded(
+              child: stats == null ? const SizedBox.shrink() : Align(alignment: Alignment.centerRight, child: stats),
+            ),
           ],
         );
       },

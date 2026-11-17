@@ -4,6 +4,8 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'desk.dart';
+import 'desk_types.dart';
 import 'desktop.dart';
 import 'desktop_types.dart';
 
@@ -26,6 +28,19 @@ abstract class SshSession implements RustOpaqueInterface {
   /// act on (for example: ask the user to trust the host key).
   static Future<SshSession> connect({required ConnectOptions options}) =>
       RustLib.instance.api.crateApiSshSshSessionConnect(options: options);
+
+  /// Every key binding with a description, in Omarchy's order.
+  Future<List<DeskBinding>> deskBindings();
+
+  /// Asks the desktop to do something. The answer is the state after it.
+  Future<DeskState> deskDo({required DeskAction action});
+
+  /// The desktop's state now.
+  Future<DeskState> deskState();
+
+  /// The state now, and again whenever it changes, until
+  /// [`DeskWatch::stop`].
+  Future<DeskWatch> deskWatch();
 
   /// Closes the connection (and everything running on it).
   Future<void> disconnect();

@@ -7,6 +7,7 @@
 //! - `multiplex setup` prepares the computer once; `multiplex doctor`
 //!   checks it.
 
+mod desk;
 mod store;
 mod system;
 
@@ -33,6 +34,12 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex unpair <name>     Remove a paired phone
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
   multiplex doctor            Check that everything is ready
+
+The paired phone uses these over SSH:
+  multiplex desk state        The desktop's state as one line of JSON
+  multiplex desk watch        The same, again whenever it changes
+  multiplex desk binds        Every key binding with a description
+  multiplex desk do <action>  Switch workspace, move focus, media keys, …
 ";
 
 fn main() {
@@ -47,6 +54,7 @@ fn main() {
         ["setup"] => setup(false),
         ["setup", "--dry-run"] => setup(true),
         ["doctor"] => doctor(),
+        ["desk", rest @ ..] => desk::run(rest),
         ["--version" | "version"] => {
             println!("multiplex {}", env!("CARGO_PKG_VERSION"));
             Ok(())

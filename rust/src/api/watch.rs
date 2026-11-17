@@ -16,7 +16,7 @@ use crate::frb_generated::StreamSink;
 /// [`stop`] ends it (closing the channel ends the command on the server).
 #[frb(opaque)]
 pub struct RemoteWatch {
-    lines: Arc<EventRelay<String>>,
+    pub(crate) lines: Arc<EventRelay<String>>,
     stop: Arc<Notify>,
 }
 

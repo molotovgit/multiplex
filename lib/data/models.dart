@@ -46,6 +46,7 @@ class Host {
     this.computer = false,
     this.tailscaleName,
     this.mac,
+    this.pins = const [],
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -86,6 +87,10 @@ class Host {
 
   /// The computer's network card address, for Wake-on-LAN.
   final String? mac;
+
+  /// The key bindings pinned to this computer's panel, by their keys
+  /// ("SUPER + RETURN"). Empty means the usual four.
+  final List<String> pins;
 
   /// Typed automatically after the shell opens.
   final String? startupCommand;
@@ -138,6 +143,7 @@ class Host {
     bool? computer,
     String? Function()? tailscaleName,
     String? Function()? mac,
+    List<String>? pins,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -162,6 +168,7 @@ class Host {
         computer: computer ?? this.computer,
         tailscaleName: tailscaleName != null ? tailscaleName() : this.tailscaleName,
         mac: mac != null ? mac() : this.mac,
+        pins: pins ?? this.pins,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -187,6 +194,7 @@ class Host {
         'computer': computer,
         'tailscaleName': tailscaleName,
         'mac': mac,
+        'pins': pins,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -212,6 +220,7 @@ class Host {
         computer: Json.boolean(j, 'computer', false),
         tailscaleName: Json.strOrNull(j, 'tailscaleName'),
         mac: Json.strOrNull(j, 'mac'),
+        pins: [for (final p in (j['pins'] as List?) ?? const []) if (p is String) p],
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

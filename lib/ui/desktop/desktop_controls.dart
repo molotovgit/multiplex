@@ -140,8 +140,8 @@ class _Key extends StatelessWidget {
 }
 
 /// The floating bar at the bottom of the desktop, where thumbs reach: back,
-/// where you are connected and how, the keyboard, the shortcut keys, and
-/// More for everything else. It fades away while you work and comes back
+/// where you are connected and how, the keyboard, the shortcut keys, the
+/// panel (workspaces, windows, media), and More for everything else. It fades away while you work and comes back
 /// with a tap on the handle.
 class DesktopToolbar extends StatelessWidget {
   const DesktopToolbar({
@@ -151,9 +151,11 @@ class DesktopToolbar extends StatelessWidget {
     required this.controller,
     required this.keyboardOpen,
     required this.keysOpen,
+    this.panelOpen = false,
     required this.onBack,
     required this.onKeyboard,
     required this.onKeys,
+    this.onPanel,
     required this.onMore,
   });
 
@@ -164,9 +166,13 @@ class DesktopToolbar extends StatelessWidget {
   final DesktopController controller;
   final bool keyboardOpen;
   final bool keysOpen;
+  final bool panelOpen;
   final VoidCallback onBack;
   final VoidCallback onKeyboard;
   final VoidCallback onKeys;
+
+  /// Null when the computer has no panel (a plain SSH server).
+  final VoidCallback? onPanel;
   final VoidCallback onMore;
 
   @override
@@ -240,6 +246,14 @@ class DesktopToolbar extends StatelessWidget {
               icon: const Icon(Icons.keyboard_command_key),
               onPressed: onKeys,
             ),
+            if (onPanel != null)
+              IconButton(
+                tooltip: panelOpen ? 'Hide the panel' : 'Panel: workspaces, windows, media',
+                isSelected: panelOpen,
+                icon: const Icon(Icons.space_dashboard_outlined),
+                selectedIcon: const Icon(Icons.space_dashboard),
+                onPressed: onPanel,
+              ),
             IconButton(tooltip: 'More', icon: const Icon(Icons.more_vert), onPressed: onMore),
           ],
         ),

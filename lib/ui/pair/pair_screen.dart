@@ -5,6 +5,7 @@ import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
+import '../../sessions/error_text.dart';
 import '../../sessions/pairing_flow.dart';
 import '../common/widgets.dart';
 import '../hosts/host_connector.dart';
@@ -85,15 +86,7 @@ class _PairScreenState extends State<PairScreen> {
     }
   }
 
-  /// The core's errors are sentences already; only the wrapper goes.
-  static String _sentence(Object e) {
-    var text = '$e';
-    final trace = text.indexOf('Stack backtrace');
-    if (trace >= 0) text = text.substring(0, trace);
-    text = text.replaceFirst(RegExp(r'^(AnyhowException|Exception)[(:]?\s*'), '').trim();
-    if (text.endsWith(')')) text = text.substring(0, text.length - 1);
-    return text.isEmpty ? 'Pairing failed.' : text[0].toUpperCase() + text.substring(1);
-  }
+  static String _sentence(Object e) => errorSentence(e, fallback: 'Pairing failed.');
 
   Future<void> _openDesktop() async {
     final host = _paired!;
