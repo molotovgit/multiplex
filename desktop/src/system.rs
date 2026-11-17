@@ -151,6 +151,7 @@ pub fn doctor() -> Vec<Check> {
             None => check("Phone camera", Some(false), false, crate::camera::NEEDS),
         },
         check("Phone microphone", Some(crate::mic::available()), false, crate::mic::NEEDS),
+        check("Phone speaker", Some(crate::speaker::available()), false, crate::speaker::NEEDS),
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }

@@ -289,6 +289,22 @@ pub fn mic_command(phone: &str) -> String {
     }
 }
 
+/// Gives the computer one more sound output, named after `phone`, and
+/// writes what is played into it to standard output (AAC frames with
+/// ADTS headers) after a `ready` line. With `everything` that output
+/// becomes the computer's default while the command runs. The phone
+/// writes a byte to it once a second; the command ends when that stops.
+pub fn speaker_command(phone: &str, everything: bool) -> String {
+    let mut words = vec!["speaker"];
+    if everything {
+        words.push("--default");
+    }
+    if !phone.is_empty() {
+        words.push(phone);
+    }
+    command(&words)
+}
+
 /// What a command that is fed bytes says once it can take them.
 pub const FEED_READY: &str = "ready";
 
@@ -316,6 +332,14 @@ pub fn done_command(id: &str) -> Result<String, ProtoError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_speaker_is_asked_for_with_or_without_all_of_the_sound() {
+        assert!(speaker_command("", false).ends_with("multiplex 'speaker'"));
+        assert!(speaker_command("", true).ends_with("multiplex 'speaker' '--default'"));
+        assert!(speaker_command("Sam's phone", true).ends_with(r"'speaker' '--default' 'Sam'\''s phone'"), "{}", speaker_command("Sam's phone", true));
+        assert!(speaker_command("Phone", false).ends_with("'speaker' 'Phone'"));
+    }
 
     #[test]
     fn the_camera_is_asked_for_with_its_turn_in_quarter_turns() {

@@ -32,6 +32,7 @@ use crate::api::desktop::*;
 use crate::api::screen::*;
 use crate::api::sftp::*;
 use crate::api::share::*;
+use crate::api::speaker::*;
 use crate::api::ssh::*;
 use crate::api::terminal::*;
 use crate::api::touchpad::*;
@@ -50,7 +51,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 424443108;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1523483402;
 
 // Section: executor
 
@@ -4622,6 +4623,164 @@ fn wire__crate__api__screen__SoundStream_write_impl(
         },
     )
 }
+fn wire__crate__api__speaker__SpeakerStream_close_impl(
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SpeakerStream_close",
+            port: None,
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            transform_result_sse::<_, ()>((move || {
+                let mut api_that_guard = None;
+                let decode_indices_ =
+                    flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                        flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                            &api_that, 0, false,
+                        ),
+                    ]);
+                for i in decode_indices_ {
+                    match i {
+                        0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                        _ => unreachable!(),
+                    }
+                }
+                let api_that_guard = api_that_guard.unwrap();
+                let output_ok = Ok::<_, ()>({
+                    crate::api::speaker::SpeakerStream::close(&*api_that_guard);
+                })?;
+                std::result::Result::Ok(output_ok)
+            })())
+        },
+    )
+}
+fn wire__crate__api__speaker__SpeakerStream_ended_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SpeakerStream_ended",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>,
+            >>::sse_decode(&mut deserializer);
+            let api_sink =
+                <StreamSink<String, flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(
+                    &mut deserializer,
+                );
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = Ok::<_, ()>({
+                        crate::api::speaker::SpeakerStream::ended(&*api_that_guard, api_sink);
+                    })?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__speaker__SpeakerStream_sound_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SpeakerStream_sound",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>,
+            >>::sse_decode(&mut deserializer);
+            let api_sink =
+                <StreamSink<Vec<u8>, flutter_rust_bridge::for_generated::SseCodec>>::sse_decode(
+                    &mut deserializer,
+                );
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let mut api_that_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_that, 0, false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_that_guard = Some(api_that.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_that_guard = api_that_guard.unwrap();
+                    let output_ok = Ok::<_, ()>({
+                        crate::api::speaker::SpeakerStream::sound(&*api_that_guard, api_sink);
+                    })?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__ssh__SshSession_agents_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -5561,6 +5720,68 @@ fn wire__crate__api__ssh__SshSession_open_shell_impl(
                         let output_ok =
                             crate::api::ssh::SshSession::open_shell(&*api_that_guard, api_options)
                                 .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__ssh__SshSession_open_speaker_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SshSession_open_speaker",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>,
+            >>::sse_decode(&mut deserializer);
+            let api_phone = <String>::sse_decode(&mut deserializer);
+            let api_everything = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::api::ssh::SshSession::open_speaker(
+                            &*api_that_guard,
+                            api_phone,
+                            api_everything,
+                        )
+                        .await?;
                         std::result::Result::Ok(output_ok)
                     })()
                     .await,
@@ -8282,6 +8503,9 @@ flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SoundStream>
 );
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
+    flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>
+);
+flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>
 );
 
@@ -8410,6 +8634,16 @@ impl SseDecode for SoundStream {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <RustOpaqueMoi<
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SoundStream>,
+        >>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for SpeakerStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <RustOpaqueMoi<
+            flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
     }
@@ -8546,6 +8780,16 @@ impl SseDecode
 }
 
 impl SseDecode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return decode_rust_opaque_moi(inner);
+    }
+}
+
+impl SseDecode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -8579,6 +8823,14 @@ impl SseDecode
         flutter_rust_bridge::for_generated::SseCodec,
     >
 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode for StreamSink<Vec<u8>, flutter_rust_bridge::for_generated::SseCodec> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut inner = <String>::sse_decode(deserializer);
@@ -10396,155 +10648,164 @@ fn pde_ffi_dispatcher_primary_impl(
         80 => wire__crate__api__screen__ScreenStream_ended_impl(port, ptr, rust_vec_len, data_len),
         83 => wire__crate__api__share__ShareLink_events_impl(port, ptr, rust_vec_len, data_len),
         86 => wire__crate__api__screen__SoundStream_ended_impl(port, ptr, rust_vec_len, data_len),
-        89 => wire__crate__api__ssh__SshSession_agents_impl(port, ptr, rust_vec_len, data_len),
-        90 => wire__crate__api__ssh__SshSession_check_alive_impl(port, ptr, rust_vec_len, data_len),
-        91 => wire__crate__api__ssh__SshSession_connect_impl(port, ptr, rust_vec_len, data_len),
-        92 => {
+        90 => {
+            wire__crate__api__speaker__SpeakerStream_ended_impl(port, ptr, rust_vec_len, data_len)
+        }
+        91 => {
+            wire__crate__api__speaker__SpeakerStream_sound_impl(port, ptr, rust_vec_len, data_len)
+        }
+        92 => wire__crate__api__ssh__SshSession_agents_impl(port, ptr, rust_vec_len, data_len),
+        93 => wire__crate__api__ssh__SshSession_check_alive_impl(port, ptr, rust_vec_len, data_len),
+        94 => wire__crate__api__ssh__SshSession_connect_impl(port, ptr, rust_vec_len, data_len),
+        95 => {
             wire__crate__api__ssh__SshSession_desk_bindings_impl(port, ptr, rust_vec_len, data_len)
         }
-        93 => wire__crate__api__ssh__SshSession_desk_do_impl(port, ptr, rust_vec_len, data_len),
-        94 => wire__crate__api__ssh__SshSession_desk_state_impl(port, ptr, rust_vec_len, data_len),
-        95 => wire__crate__api__ssh__SshSession_desk_watch_impl(port, ptr, rust_vec_len, data_len),
-        96 => wire__crate__api__ssh__SshSession_disconnect_impl(port, ptr, rust_vec_len, data_len),
-        97 => wire__crate__api__ssh__SshSession_exec_impl(port, ptr, rust_vec_len, data_len),
-        100 => {
+        96 => wire__crate__api__ssh__SshSession_desk_do_impl(port, ptr, rust_vec_len, data_len),
+        97 => wire__crate__api__ssh__SshSession_desk_state_impl(port, ptr, rust_vec_len, data_len),
+        98 => wire__crate__api__ssh__SshSession_desk_watch_impl(port, ptr, rust_vec_len, data_len),
+        99 => wire__crate__api__ssh__SshSession_disconnect_impl(port, ptr, rust_vec_len, data_len),
+        100 => wire__crate__api__ssh__SshSession_exec_impl(port, ptr, rust_vec_len, data_len),
+        103 => {
             wire__crate__api__ssh__SshSession_open_camera_impl(port, ptr, rust_vec_len, data_len)
         }
-        101 => {
+        104 => {
             wire__crate__api__ssh__SshSession_open_desktop_impl(port, ptr, rust_vec_len, data_len)
         }
-        102 => wire__crate__api__ssh__SshSession_open_files_impl(port, ptr, rust_vec_len, data_len),
-        103 => wire__crate__api__ssh__SshSession_open_mic_impl(port, ptr, rust_vec_len, data_len),
-        104 => {
+        105 => wire__crate__api__ssh__SshSession_open_files_impl(port, ptr, rust_vec_len, data_len),
+        106 => wire__crate__api__ssh__SshSession_open_mic_impl(port, ptr, rust_vec_len, data_len),
+        107 => {
             wire__crate__api__ssh__SshSession_open_screen_impl(port, ptr, rust_vec_len, data_len)
         }
-        105 => wire__crate__api__ssh__SshSession_open_shell_impl(port, ptr, rust_vec_len, data_len),
-        106 => {
-            wire__crate__api__ssh__SshSession_open_touchpad_impl(port, ptr, rust_vec_len, data_len)
-        }
-        107 => wire__crate__api__ssh__SshSession_phone_call_impl(port, ptr, rust_vec_len, data_len),
-        108 => {
-            wire__crate__api__ssh__SshSession_phone_notice_impl(port, ptr, rust_vec_len, data_len)
-        }
+        108 => wire__crate__api__ssh__SshSession_open_shell_impl(port, ptr, rust_vec_len, data_len),
         109 => {
-            wire__crate__api__ssh__SshSession_phone_status_impl(port, ptr, rust_vec_len, data_len)
+            wire__crate__api__ssh__SshSession_open_speaker_impl(port, ptr, rust_vec_len, data_len)
         }
         110 => {
+            wire__crate__api__ssh__SshSession_open_touchpad_impl(port, ptr, rust_vec_len, data_len)
+        }
+        111 => wire__crate__api__ssh__SshSession_phone_call_impl(port, ptr, rust_vec_len, data_len),
+        112 => {
+            wire__crate__api__ssh__SshSession_phone_notice_impl(port, ptr, rust_vec_len, data_len)
+        }
+        113 => {
+            wire__crate__api__ssh__SshSession_phone_status_impl(port, ptr, rust_vec_len, data_len)
+        }
+        114 => {
             wire__crate__api__ssh__SshSession_reattach_shell_impl(port, ptr, rust_vec_len, data_len)
         }
-        111 => {
+        115 => {
             wire__crate__api__ssh__SshSession_share_approved_impl(port, ptr, rust_vec_len, data_len)
         }
-        112 => wire__crate__api__ssh__SshSession_share_copy_impl(port, ptr, rust_vec_len, data_len),
-        113 => wire__crate__api__ssh__SshSession_share_done_impl(port, ptr, rust_vec_len, data_len),
-        114 => {
+        116 => wire__crate__api__ssh__SshSession_share_copy_impl(port, ptr, rust_vec_len, data_len),
+        117 => wire__crate__api__ssh__SshSession_share_done_impl(port, ptr, rust_vec_len, data_len),
+        118 => {
             wire__crate__api__ssh__SshSession_share_inbox_impl(port, ptr, rust_vec_len, data_len)
         }
-        115 => wire__crate__api__ssh__SshSession_share_link_impl(port, ptr, rust_vec_len, data_len),
-        116 => wire__crate__api__ssh__SshSession_share_open_impl(port, ptr, rust_vec_len, data_len),
-        117 => {
+        119 => wire__crate__api__ssh__SshSession_share_link_impl(port, ptr, rust_vec_len, data_len),
+        120 => wire__crate__api__ssh__SshSession_share_open_impl(port, ptr, rust_vec_len, data_len),
+        121 => {
             wire__crate__api__ssh__SshSession_share_paste_impl(port, ptr, rust_vec_len, data_len)
         }
-        118 => {
+        122 => {
             wire__crate__api__ssh__SshSession_share_received_impl(port, ptr, rust_vec_len, data_len)
         }
-        119 => {
+        123 => {
             wire__crate__api__ssh__SshSession_start_tunnel_impl(port, ptr, rust_vec_len, data_len)
         }
-        120 => wire__crate__api__ssh__SshSession_watch_impl(port, ptr, rust_vec_len, data_len),
-        123 => wire__crate__api__vault__backup_open_impl(port, ptr, rust_vec_len, data_len),
-        124 => wire__crate__api__vault__backup_seal_impl(port, ptr, rust_vec_len, data_len),
-        125 => wire__crate__api__transfer__copy_item_impl(port, ptr, rust_vec_len, data_len),
-        127 => {
+        124 => wire__crate__api__ssh__SshSession_watch_impl(port, ptr, rust_vec_len, data_len),
+        127 => wire__crate__api__vault__backup_open_impl(port, ptr, rust_vec_len, data_len),
+        128 => wire__crate__api__vault__backup_seal_impl(port, ptr, rust_vec_len, data_len),
+        129 => wire__crate__api__transfer__copy_item_impl(port, ptr, rust_vec_len, data_len),
+        131 => {
             wire__crate__api__ssh_types__credentials_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        128 => wire__crate__api__desk_types__desk_binding_default_impl(
+        132 => wire__crate__api__desk_types__desk_binding_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        129 => {
+        133 => {
             wire__crate__api__desk_types__desk_media_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        130 => wire__crate__api__desk_types__desk_monitor_default_impl(
+        134 => wire__crate__api__desk_types__desk_monitor_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        131 => {
+        135 => {
             wire__crate__api__desk_types__desk_slot_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        132 => {
+        136 => {
             wire__crate__api__desk_types__desk_state_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        133 => wire__crate__api__desk_types__desk_volume_default_impl(
+        137 => wire__crate__api__desk_types__desk_volume_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        134 => wire__crate__api__desk_types__desk_window_default_impl(
+        138 => wire__crate__api__desk_types__desk_window_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        135 => wire__crate__api__desktop_types__desktop_stats_default_impl(
+        139 => wire__crate__api__desktop_types__desktop_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        136 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
-        137 => wire__crate__api__app__init_app_impl(port, ptr, rust_vec_len, data_len),
-        138 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
-        139 => wire__crate__api__terminal_types__key_modifiers_default_impl(
+        140 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
+        141 => wire__crate__api__app__init_app_impl(port, ptr, rust_vec_len, data_len),
+        142 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
+        143 => wire__crate__api__terminal_types__key_modifiers_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        142 => wire__crate__api__pairing__pairing_register_impl(port, ptr, rust_vec_len, data_len),
-        152 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
-        153 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
-        155 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
+        146 => wire__crate__api__pairing__pairing_register_impl(port, ptr, rust_vec_len, data_len),
+        156 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
+        157 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
+        159 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        156 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
-        157 => {
+        160 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
+        161 => {
             wire__crate__api__tailscale__tailscale_logout_impl(port, ptr, rust_vec_len, data_len)
         }
-        158 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
-        159 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
-        160 => {
+        162 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
+        163 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
+        164 => {
             wire__crate__api__tailscale__tailscale_status_impl(port, ptr, rust_vec_len, data_len)
         }
-        161 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
+        165 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        162 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        166 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        163 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        167 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        164 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        166 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
-        167 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
+        168 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        170 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        171 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -10652,24 +10913,25 @@ fn pde_ffi_dispatcher_sync_impl(
         85 => wire__crate__api__screen__SoundStream_close_impl(ptr, rust_vec_len, data_len),
         87 => wire__crate__api__screen__SoundStream_status_impl(ptr, rust_vec_len, data_len),
         88 => wire__crate__api__screen__SoundStream_write_impl(ptr, rust_vec_len, data_len),
-        98 => wire__crate__api__ssh__SshSession_info_impl(ptr, rust_vec_len, data_len),
-        99 => wire__crate__api__ssh__SshSession_is_connected_impl(ptr, rust_vec_len, data_len),
-        121 => wire__crate__api__agents__agent_attach_command_impl(ptr, rust_vec_len, data_len),
-        122 => wire__crate__api__share__approval_sign_impl(ptr, rust_vec_len, data_len),
-        126 => wire__crate__api__app__core_version_impl(ptr, rust_vec_len, data_len),
-        140 => wire__crate__api__pairing__pairing_is_code_impl(ptr, rust_vec_len, data_len),
-        141 => wire__crate__api__pairing__pairing_read_impl(ptr, rust_vec_len, data_len),
-        143 => wire__crate__api__theme__parse_theme_file_impl(ptr, rust_vec_len, data_len),
-        144 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
-        145 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
-        146 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
-        147 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
-        148 => wire__crate__api__screen__screen_start_bitrate_impl(ptr, rust_vec_len, data_len),
-        149 => wire__crate__api__share__share_is_link_impl(ptr, rust_vec_len, data_len),
-        150 => wire__crate__api__share__signing_describe_impl(ptr, rust_vec_len, data_len),
-        151 => wire__crate__api__share__signing_sign_impl(ptr, rust_vec_len, data_len),
-        154 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
-        165 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        89 => wire__crate__api__speaker__SpeakerStream_close_impl(ptr, rust_vec_len, data_len),
+        101 => wire__crate__api__ssh__SshSession_info_impl(ptr, rust_vec_len, data_len),
+        102 => wire__crate__api__ssh__SshSession_is_connected_impl(ptr, rust_vec_len, data_len),
+        125 => wire__crate__api__agents__agent_attach_command_impl(ptr, rust_vec_len, data_len),
+        126 => wire__crate__api__share__approval_sign_impl(ptr, rust_vec_len, data_len),
+        130 => wire__crate__api__app__core_version_impl(ptr, rust_vec_len, data_len),
+        144 => wire__crate__api__pairing__pairing_is_code_impl(ptr, rust_vec_len, data_len),
+        145 => wire__crate__api__pairing__pairing_read_impl(ptr, rust_vec_len, data_len),
+        147 => wire__crate__api__theme__parse_theme_file_impl(ptr, rust_vec_len, data_len),
+        148 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
+        149 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
+        150 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
+        151 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
+        152 => wire__crate__api__screen__screen_start_bitrate_impl(ptr, rust_vec_len, data_len),
+        153 => wire__crate__api__share__share_is_link_impl(ptr, rust_vec_len, data_len),
+        154 => wire__crate__api__share__signing_describe_impl(ptr, rust_vec_len, data_len),
+        155 => wire__crate__api__share__signing_sign_impl(ptr, rust_vec_len, data_len),
+        158 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
+        169 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -10852,6 +11114,21 @@ impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<
 
 impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SoundStream>> for SoundStream {
     fn into_into_dart(self) -> FrbWrapper<SoundStream> {
+        self.into()
+    }
+}
+
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for FrbWrapper<SpeakerStream> {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self.0)
+            .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for FrbWrapper<SpeakerStream> {}
+
+impl flutter_rust_bridge::IntoIntoDart<FrbWrapper<SpeakerStream>> for SpeakerStream {
+    fn into_into_dart(self) -> FrbWrapper<SpeakerStream> {
         self.into()
     }
 }
@@ -12616,6 +12893,13 @@ impl SseEncode for SoundStream {
     }
 }
 
+impl SseEncode for SpeakerStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
 impl SseEncode for SshSession {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -12756,6 +13040,17 @@ impl SseEncode
 }
 
 impl SseEncode
+    for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        let (ptr, size) = self.sse_encode_raw();
+        <usize>::sse_encode(ptr, serializer);
+        <i32>::sse_encode(size, serializer);
+    }
+}
+
+impl SseEncode
     for RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -12788,6 +13083,13 @@ impl SseEncode
         flutter_rust_bridge::for_generated::SseCodec,
     >
 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode for StreamSink<Vec<u8>, flutter_rust_bridge::for_generated::SseCodec> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         unimplemented!("")
@@ -14220,6 +14522,7 @@ mod io {
     use crate::api::screen::*;
     use crate::api::sftp::*;
     use crate::api::share::*;
+    use crate::api::speaker::*;
     use crate::api::ssh::*;
     use crate::api::terminal::*;
     use crate::api::touchpad::*;
@@ -14405,6 +14708,20 @@ mod io {
     }
 
     #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>::increment_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>::decrement_strong_count(ptr as _);
+    }
+
+    #[unsafe(no_mangle)]
     pub extern "C" fn frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
         ptr: *const std::ffi::c_void,
     ) {
@@ -14435,6 +14752,7 @@ mod web {
     use crate::api::screen::*;
     use crate::api::sftp::*;
     use crate::api::share::*;
+    use crate::api::speaker::*;
     use crate::api::ssh::*;
     use crate::api::terminal::*;
     use crate::api::touchpad::*;
@@ -14619,6 +14937,20 @@ mod web {
         ptr: *const std::ffi::c_void,
     ) {
         MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SoundStream>>::decrement_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>::increment_strong_count(ptr as _);
+    }
+
+    #[wasm_bindgen]
+    pub fn rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+        ptr: *const std::ffi::c_void,
+    ) {
+        MoiArc::<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SpeakerStream>>::decrement_strong_count(ptr as _);
     }
 
     #[wasm_bindgen]

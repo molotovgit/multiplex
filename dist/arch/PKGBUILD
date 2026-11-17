@@ -18,8 +18,8 @@ optdepends=(
   'xdg-user-dirs: files from the phone go to the Downloads folder it names'
   'networkmanager: multiplex setup turns Wake-on-LAN on'
   "mpv: the phone's screen in a window"
-  "ffmpeg: the phone's camera as a webcam, its microphone as a microphone"
-  "libpulse: the phone's microphone (pactl)"
+  "ffmpeg: the phone as a webcam, a microphone and a speaker"
+  "libpulse: the phone as a microphone and a speaker (pactl)"
   "gst-plugin-pipewire: the phone's camera as a PipeWire camera (with gstreamer and gst-plugins-base)"
   "v4l2loopback-dkms: the phone's camera for every program that uses a webcam"
 )

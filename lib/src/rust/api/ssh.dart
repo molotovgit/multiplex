@@ -15,6 +15,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'screen.dart';
 import 'sftp.dart';
 import 'share.dart';
+import 'speaker.dart';
 import 'ssh_types.dart';
 import 'terminal.dart';
 import 'terminal_types.dart';
@@ -86,6 +87,15 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.
   Future<RemoteShell> openShell({required ShellOptions options});
+
+  /// Gives the computer one more sound output, named after the phone
+  /// (`phone`, or empty), whose sound comes here. With `everything` it
+  /// becomes the computer's default output while this is open, so all
+  /// of its sound is heard on the phone.
+  Future<SpeakerStream> openSpeaker({
+    required String phone,
+    required bool everything,
+  });
 
   /// Starts a touchpad and keyboard on the computer. It is ready when
   /// this returns.

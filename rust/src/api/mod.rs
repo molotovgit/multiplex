@@ -15,6 +15,7 @@ pub mod pairing;
 pub mod share;
 pub mod screen;
 pub mod sftp;
+pub mod speaker;
 pub mod sftp_types;
 pub mod ssh;
 pub mod ssh_types;

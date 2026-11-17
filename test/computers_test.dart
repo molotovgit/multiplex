@@ -79,10 +79,17 @@ void main() {
       'Phone screen',
       'Camera',
       'Microphone',
+      'Speaker',
       'Agents',
       'Tunnels',
       'Status',
     ]) {
+      // There are more tiles than fit on one screen: the page scrolls.
+      await tester.scrollUntilVisible(
+        find.text(tile),
+        120,
+        scrollable: find.descendant(of: find.byType(ComputerScreen), matching: find.byType(Scrollable)).first,
+      );
       expect(find.text(tile), findsOneWidget, reason: tile);
     }
   });

@@ -18,6 +18,7 @@ mod input;
 mod mic;
 mod screen;
 mod share;
+mod speaker;
 mod store;
 mod system;
 
@@ -65,6 +66,7 @@ The paired phone uses these over SSH:
   multiplex screen            The phone's screen in a window (the phone sends the picture)
   multiplex camera            The phone's camera as a camera of this computer (the phone sends the picture)
   multiplex mic               The phone's microphone as a microphone of this computer (the phone sends the sound)
+  multiplex speaker           The phone as a loudspeaker of this computer (the phone plays the sound)
 ";
 
 fn main() {
@@ -86,6 +88,7 @@ fn main() {
         ["screen", rest @ ..] => screen::run(rest),
         ["camera", rest @ ..] => camera::run(rest),
         ["mic", rest @ ..] => mic::run(rest),
+        ["speaker", rest @ ..] => speaker::run(rest),
         ["agent", rest @ ..] => agent::run(rest),
         ["key", rest @ ..] => agent::key(rest),
         ["send", rest @ ..] => share::send(rest),

@@ -26,3 +26,5 @@ pub mod touchpad;
 pub mod share;
 pub mod pipe;
 pub mod screen;
+pub mod tap;
+pub mod adts;

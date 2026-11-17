@@ -128,6 +128,16 @@ On a computer's page, **Microphone** makes the phone's microphone a microphone o
 - 48 kHz, one channel, AAC at 64 kbit/s over the SSH connection that is already open. Nothing is stored.
 - It stays current: while no program on the computer is listening the sound is dropped there, so one that starts listening hears now and not what was said a while ago. If the connection falls a second behind, sound is left out instead of arriving late.
 
+## The phone as a speaker
+
+On a computer's page, **Speaker** plays the computer's sound on the phone. The computer gets one more sound output, named after the phone ("Sam's phone speaker"). What is played into it is heard on the phone, wherever the phone's media sound comes out (its own speaker, its headphones), about a quarter of a second later. The phone's volume keys set how loud.
+
+- **All of the computer's sound** (on by default): the new output becomes the computer's default output while this plays. The computer goes back to its own output when you stop, and within five seconds if the phone goes away without a word (out of range, the app closed). Switched off, only what you point at the phone's output on the computer is heard.
+- The computer needs `ffmpeg` and `pactl`; no root. `multiplex doctor` checks.
+- 48 kHz, two channels, AAC at 128 kbit/s over the SSH connection that is already open.
+- It plays what is current: sound that arrives in a clump after a pause in the network is thrown away, not played late.
+- Good for music and speech. With a film, the quarter second shows on the lips.
+
 ## Coding agents
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
@@ -180,7 +190,7 @@ multiplex access "Sam's phone" everything      # back to no limits
 
 | Switch | Covers |
 |---|---|
-| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, and lending its camera or microphone |
+| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, lending its camera or microphone, and playing the computer's sound |
 | `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
 | `files` | browsing, sending and fetching files |
 | `clipboard` | sharing the clipboard, opening links |

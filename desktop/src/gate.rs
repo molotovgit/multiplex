@@ -224,7 +224,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["agents"] => need(access.desktop || access.terminal, "desktop"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
-            ["screen" | "camera" | "mic", ..] => need(access.desktop, "desktop"),
+            ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
             ["share", "inbox" | "received" | "done", ..] => need(access.files, "files"),
             ["share", "clip" | "paste" | "open", ..] => need(access.clipboard, "clipboard"),
             ["link", ..] => need(access.files || access.clipboard, "files"),
@@ -436,6 +436,9 @@ mod tests {
         assert!(permits(&no_terminal, &multiplex(&["camera", "Phone"])).is_ok());
         assert_eq!(permits(&no_desktop, &multiplex(&["mic", "Phone"])), Err("desktop"));
         assert!(permits(&no_terminal, &multiplex(&["mic"])).is_ok());
+        // Hearing what the computer plays is a kind of seeing its desktop.
+        assert_eq!(permits(&no_desktop, &multiplex(&["speaker", "--default", "Phone"])), Err("desktop"));
+        assert!(permits(&no_terminal, &multiplex(&["speaker"])).is_ok());
 
         let no_files = Access { files: false, terminal: false, ..all };
         assert_eq!(permits(&no_files, &Wanted::Sftp), Err("files"));
