@@ -64,6 +64,9 @@ class _Computer implements ShareChannel {
   @override
   Future<void> dnd({required bool on}) async => log.add('quiet ${on ? 'on' : 'off'}');
 
+  @override
+  Future<void> approved(String id, String answer) async => log.add('approval $id: $answer');
+
   /// Names that do not make it across.
   final failing = <String>{};
 
@@ -133,6 +136,9 @@ void main() {
   late Directory temp;
   late PhoneOutbox outbox;
   late _Phone phone;
+  final asked = <String>[];
+  var fingerprintOk = true;
+  var inFront = true;
   const desk = Host(id: 'c', label: 'Desk', address: 'desk', computer: true, pairedAs: 'My phone');
 
   Future<LiveSession> connect({Host host = desk}) async {
@@ -153,6 +159,23 @@ void main() {
     temp = Directory.systemTemp.createTempSync('outbox-test');
     outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
     phone = _Phone();
+    asked.clear();
+    fingerprintOk = true;
+    inFront = true;
+    store.saveKey(
+      StoredKey(
+        id: 'k',
+        name: 'This phone',
+        privatePem: 'PRIVATE',
+        publicOpenssh: 'ssh-ed25519 AAAA',
+        fingerprint: 'SHA256:x',
+        algorithm: 'ed25519',
+        passphrase: null,
+        encrypted: false,
+        createdAt: DateTime(2026),
+      ),
+    );
+    store.saveHost(desk.copyWith(keyId: () => 'k'));
     links = ComputerLinks(
       sessions,
       store,
@@ -162,6 +185,12 @@ void main() {
       writeClipboard: (text) async => phoneClipboard = text,
       outbox: outbox,
       phone: phone,
+      confirm: (reason) async {
+        asked.add(reason);
+        return fingerprintOk;
+      },
+      sign: (key, id, reason, challenge) => 'signed($id|$reason|$challenge|${key.length})',
+      appInFront: () => inFront,
     );
   });
 
@@ -334,6 +363,54 @@ void main() {
     computer.events.add(const ShareEvent.agent(name: 'codex', title: '', workspace: '', waiting: false));
     await Future<void>.delayed(Duration.zero);
     expect(notices, ['Claude needs you | Fix the tests · api · Desk', 'codex is done | Desk']);
+  });
+
+  group('approving something for the computer', () {
+    final ask = const ShareEvent.approve(id: '00aa', reason: 'sudo pacman -Syu', challenge: 'Yw==');
+
+    test('a fingerprint gives a signed yes, for exactly what was shown', () async {
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(ask);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(asked, ['Approve on Desk: sudo pacman -Syu']);
+      expect(computer.log, ['approval 00aa: signed(00aa|sudo pacman -Syu|Yw==|7)']);
+    });
+
+    test('a cancelled fingerprint is a no, and nothing is signed', () async {
+      fingerprintOk = false;
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(ask);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(computer.log, ['approval 00aa: no']);
+    });
+
+    test('with the app in the background a notification asks for it, and the prompt waits for the app', () async {
+      inFront = false;
+      await connect(host: desk.copyWith(keyId: () => 'k'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(ask);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(notices, ['Desk asks for your approval | Open Multiplex to answer: sudo pacman -Syu']);
+      expect(asked, isEmpty, reason: 'no prompt while the app is not on screen');
+      expect(computer.log, isEmpty);
+      inFront = true;
+      links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(asked, ['Approve on Desk: sudo pacman -Syu']);
+      expect(computer.log, ['approval 00aa: signed(00aa|sudo pacman -Syu|Yw==|7)']);
+    });
+
+    test('a computer without a key of this phone gets a no', () async {
+      await connect(host: desk.copyWith(keyId: () => null));
+      store.saveHost(desk.copyWith(keyId: () => null));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(ask);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(asked, isEmpty);
+      expect(computer.log, ['approval 00aa: no']);
+    });
   });
 
   test('the link ends with the connection', () async {

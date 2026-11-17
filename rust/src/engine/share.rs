@@ -104,6 +104,30 @@ pub async fn call(conn: &Connection, phone: &str, active: bool) -> anyhow::Resul
     run(conn, &proto::call_command(phone, active)).await.map(|_| ())
 }
 
+/// Signs an approval request with the phone's own key (an OpenSSH
+/// ed25519 private key, as the app stores it). The answer is the
+/// signature in base64, which only this key can make and which is good
+/// for this one request.
+pub fn approval_signature(private_key: &str, id: &str, reason: &str, challenge: &str) -> anyhow::Result<String> {
+    use base64::engine::general_purpose::STANDARD;
+    use base64::Engine;
+    use ed25519_dalek::Signer;
+    use russh::keys::ssh_key::private::KeypairData;
+
+    let key = russh::keys::decode_secret_key(private_key.trim(), None).map_err(|_| anyhow::anyhow!("This phone's key could not be read."))?;
+    let KeypairData::Ed25519(pair) = key.key_data() else { anyhow::bail!("This phone's key is not of the kind approvals use.") };
+    let signer = ed25519_dalek::SigningKey::from_bytes(&pair.private.to_bytes());
+    let id = proto::clean_id(id).map_err(|err| anyhow::anyhow!("{err}"))?;
+    Ok(STANDARD.encode(signer.sign(&proto::approval_message(&id, reason, challenge)).to_bytes()))
+}
+
+/// Gives the computer the phone's answer to an approval: a signature, or
+/// "no".
+pub async fn approved(conn: &Connection, id: &str, answer: &str) -> anyhow::Result<()> {
+    let command = proto::approved_command(id).map_err(|err| anyhow::anyhow!("{err}"))?;
+    tell(conn, &command, answer.to_owned()).await
+}
+
 /// The phone has fetched a waiting file: the computer forgets it.
 pub async fn done(conn: &Connection, id: &str) -> anyhow::Result<()> {
     let command = proto::done_command(id).map_err(|err| anyhow::anyhow!("{err}"))?;
@@ -113,6 +137,29 @@ pub async fn done(conn: &Connection, id: &str) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_approval_signed_here_is_one_the_computer_accepts() {
+        use base64::engine::general_purpose::STANDARD;
+        use base64::Engine;
+        use russh::keys::ssh_key::private::{Ed25519Keypair, KeypairData};
+        use russh::keys::ssh_key::LineEnding;
+        use russh::keys::PrivateKey;
+
+        // A phone key as the app keeps it.
+        let pair = Ed25519Keypair::from_seed(&[9u8; 32]);
+        let public = pair.public.0;
+        let pem = PrivateKey::new(KeypairData::Ed25519(pair), "multiplex-phone").unwrap().to_openssh(LineEnding::LF).unwrap().to_string();
+        let (id, reason, challenge) = ("00112233aabbccdd", "sudo pacman -Syu", "Y2hhbGxlbmdl");
+        let signature: [u8; 64] = STANDARD.decode(approval_signature(&pem, id, reason, challenge).unwrap()).unwrap().try_into().unwrap();
+        // The computer's check: the phone's public key over the same message.
+        let key = ed25519_dalek::VerifyingKey::from_bytes(&public).unwrap();
+        let signature = ed25519_dalek::Signature::from_bytes(&signature);
+        assert!(key.verify_strict(&proto::approval_message(id, reason, challenge), &signature).is_ok());
+        assert!(key.verify_strict(&proto::approval_message(id, "sudo rm -rf /", challenge), &signature).is_err());
+        assert!(approval_signature("not a key", id, reason, challenge).is_err());
+        assert!(approval_signature(&pem, "not an id", reason, challenge).is_err());
+    }
 
     #[test]
     fn failures_are_put_in_words() {

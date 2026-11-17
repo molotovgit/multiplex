@@ -14,7 +14,13 @@ use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
-use multiplex_proto::share::{clean_file_name, clean_id, clean_phone_number, clean_sms_text, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, MAX_CLIP, RING_SECONDS};
+use base64::engine::general_purpose::STANDARD;
+use base64::Engine;
+use multiplex_proto::share::{
+    approval_message, clean_file_name, clean_id, clean_phone_number, clean_reason, clean_sms_text, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, APPROVE_SECONDS, MAX_CLIP,
+    RING_SECONDS,
+};
+use multiplex_proto::ed25519_key_bytes;
 use multiplex_proto::clean_device_name;
 use serde::{Deserialize, Serialize};
 
@@ -283,6 +289,20 @@ pub fn share(args: &[&str]) -> Result<()> {
             Session::find()?.dispatch_either(&format!("hl.dsp.exec_cmd({})", lua_string(&format!("xdg-open '{url}'"))), ("exec", &format!("xdg-open '{url}'")))?;
             println!("ok");
         }
+        ["approved", id] => {
+            let id = clean_id(id).map_err(|err| anyhow!("{err}"))?;
+            let dir = runtime_dir().join("approvals");
+            if !dir.join(format!("{id}.pending")).is_file() {
+                bail!("nothing with that id is waiting for an answer");
+            }
+            let mut answer = String::new();
+            std::io::stdin().lock().take(512).read_to_string(&mut answer)?;
+            // Written beside it, then moved: the one waiting never reads half an answer.
+            let temp = dir.join(format!(".{id}.tmp"));
+            std::fs::write(&temp, answer.trim())?;
+            std::fs::rename(&temp, dir.join(&id))?;
+            println!("ok");
+        }
         ["done", id] => {
             let waiting = Outbox::open()?.done(&clean_id(id).map_err(|err| anyhow!("{err}"))?)?;
             notify(Session::find().ok().as_ref(), &format!("{} is on {}", waiting.name, waiting.phone), "Delivered.");
@@ -448,6 +468,69 @@ pub fn sms(args: &[&str]) -> Result<()> {
     }
     println!("Asked {phone} to send it to {number}. It says here when it has (or why not).");
     Ok(())
+}
+
+/// Whether an answer approves this request: a signature over exactly
+/// this request, made with the paired phone's own key.
+fn check_answer(phone_key: &[u8; 32], id: &str, reason: &str, challenge: &str, answer: &str) -> std::result::Result<(), &'static str> {
+    let answer = answer.trim();
+    if answer == "no" {
+        return Err("it was refused on the phone");
+    }
+    let signature: [u8; 64] = STANDARD.decode(answer).ok().and_then(|bytes| bytes.try_into().ok()).ok_or("the answer was not understood")?;
+    let key = ed25519_dalek::VerifyingKey::from_bytes(phone_key).map_err(|_| "the phone's key could not be read")?;
+    key.verify_strict(&approval_message(id, reason, challenge), &ed25519_dalek::Signature::from_bytes(&signature)).map_err(|_| "the answer did not come from the paired phone")
+}
+
+/// `multiplex approve [--to <phone>] <what>`: asks the phone's owner to
+/// approve something, with a fingerprint there. Succeeds only with an
+/// answer signed by the paired phone's key for exactly this request, so
+/// nothing running on the computer can say yes in its place.
+pub fn approve(args: &[&str]) -> Result<()> {
+    let (to, words) = match args {
+        ["--to", name, rest @ ..] => (Some(*name), rest),
+        rest => (None, rest),
+    };
+    let reason = clean_reason(&words.join(" ")).map_err(|err| anyhow!("{err}"))?;
+    let phone = match phone_named(to)?.as_slice() {
+        [one] => one.clone(),
+        _ => bail!("several phones are paired: say which with --to <name>"),
+    };
+    let key = Store::open()?.devices()?.into_iter().find(|d| d.name == phone).and_then(|d| ed25519_key_bytes(&d.key)).ok_or_else(|| anyhow!("{phone}'s key could not be read"))?;
+    let id = random_id()?;
+    let mut challenge = [0u8; 32];
+    std::fs::File::open("/dev/urandom")?.read_exact(&mut challenge)?;
+    let challenge = STANDARD.encode(challenge);
+
+    let dir = runtime_dir().join("approvals");
+    std::fs::create_dir_all(&dir)?;
+    let (pending, answered) = (dir.join(format!("{id}.pending")), dir.join(&id));
+    std::fs::write(&pending, b"")?;
+    let finish = || {
+        let _ = std::fs::remove_file(&pending);
+        let _ = std::fs::remove_file(&answered);
+    };
+    if !ask(&phone, &LinkEvent::Approve { id: id.clone(), reason: reason.clone(), challenge: challenge.clone() })? {
+        finish();
+        bail!("{phone} is not connected right now, so it cannot approve anything");
+    }
+    eprintln!("Waiting for {phone} to approve: {reason}");
+    let until = Instant::now() + Duration::from_secs(APPROVE_SECONDS);
+    while Instant::now() < until {
+        if let Ok(answer) = std::fs::read_to_string(&answered) {
+            finish();
+            return match check_answer(&key, &id, &reason, &challenge, &answer) {
+                Ok(()) => {
+                    println!("Approved on {phone}.");
+                    Ok(())
+                }
+                Err(why) => bail!("not approved: {why}"),
+            };
+        }
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    finish();
+    bail!("not approved: {phone} did not answer in time")
 }
 
 /// What has been asked of a phone since the last look; each ask is handed
@@ -623,6 +706,29 @@ mod tests {
         assert!(outbox.waiting_for("Phone").is_empty());
         assert!(outbox.all().is_empty());
         assert!(outbox.add("Phone", &file).is_err());
+    }
+
+    #[test]
+    fn only_the_phones_own_signature_over_this_very_request_approves() {
+        use ed25519_dalek::Signer;
+        let phone = ed25519_dalek::SigningKey::from_bytes(&[5u8; 32]);
+        let key = phone.verifying_key().to_bytes();
+        let (id, reason, challenge) = ("00112233aabbccdd", "sudo pacman -Syu", "Y2hhbGxlbmdl");
+        let sign = |who: &ed25519_dalek::SigningKey, id: &str, reason: &str, challenge: &str| STANDARD.encode(who.sign(&approval_message(id, reason, challenge)).to_bytes());
+
+        assert_eq!(check_answer(&key, id, reason, challenge, &sign(&phone, id, reason, challenge)), Ok(()));
+        assert_eq!(check_answer(&key, id, reason, challenge, &format!("  {}\n", sign(&phone, id, reason, challenge))), Ok(()));
+        assert_eq!(check_answer(&key, id, reason, challenge, "no"), Err("it was refused on the phone"));
+        // Another key, another reason, another request, an old challenge: all refused.
+        let stranger = ed25519_dalek::SigningKey::from_bytes(&[6u8; 32]);
+        let forged = Err("the answer did not come from the paired phone");
+        assert_eq!(check_answer(&key, id, reason, challenge, &sign(&stranger, id, reason, challenge)), forged);
+        assert_eq!(check_answer(&key, id, reason, challenge, &sign(&phone, id, "sudo rm -rf /", challenge)), forged);
+        assert_eq!(check_answer(&key, id, reason, challenge, &sign(&phone, "ffffffffffffffff", reason, challenge)), forged);
+        assert_eq!(check_answer(&key, id, reason, challenge, &sign(&phone, id, reason, "b2xk")), forged);
+        for nonsense in ["", "yes", "true", "AAAA", &STANDARD.encode([0u8; 64])] {
+            assert!(check_answer(&key, id, reason, challenge, nonsense).is_err(), "{nonsense}");
+        }
     }
 
     #[test]

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../app/lock_gate.dart';
 import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../platform/phone_bridge.dart';
@@ -38,6 +39,9 @@ abstract class ShareChannel {
 
   /// A call on the phone began or ended.
   Future<void> call(String phone, {required bool active});
+
+  /// The phone's answer to an approval: a signature, or "no".
+  Future<void> approved(String id, String answer);
 
   /// Silences the computer's notifications, or stops silencing them.
   Future<void> dnd({required bool on});
@@ -114,6 +118,9 @@ class SshShareChannel implements ShareChannel {
   Future<void> call(String phone, {required bool active}) => session.ssh.phoneCall(phone: phone, active: active);
 
   @override
+  Future<void> approved(String id, String answer) => session.ssh.shareApproved(id: id, answer: answer);
+
+  @override
   Future<void> dnd({required bool on}) => session.ssh.deskDo(action: DeskAction.dnd(enabled: on));
 
   @override
@@ -179,7 +186,13 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     Future<void> Function(String text)? writeClipboard,
     PhoneOutbox? outbox,
     PhoneBridge phone = const PhoneBridge(),
+    Future<bool> Function(String reason)? confirm,
+    String Function(String privateKey, String id, String reason, String challenge)? sign,
+    bool Function()? appInFront,
   }) : outbox = outbox ?? PhoneOutbox(),
+       _confirm = confirm ?? const DeviceUnlock().confirmTo,
+       _sign = sign ?? ((key, id, reason, challenge) => approvalSign(privateKey: key, id: id, reason: reason, challenge: challenge)),
+       _appInFront = appInFront ?? (() => WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed),
        // ignore: prefer_initializing_formals
        _phone = phone,
        _channel = channel ?? SshShareChannel.new,
@@ -199,6 +212,26 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   final PhoneBridge _phone;
+
+  /// Asks the owner to confirm with a fingerprint, face or PIN.
+  final Future<bool> Function(String reason) _confirm;
+
+  /// Signs an approval with the phone's key (in the Rust core).
+  final String Function(String privateKey, String id, String reason, String challenge) _sign;
+  final bool Function() _appInFront;
+
+  /// Completed when the app next comes to the front (a fingerprint
+  /// prompt can only show then).
+  Completer<void>? _front;
+
+  /// Waits until the app is in front, for at most [limit]. False if it
+  /// did not get there.
+  Future<bool> _whenInFront(Duration limit) async {
+    if (_appInFront()) return true;
+    final front = _front ??= Completer<void>();
+    return front.future.then((_) => true).timeout(limit, onTimeout: () => false);
+  }
+
   StreamSubscription<PhoneNotification>? _phoneNotices;
   StreamSubscription<({bool? call, bool? dnd})>? _phoneChanges;
 
@@ -280,6 +313,8 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Back in front: what was copied on the phone meanwhile goes over.
     if (state == AppLifecycleState.resumed) {
+      _front?.complete();
+      _front = null;
       for (final link in _links.values) {
         link.sendPhoneClipboard();
       }
@@ -358,6 +393,8 @@ class _Link {
         unawaited(owner._phone.ring(seconds));
       case ShareEvent_Sms(:final to, :final text):
         unawaited(_sendSms(to, text));
+      case ShareEvent_Approve(:final id, :final reason, :final challenge):
+        unawaited(_approve(id, reason, challenge));
       case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting):
         // A coding agent on the computer wants an answer, or is done.
         final where = [if (title.isNotEmpty) title, if (workspace.isNotEmpty) workspace, host.title].join(' · ');
@@ -378,6 +415,25 @@ class _Link {
     } catch (_) {
       // An older package: the rest still works.
     }
+  }
+
+  /// The computer asks for a yes. Only a fingerprint (or face, or PIN)
+  /// on this phone gives one: the answer is then signed with the phone's
+  /// key. Anything else, including not answering in time, is a no.
+  Future<void> _approve(String id, String reason, String challenge) async {
+    var answer = 'no';
+    try {
+      // The prompt needs the app on screen; a notification asks for that.
+      if (!owner._appInFront()) await owner._notify('${host.title} asks for your approval', 'Open Multiplex to answer: $reason');
+      final key = owner._store.key(host.keyId);
+      if (key != null && !key.encrypted && await owner._whenInFront(const Duration(seconds: 50)) && await owner._confirm('Approve on ${host.title}: $reason')) {
+        answer = owner._sign(key.privatePem, id, reason, challenge);
+      }
+    } catch (_) {
+      // A cancelled or failed check is a no.
+    }
+    if (_closed) return;
+    unawaited(channel.approved(id, answer).catchError((Object _) {}));
   }
 
   /// The computer asked for a text message to be sent. It hears what

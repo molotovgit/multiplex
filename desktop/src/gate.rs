@@ -228,6 +228,8 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["link", ..] => need(access.files || access.clipboard, "files"),
             // What the phone says about itself changes nothing here.
             ["phone", "status" | "notify" | "call", ..] => Ok(()),
+            // Its answer to an approval asked of it (worthless unless signed with its key).
+            ["share", "approved", _] => Ok(()),
             // Everything else this command can do (pairing, these very
             // switches, setup) is the owner's.
             _ => need(access.terminal, "terminal"),

@@ -33,6 +33,9 @@ pub enum ShareEvent {
     /// A coding agent on the computer now waits for an answer
     /// (`waiting`), or has finished.
     Agent { name: String, title: String, workspace: String, waiting: bool },
+    /// Someone at the computer asks the phone's owner to approve
+    /// something (`reason`). Answer with [`SshSession::share_approved`].
+    Approve { id: String, reason: String, challenge: String },
 }
 
 impl SshSession {
@@ -92,6 +95,13 @@ impl SshSession {
         AsyncRuntime::run(async move { share::call(&conn, &phone, active).await }).await?
     }
 
+    /// Answers an approval the computer asked for: `answer` is what
+    /// [`approval_sign`] made, or "no".
+    pub async fn share_approved(&self, id: String, answer: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { share::approved(&conn, &id, &answer).await }).await?
+    }
+
     /// Hears what the computer has for this phone: files waiting (also
     /// ones sent while the phone was away) and clipboard changes. `phone`
     /// is the name this phone paired under; empty when it is the only one.
@@ -100,6 +110,14 @@ impl SshSession {
         let inner = AsyncRuntime::run(RemoteWatch::start(conn, proto::link_command(&phone))).await??;
         Ok(ShareLink { inner })
     }
+}
+
+/// Signs an approval request with the phone's own key (its OpenSSH
+/// private key). Only call this after the owner has confirmed with a
+/// fingerprint: the signature is the "yes".
+#[frb(sync)]
+pub fn approval_sign(private_key: String, id: String, reason: String, challenge: String) -> anyhow::Result<String> {
+    share::approval_signature(&private_key, &id, &reason, &challenge)
 }
 
 /// Whether text is a web link the computer would open.
@@ -130,6 +148,11 @@ impl ShareLink {
                 let waiting = agent.status == multiplex_proto::agents::AgentStatus::Blocked;
                 sink.add(ShareEvent::Agent { name: agent.name, title: agent.title, workspace: agent.workspace, waiting }).is_ok()
             }
+            // The reason is shown to the owner: one tidy line.
+            Ok(proto::LinkEvent::Approve { id, reason, challenge }) => match (proto::clean_id(&id), proto::clean_reason(&reason)) {
+                (Ok(id), Ok(reason)) => sink.add(ShareEvent::Approve { id, reason, challenge }).is_ok(),
+                _ => true,
+            },
             // Not an event (a notice from the shell, say): keep listening.
             Err(_) => true,
         }));

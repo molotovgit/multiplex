@@ -11,6 +11,21 @@ part 'share.freezed.dart';
 
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
+/// Signs an approval request with the phone's own key (its OpenSSH
+/// private key). Only call this after the owner has confirmed with a
+/// fingerprint: the signature is the "yes".
+String approvalSign({
+  required String privateKey,
+  required String id,
+  required String reason,
+  required String challenge,
+}) => RustLib.instance.api.crateApiShareApprovalSign(
+  privateKey: privateKey,
+  id: id,
+  reason: reason,
+  challenge: challenge,
+);
+
 /// Whether text is a web link the computer would open.
 bool shareIsLink({required String text}) =>
     RustLib.instance.api.crateApiShareShareIsLink(text: text);
@@ -57,4 +72,12 @@ sealed class ShareEvent with _$ShareEvent {
     required String workspace,
     required bool waiting,
   }) = ShareEvent_Agent;
+
+  /// Someone at the computer asks the phone's owner to approve
+  /// something (`reason`). Answer with [`SshSession::share_approved`].
+  const factory ShareEvent.approve({
+    required String id,
+    required String reason,
+    required String challenge,
+  }) = ShareEvent_Approve;
 }

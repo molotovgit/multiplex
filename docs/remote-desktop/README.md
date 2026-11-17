@@ -103,6 +103,18 @@ While the phone is connected it is also told when an agent starts waiting for an
 
 On the computer this is `multiplex agents`, which reads `herdr api snapshot`; it changes nothing there.
 
+## A yes from the phone
+
+```sh
+multiplex approve deploy to production && ./deploy.sh
+```
+
+`multiplex approve <what>` asks the connected phone's owner to approve something. The phone shows what is asked and wants a fingerprint, face or PIN; with the app in the background a notification asks you to open it. The command succeeds only on a yes, within a minute.
+
+The yes cannot be faked on the computer. Each request carries a fresh random challenge, and the phone answers by signing the request (its id, the challenge, the words shown) with its own key, which never leaves the phone. The computer checks the signature against the key the phone paired with. A no, a wrong or old signature, another reason, or silence all fail.
+
+This is the building block for approving `sudo` from the phone. It is not wired into `sudo` yet: that needs a PAM entry and a copy of the phone's key that only root can change, which should be set up with you at the keyboard.
+
 ## What a phone may do
 
 A paired phone logs in with its own key and, by default, may do what you may. On the computer you can narrow that, per phone:

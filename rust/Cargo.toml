@@ -36,6 +36,8 @@ gliff-proto = { path = "vendor/gliff-proto" }
 gliff-transport = { path = "vendor/gliff-transport" }
 # The pairing code and register request, shared with the Omarchy side.
 multiplex-proto = { path = "proto" }
+# Signing an approval with the phone's own key (already in the tree through ssh-key).
+ed25519-dalek = "2"
 bytes = "1"
 # Loads the embedded Tailscale library (native/tailscale) at run time.
 libloading = "0.8"

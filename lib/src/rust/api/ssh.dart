@@ -102,6 +102,10 @@ abstract class SshSession implements RustOpaqueInterface {
     required ShellOptions options,
   });
 
+  /// Answers an approval the computer asked for: `answer` is what
+  /// [`approval_sign`] made, or "no".
+  Future<void> shareApproved({required String id, required String answer});
+
   /// Puts text on the computer's clipboard.
   Future<void> shareCopy({required String text});
 

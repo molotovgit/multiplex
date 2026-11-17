@@ -40,6 +40,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
   multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
   multiplex ring              Make the phone ring, to find it
+  multiplex approve <what>    Ask for a yes on the phone (fingerprint there); succeeds only with it
   multiplex sms <number> <text>  Send a text message from the phone (it has to allow this computer to)
   multiplex doctor            Check that everything is ready
 
@@ -73,6 +74,7 @@ fn main() {
         ["agents"] => agents::run(),
         ["send", rest @ ..] => share::send(rest),
         ["ring", rest @ ..] => share::ring(rest),
+        ["approve", rest @ ..] => share::approve(rest),
         ["sms", rest @ ..] => share::sms(rest),
         ["phone", rest @ ..] => share::phone(rest),
         ["share", rest @ ..] => share::share(rest),

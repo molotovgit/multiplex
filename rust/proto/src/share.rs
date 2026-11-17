@@ -49,6 +49,10 @@ pub enum LinkEvent {
     Sms { to: String, text: String },
     /// A coding agent on the computer now waits for an answer, or is done.
     Agent(crate::agents::Agent),
+    /// Someone at the computer asks the phone's owner to approve
+    /// something. The phone answers by signing [`approval_message`] with
+    /// its own key, which nothing on the computer can do in its place.
+    Approve { id: String, reason: String, challenge: String },
 }
 
 /// What `multiplex share paste` prints.
@@ -171,6 +175,32 @@ pub fn clean_sms_text(text: &str) -> Result<String, ProtoError> {
     }
 }
 
+/// How long the computer waits for an approval.
+pub const APPROVE_SECONDS: u64 = 60;
+
+/// What is being approved, as one line that fits a fingerprint prompt.
+pub fn clean_reason(reason: &str) -> Result<String, ProtoError> {
+    let tidy = one_line(reason, 200);
+    if tidy.is_empty() {
+        Err(ProtoError::Invalid("say what is to be approved"))
+    } else {
+        Ok(tidy)
+    }
+}
+
+/// The bytes the phone signs to approve: the request's id, a random
+/// challenge made for this one request, and the reason as it was shown.
+/// Signing them says "yes, to exactly this, now".
+pub fn approval_message(id: &str, reason: &str, challenge: &str) -> Vec<u8> {
+    format!("multiplex-approve-v1\n{id}\n{challenge}\n{reason}").into_bytes()
+}
+
+/// Reads the phone's answer from standard input: the signature in
+/// base64, or "no".
+pub fn approved_command(id: &str) -> Result<String, ProtoError> {
+    Ok(command(&["share", "approved", &clean_id(id)?]))
+}
+
 /// How long a phone rings at most when the computer looks for it.
 pub const RING_SECONDS: u32 = 30;
 
@@ -266,6 +296,19 @@ mod tests {
         assert!(clean_sms_text("  ").is_err() && clean_sms_text(&"x".repeat(1001)).is_err());
         let sms = LinkEvent::Sms { to: "+15550100".into(), text: "hi".into() };
         assert_eq!(parse_link_event(&serde_json::to_string(&sms).unwrap()).unwrap(), sms);
+    }
+
+    #[test]
+    fn an_approval_is_for_exactly_one_request() {
+        let message = approval_message("00112233aabbccdd", "sudo pacman -Syu", "Y2hhbGxlbmdl");
+        assert_eq!(message, b"multiplex-approve-v1\n00112233aabbccdd\nY2hhbGxlbmdl\nsudo pacman -Syu");
+        assert_ne!(message, approval_message("00112233aabbccdd", "sudo rm -rf /", "Y2hhbGxlbmdl"));
+        assert_ne!(message, approval_message("00112233aabbccdd", "sudo pacman -Syu", "b3RoZXI="));
+        assert_eq!(clean_reason("  sudo\npacman  -Syu ").unwrap(), "sudo pacman -Syu");
+        assert!(clean_reason(" \n ").is_err());
+        assert!(approved_command("nope").is_err());
+        let ask = LinkEvent::Approve { id: "00112233aabbccdd".into(), reason: "x".into(), challenge: "Yw==".into() };
+        assert_eq!(parse_link_event(&serde_json::to_string(&ask).unwrap()).unwrap(), ask);
     }
 
     #[test]
