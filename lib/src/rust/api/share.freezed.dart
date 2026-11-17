@@ -56,13 +56,14 @@ extension ShareEventPatterns on ShareEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShareEvent_File value)?  file,TResult Function( ShareEvent_Clip value)?  clip,TResult Function( ShareEvent_Ring value)?  ring,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShareEvent_File value)?  file,TResult Function( ShareEvent_Clip value)?  clip,TResult Function( ShareEvent_Ring value)?  ring,TResult Function( ShareEvent_Sms value)?  sms,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that);case ShareEvent_Clip() when clip != null:
 return clip(_that);case ShareEvent_Ring() when ring != null:
-return ring(_that);case _:
+return ring(_that);case ShareEvent_Sms() when sms != null:
+return sms(_that);case _:
   return orElse();
 
 }
@@ -80,13 +81,14 @@ return ring(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShareEvent_File value)  file,required TResult Function( ShareEvent_Clip value)  clip,required TResult Function( ShareEvent_Ring value)  ring,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShareEvent_File value)  file,required TResult Function( ShareEvent_Clip value)  clip,required TResult Function( ShareEvent_Ring value)  ring,required TResult Function( ShareEvent_Sms value)  sms,}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File():
 return file(_that);case ShareEvent_Clip():
 return clip(_that);case ShareEvent_Ring():
-return ring(_that);}
+return ring(_that);case ShareEvent_Sms():
+return sms(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -100,13 +102,14 @@ return ring(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShareEvent_File value)?  file,TResult? Function( ShareEvent_Clip value)?  clip,TResult? Function( ShareEvent_Ring value)?  ring,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShareEvent_File value)?  file,TResult? Function( ShareEvent_Clip value)?  clip,TResult? Function( ShareEvent_Ring value)?  ring,TResult? Function( ShareEvent_Sms value)?  sms,}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that);case ShareEvent_Clip() when clip != null:
 return clip(_that);case ShareEvent_Ring() when ring != null:
-return ring(_that);case _:
+return ring(_that);case ShareEvent_Sms() when sms != null:
+return sms(_that);case _:
   return null;
 
 }
@@ -123,12 +126,13 @@ return ring(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  BigInt size,  String path)?  file,TResult Function( String text)?  clip,TResult Function( int seconds)?  ring,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  BigInt size,  String path)?  file,TResult Function( String text)?  clip,TResult Function( int seconds)?  ring,TResult Function( String to,  String text)?  sms,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip() when clip != null:
 return clip(_that.text);case ShareEvent_Ring() when ring != null:
-return ring(_that.seconds);case _:
+return ring(_that.seconds);case ShareEvent_Sms() when sms != null:
+return sms(_that.to,_that.text);case _:
   return orElse();
 
 }
@@ -146,12 +150,13 @@ return ring(_that.seconds);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  BigInt size,  String path)  file,required TResult Function( String text)  clip,required TResult Function( int seconds)  ring,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  BigInt size,  String path)  file,required TResult Function( String text)  clip,required TResult Function( int seconds)  ring,required TResult Function( String to,  String text)  sms,}) {final _that = this;
 switch (_that) {
 case ShareEvent_File():
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip():
 return clip(_that.text);case ShareEvent_Ring():
-return ring(_that.seconds);}
+return ring(_that.seconds);case ShareEvent_Sms():
+return sms(_that.to,_that.text);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -165,12 +170,13 @@ return ring(_that.seconds);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  BigInt size,  String path)?  file,TResult? Function( String text)?  clip,TResult? Function( int seconds)?  ring,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  BigInt size,  String path)?  file,TResult? Function( String text)?  clip,TResult? Function( int seconds)?  ring,TResult? Function( String to,  String text)?  sms,}) {final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip() when clip != null:
 return clip(_that.text);case ShareEvent_Ring() when ring != null:
-return ring(_that.seconds);case _:
+return ring(_that.seconds);case ShareEvent_Sms() when sms != null:
+return sms(_that.to,_that.text);case _:
   return null;
 
 }
@@ -383,6 +389,76 @@ class _$ShareEvent_RingCopyWithImpl<$Res>
   return _then(ShareEvent_Ring(
 seconds: null == seconds ? _self.seconds : seconds // ignore: cast_nullable_to_non_nullable
 as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ShareEvent_Sms extends ShareEvent {
+  const ShareEvent_Sms({required this.to, required this.text}): super._();
+  
+
+ final  String to;
+ final  String text;
+
+/// Create a copy of ShareEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ShareEvent_SmsCopyWith<ShareEvent_Sms> get copyWith => _$ShareEvent_SmsCopyWithImpl<ShareEvent_Sms>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShareEvent_Sms&&(identical(other.to, to) || other.to == to)&&(identical(other.text, text) || other.text == text));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,to,text);
+}
+
+@override
+String toString() {
+    return 'ShareEvent.sms(to: $to, text: $text)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ShareEvent_SmsCopyWith<$Res> implements $ShareEventCopyWith<$Res> {
+  factory $ShareEvent_SmsCopyWith(ShareEvent_Sms value, $Res Function(ShareEvent_Sms) _then) = _$ShareEvent_SmsCopyWithImpl;
+@useResult
+$Res call({
+ String to, String text
+});
+
+
+
+
+}
+/// @nodoc
+class _$ShareEvent_SmsCopyWithImpl<$Res>
+    implements $ShareEvent_SmsCopyWith<$Res> {
+  _$ShareEvent_SmsCopyWithImpl(this._self, this._then);
+
+  final ShareEvent_Sms _self;
+  final $Res Function(ShareEvent_Sms) _then;
+
+/// Create a copy of ShareEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? to = null,Object? text = null,}) {
+  return _then(ShareEvent_Sms(
+to: null == to ? _self.to : to // ignore: cast_nullable_to_non_nullable
+as String,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

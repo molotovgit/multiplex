@@ -106,6 +106,9 @@ void main() {
   });
 
   testWidgets('sharing: the clipboard and notification switches are saved; access is asked for', (tester) async {
+    // Tall enough for every switch: this screen keeps growing.
+    await tester.binding.setSurfaceSize(const Size(500, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     store.saveHost(_desk);
     final sessions = SessionManager(store);
     addTearDown(sessions.dispose);

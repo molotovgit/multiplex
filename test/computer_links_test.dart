@@ -88,6 +88,17 @@ class _Phone extends PhoneBridge {
   @override
   Future<void> ring(int seconds) async => rang.add(seconds);
 
+  final texts = <String>[];
+
+  /// Why Android would not send, if it would not.
+  String? smsProblem;
+
+  @override
+  Future<String?> sendSms(String to, String text) async {
+    if (smsProblem == null) texts.add('$to: $text');
+    return smsProblem;
+  }
+
   @override
   Future<({int level, bool charging})?> battery() async => (level: 82, charging: true);
 
@@ -292,6 +303,28 @@ void main() {
     phone.changed.add((call: null, dnd: false));
     await Future<void>.delayed(Duration.zero);
     expect(computer.log, ['quiet on', 'quiet off']);
+  });
+
+  test('a text message is sent only when this computer may, and it always hears the outcome', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    computer.events.add(const ShareEvent.sms(to: '+15550100', text: 'On my way'));
+    await Future<void>.delayed(Duration.zero);
+    expect(phone.texts, isEmpty, reason: 'off until switched on for this computer');
+    expect(computer.log, ['notice Messages: Not sent to +15550100']);
+
+    computer.log.clear();
+    store.saveHost(desk.copyWith(allowSms: true));
+    computer.events.add(const ShareEvent.sms(to: '+15550100', text: 'On my way'));
+    await Future<void>.delayed(Duration.zero);
+    expect(phone.texts, ['+15550100: On my way']);
+    expect(computer.log, ['notice Messages: Sent to +15550100']);
+
+    computer.log.clear();
+    phone.smsProblem = 'Android has not allowed Multiplex to send text messages.';
+    computer.events.add(const ShareEvent.sms(to: '+15550100', text: 'Again'));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['notice Messages: Not sent to +15550100']);
   });
 
   test('the link ends with the connection', () async {

@@ -18,6 +18,11 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.telephony.SmsManager
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import java.lang.ref.WeakReference
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
@@ -46,8 +51,33 @@ object PhoneChannel {
     private var inCall = false
     private val stopLater = Runnable { ringtone?.stop(); ringtone = null }
 
+    /** For Android's permission question, which needs a screen to show on. */
+    private var activity = WeakReference<Activity>(null)
+
+    private fun maySendSms(context: Context) = context.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+
+    /** Sends a text message. Null when Android took it; otherwise why not. */
+    private fun sendSms(context: Context, to: String, text: String): String? {
+        if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) return "This device cannot send text messages."
+        if (!maySendSms(context)) return "Android has not allowed Multiplex to send text messages."
+        return try {
+            val manager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService(SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            } ?: return "This device cannot send text messages."
+            val parts = manager.divideMessage(text)
+            if (parts.size > 1) manager.sendMultipartTextMessage(to, null, parts, null, null) else manager.sendTextMessage(to, null, text, null, null)
+            null
+        } catch (e: Exception) {
+            e.message ?: "The message could not be sent."
+        }
+    }
+
     fun register(messenger: BinaryMessenger, context: Context) {
         val app = context.applicationContext
+        if (context is Activity) activity = WeakReference(context)
         MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "battery" -> result.success(battery(app))
@@ -57,6 +87,16 @@ object PhoneChannel {
                 }
                 "stopRing" -> {
                     stopRing(app)
+                    result.success(null)
+                }
+                "sendSms" -> {
+                    val to = call.argument<String>("to").orEmpty()
+                    val text = call.argument<String>("text").orEmpty()
+                    result.success(if (to.isEmpty() || text.isEmpty()) "There was nothing to send." else sendSms(app, to, text))
+                }
+                "smsPermission" -> result.success(maySendSms(app))
+                "requestSmsPermission" -> {
+                    if (!maySendSms(app)) activity.get()?.requestPermissions(arrayOf(Manifest.permission.SEND_SMS), 4208)
                     result.success(null)
                 }
                 "notificationAccess" -> result.success(hasNotificationAccess(app))

@@ -45,6 +45,8 @@ pub enum LinkEvent {
     /// Someone at the computer is looking for the phone: ring, loudly, for
     /// at most this long.
     Ring { seconds: u32 },
+    /// Send this text message from the phone.
+    Sms { to: String, text: String },
 }
 
 /// What `multiplex share paste` prints.
@@ -137,6 +139,36 @@ pub fn link_command(phone: &str) -> String {
     command(&["link", phone])
 }
 
+/// The longest text message taken (a few joined messages' worth).
+pub const MAX_SMS: usize = 1000;
+
+/// A phone number as people write it: digits, with an optional leading
+/// plus, and spaces, dashes, dots or brackets between them. The answer
+/// has only the plus and the digits.
+pub fn clean_phone_number(number: &str) -> Result<String, ProtoError> {
+    let number = number.trim();
+    let allowed = number.chars().all(|c| c.is_ascii_digit() || matches!(c, '+' | ' ' | '-' | '.' | '(' | ')'));
+    let plus_only_first = number.chars().skip(1).all(|c| c != '+');
+    let digits: String = number.chars().filter(char::is_ascii_digit).collect();
+    if allowed && plus_only_first && (3..=20).contains(&digits.len()) {
+        Ok(if number.starts_with('+') { format!("+{digits}") } else { digits })
+    } else {
+        Err(ProtoError::Invalid("this is not a phone number"))
+    }
+}
+
+/// A text message's words: not empty, not longer than [`MAX_SMS`], no
+/// control characters except line breaks.
+pub fn clean_sms_text(text: &str) -> Result<String, ProtoError> {
+    let text: String = text.chars().filter(|c| !c.is_control() || *c == '\n').collect();
+    let text = text.trim();
+    if text.is_empty() || text.chars().count() > MAX_SMS {
+        Err(ProtoError::Invalid("a text message has between 1 and 1000 characters"))
+    } else {
+        Ok(text.to_owned())
+    }
+}
+
 /// How long a phone rings at most when the computer looks for it.
 pub const RING_SECONDS: u32 = 30;
 
@@ -219,6 +251,19 @@ mod tests {
         let notice = PhoneNotice { app: "Messages\n".into(), title: "  Sam \t Lee ".into(), text: "x".repeat(900) }.cleaned();
         assert_eq!((notice.app.as_str(), notice.title.as_str(), notice.text.chars().count()), ("Messages", "Sam Lee", 500));
         assert_eq!(PhoneStatus { battery: 250, charging: true }.cleaned(), PhoneStatus { battery: 100, charging: true });
+    }
+
+    #[test]
+    fn phone_numbers_and_messages_are_checked() {
+        assert_eq!(clean_phone_number(" +44 (20) 7946-0018 ").unwrap(), "+442079460018");
+        assert_eq!(clean_phone_number("555.0100").unwrap(), "5550100");
+        for bad in ["", "12", "+", "44+20", "call me", "123; rm -rf", "1".repeat(21).as_str()] {
+            assert!(clean_phone_number(bad).is_err(), "{bad}");
+        }
+        assert_eq!(clean_sms_text("  On my way\u{7}\nBack at 5 ").unwrap(), "On my way\nBack at 5");
+        assert!(clean_sms_text("  ").is_err() && clean_sms_text(&"x".repeat(1001)).is_err());
+        let sms = LinkEvent::Sms { to: "+15550100".into(), text: "hi".into() };
+        assert_eq!(parse_link_event(&serde_json::to_string(&sms).unwrap()).unwrap(), sms);
     }
 
     #[test]

@@ -14,7 +14,7 @@ use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
-use multiplex_proto::share::{clean_file_name, clean_id, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, MAX_CLIP, RING_SECONDS};
+use multiplex_proto::share::{clean_file_name, clean_id, clean_phone_number, clean_sms_text, clean_url, Clipboard, LinkEvent, OutFile, PhoneNotice, PhoneStatus, MAX_CLIP, RING_SECONDS};
 use multiplex_proto::clean_device_name;
 use serde::{Deserialize, Serialize};
 
@@ -404,19 +404,49 @@ pub fn ring(args: &[&str]) -> Result<()> {
     };
     let mut rang = false;
     for phone in phone_named(to)? {
-        if !linked(&phone) {
+        if !ask(&phone, &LinkEvent::Ring { seconds: RING_SECONDS })? {
             println!("{phone} is not connected right now, so it cannot be rung.");
             continue;
         }
-        let dir = runtime_dir().join("asks").join(file_name_of(&phone));
-        std::fs::create_dir_all(&dir)?;
-        std::fs::write(dir.join(format!("{}.json", random_id()?)), serde_json::to_vec(&LinkEvent::Ring { seconds: RING_SECONDS })?)?;
         println!("Ringing {phone}…");
         rang = true;
     }
     if !rang {
         bail!("no phone could be rung");
     }
+    Ok(())
+}
+
+/// Hands a connected phone something to do. False when it is not
+/// connected (asks are for now, not for later).
+fn ask(phone: &str, event: &LinkEvent) -> Result<bool> {
+    if !linked(phone) {
+        return Ok(false);
+    }
+    let dir = runtime_dir().join("asks").join(file_name_of(phone));
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(dir.join(format!("{}.json", random_id()?)), serde_json::to_vec(event)?)?;
+    Ok(true)
+}
+
+/// `multiplex sms [--to <phone>] <number> <text…>`: the phone sends a text
+/// message, if its owner has allowed this computer to.
+pub fn sms(args: &[&str]) -> Result<()> {
+    let (to, rest) = match args {
+        ["--to", name, rest @ ..] => (Some(*name), rest),
+        rest => (None, rest),
+    };
+    let [number, words @ ..] = rest else { bail!("use: multiplex sms [--to <phone>] <number> <text>") };
+    let number = clean_phone_number(number).map_err(|err| anyhow!("{err}"))?;
+    let text = clean_sms_text(&words.join(" ")).map_err(|err| anyhow!("{err}"))?;
+    let phone = match phone_named(to)?.as_slice() {
+        [one] => one.clone(),
+        _ => bail!("several phones are paired: say which with --to <name>"),
+    };
+    if !ask(&phone, &LinkEvent::Sms { to: number.clone(), text })? {
+        bail!("{phone} is not connected right now, so it cannot send a message");
+    }
+    println!("Asked {phone} to send it to {number}. It says here when it has (or why not).");
     Ok(())
 }
 

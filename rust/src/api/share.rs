@@ -27,6 +27,9 @@ pub enum ShareEvent {
     /// Someone at the computer is looking for the phone: ring, loudly, for
     /// at most this long.
     Ring { seconds: u32 },
+    /// Send this text message from the phone (number and words already
+    /// checked).
+    Sms { to: String, text: String },
 }
 
 impl SshSession {
@@ -115,6 +118,11 @@ impl ShareLink {
             Ok(proto::LinkEvent::File(file)) => sink.add(ShareEvent::File { id: file.id, name: proto::clean_file_name(&file.name), size: file.size, path: file.path }).is_ok(),
             Ok(proto::LinkEvent::Clip { text }) => sink.add(ShareEvent::Clip { text }).is_ok(),
             Ok(proto::LinkEvent::Ring { seconds }) => sink.add(ShareEvent::Ring { seconds: seconds.min(120) }).is_ok(),
+            // Checked again here: what reaches the phone's messaging is exact.
+            Ok(proto::LinkEvent::Sms { to, text }) => match (proto::clean_phone_number(&to), proto::clean_sms_text(&text)) {
+                (Ok(to), Ok(text)) => sink.add(ShareEvent::Sms { to, text }).is_ok(),
+                _ => true,
+            },
             // Not an event (a notice from the shell, say): keep listening.
             Err(_) => true,
         }));

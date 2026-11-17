@@ -43,4 +43,9 @@ sealed class ShareEvent with _$ShareEvent {
   /// Someone at the computer is looking for the phone: ring, loudly, for
   /// at most this long.
   const factory ShareEvent.ring({required int seconds}) = ShareEvent_Ring;
+
+  /// Send this text message from the phone (number and words already
+  /// checked).
+  const factory ShareEvent.sms({required String to, required String text}) =
+      ShareEvent_Sms;
 }

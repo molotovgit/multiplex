@@ -68,6 +68,32 @@ class PhoneBridge {
       )
       .handleError((Object _) {});
 
+  /// Sends a text message. Null when Android took it; otherwise why not,
+  /// as a sentence.
+  Future<String?> sendSms(String to, String text) async {
+    try {
+      return await channel.invokeMethod<String>('sendSms', {'to': to, 'text': text});
+    } on MissingPluginException {
+      return 'This device cannot send text messages.';
+    } on PlatformException catch (e) {
+      return e.message ?? 'The message could not be sent.';
+    }
+  }
+
+  /// Whether Android lets Multiplex send text messages.
+  Future<bool> smsPermission() async {
+    try {
+      return await channel.invokeMethod<bool>('smsPermission') ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  /// Asks Android for that permission (it shows its own question).
+  Future<void> requestSmsPermission() => _quiet(() => channel.invokeMethod<void>('requestSmsPermission'));
+
   /// Whether Android lets Multiplex see notifications.
   Future<bool> notificationAccess() async {
     try {

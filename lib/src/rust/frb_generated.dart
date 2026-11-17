@@ -7087,6 +7087,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         return ShareEvent_Clip(text: dco_decode_String(raw[1]));
       case 2:
         return ShareEvent_Ring(seconds: dco_decode_u_32(raw[1]));
+      case 3:
+        return ShareEvent_Sms(
+          to: dco_decode_String(raw[1]),
+          text: dco_decode_String(raw[2]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -8955,6 +8960,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case 2:
         var var_seconds = sse_decode_u_32(deserializer);
         return ShareEvent_Ring(seconds: var_seconds);
+      case 3:
+        var var_to = sse_decode_String(deserializer);
+        var var_text = sse_decode_String(deserializer);
+        return ShareEvent_Sms(to: var_to, text: var_text);
       default:
         throw UnimplementedError('');
     }
@@ -10823,6 +10832,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       case ShareEvent_Ring(seconds: final seconds):
         sse_encode_i_32(2, serializer);
         sse_encode_u_32(seconds, serializer);
+      case ShareEvent_Sms(to: final to, text: final text):
+        sse_encode_i_32(3, serializer);
+        sse_encode_String(to, serializer);
+        sse_encode_String(text, serializer);
     }
   }
 

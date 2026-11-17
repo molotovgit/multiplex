@@ -92,6 +92,7 @@ While the phone is connected to a paired computer:
 - `multiplex devices` shows each paired phone, whether it is connected, and its battery.
 - When the phone rings or is in a call (also an internet call; Android 12 or later), what is playing on the computer pauses, and carries on afterwards unless you touched it meanwhile. On by default; the switch is in **Sharing and notifications**.
 - **Do Not Disturb together** (off by default) silences the computer's notifications while the phone is on Do Not Disturb. The panel also has a **Do Not Disturb** chip for the computer alone.
+- `multiplex sms <number> <text>` sends a text message through the phone. It is off until you switch on **Send text messages from <computer>** in that computer's **Sharing and notifications** (Android then asks for its permission once). The computer is told what became of each message: sent, or why not.
 - The phone's notifications can show on the computer's screen. This is off until you switch it on for that computer (its page, **⋮ → Sharing and notifications**) and give Multiplex notification access in Android's settings, which the app opens for you. Apps appear in that screen as they post; switch one off to keep it on the phone only. Nothing is stored on either side: a notification is passed on only while the computer is connected.
 
 ## Waking the computer

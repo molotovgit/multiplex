@@ -44,10 +44,42 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
     super.dispose();
   }
 
-  /// Back from Android's settings: the answer may have changed.
+  /// The switch for text messages was turned on and Android is asking.
+  bool _askingSms = false;
+
+  /// Back from Android's settings or its question: the answer may have changed.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkAccess();
+    if (state != AppLifecycleState.resumed) return;
+    _checkAccess();
+    if (_askingSms) _smsAnswered();
+  }
+
+  Future<void> _smsAnswered() async {
+    _askingSms = false;
+    final allowed = await widget.phone.smsPermission();
+    if (!mounted) return;
+    final store = AppScope.store(context);
+    final host = store.host(widget.hostId);
+    if (host == null) return;
+    if (allowed) {
+      store.saveHost(host.copyWith(allowSms: true));
+    } else {
+      Toast.show(context, 'Android did not allow Multiplex to send text messages');
+    }
+  }
+
+  Future<void> _setSms(bool on) async {
+    final store = AppScope.store(context);
+    final host = store.host(widget.hostId);
+    if (host == null) return;
+    if (!on || await widget.phone.smsPermission()) {
+      store.saveHost(host.copyWith(allowSms: on));
+      return;
+    }
+    // Android asks; the answer is read when the app is in front again.
+    _askingSms = true;
+    await widget.phone.requestSmsPermission();
   }
 
   Future<void> _checkAccess() async {
@@ -91,6 +123,12 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                   subtitle: Text('${host.title} silences its notifications while this phone is on Do Not Disturb'),
                   value: host.syncDnd,
                   onChanged: (on) => store.saveHost(host.copyWith(syncDnd: on)),
+                ),
+                SwitchListTile(
+                  title: Text('Send text messages from ${host.title}'),
+                  subtitle: const Text('`multiplex sms <number> <text>` there sends through this phone. Off unless you want it'),
+                  value: host.allowSms,
+                  onChanged: _setSms,
                 ),
                 const SectionHeader('Notifications'),
                 SwitchListTile(

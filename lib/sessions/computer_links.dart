@@ -356,6 +356,8 @@ class _Link {
         unawaited(owner._writeClipboard(text));
       case ShareEvent_Ring(:final seconds):
         unawaited(owner._phone.ring(seconds));
+      case ShareEvent_Sms(:final to, :final text):
+        unawaited(_sendSms(to, text));
     }
   }
 
@@ -372,6 +374,15 @@ class _Link {
     } catch (_) {
       // An older package: the rest still works.
     }
+  }
+
+  /// The computer asked for a text message to be sent. It hears what
+  /// became of it, whatever that is.
+  Future<void> _sendSms(String to, String text) async {
+    final problem = host.allowSms ? await owner._phone.sendSms(to, text) : 'Sending text messages from this computer is switched off on the phone.';
+    if (_closed) return;
+    final reply = PhoneNotification(app: 'Messages', title: problem == null ? 'Sent to $to' : 'Not sent to $to', text: problem ?? text);
+    unawaited(channel.notice(_name, reply).catchError((Object _) {}));
   }
 
   /// A call began or ended: the computer pauses, then carries on.

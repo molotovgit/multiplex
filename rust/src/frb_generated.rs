@@ -8876,6 +8876,14 @@ impl SseDecode for crate::api::share::ShareEvent {
                     seconds: var_seconds,
                 };
             }
+            3 => {
+                let mut var_to = <String>::sse_decode(deserializer);
+                let mut var_text = <String>::sse_decode(deserializer);
+                return crate::api::share::ShareEvent::Sms {
+                    to: var_to,
+                    text: var_text,
+                };
+            }
             _ => {
                 unimplemented!("");
             }
@@ -10787,6 +10795,12 @@ impl flutter_rust_bridge::IntoDart for crate::api::share::ShareEvent {
             crate::api::share::ShareEvent::Ring { seconds } => {
                 [2.into_dart(), seconds.into_into_dart().into_dart()].into_dart()
             }
+            crate::api::share::ShareEvent::Sms { to, text } => [
+                3.into_dart(),
+                to.into_into_dart().into_dart(),
+                text.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -12497,6 +12511,11 @@ impl SseEncode for crate::api::share::ShareEvent {
             crate::api::share::ShareEvent::Ring { seconds } => {
                 <i32>::sse_encode(2, serializer);
                 <u32>::sse_encode(seconds, serializer);
+            }
+            crate::api::share::ShareEvent::Sms { to, text } => {
+                <i32>::sse_encode(3, serializer);
+                <String>::sse_encode(to, serializer);
+                <String>::sse_encode(text, serializer);
             }
             _ => {
                 unimplemented!("");

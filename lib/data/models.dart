@@ -53,6 +53,7 @@ class Host {
     this.mutedApps = const [],
     this.pauseMediaOnCalls = true,
     this.syncDnd = false,
+    this.allowSms = false,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -121,6 +122,9 @@ class Host {
   /// Disturb.
   final bool syncDnd;
 
+  /// This computer may send text messages from the phone (`multiplex sms`).
+  final bool allowSms;
+
   /// Typed automatically after the shell opens.
   final String? startupCommand;
 
@@ -179,6 +183,7 @@ class Host {
     List<String>? mutedApps,
     bool? pauseMediaOnCalls,
     bool? syncDnd,
+    bool? allowSms,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -210,6 +215,7 @@ class Host {
         mutedApps: mutedApps ?? this.mutedApps,
         pauseMediaOnCalls: pauseMediaOnCalls ?? this.pauseMediaOnCalls,
         syncDnd: syncDnd ?? this.syncDnd,
+        allowSms: allowSms ?? this.allowSms,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -242,6 +248,7 @@ class Host {
         'mutedApps': mutedApps,
         'pauseMediaOnCalls': pauseMediaOnCalls,
         'syncDnd': syncDnd,
+        'allowSms': allowSms,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -274,6 +281,7 @@ class Host {
         mutedApps: [for (final a in (j['mutedApps'] as List?) ?? const []) if (a is String) a],
         pauseMediaOnCalls: Json.boolean(j, 'pauseMediaOnCalls', true),
         syncDnd: Json.boolean(j, 'syncDnd', false),
+        allowSms: Json.boolean(j, 'allowSms', false),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),
