@@ -11,7 +11,7 @@ Install the package and prepare the computer once:
 ```sh
 git clone https://github.com/molotovgit/multiplex.git
 cd multiplex/dist/arch
-makepkg -si          # installs the `multiplex` command
+makepkg -si          # installs the `multiplex` command and the Multiplex window
 multiplex setup      # asks for sudo; `multiplex setup --dry-run` shows the steps first
 multiplex doctor     # checks that everything is ready
 ```
@@ -20,7 +20,7 @@ multiplex doctor     # checks that everything is ready
 
 ## 2. Pair the phone
 
-1. On the computer, run `multiplex pair`. It shows a QR code for five minutes.
+1. On the computer, run `multiplex pair`, or open the Multiplex window and press **Pair a phone**. Either shows a QR code for five minutes.
 2. In the app: **Hosts → Pair a computer → Scan the code**. No camera? Paste the line of text shown under the code.
 3. The app shows **Paired with <computer>**. Tap **Open the desktop**.
 
@@ -36,6 +36,22 @@ What the code does, and why it is safe to show on a screen for a few minutes:
 `multiplex devices` lists the paired phones; `multiplex unpair "<name>"` removes one.
 
 Building Tailscale into the app needs Go and the Android NDK. Run `native/tailscale/build-android.sh` before `flutter build apk`; builds without it work, minus Tailscale.
+
+## The Multiplex window
+
+`multiplex open`, or **Multiplex** in the app launcher, opens a window for the things you would otherwise type.
+
+![The Multiplex window: the paired phones, and what the picked one may do](pictures/window.png)
+
+- The paired phones, whether each is connected, and its battery.
+- **Pair a phone** (`P`) shows the pairing code for the phone's camera and waits for it. Closing the window, or **Cancel**, takes the code back at once.
+- For the phone that is picked (`↑` `↓`): **Send files…** (`S` or Space; files dropped on the window go the same way), **Ring it** (`R`), **Unpair** (`Del`, asked about first), and the six switches of what it may do on this computer (`1` to `6`).
+- **This computer** (`D`) lists what `multiplex doctor` checks.
+- `?` shows every key; `Q` quits.
+
+![Pairing: the code for the phone's camera](pictures/window-pairing.png)
+
+The window follows Omarchy's theme while it is open: its accent, and Hyprland's corner rounding. It is a thin layer over the command: everything it shows and does, it gets by running `multiplex`, so the two cannot disagree, and a script can do all of it too (`multiplex devices --json`, `access --json`, `doctor --json`, `pair --json`). Like the phone app (Rust with a Flutter screen), it is Rust with a QML screen, in `desktop/app`.
 
 ## The panel: the desktop without its picture
 

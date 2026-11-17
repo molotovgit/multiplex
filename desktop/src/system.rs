@@ -110,6 +110,7 @@ fn hyprland_running() -> bool {
 }
 
 /// One line of `multiplex doctor`.
+#[derive(serde::Serialize)]
 pub struct Check {
     pub name: &'static str,
     /// None: could not tell without sudo.

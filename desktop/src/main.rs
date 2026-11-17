@@ -43,6 +43,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
 
   multiplex pair              Show a QR code to pair a phone (scan it in the app)
   multiplex pair --code-only  Print only the pairing code, for scripts
+  multiplex open              Open the Multiplex window
   multiplex devices           List the paired phones
   multiplex devices --json    The same as a list a script or a bar widget can read
   multiplex unpair <name>     Remove a paired phone
@@ -77,8 +78,10 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let args: Vec<&str> = args.iter().map(String::as_str).collect();
     let result = match args.as_slice() {
-        ["pair"] => pair(false),
-        ["pair", "--code-only"] => pair(true),
+        ["pair"] => pair(PairAs::Terminal),
+        ["pair", "--code-only"] => pair(PairAs::CodeOnly),
+        ["pair", "--json"] => pair(PairAs::Json),
+        ["open"] => open_app(),
         ["pair-accept", id] => accept(id),
         ["devices"] => devices(),
         ["devices", "--json"] => devices_json(),
@@ -95,6 +98,7 @@ fn main() {
         // What sudo's PAM file runs. It says nothing and only ever answers yes or no.
         ["approve", "--pam", rest @ ..] => std::process::exit(if sudo::pam(rest) { 0 } else { 1 }),
         ["doctor"] => doctor(),
+        ["doctor", "--json"] => doctor_json(),
         ["desk", rest @ ..] => desk::run(rest),
         ["access", rest @ ..] => gate::access(rest),
         ["gate", phone] => gate::gate(phone),
@@ -142,7 +146,37 @@ fn random32() -> anyhow::Result<[u8; 32]> {
     Ok(bytes)
 }
 
-fn pair(code_only: bool) -> anyhow::Result<()> {
+/// How `multiplex pair` shows the code and says what became of it.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PairAs {
+    /// A QR code in the terminal, and a line that counts down.
+    Terminal,
+    /// The code alone, without waiting.
+    CodeOnly,
+    /// For the app: one line of JSON with the code and its QR picture,
+    /// then one more when the phone has paired or the code is over.
+    Json,
+}
+
+/// The QR code's squares, row by row: `1` is dark.
+fn qr_rows(qr: &QrCode) -> Vec<String> {
+    let width = qr.width();
+    qr.to_colors().chunks(width).map(|row| row.iter().map(|c| if *c == qrcode::Color::Dark { '1' } else { '0' }).collect()).collect()
+}
+
+/// `multiplex open`: the window (the `multiplex-app` program beside this
+/// one, or on the path).
+fn open_app() -> anyhow::Result<()> {
+    use std::os::unix::process::CommandExt;
+    let beside = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|dir| dir.join("multiplex-app"))).filter(|app| app.is_file());
+    let app = beside.unwrap_or_else(|| "multiplex-app".into());
+    // Replaces this command with the app; only returns when that failed.
+    let err = std::process::Command::new(&app).exec();
+    bail!("the Multiplex window could not be started ({err}); it is the `multiplex-app` program from the same package")
+}
+
+fn pair(how: PairAs) -> anyhow::Result<()> {
+    let code_only = how == PairAs::CodeOnly;
     let store = Store::open()?;
     let computer = Computer::detect()?;
     if computer.addresses.is_empty() && computer.tailscale.is_none() {
@@ -175,20 +209,27 @@ fn pair(code_only: bool) -> anyhow::Result<()> {
     }
 
     let qr = QrCode::with_error_correction_level(code.as_bytes(), EcLevel::L).context("the pairing code did not fit a QR code")?;
-    let picture = qr.render::<Dense1x2>().dark_color(Dense1x2::Light).light_color(Dense1x2::Dark).quiet_zone(true).build();
-    println!("\n  Pair a phone with \x1b[1m{}\x1b[0m\n", computer.name);
-    println!("  In Multiplex on the phone: \x1b[1mPair a computer\x1b[0m, then scan this code.\n");
-    for line in picture.lines() {
-        println!("  {line}");
+    if how == PairAs::Json {
+        println!("{}", serde_json::json!({ "code": code, "qr": qr_rows(&qr), "computer": computer.name, "expires": expires }));
+        std::io::stdout().flush()?;
     }
-    let reach = match (&computer.addresses.first(), &computer.tailscale) {
-        (Some(a), Some(t)) => format!("on the home network ({a}) or over Tailscale ({t})"),
-        (Some(a), None) => format!("on the home network ({a}); the phone must be on the same Wi-Fi"),
-        (None, Some(t)) => format!("over Tailscale ({t})"),
-        (None, None) => unreachable!("checked above"),
-    };
-    println!("\n  The phone reaches this computer {reach}.");
-    println!("  No camera? Paste this code in the app instead:\n\n  {code}\n");
+    let json = how == PairAs::Json;
+    let picture = qr.render::<Dense1x2>().dark_color(Dense1x2::Light).light_color(Dense1x2::Dark).quiet_zone(true).build();
+    if !json {
+        println!("\n  Pair a phone with \x1b[1m{}\x1b[0m\n", computer.name);
+        println!("  In Multiplex on the phone: \x1b[1mPair a computer\x1b[0m, then scan this code.\n");
+        for line in picture.lines() {
+            println!("  {line}");
+        }
+        let reach = match (&computer.addresses.first(), &computer.tailscale) {
+            (Some(a), Some(t)) => format!("on the home network ({a}) or over Tailscale ({t})"),
+            (Some(a), None) => format!("on the home network ({a}); the phone must be on the same Wi-Fi"),
+            (None, Some(t)) => format!("over Tailscale ({t})"),
+            (None, None) => unreachable!("checked above"),
+        };
+        println!("\n  The phone reaches this computer {reach}.");
+        println!("  No camera? Paste this code in the app instead:\n\n  {code}\n");
+    }
 
     // Ctrl+C ends the pairing at once instead of leaving the key to expire.
     let stop = Arc::new(AtomicBool::new(false));
@@ -196,17 +237,27 @@ fn pair(code_only: bool) -> anyhow::Result<()> {
     let _ = ctrlc::set_handler(move || flag.store(true, Ordering::SeqCst));
     loop {
         if let Some(name) = store.take_done(&id) {
-            println!("\r  \x1b[32m✓\x1b[0m Paired with \x1b[1m{name}\x1b[0m.                         \n");
+            if json {
+                println!("{}", serde_json::json!({ "paired": name }));
+            } else {
+                println!("\r  \x1b[32m✓\x1b[0m Paired with \x1b[1m{name}\x1b[0m.                         \n");
+            }
             return Ok(());
         }
         let left = expires.saturating_sub(now_unix());
         if left == 0 || stop.load(Ordering::SeqCst) {
             store.remove_pairing(&id)?;
-            println!("\r  {}                              \n", if left == 0 { "The code has expired. Run `multiplex pair` for a new one." } else { "Pairing cancelled." });
+            if json {
+                println!("{}", if left == 0 { serde_json::json!({ "expired": true }) } else { serde_json::json!({ "cancelled": true }) });
+            } else {
+                println!("\r  {}                              \n", if left == 0 { "The code has expired. Run `multiplex pair` for a new one." } else { "Pairing cancelled." });
+            }
             return Ok(());
         }
-        print!("\r  Waiting for the phone… the code works for {}:{:02} more. Ctrl+C cancels. ", left / 60, left % 60);
-        let _ = std::io::stdout().flush();
+        if !json {
+            print!("\r  Waiting for the phone… the code works for {}:{:02} more. Ctrl+C cancels. ", left / 60, left % 60);
+            let _ = std::io::stdout().flush();
+        }
         std::thread::sleep(Duration::from_millis(300));
     }
 }
@@ -321,6 +372,12 @@ fn doctor() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// `multiplex doctor --json`: the same checks as a list, for the app.
+fn doctor_json() -> anyhow::Result<()> {
+    println!("{}", serde_json::to_string(&system::doctor())?);
+    Ok(())
+}
+
 fn setup(dry_run: bool) -> anyhow::Result<()> {
     let steps = system::setup_steps();
     println!("multiplex setup prepares this computer for the phone app:\n");
@@ -348,6 +405,17 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_qr_picture_is_given_as_rows_of_squares() {
+        let qr = QrCode::with_error_correction_level(b"multiplex", EcLevel::L).unwrap();
+        let rows = qr_rows(&qr);
+        assert_eq!(rows.len(), qr.width());
+        assert!(rows.iter().all(|row| row.len() == qr.width() && row.chars().all(|c| c == '0' || c == '1')));
+        // The corner mark every QR code has: seven dark squares, then a light one.
+        assert!(rows[0].starts_with("11111110"), "{}", rows[0]);
+        assert_eq!(&rows[1][..8], "10000010");
+    }
 
     #[test]
     fn a_phones_state_reads_the_same_for_a_script_every_time() {

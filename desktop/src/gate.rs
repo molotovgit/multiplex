@@ -325,6 +325,11 @@ pub fn access(args: &[&str]) -> Result<()> {
         Ok(())
     };
     match args {
+        // For the app: every phone's switches.
+        ["--json"] => {
+            let all: std::collections::BTreeMap<&String, Access> = phones.iter().map(|phone| (phone, Access::load(&dir, phone))).collect();
+            println!("{}", serde_json::to_string(&all)?);
+        }
         [] => {
             if phones.is_empty() {
                 println!("No phone is paired.");
