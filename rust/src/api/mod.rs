@@ -8,6 +8,7 @@ pub mod app;
 pub mod desktop;
 pub mod desktop_types;
 pub mod keys;
+pub mod pairing;
 pub mod sftp;
 pub mod sftp_types;
 pub mod ssh;

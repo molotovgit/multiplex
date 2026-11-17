@@ -7,6 +7,7 @@ import 'api/app.dart';
 import 'api/desktop.dart';
 import 'api/desktop_types.dart';
 import 'api/keys.dart';
+import 'api/pairing.dart';
 import 'api/sftp.dart';
 import 'api/sftp_types.dart';
 import 'api/ssh.dart';
@@ -408,6 +409,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  PairingInfo dco_decode_pairing_info(dynamic raw);
+
+  @protected
+  PairingOutcome dco_decode_pairing_outcome(dynamic raw);
 
   @protected
   RemoteEntry dco_decode_remote_entry(dynamic raw);
@@ -857,6 +864,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  PairingInfo sse_decode_pairing_info(SseDeserializer deserializer);
+
+  @protected
+  PairingOutcome sse_decode_pairing_outcome(SseDeserializer deserializer);
 
   @protected
   RemoteEntry sse_decode_remote_entry(SseDeserializer deserializer);
@@ -1391,6 +1404,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_pairing_info(PairingInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_pairing_outcome(
+    PairingOutcome self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_remote_entry(RemoteEntry self, SseSerializer serializer);

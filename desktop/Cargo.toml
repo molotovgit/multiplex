@@ -1,0 +1,28 @@
+[package]
+name = "multiplex"
+version = "0.1.0"
+edition = "2021"
+description = "The Omarchy side of Multiplex: pair a phone by QR code, list and remove paired phones, set the computer up."
+publish = false
+
+[[bin]]
+name = "multiplex"
+path = "src/main.rs"
+
+[dependencies]
+multiplex-proto = { path = "../rust/proto" }
+anyhow = "1"
+base64 = "0.22"
+ctrlc = "3"
+# The one-time pairing key: public half from a random seed.
+ed25519-dalek = "2"
+qrcode = { version = "0.14", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

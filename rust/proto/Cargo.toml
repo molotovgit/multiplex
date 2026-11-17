@@ -1,0 +1,12 @@
+[package]
+name = "multiplex-proto"
+version = "0.1.0"
+edition = "2021"
+description = "What the Multiplex phone app and the Omarchy side agree on: the pairing code and the register request."
+publish = false
+
+[dependencies]
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

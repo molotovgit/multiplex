@@ -1,0 +1,34 @@
+# The Omarchy side of Multiplex, built from the checkout this file is in:
+#   cd dist/arch && makepkg -si
+pkgname=multiplex-omarchy
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="The Omarchy side of Multiplex: pair a phone by QR code and control the computer from it"
+arch=('x86_64' 'aarch64')
+url="https://github.com/molotovgit/multiplex"
+license=('custom')
+depends=('openssh' 'gliff' 'iproute2')
+makedepends=('cargo')
+optdepends=(
+  'tailscale: reach the computer from anywhere'
+  'ufw: firewall rules written by multiplex setup'
+  'fcitx5: the phone keyboard opens when a text field has the focus'
+  'libnotify: a notification when a phone pairs'
+)
+options=('!debug')
+
+_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+build() {
+  cd "$_repo/desktop"
+  cargo build --release --locked
+}
+
+check() {
+  cd "$_repo/desktop"
+  cargo test --release --locked
+}
+
+package() {
+  install -Dm755 "$_repo/desktop/target/release/multiplex" "$pkgdir/usr/bin/multiplex"
+}
