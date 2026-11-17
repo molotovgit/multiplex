@@ -110,10 +110,16 @@ class CameraCapture extends ScreenCapture {
   }
 }
 
-/// Sends a picture from this phone to a paired computer: its screen, for
-/// a window there, or its camera, as a webcam there. One of each at a
-/// time; it carries on while the user leaves Multiplex, which for the
-/// screen is the point.
+/// What only Android can do for the microphone: ask the user, record and
+/// encode. Its pieces are whole AAC frames.
+class MicCapture extends ScreenCapture {
+  const MicCapture({super.channel = const MethodChannel('multiplex/miccast'), super.frames = const EventChannel('multiplex/miccast/frames')});
+}
+
+/// Sends something live from this phone to a paired computer: its screen,
+/// for a window there; its camera, as a webcam there; its microphone, as
+/// a microphone there. One of each at a time; it carries on while the
+/// user leaves Multiplex, which for the screen is the point.
 class PhoneCast extends ChangeNotifier {
   PhoneCast({ScreenCapture capture = const ScreenCapture()})
     // ignore: prefer_initializing_formals
@@ -125,6 +131,9 @@ class PhoneCast extends ChangeNotifier {
   /// The app's own: this phone's camera, as a webcam of a computer.
   static final CameraCapture phoneCamera = CameraCapture();
   static final PhoneCast camera = PhoneCast(capture: phoneCamera);
+
+  /// The app's own: this phone's microphone, as a microphone of a computer.
+  static final PhoneCast microphone = PhoneCast(capture: const MicCapture());
 
   final ScreenCapture _capture;
   ScreenWindow? _window;

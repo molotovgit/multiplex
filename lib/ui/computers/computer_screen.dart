@@ -81,6 +81,7 @@ class ComputerScreen extends StatelessWidget {
       ),
       _Tile(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
       _Tile(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
+      _Tile(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
       _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host)),
       _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
       _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),

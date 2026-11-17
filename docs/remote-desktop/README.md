@@ -119,6 +119,15 @@ On a computer's page, **Camera** makes the phone's camera a camera of the comput
 - The picture is turned upright for how the phone is held when you start. Turn the phone afterwards and the picture lies on its side until you stop and start again.
 - The picture only: no sound.
 
+## The phone as a microphone
+
+On a computer's page, **Microphone** makes the phone's microphone a microphone of the computer, named after the phone ("Sam's phone microphone"). Android asks for the microphone the first time; a notification on the phone says so while it is in use, and it carries on while Multiplex is in the background.
+
+- The computer needs `ffmpeg` and `pactl` (PipeWire with pipewire-pulse, or PulseAudio); no root. `multiplex doctor` checks.
+- It does not become the computer's default input. Choose it in the program that should use it, or in the sound settings.
+- 48 kHz, one channel, AAC at 64 kbit/s over the SSH connection that is already open. Nothing is stored.
+- It stays current: while no program on the computer is listening the sound is dropped there, so one that starts listening hears now and not what was said a while ago. If the connection falls a second behind, sound is left out instead of arriving late.
+
 ## Coding agents
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
@@ -171,7 +180,7 @@ multiplex access "Sam's phone" everything      # back to no limits
 
 | Switch | Covers |
 |---|---|
-| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, and lending its camera |
+| `desktop` | seeing the screen: the panel's state, and (with `input`) the remote desktop; also the phone showing its own screen in a window here, and lending its camera or microphone |
 | `input` | acting on the desktop: the panel's buttons, the touchpad, and the remote desktop, which cannot show the screen without also taking keys and the pointer |
 | `files` | browsing, sending and fetching files |
 | `clipboard` | sharing the clipboard, opening links |

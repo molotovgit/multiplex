@@ -278,6 +278,17 @@ pub fn camera_command(phone: &str, turn: u32) -> String {
     }
 }
 
+/// Offers the sound the phone then writes to standard input (its
+/// microphone, as AAC frames with ADTS headers) to the computer's
+/// programs as a microphone. `phone` names it.
+pub fn mic_command(phone: &str) -> String {
+    if phone.is_empty() {
+        command(&["mic"])
+    } else {
+        command(&["mic", phone])
+    }
+}
+
 /// What a command that is fed bytes says once it can take them.
 pub const FEED_READY: &str = "ready";
 

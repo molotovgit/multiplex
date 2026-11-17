@@ -18,6 +18,11 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <!-- This phone's microphone as a microphone for a paired computer.
+         Asked for when that is first started. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- A paired computer can send a text message through the phone
          (`multiplex sms`), once the user switches that on for it. -->
@@ -91,6 +96,10 @@
             android:name=".CameraCastService"
             android:exported="false"
             android:foregroundServiceType="camera" />
+        <service
+            android:name=".MicCastService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
         <!-- Phone notifications for a paired computer. Android runs this only
              after the user allows it under Settings > Notification access. -->
         <service

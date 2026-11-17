@@ -88,14 +88,15 @@ fn window_size(picture: (u32, u32), long_side: u32) -> (u32, u32) {
     (scaled(width), scaled(height))
 }
 
-/// Whether this file is the pipe of a `multiplex screen` that is gone
-/// (one that was killed could not remove its own).
+/// Whether this file is the pipe of a `multiplex screen` or `multiplex
+/// mic` that is gone (one that was killed could not remove its own).
 fn left_behind(name: &str, running: impl Fn(u32) -> bool) -> bool {
-    name.strip_prefix("screen-").and_then(|rest| rest.strip_suffix(".h264")).and_then(|pid| pid.parse::<u32>().ok()).is_some_and(|pid| !running(pid))
+    let owner = |before: &str, after: &str| name.strip_prefix(before).and_then(|rest| rest.strip_suffix(after)).and_then(|pid| pid.parse::<u32>().ok());
+    owner("screen-", ".h264").or_else(|| owner("mic-", ".pcm")).is_some_and(|pid| !running(pid))
 }
 
 /// Removes such pipes.
-fn sweep(folder: &Path) {
+pub(crate) fn sweep(folder: &Path) {
     for entry in std::fs::read_dir(folder).into_iter().flatten().flatten() {
         if entry.file_name().to_str().is_some_and(|name| left_behind(name, |pid| Path::new("/proc").join(pid.to_string()).exists())) {
             let _ = std::fs::remove_file(entry.path());
@@ -256,6 +257,8 @@ mod tests {
     fn only_pipes_of_commands_that_are_gone_are_swept() {
         let running = |pid: u32| pid == 500;
         assert!(left_behind("screen-499.h264", running));
+        assert!(left_behind("mic-499.pcm", running));
+        assert!(!left_behind("mic-500.pcm", running));
         assert!(!left_behind("screen-500.h264", running), "still in use");
         for other in ["screen-hidden", "screen-test.sock", "screen-.h264", "screen-x.h264", "agent.sock", "screen-499.h264.bak"] {
             assert!(!left_behind(other, running), "{other}");

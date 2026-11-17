@@ -30,6 +30,22 @@ abstract class ScreenStream implements RustOpaqueInterface {
   ScreenWrite write({required List<int> bytes});
 }
 
+// Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SoundStream>>
+abstract class SoundStream implements RustOpaqueInterface {
+  void close();
+
+  /// Hears once why the stream ended (empty when it was closed from
+  /// here). Listen once.
+  Stream<String> ended();
+
+  ScreenStatus status();
+
+  /// Sends the next frame. When the connection is behind, the frame is
+  /// left out instead: sound that arrives a second late is of no use,
+  /// and each frame stands by itself.
+  ScreenWrite write({required List<int> bytes});
+}
+
 /// How the stream is doing, for the log.
 class ScreenStatus {
   final int bitrate;

@@ -69,7 +69,20 @@ void main() {
     await tester.tap(find.text('Desk'));
     await tester.pumpAndSettle();
     expect(find.byType(ComputerScreen), findsOneWidget);
-    for (final tile in ['Desktop', 'Panel', 'Touchpad', 'Terminal', 'Files', 'Extend screen', 'Phone screen', 'Camera', 'Agents', 'Tunnels', 'Status']) {
+    for (final tile in [
+      'Desktop',
+      'Panel',
+      'Touchpad',
+      'Terminal',
+      'Files',
+      'Extend screen',
+      'Phone screen',
+      'Camera',
+      'Microphone',
+      'Agents',
+      'Tunnels',
+      'Status',
+    ]) {
       expect(find.text(tile), findsOneWidget, reason: tile);
     }
   });

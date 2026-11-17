@@ -36,6 +36,34 @@ class _SshWindow extends ScreenWindow {
   void close() => _stream.close();
 }
 
+/// The real microphone on the computer: a sound stream to `multiplex mic`.
+class _SshMicrophone extends ScreenWindow {
+  _SshMicrophone(this._stream);
+
+  final SoundStream _stream;
+
+  @override
+  ScreenWrote write(Uint8List bytes) {
+    final wrote = _stream.write(bytes: bytes);
+    return ScreenWrote(ended: wrote.ended, reason: wrote.reason);
+  }
+
+  @override
+  Stream<String> get ended => _stream.ended();
+
+  @override
+  String? status() {
+    final now = _stream.status();
+    return 'sound inflight_b=${now.inFlight} skipped=${now.skipped}${now.skipping ? ' skipping' : ''}';
+  }
+
+  @override
+  void close() => _stream.close();
+}
+
+/// What a cast page is for.
+enum CastKind { screen, camera, microphone }
+
 /// The words and pictures of a cast page.
 class _Kind {
   const _Kind({
@@ -85,16 +113,37 @@ class _Kind {
     start: 'Start the camera',
     stop: 'Stop the camera',
   );
+
+  static final microphone = _Kind(
+    title: 'Microphone',
+    icon: Icons.mic_none,
+    liveIcon: Icons.mic,
+    offer: (computer) => 'Use this phone as a microphone for $computer',
+    live: (computer) => '$computer is using this phone\'s microphone',
+    before: 'The computer gets a microphone with this phone\'s name, for calls and recordings there. Android asks for the microphone the first time.',
+    during: 'Pick the microphone named after this phone in the program on the computer. It is there until you stop.',
+    start: 'Start the microphone',
+    stop: 'Stop the microphone',
+  );
+
+  static _Kind of(CastKind kind) => switch (kind) {
+    CastKind.screen => screen,
+    CastKind.camera => camera,
+    CastKind.microphone => microphone,
+  };
 }
 
-/// A picture from this phone on a paired computer: start it, see that it
-/// is running, stop it. Either the phone's screen in a window there
-/// ([ScreenCastScreen.show]) or its camera as a webcam there
-/// ([ScreenCastScreen.showCamera]).
+/// Something live from this phone on a paired computer: start it, see
+/// that it is running, stop it. The phone's screen in a window there
+/// ([ScreenCastScreen.show]), its camera as a webcam there
+/// ([ScreenCastScreen.showCamera]), or its microphone as a microphone
+/// there ([ScreenCastScreen.showMicrophone]).
 class ScreenCastScreen extends StatelessWidget {
-  const ScreenCastScreen({super.key, required this.host, required this.open, this.startBitrate = 4000000, this.cast, this.camera});
+  const ScreenCastScreen({super.key, required this.host, required this.open, this.kind = CastKind.screen, this.startBitrate = 4000000, this.cast, this.camera});
 
   final Host host;
+
+  final CastKind kind;
 
   /// Opens the computer's end. Tests pass a stand-in.
   final Future<ScreenWindow> Function() open;
@@ -130,6 +179,7 @@ class ScreenCastScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ScreenCastScreen(
           host: host,
+          kind: CastKind.camera,
           cast: PhoneCast.camera,
           camera: camera,
           startBitrate: screenStartBitrate(),
@@ -139,10 +189,26 @@ class ScreenCastScreen extends StatelessWidget {
     );
   }
 
+  /// Connects (if needed) and opens the page for the phone's microphone.
+  static Future<void> showMicrophone(BuildContext context, Host host) async {
+    final LiveSession? session = await HostConnector.connect(context, host);
+    if (session == null || !context.mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ScreenCastScreen(
+          host: host,
+          kind: CastKind.microphone,
+          cast: PhoneCast.microphone,
+          open: () async => _SshMicrophone(await session.ssh.openMic(phone: host.pairedAs ?? '')),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cast = this.cast ?? PhoneCast.screen;
-    final kind = camera == null ? _Kind.screen : _Kind.camera;
+    final kind = _Kind.of(this.kind);
     final colors = AppColorsTheme.of(context);
     final text = Theme.of(context).textTheme;
     return Scaffold(

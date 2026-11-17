@@ -283,6 +283,7 @@ dependencies = [
  "base64",
  "ctrlc",
  "ed25519-dalek",
+ "libc",
  "multiplex-proto",
  "qrcode",
  "serde",

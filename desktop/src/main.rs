@@ -15,6 +15,7 @@ mod feed;
 mod gate;
 mod h264;
 mod input;
+mod mic;
 mod screen;
 mod share;
 mod store;
@@ -63,6 +64,7 @@ The paired phone uses these over SSH:
   multiplex agents            Coding agents under herdr, with their state
   multiplex screen            The phone's screen in a window (the phone sends the picture)
   multiplex camera            The phone's camera as a camera of this computer (the phone sends the picture)
+  multiplex mic               The phone's microphone as a microphone of this computer (the phone sends the sound)
 ";
 
 fn main() {
@@ -83,6 +85,7 @@ fn main() {
         ["agents"] => agents::run(),
         ["screen", rest @ ..] => screen::run(rest),
         ["camera", rest @ ..] => camera::run(rest),
+        ["mic", rest @ ..] => mic::run(rest),
         ["agent", rest @ ..] => agent::run(rest),
         ["key", rest @ ..] => agent::key(rest),
         ["send", rest @ ..] => share::send(rest),

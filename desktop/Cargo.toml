@@ -10,6 +10,7 @@ name = "multiplex"
 path = "src/main.rs"
 
 [dependencies]
+libc = "0.2"
 multiplex-proto = { path = "../rust/proto" }
 anyhow = "1"
 base64 = "0.22"

@@ -74,6 +74,10 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Opens a file browser on this connection.
   Future<RemoteFiles> openFiles();
 
+  /// Makes the phone's microphone a microphone of the computer, for as
+  /// long as the stream is open.
+  Future<SoundStream> openMic({required String phone});
+
   /// Opens the window on the computer. It is there when this returns.
   /// `phone` (the name this phone paired under, or empty) goes in its
   /// title.

@@ -2,11 +2,12 @@
 //! phone captures and encodes it (Android's part); this carries the
 //! stream to `multiplex screen` on the computer and keeps it live.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use flutter_rust_bridge::frb;
-use multiplex_proto::share::{camera_command, screen_command};
+use multiplex_proto::share::{camera_command, mic_command, screen_command};
 
 use super::ssh::SshSession;
 use crate::engine::events::EventRelay;
@@ -46,6 +47,64 @@ impl SshSession {
         let inner = AsyncRuntime::run(async move { Pipe::open(conn, &camera_command(&phone, turn), relay).await }).await??;
         let now = Instant::now();
         Ok(ScreenStream { inner, ended, state: Mutex::new(State { pace: Pace::new(now), last_sent: now }) })
+    }
+}
+
+impl SshSession {
+    /// Makes the phone's microphone a microphone of the computer, for as
+    /// long as the stream is open.
+    pub async fn open_mic(&self, phone: String) -> anyhow::Result<SoundStream> {
+        let conn = self.conn.clone();
+        let ended = Arc::new(EventRelay::<String>::new());
+        let relay = ended.clone();
+        let inner = AsyncRuntime::run(async move { Pipe::open(conn, &mic_command(&phone), relay).await }).await??;
+        Ok(SoundStream { inner, ended, skipped: AtomicU64::new(0) })
+    }
+}
+
+/// More sound than this on its way (a second of it, at 64 kbit/s) would
+/// only arrive late.
+const LATE_SOUND: u64 = 8_000;
+
+/// A sound stream to the computer (the phone's microphone): AAC frames,
+/// each one whole.
+#[frb(opaque)]
+pub struct SoundStream {
+    inner: Pipe,
+    ended: Arc<EventRelay<String>>,
+    skipped: AtomicU64,
+}
+
+impl SoundStream {
+    /// Sends the next frame. When the connection is behind, the frame is
+    /// left out instead: sound that arrives a second late is of no use,
+    /// and each frame stands by itself.
+    #[frb(sync)]
+    pub fn write(&self, bytes: Vec<u8>) -> ScreenWrite {
+        if self.inner.in_flight() > LATE_SOUND {
+            self.skipped.fetch_add(1, Ordering::Relaxed);
+            return ScreenWrite { ended: false, reason: String::new(), bitrate: None, key_frame: false };
+        }
+        match self.inner.write(bytes) {
+            Ok(()) => ScreenWrite { ended: false, reason: String::new(), bitrate: None, key_frame: false },
+            Err(reason) => ScreenWrite { ended: true, reason, bitrate: None, key_frame: false },
+        }
+    }
+
+    #[frb(sync)]
+    pub fn status(&self) -> ScreenStatus {
+        ScreenStatus { bitrate: 64_000, in_flight: self.inner.in_flight(), skipped: self.skipped.load(Ordering::Relaxed), skipping: self.inner.in_flight() > LATE_SOUND }
+    }
+
+    /// Hears once why the stream ended (empty when it was closed from
+    /// here). Listen once.
+    pub fn ended(&self, sink: StreamSink<String>) {
+        self.ended.attach(Arc::new(move |reason| sink.add(reason).is_ok()));
+    }
+
+    #[frb(sync)]
+    pub fn close(&self) {
+        self.inner.close();
     }
 }
 
