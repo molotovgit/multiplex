@@ -45,6 +45,8 @@ libloading = "0.8"
 [target.'cfg(target_os = "android")'.dependencies]
 # Hardware H.264 decoding straight onto the Flutter texture's surface.
 ndk = { version = "0.9", features = ["media", "api-level-26"] }
+# Thread ids and a system property, for the performance hints.
+libc = "0.2"
 jni-sys = "0.3"
 
 [dev-dependencies]

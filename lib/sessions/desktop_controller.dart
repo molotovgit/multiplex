@@ -401,6 +401,14 @@ done
         return;
       case DesktopEvent_Stats(:final field0):
         stats = field0;
+        // Debug builds log the numbers, so a change to the video path can
+        // be measured from the computer (adb logcat) over minutes.
+        if (kDebugMode) {
+          debugPrint(
+            'mpxstats fps=${field0.fps.toStringAsFixed(0)} rtt=${field0.rttMs.toStringAsFixed(1)} net=${netPingMs?.toStringAsFixed(1) ?? '-'} '
+            'decode=${field0.decodeMs.toStringAsFixed(2)} age=${field0.frameAgeMs.toStringAsFixed(1)} kbps=${field0.kbps.toStringAsFixed(0)}',
+          );
+        }
         if (!_settings.showStats) return;
       case DesktopEvent_Ended(:final reason, :final retryable):
         _desktop = null;

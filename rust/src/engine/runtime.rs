@@ -16,6 +16,8 @@ static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| {
     Builder::new_multi_thread()
         .worker_threads(4)
         .thread_name("multiplex-net")
+        // Known by id, so Android can be told they carry the picture.
+        .on_thread_start(crate::engine::threads::note_this_thread)
         .enable_all()
         .build()
         .expect("could not start the network runtime")

@@ -136,6 +136,9 @@ struct DecoderThread {
     asked: bool,
     /// Logged once that the decoder does not keep timestamps.
     warned_pts: bool,
+    /// Tells Android this thread and the network workers do time-critical
+    /// work (Android 13 and later).
+    hint: Option<super::perf_hint::PerfHint>,
 }
 
 impl DecoderThread {
@@ -156,10 +159,20 @@ impl DecoderThread {
             need_keyframe: true,
             asked: false,
             warned_pts: false,
+            hint: None,
         }
     }
 
+    /// How long a frame should take from arriving to being shown. Reported
+    /// times above it make Android give the video threads faster cores.
+    const FRAME_TARGET: Duration = Duration::from_millis(4);
+
     fn run(mut self, rx: std_mpsc::Receiver<Command>) {
+        crate::engine::threads::note_this_thread();
+        if super::perf_hint::allowed() {
+            self.hint = super::perf_hint::PerfHint::start(&crate::engine::threads::noted(), Self::FRAME_TARGET);
+        }
+        log_line(if self.hint.is_some() { "performance hints on for the video threads" } else { "no performance hints" });
         loop {
             // Block while idle; poll quickly while a picture is decoding.
             let cmd = if self.in_flight.is_empty() {
@@ -301,7 +314,11 @@ impl DecoderThread {
                     }
                     while let Some((fid, arrived)) = self.in_flight.pop_front() {
                         if !known || fid == pts {
-                            let _ = self.reports.send(VideoReport::Shown { id: fid, latency: arrived.elapsed() });
+                            let latency = arrived.elapsed();
+                            if let Some(hint) = &self.hint {
+                                hint.report(latency);
+                            }
+                            let _ = self.reports.send(VideoReport::Shown { id: fid, latency });
                             break;
                         }
                         // Older than this picture: the codec dropped it.

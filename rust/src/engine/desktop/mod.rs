@@ -19,6 +19,8 @@ pub mod video;
 
 #[cfg(target_os = "android")]
 pub mod android;
+#[cfg(target_os = "android")]
+pub mod perf_hint;
 
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
