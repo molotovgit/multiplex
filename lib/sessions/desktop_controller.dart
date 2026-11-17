@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../src/rust/api/desktop.dart';
 import '../src/rust/api/desktop_types.dart';
 import '../src/rust/api/tailscale.dart';
+import '../src/rust/api/watch.dart';
 import '../ui/desktop/desktop_keys.dart';
 import '../ui/desktop/desktop_settings.dart';
 import 'session_manager.dart';
@@ -148,6 +149,47 @@ class DesktopController extends ChangeNotifier {
   }
 
   DesktopStats? stats;
+
+  /// A text field has the keyboard focus on the remote: the screen shows
+  /// the keyboard while this is true (see [_watchTextFocus]).
+  final ValueNotifier<bool> remoteTextFocus = ValueNotifier(false);
+  RemoteWatch? _textWatch;
+  StreamSubscription<String>? _textLines;
+
+  /// Asks the remote's input method (fcitx5) about 7 times a second
+  /// whether a text field has focus, and reports only changes. Apps that
+  /// type through the input method (browsers, terminals, chat, editors)
+  /// all show up; without fcitx5 nothing is reported and the keyboard
+  /// stays manual.
+  static const _textFocusWatcher = r'command -v busctl >/dev/null || exit 0; '
+      r'prev=; while :; do '
+      r'f=$(busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 DebugInfo 2>/dev/null | grep -c "focus:1"); '
+      r'[ "$f" != "$prev" ] && echo "text $f" && prev=$f; sleep 0.15; done';
+
+  Future<void> _watchTextFocus() async {
+    if (_textWatch != null || !_settings.autoKeyboard) return;
+    try {
+      final watch = await session.ssh.watch(command: _textFocusWatcher);
+      if (_disposed) {
+        watch.stop();
+        return;
+      }
+      _textWatch = watch;
+      _textLines = watch.lines().listen((line) {
+        if (line.startsWith('text ')) remoteTextFocus.value = line != 'text 0';
+      });
+    } catch (_) {
+      // No watcher: the keyboard stays manual.
+    }
+  }
+
+  void _stopTextWatch() {
+    _textLines?.cancel();
+    _textLines = null;
+    _textWatch?.stop();
+    _textWatch = null;
+    remoteTextFocus.value = false;
+  }
 
   /// Over Tailscale: the network's own round trip (disco ping) and one
   /// through WireGuard and the IP stacks (TSMP), measured every 2 s, to
@@ -309,6 +351,9 @@ class DesktopController extends ChangeNotifier {
         phase = DesktopPhase.live;
         note = '';
         _startNetProbe();
+        // A reconnect makes a new connection: the watcher starts again on it.
+        _stopTextWatch();
+        unawaited(_watchTextFocus());
         _quickRetries = 0;
         // Put the pointer where the user will look for it.
         if (streamWidth == 0) cursor = Offset(remoteSize.width / 2, remoteSize.height / 2);
@@ -685,6 +730,8 @@ class DesktopController extends ChangeNotifier {
     _disposed = true;
     _resizeDebounce?.cancel();
     _netProbe?.cancel();
+    _stopTextWatch();
+    remoteTextFocus.dispose();
     _releaseHeld();
     _events?.cancel();
     _desktop?.close();

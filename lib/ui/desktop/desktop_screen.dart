@@ -17,7 +17,9 @@ import '../terminal/reconnect_banner.dart';
 import 'desktop_controls.dart';
 import 'desktop_cursor.dart';
 import 'desktop_gestures.dart';
+import 'desktop_key_sink.dart';
 import 'desktop_keyboard.dart';
+import '../keyboard/terminal_keyboard_panel.dart';
 import 'desktop_menu.dart';
 import 'desktop_settings.dart';
 import 'direct_video_view.dart';
@@ -56,6 +58,15 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   /// does its disappearing (back gesture) mean the user closed it.
   bool _keyboardSeen = false;
   bool _keysOpen = false;
+
+  /// The phone's own keyboard instead of Multiplex's.
+  late bool _systemKeyboard = !c.settings.builtInKeyboard;
+
+  /// The keyboard was opened because a remote text field got the focus
+  /// (so it closes again when the field loses it).
+  bool _autoOpened = false;
+  final _panelKey = GlobalKey();
+  double _panelHeight = 0;
   bool _toolbarShown = true;
   Timer? _hideToolbar;
   Size _lastView = Size.zero;
@@ -71,6 +82,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     ScreenAwake.hold();
     c.addListener(_changed);
     c.copiedFromDesktop.addListener(_copied);
+    c.remoteTextFocus.addListener(_remoteFocusChanged);
     // Over Tailscale, keep the route label current: a connection often
     // starts on a relay and turns direct a few seconds later.
     if (widget.session.host.viaTailscale) {
@@ -86,6 +98,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     _hideToolbar?.cancel();
     c.removeListener(_changed);
     c.copiedFromDesktop.removeListener(_copied);
+    c.remoteTextFocus.removeListener(_remoteFocusChanged);
     if (widget.session.host.viaTailscale) {
       TailscaleNode.instance.removeListener(_changed);
       TailscaleNode.instance.unwatch();
@@ -131,17 +144,55 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
   }
 
   void _toggleKeyboard() {
+    _autoOpened = false;
+    _keyboardOpen ? _closeKeyboard() : _openKeyboard();
+    _scheduleHide();
+  }
+
+  void _openKeyboard() {
     setState(() {
-      _keyboardOpen = !_keyboardOpen;
+      _keyboardOpen = true;
       _keyboardSeen = false;
     });
-    if (_keyboardOpen) {
-      _focus.requestFocus();
-      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-    } else {
-      _focus.unfocus();
+    _focus.requestFocus();
+    SystemChannels.textInput.invokeMethod<void>(_systemKeyboard ? 'TextInput.show' : 'TextInput.hide');
+  }
+
+  void _closeKeyboard() {
+    setState(() {
+      _keyboardOpen = false;
+      _keyboardSeen = false;
+      _autoOpened = false;
+    });
+    _focus.unfocus();
+  }
+
+  /// A text field on the remote got or lost the focus.
+  void _remoteFocusChanged() {
+    if (!mounted || !c.settings.autoKeyboard) return;
+    if (c.remoteTextFocus.value && !_keyboardOpen) {
+      _openKeyboard();
+      _autoOpened = true;
+    } else if (!c.remoteTextFocus.value && _keyboardOpen && _autoOpened) {
+      _closeKeyboard();
     }
-    _scheduleHide();
+  }
+
+  /// Between Multiplex's keyboard and the phone's (voice, other languages).
+  void _useSystemKeyboard(bool system) {
+    setState(() => _systemKeyboard = system);
+    if (_keyboardOpen) {
+      _focus.unfocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openKeyboard());
+    }
+  }
+
+  /// The built-in keyboard's height, once laid out, so the picture can move
+  /// above it.
+  void _measurePanel() {
+    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
+    final h = box?.hasSize == true ? box!.size.height : 0.0;
+    if ((h - _panelHeight).abs() > 0.5) setState(() => _panelHeight = h);
   }
 
   void _keepFocus() {
@@ -189,6 +240,52 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     return via == null ? 'Direct' : 'via $via';
   }
 
+  // Zoom.
+
+  Size _view = Size.zero;
+
+  void _toggleZoom(Offset focal) {
+    if (_viewport.zoom > 1.05) {
+      _viewport.layout(_view, c.remoteSize, zoom: 1);
+    } else {
+      _viewport.zoomAround(focal, 2.5, _view, c.remoteSize);
+    }
+    setState(() {});
+  }
+
+  void _zoomBy(double factor) {
+    _viewport.zoomAround(Offset(_view.width / 2, _view.height / 2), factor, _view, c.remoteSize);
+    setState(() {});
+  }
+
+  // Screens.
+
+  /// The monitors to step through, in order, and which one is shown.
+  (List<String>, int) get _screens {
+    final names = c.monitors.isNotEmpty ? [for (final m in c.monitors) m.name] : [for (final o in c.outputs) o.name];
+    final shown = c.settings.output.isNotEmpty ? c.settings.output : (c.monitors.where((m) => m.focused).firstOrNull?.name ?? c.outputName);
+    return (names, names.indexOf(shown));
+  }
+
+  Future<void> _switchScreen(int step) async {
+    if (c.monitors.isEmpty) await c.refreshMonitors();
+    final (names, at) = _screens;
+    if (names.length < 2) {
+      if (mounted) Toast.show(context, 'Only one monitor');
+      return;
+    }
+    final next = names[((at < 0 ? 0 : at) + step) % names.length];
+    _showScreen(next);
+  }
+
+  void _showScreen(String name) {
+    final next = c.settings.copyWith(output: name);
+    next.saveTo(AppScope.store(context));
+    c.showOutput(name);
+    _viewport.layout(_view, c.remoteSize, zoom: 1);
+    Toast.show(context, name);
+  }
+
   /// Starts the desktop once the size is known; later sizes are resizes.
   void _layoutChanged(Size view, double dpr) {
     final px = Size(view.width * dpr, view.height * dpr);
@@ -205,8 +302,8 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
     final media = MediaQuery.of(context);
     final keyboardHeight = media.viewInsets.bottom;
     // The phone keyboard closed by itself (back gesture): follow it.
-    if (_keyboardOpen && keyboardHeight > 0) _keyboardSeen = true;
-    if (_keyboardOpen && _keyboardSeen && keyboardHeight == 0) {
+    if (_keyboardOpen && _systemKeyboard && keyboardHeight > 0) _keyboardSeen = true;
+    if (_keyboardOpen && _systemKeyboard && _keyboardSeen && keyboardHeight == 0) {
       _keyboardOpen = false;
       _keyboardSeen = false;
       _focus.unfocus();
@@ -221,6 +318,7 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
           body: LayoutBuilder(
             builder: (context, constraints) {
               final view = constraints.biggest;
+              _view = view;
               final dpr = media.devicePixelRatio;
               // The remote screen is sized to the whole phone screen, so
               // opening the keyboard never resizes the remote desktop.
@@ -231,13 +329,16 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                 _lastView = view;
                 _lastRemote = remote;
               }
-              final bottomInset = keyboardHeight + (showKeys ? 52 : 0);
+              final builtIn = _keyboardOpen && !_systemKeyboard;
+              if (builtIn) WidgetsBinding.instance.addPostFrameCallback((_) => _measurePanel());
+              final bottomInset = builtIn ? _panelHeight : keyboardHeight + (showKeys ? 52 : 0);
               final visible = bottomInset > 0 ? view.height - bottomInset : null;
               if (visible != null && c.live) _viewport.follow(c.cursor, view, remote, visibleHeight: visible);
 
               return DesktopKeyboard(
                 controller: c,
                 focusNode: _focus,
+                systemKeyboard: _systemKeyboard,
                 child: Stack(
                   children: [
                     Positioned.fill(
@@ -248,6 +349,8 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                         visibleHeight: visible,
                         onViewChanged: () => setState(() {}),
                         onTapEmpty: () {},
+                        onToggleZoom: _toggleZoom,
+                        onSwitchScreen: _switchScreen,
                         child: _RemoteView(controller: c, viewport: _viewport),
                       ),
                     ),
@@ -264,31 +367,59 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                               ? ConstrainedBox(
                                   key: const ValueKey('bar'),
                                   constraints: const BoxConstraints(maxWidth: 560),
-                                  child: DesktopToolbar(
-                                    title: widget.session.host.title,
-                                    route: _route,
-                                    controller: c,
-                                    keyboardOpen: _keyboardOpen,
-                                    keysOpen: _keysOpen,
-                                    onBack: () => Navigator.of(context).maybePop(),
-                                    onKeyboard: _toggleKeyboard,
-                                    onKeys: () {
-                                      setState(() => _keysOpen = !_keysOpen);
-                                      _scheduleHide();
-                                    },
-                                    onTouchMode: _toggleTouchMode,
-                                    onScreens: () async {
-                                      _hideToolbar?.cancel();
-                                      await DesktopScreens.show(context, controller: c);
-                                      _scheduleHide();
-                                    },
-                                    onMore: _more,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DesktopToolbar(
+                                        title: widget.session.host.title,
+                                        route: _route,
+                                        controller: c,
+                                        keyboardOpen: _keyboardOpen,
+                                        keysOpen: _keysOpen,
+                                        onBack: () => Navigator.of(context).maybePop(),
+                                        onKeyboard: _toggleKeyboard,
+                                        onKeys: () {
+                                          setState(() => _keysOpen = !_keysOpen);
+                                          _scheduleHide();
+                                        },
+                                        onTouchMode: _toggleTouchMode,
+                                        onScreens: () async {
+                                          _hideToolbar?.cancel();
+                                          await DesktopScreens.show(context, controller: c);
+                                          _scheduleHide();
+                                        },
+                                        onMore: _more,
+                                      ),
+                                      if (_screens.$1.length > 1) ...[
+                                        const SizedBox(height: 6),
+                                        DesktopScreenChips(
+                                          names: _screens.$1,
+                                          selected: _screens.$2,
+                                          onSelect: (name) {
+                                            _showScreen(name);
+                                            _scheduleHide();
+                                          },
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 )
                               : _Handle(key: const ValueKey('handle'), onTap: _showToolbar),
                         ),
                       ),
                     ),
+                    // While zoomed in: zoom out, in, or back to the whole screen.
+                    if (c.live && _viewport.zoom > 1.05)
+                      Positioned(
+                        left: 12,
+                        bottom: bottomInset + 12 + (showKeys || _keyboardOpen ? 0 : media.padding.bottom),
+                        child: DesktopZoomPill(
+                          zoom: _viewport.zoom,
+                          onOut: () => _zoomBy(1 / 1.5),
+                          onIn: () => _zoomBy(1.5),
+                          onFit: () => _toggleZoom(Offset.zero),
+                        ),
+                      ),
                     if (c.settings.showStats && c.live)
                       Positioned(
                         right: 8,
@@ -307,7 +438,27 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
                           onStop: () => AppScope.sessions(context).stopReconnecting(widget.session),
                         ),
                         DesktopPhase.ended => EndedBanner(reason: c.note, onReconnect: c.restart, onClose: () => Navigator.of(context).maybePop()),
-                        _ when showKeys => DesktopKeyBar(controller: c, keepFocus: _keepFocus),
+                        // Multiplex's keyboard, with the desktop's Super key bar on top.
+                        _ when builtIn => Column(
+                          key: _panelKey,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DesktopKeyBar(controller: c, keepFocus: _keepFocus, compact: true),
+                            TerminalKeyboardPanel.withSink(
+                              showCommands: false,
+                              sink: DesktopKeySink(c),
+                              onSnippets: () {},
+                              onHistory: () {},
+                              onHide: _closeKeyboard,
+                              onSwitchToSystem: () => _useSystemKeyboard(true),
+                            ),
+                          ],
+                        ),
+                        _ when showKeys => DesktopKeyBar(
+                          controller: c,
+                          keepFocus: _keepFocus,
+                          onSwitchKeyboard: _keyboardOpen ? () => _useSystemKeyboard(false) : null,
+                        ),
                         _ => const SizedBox.shrink(),
                       },
                     ),

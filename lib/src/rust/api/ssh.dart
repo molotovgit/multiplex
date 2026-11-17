@@ -15,6 +15,7 @@ import 'terminal.dart';
 import 'terminal_types.dart';
 import 'tunnel.dart';
 import 'tunnel_types.dart';
+import 'watch.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 abstract class SshSession implements RustOpaqueInterface {
@@ -58,4 +59,8 @@ abstract class SshSession implements RustOpaqueInterface {
 
   /// Starts a port forward on this connection.
   Future<ActiveTunnel> startTunnel({required TunnelSpec spec});
+
+  /// Starts a long-running command whose output lines stream back (a
+  /// watcher on the server). Stop it with [`RemoteWatch::stop`].
+  Future<RemoteWatch> watch({required String command});
 }

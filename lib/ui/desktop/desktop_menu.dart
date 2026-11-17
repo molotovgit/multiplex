@@ -4,6 +4,7 @@ import '../../app/app_motion.dart';
 import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../sessions/desktop_controller.dart';
+import '../../src/rust/api/desktop_types.dart';
 import '../common/widgets.dart';
 import 'desktop_keys.dart';
 import 'desktop_settings.dart';
@@ -186,6 +187,14 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
                   onPressed: () => _shortcut(const [LinuxKey.leftMeta], 33),
                 ),
                 ActionChip(
+                  avatar: const Icon(Icons.mouse_outlined, size: 18),
+                  label: const Text('Middle click'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    c.click(DesktopButton.middle);
+                  },
+                ),
+                ActionChip(
                   avatar: const Icon(Icons.refresh, size: 18),
                   label: const Text('Refresh picture'),
                   onPressed: () {
@@ -268,8 +277,8 @@ class _DesktopMenuSheetState extends State<_DesktopMenuSheet> {
               padding: const EdgeInsets.only(top: 6),
               child: Text(
                 s.touch == DesktopTouchMode.trackpad
-                    ? 'Drag to move · tap to click · two-finger tap: right-click · two fingers: scroll · hold, then drag: select · pinch: zoom'
-                    : 'Tap: click · hold: right-click · drag: drag · two fingers: scroll · pinch: zoom',
+                    ? 'Drag to move · tap to click · two-finger tap: right-click · two fingers: scroll · hold, then drag: select · pinch: zoom · three-finger tap: zoom in or out · three fingers: pan, or swipe to the next screen'
+                    : 'Tap: click · hold: right-click · drag: drag · two fingers: scroll · pinch: zoom · three-finger tap: zoom in or out · three fingers: pan, or swipe to the next screen',
                 style: text.bodySmall?.copyWith(color: colors.muted),
               ),
             ),

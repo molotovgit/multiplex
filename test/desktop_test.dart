@@ -1,7 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:multiplex/src/rust/api/terminal_types.dart';
 import 'package:multiplex/ui/desktop/desktop_gestures.dart';
+import 'package:multiplex/ui/desktop/desktop_key_sink.dart';
 import 'package:multiplex/ui/desktop/desktop_keys.dart';
 import 'package:multiplex/ui/desktop/desktop_settings.dart';
 
@@ -56,6 +58,13 @@ void main() {
       v.zoomAround(const Offset(10, 10), 0.2, view, remote);
       expect(v.zoom, closeTo(1, 1e-9));
     });
+  });
+
+  test('the built-in keyboard maps to Linux keys', () {
+    expect(DesktopKeySink.codeFor(TerminalKey.enter), LinuxKey.enter);
+    expect(DesktopKeySink.codeFor(TerminalKey.f5), 63);
+    expect(DesktopKeySink.codeFor(TerminalKey.f12), 88);
+    expect(DesktopKeySink.modsFor(const KeyModifiers(ctrl: true, alt: false, shift: true)), [LinuxKey.leftCtrl, LinuxKey.leftShift]);
   });
 
   test('settings fall back to defaults and keep what they know', () {

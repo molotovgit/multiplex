@@ -14,6 +14,7 @@ use crate::api::terminal_types::{ShellEvent, ShellOptions};
 use crate::engine::desktop::{video, DesktopSession};
 use crate::engine::events::EventRelay;
 use crate::api::tunnel::ActiveTunnel;
+use crate::api::watch::RemoteWatch;
 use crate::api::tunnel_types::TunnelSpec;
 use crate::engine::runtime::AsyncRuntime;
 use crate::engine::sftp::SftpBrowser;
@@ -85,6 +86,13 @@ impl SshSession {
         let conn = self.conn.clone();
         let browser = AsyncRuntime::run(async move { SftpBrowser::open(&conn).await }).await??;
         Ok(RemoteFiles::new(browser))
+    }
+
+    /// Starts a long-running command whose output lines stream back (a
+    /// watcher on the server). Stop it with [`RemoteWatch::stop`].
+    pub async fn watch(&self, command: String) -> anyhow::Result<RemoteWatch> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(RemoteWatch::start(conn, command)).await?
     }
 
     /// Starts a remote desktop (gliff) on this connection. The video is

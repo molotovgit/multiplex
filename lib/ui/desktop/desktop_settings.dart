@@ -62,6 +62,8 @@ class DesktopSettings {
     this.syncClipboard = true,
     this.warmRadio = true,
     this.directVideo = true,
+    this.autoKeyboard = true,
+    this.builtInKeyboard = true,
   });
 
   final DesktopScreenMode screen;
@@ -92,6 +94,14 @@ class DesktopSettings {
   /// directly, instead of a Flutter texture: about one refresh less delay.
   final bool directVideo;
 
+  /// Show the keyboard by itself when a text field on the remote gets the
+  /// focus, and hide it when it loses it.
+  final bool autoKeyboard;
+
+  /// Multiplex's own keyboard (with Ctrl, Alt, arrows and more) instead of
+  /// the phone's.
+  final bool builtInKeyboard;
+
   static const textSizes = [0.75, 0.85, 1.0, 1.15, 1.3];
 
   static DesktopSettings of(VaultStore store) => DesktopSettings.fromJson(store.settings.desktop);
@@ -110,6 +120,8 @@ class DesktopSettings {
     bool? syncClipboard,
     bool? warmRadio,
     bool? directVideo,
+    bool? autoKeyboard,
+    bool? builtInKeyboard,
   }) => DesktopSettings(
     screen: screen ?? this.screen,
     touch: touch ?? this.touch,
@@ -122,6 +134,8 @@ class DesktopSettings {
     syncClipboard: syncClipboard ?? this.syncClipboard,
     warmRadio: warmRadio ?? this.warmRadio,
     directVideo: directVideo ?? this.directVideo,
+    autoKeyboard: autoKeyboard ?? this.autoKeyboard,
+    builtInKeyboard: builtInKeyboard ?? this.builtInKeyboard,
   );
 
   Map<String, dynamic> toJson() => {
@@ -136,6 +150,8 @@ class DesktopSettings {
     'syncClipboard': syncClipboard,
     'warmRadio': warmRadio,
     'directVideo': directVideo,
+    'autoKeyboard': autoKeyboard,
+    'builtInKeyboard': builtInKeyboard,
   };
 
   /// Unknown or missing values fall back to the defaults.
@@ -154,6 +170,8 @@ class DesktopSettings {
       syncClipboard: Json.boolean(j, 'syncClipboard', d.syncClipboard),
       warmRadio: Json.boolean(j, 'warmRadio', d.warmRadio),
       directVideo: Json.boolean(j, 'directVideo', d.directVideo),
+      autoKeyboard: Json.boolean(j, 'autoKeyboard', d.autoKeyboard),
+      builtInKeyboard: Json.boolean(j, 'builtInKeyboard', d.builtInKeyboard),
     );
   }
 }

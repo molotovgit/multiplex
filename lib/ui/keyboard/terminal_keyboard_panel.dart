@@ -34,7 +34,8 @@ class TerminalKeyboardPanel extends StatefulWidget {
   })  : sink = null,
         onSent = null,
         modifiers = null,
-        commands = null;
+        commands = null,
+        showCommands = true;
 
   /// The keyboard sending somewhere else: the settings preview and tests.
   const TerminalKeyboardPanel.withSink({
@@ -47,6 +48,7 @@ class TerminalKeyboardPanel extends StatefulWidget {
     this.modifiers,
     this.onHistory,
     this.commands = const NoCommandTarget(),
+    this.showCommands = true,
   }) : controller = null;
 
   final TerminalController? controller;
@@ -69,6 +71,10 @@ class TerminalKeyboardPanel extends StatefulWidget {
 
   /// Where recent commands go; the terminal's when not set.
   final CommandTarget? commands;
+
+  /// The recent-commands strip (off where there are no commands, such as
+  /// the remote desktop).
+  final bool showCommands;
 
   @override
   State<TerminalKeyboardPanel> createState() => _TerminalKeyboardPanelState();
@@ -151,7 +157,7 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
                   builder: (context, _) => Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (settings.showRecentCommands)
+                      if (settings.showRecentCommands && widget.showCommands)
                         CommandStrip(
                           target: _commands,
                           onOpenHistory: _openHistory,

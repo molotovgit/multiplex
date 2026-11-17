@@ -12,7 +12,12 @@ import 'desktop_keys.dart';
 /// key goes to the desktop as itself, press and release, so shortcuts and
 /// holding keys work as at the desk.
 class DesktopKeyboard extends StatefulWidget {
-  const DesktopKeyboard({super.key, required this.controller, required this.focusNode, required this.child});
+  const DesktopKeyboard({super.key, required this.controller, required this.focusNode, required this.child, this.systemKeyboard = true});
+
+  /// False while Multiplex's own keyboard is shown: the hidden field keeps
+  /// the focus (a hardware keyboard still works) but the phone's keyboard
+  /// stays closed.
+  final bool systemKeyboard;
 
   final DesktopController controller;
   final FocusNode focusNode;
@@ -111,7 +116,7 @@ class _DesktopKeyboardState extends State<DesktopKeyboard> {
               },
               onEditingComplete: () {},
               onTapOutside: (_) {},
-              keyboardType: TextInputType.visiblePassword,
+              keyboardType: widget.systemKeyboard ? TextInputType.visiblePassword : TextInputType.none,
               autocorrect: false,
               enableSuggestions: false,
               enableIMEPersonalizedLearning: false,

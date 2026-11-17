@@ -82,6 +82,10 @@ class DesktopViewport {
 /// trackpad, tap clicks, two-finger tap right-clicks, two fingers scroll,
 /// press and hold then drag selects or moves things, pinch zooms the view.
 ///
+/// In both modes: three-finger tap zooms in where it lands (again: the
+/// whole screen); three-finger drag pans while zoomed, and a three-finger
+/// swipe left or right switches to the next or previous monitor.
+///
 /// Direct mode: tap clicks where the finger is, hold right-clicks, drag
 /// drags, two fingers scroll, pinch zooms.
 ///
@@ -94,6 +98,8 @@ class DesktopGestures extends StatefulWidget {
     required this.viewSize,
     required this.onViewChanged,
     required this.onTapEmpty,
+    required this.onToggleZoom,
+    required this.onSwitchScreen,
     this.visibleHeight,
     required this.child,
   });
@@ -107,6 +113,12 @@ class DesktopGestures extends StatefulWidget {
 
   /// A touch that reached the screen, to bring the toolbar back.
   final VoidCallback onTapEmpty;
+
+  /// Three-finger tap: zoom in at this point, or back to the whole screen.
+  final ValueChanged<Offset> onToggleZoom;
+
+  /// Three-finger swipe while not zoomed: +1 = next monitor, -1 = previous.
+  final ValueChanged<int> onSwitchScreen;
 
   /// Height above the phone keyboard while it is open.
   final double? visibleHeight;
@@ -139,6 +151,13 @@ class _DesktopGesturesState extends State<DesktopGestures> {
   double _lastSpread = 1;
   DateTime _twoAt = DateTime.now();
   int _maxTouches = 0;
+
+  // Three fingers: tap toggles zoom; drag pans (zoomed) or switches screens.
+  bool _three = false;
+  bool _threeZoomed = false;
+  Offset _threeStart = Offset.zero;
+  Offset _threeLast = Offset.zero;
+  DateTime _threeAt = DateTime.now();
 
   // Trackpad feel: small movements stay precise, fast ones go far.
   double _gain(double speed) => 1.0 + math.min(speed / 18.0, 1.6);
@@ -186,6 +205,13 @@ class _DesktopGesturesState extends State<DesktopGestures> {
       _startSpread = _spread;
       _lastSpread = _spread;
       _twoAt = DateTime.now();
+    } else if (_touches.length == 3) {
+      if (_two == _Two.scroll) c.scrollStop();
+      _three = true;
+      _threeZoomed = widget.viewport.zoom > 1.01;
+      _threeStart = _centroid;
+      _threeLast = _centroid;
+      _threeAt = DateTime.now();
     }
   }
 
@@ -236,6 +262,16 @@ class _DesktopGesturesState extends State<DesktopGestures> {
       }
       return;
     }
+    if (_three) {
+      if (_touches.length < 3) return;
+      final centroid = _centroid;
+      if (_threeZoomed) {
+        widget.viewport.panBy(centroid - _threeLast, widget.viewSize, c.remoteSize);
+        widget.onViewChanged();
+      }
+      _threeLast = centroid;
+      return;
+    }
     if (_touches.length == 2) _twoMove();
   }
 
@@ -272,16 +308,32 @@ class _DesktopGesturesState extends State<DesktopGestures> {
     _touches.remove(e.pointer);
     final quick = DateTime.now().difference(_wasMulti ? _twoAt : _startAt) < _tapTime;
 
+    if (_three) {
+      if (_touches.isNotEmpty) return;
+      final total = _threeLast - _threeStart;
+      final quick = DateTime.now().difference(_threeAt) < const Duration(milliseconds: 300);
+      if (quick && total.distance < 24) {
+        widget.onToggleZoom(_threeStart);
+        _haptic();
+      } else if (!_threeZoomed && total.dx.abs() > 90 && total.dx.abs() > total.dy.abs() * 1.5) {
+        // Swipe left = next screen, as when paging.
+        widget.onSwitchScreen(total.dx < 0 ? 1 : -1);
+        if (c.settings.haptics) HapticFeedback.mediumImpact();
+      }
+      _three = false;
+      _two = _Two.undecided;
+      _hold?.cancel();
+      c.steering = false;
+      _maxTouches = 0;
+      _wasMulti = false;
+      return;
+    }
     if (wasCount == 2 && _touches.length == 1) {
       // Second finger lifted: finish the two-finger gesture.
       if (_two == _Two.scroll) c.scrollStop();
       if (_two == _Two.undecided && quick && _maxTouches == 2) {
         if (!_trackpad) c.moveTo(widget.viewport.toRemote(_twoStart));
         c.click(DesktopButton.right);
-        _haptic();
-      }
-      if (_maxTouches == 3 && _two == _Two.undecided && quick) {
-        c.click(DesktopButton.middle);
         _haptic();
       }
       _two = _Two.undecided;

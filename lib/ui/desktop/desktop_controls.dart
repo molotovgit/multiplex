@@ -10,7 +10,14 @@ import 'desktop_keys.dart';
 /// navigation keys and F1 to F12. Shown with the phone keyboard, or on its
 /// own for shortcuts.
 class DesktopKeyBar extends StatelessWidget {
-  const DesktopKeyBar({super.key, required this.controller, required this.keepFocus});
+  const DesktopKeyBar({super.key, required this.controller, required this.keepFocus, this.onSwitchKeyboard, this.compact = false});
+
+  /// Above Multiplex's keyboard: only the keys it does not have (Super,
+  /// Shift, Del, the page keys and F1 to F12).
+  final bool compact;
+
+  /// Shown with the phone's keyboard: back to Multiplex's keyboard.
+  final VoidCallback? onSwitchKeyboard;
 
   final DesktopController controller;
 
@@ -32,23 +39,27 @@ class DesktopKeyBar extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             children: [
+              if (onSwitchKeyboard != null) _Key(icon: Icons.keyboard_alt_outlined, name: 'Multiplex keyboard', onTap: onSwitchKeyboard!),
               for (final (code, label) in _mods)
-                _Key(
-                  label: label,
-                  name: '$label (tap for the next key, double tap to lock)',
-                  state: controller.mods[code] ?? ModState.off,
-                  onTap: () {
-                    controller.toggleMod(code);
-                    keepFocus();
-                  },
-                ),
-              _Key(label: 'Esc', name: 'Escape', onTap: () => _tap(LinuxKey.esc)),
-              _Key(label: 'Tab', name: 'Tab', onTap: () => _tap(LinuxKey.tab)),
-              _Key(icon: Icons.keyboard_arrow_left, name: 'Left', onTap: () => _tap(LinuxKey.left)),
-              _Key(icon: Icons.keyboard_arrow_up, name: 'Up', onTap: () => _tap(LinuxKey.up)),
-              _Key(icon: Icons.keyboard_arrow_down, name: 'Down', onTap: () => _tap(LinuxKey.down)),
-              _Key(icon: Icons.keyboard_arrow_right, name: 'Right', onTap: () => _tap(LinuxKey.right)),
-              _Key(icon: Icons.backspace_outlined, name: 'Backspace', onTap: () => _tap(LinuxKey.backspace)),
+                if (!compact || code == LinuxKey.leftMeta || code == LinuxKey.leftShift)
+                  _Key(
+                    label: label,
+                    name: '$label (tap for the next key, double tap to lock)',
+                    state: controller.mods[code] ?? ModState.off,
+                    onTap: () {
+                      controller.toggleMod(code);
+                      keepFocus();
+                    },
+                  ),
+              if (!compact) ...[
+                _Key(label: 'Esc', name: 'Escape', onTap: () => _tap(LinuxKey.esc)),
+                _Key(label: 'Tab', name: 'Tab', onTap: () => _tap(LinuxKey.tab)),
+                _Key(icon: Icons.keyboard_arrow_left, name: 'Left', onTap: () => _tap(LinuxKey.left)),
+                _Key(icon: Icons.keyboard_arrow_up, name: 'Up', onTap: () => _tap(LinuxKey.up)),
+                _Key(icon: Icons.keyboard_arrow_down, name: 'Down', onTap: () => _tap(LinuxKey.down)),
+                _Key(icon: Icons.keyboard_arrow_right, name: 'Right', onTap: () => _tap(LinuxKey.right)),
+                _Key(icon: Icons.backspace_outlined, name: 'Backspace', onTap: () => _tap(LinuxKey.backspace)),
+              ],
               _Key(label: 'Del', name: 'Delete', onTap: () => _tap(LinuxKey.delete)),
               _Key(label: 'Home', name: 'Home', onTap: () => _tap(LinuxKey.home)),
               _Key(label: 'End', name: 'End', onTap: () => _tap(LinuxKey.end)),
@@ -275,6 +286,82 @@ class DesktopStatsChip extends StatelessWidget {
             style: text,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// One tap per monitor, under the toolbar.
+class DesktopScreenChips extends StatelessWidget {
+  const DesktopScreenChips({super.key, required this.names, required this.selected, required this.onSelect});
+
+  final List<String> names;
+  final int selected;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final look = AppStyleTheme.of(context);
+    return Material(
+      color: colors.surface.withValues(alpha: 0.94),
+      shape: look.shapes.border(look.shapes.pill, BorderSide(color: colors.outline.withValues(alpha: 0.5))),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < names.length; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: ChoiceChip(
+                  visualDensity: VisualDensity.compact,
+                  avatar: Icon(Icons.desktop_windows_outlined, size: 16, color: i == selected ? colors.onAccent : colors.muted),
+                  label: Text(names[i]),
+                  selected: i == selected,
+                  showCheckmark: false,
+                  selectedColor: colors.accent,
+                  labelStyle: TextStyle(color: i == selected ? colors.onAccent : colors.text),
+                  onSelected: (_) => onSelect(names[i]),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown while zoomed in: out, the zoom level, in, and back to the whole
+/// screen.
+class DesktopZoomPill extends StatelessWidget {
+  const DesktopZoomPill({super.key, required this.zoom, required this.onOut, required this.onIn, required this.onFit});
+
+  final double zoom;
+  final VoidCallback onOut;
+  final VoidCallback onIn;
+  final VoidCallback onFit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final look = AppStyleTheme.of(context);
+    return Material(
+      color: colors.surface.withValues(alpha: 0.92),
+      elevation: 2,
+      shadowColor: look.surfaces.shadow,
+      shape: look.shapes.border(look.shapes.pill, BorderSide(color: colors.outline.withValues(alpha: 0.5))),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(tooltip: 'Zoom out', icon: const Icon(Icons.remove), onPressed: onOut),
+          Text('${zoom.toStringAsFixed(1)}×', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontFeatures: const [FontFeature.tabularFigures()])),
+          IconButton(tooltip: 'Zoom in', icon: const Icon(Icons.add), onPressed: onIn),
+          IconButton(tooltip: 'Whole screen', icon: const Icon(Icons.fit_screen_outlined), onPressed: onFit),
+        ],
       ),
     );
   }
