@@ -13,6 +13,9 @@ import '../ui/desktop/desktop_keys.dart';
 import '../ui/desktop/desktop_settings.dart';
 import 'session_manager.dart';
 import 'tailscale_node.dart';
+import 'key_target.dart';
+
+export 'key_target.dart' show KeyTarget, ModState;
 
 /// One monitor of the remote machine, as Hyprland reports it.
 class RemoteMonitor {
@@ -34,16 +37,13 @@ const fastServerCommand = r'"$( [ -x "$HOME/.local/bin/gliff-server-fast" ] && e
 /// Where a remote desktop stands.
 enum DesktopPhase { connecting, live, reconnecting, ended }
 
-/// A sticky modifier on the key bar: off, on for the next key, or locked.
-enum ModState { off, once, locked }
-
 /// One remote desktop: the video texture, the remote pointer and keys,
 /// and keeping it running across drops and network changes.
 ///
 /// The video itself never comes through here: the Rust core decodes it
 /// straight into [textureId]. This class only tracks what the screen
 /// draws on top (cursor, status) and turns gestures into input.
-class DesktopController extends ChangeNotifier {
+class DesktopController extends ChangeNotifier with StickyMods implements KeyTarget {
   DesktopController({required this.session, required DesktopSettings settings, required this.onConnectionLost})
     // ignore: prefer_initializing_formals
     : _settings = settings;
@@ -256,15 +256,6 @@ done
   /// While a finger steers the pointer, the remote's own reports of it
   /// (which lag behind) are not shown.
   bool steering = false;
-
-  /// Sticky modifiers from the key bar.
-  final Map<int, ModState> mods = {
-    LinuxKey.leftMeta: ModState.off,
-    LinuxKey.leftCtrl: ModState.off,
-    LinuxKey.leftAlt: ModState.off,
-    LinuxKey.leftShift: ModState.off,
-  };
-  final Map<int, DateTime> _modTapped = {};
 
   /// Buttons held down right now (a drag), with the modifiers held for them.
   final Map<DesktopButton, List<int>> _held = {};
@@ -578,7 +569,7 @@ done
   /// Presses a button, holding the sticky modifiers with it (Super+drag
   /// moves windows in Hyprland).
   void press(DesktopButton button) {
-    final held = _activeMods();
+    final held = activeMods();
     for (final m in held) {
       _desktop?.key(code: m, pressed: true);
     }
@@ -593,7 +584,7 @@ done
     for (final m in held.reversed) {
       _desktop?.key(code: m, pressed: false);
     }
-    _consumeOnceMods();
+    consumeOnceMods();
   }
 
   void click(DesktopButton button) {
@@ -614,18 +605,21 @@ done
   // Keys.
 
   /// Taps a key with the sticky modifiers (and [extra] ones) held.
+  @override
   void tap(int code, {List<int> extra = const []}) {
-    final mods = [..._activeMods(), ...extra.where((m) => !_activeMods().contains(m))];
+    final mods = [...activeMods(), ...extra.where((m) => !activeMods().contains(m))];
     _desktop?.chord(modifiers: mods, code: code);
-    _consumeOnceMods();
+    consumeOnceMods();
   }
 
   /// Raw press/release, for a hardware keyboard (it sends its own
   /// modifiers).
+  @override
   void keyEvent(int code, bool pressed) => _desktop?.key(code: code, pressed: pressed);
 
   /// Types text. What the US layout cannot type (accents, other
   /// alphabets, emoji) is pasted through the clipboard instead.
+  @override
   void type(String text) {
     if (text.isEmpty) return;
     if (!UsLayout.canType(text)) {
@@ -640,6 +634,7 @@ done
   }
 
   /// Sends the phone's clipboard and pastes it on the desktop.
+  @override
   Future<bool> pastePhoneClipboard() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text;
@@ -647,38 +642,6 @@ done
     _desktop?.setClipboard(text: text);
     Timer(const Duration(milliseconds: 120), () => _desktop?.chord(modifiers: const [LinuxKey.leftCtrl], code: LinuxKey.v));
     return true;
-  }
-
-  /// One tap: on for the next key; a quick second tap: locked; a tap
-  /// while on or locked: off.
-  void toggleMod(int code) {
-    final now = DateTime.now();
-    final last = _modTapped[code];
-    _modTapped[code] = now;
-    final state = mods[code] ?? ModState.off;
-    final quick = last != null && now.difference(last) < const Duration(milliseconds: 350);
-    mods[code] = switch (state) {
-      ModState.off => ModState.once,
-      ModState.once => quick ? ModState.locked : ModState.off,
-      ModState.locked => ModState.off,
-    };
-    notifyListeners();
-  }
-
-  List<int> _activeMods() => [
-    for (final e in mods.entries)
-      if (e.value != ModState.off) e.key,
-  ];
-
-  void _consumeOnceMods() {
-    var changed = false;
-    for (final e in mods.entries.toList()) {
-      if (e.value == ModState.once) {
-        mods[e.key] = ModState.off;
-        changed = true;
-      }
-    }
-    if (changed) notifyListeners();
   }
 
   // Cursor pictures.

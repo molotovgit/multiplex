@@ -15,6 +15,7 @@
 //! and the checks.
 
 pub mod desk;
+pub mod input;
 
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use base64::Engine;

@@ -20,6 +20,7 @@ import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
 import 'api/theme_types.dart';
+import 'api/touchpad.dart';
 import 'api/transfer.dart';
 import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
@@ -73,6 +74,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteTouchpadPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_RemoteWatchPtr => wire
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr;
 
@@ -122,6 +127,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   RemoteShell
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteTouchpad
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
     dynamic raw,
   );
 
@@ -180,6 +191,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  );
+
+  @protected
   RemoteWatch
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     dynamic raw,
@@ -230,6 +247,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   RemoteShell
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteTouchpad
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
     dynamic raw,
   );
 
@@ -556,6 +579,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TextRun dco_decode_text_run(dynamic raw);
 
   @protected
+  TouchpadButton dco_decode_touchpad_button(dynamic raw);
+
+  @protected
   TransferProgress dco_decode_transfer_progress(dynamic raw);
 
   @protected
@@ -631,6 +657,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteWatch
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     SseDeserializer deserializer,
@@ -685,6 +717,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteWatch
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     SseDeserializer deserializer,
@@ -735,6 +773,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   RemoteShell
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteTouchpad
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
     SseDeserializer deserializer,
   );
 
@@ -1097,6 +1141,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TextRun sse_decode_text_run(SseDeserializer deserializer);
 
   @protected
+  TouchpadButton sse_decode_touchpad_button(SseDeserializer deserializer);
+
+  @protected
   TransferProgress sse_decode_transfer_progress(SseDeserializer deserializer);
 
   @protected
@@ -1183,6 +1230,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     RemoteWatch self,
     SseSerializer serializer,
@@ -1246,6 +1300,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     RemoteWatch self,
     SseSerializer serializer,
@@ -1304,6 +1365,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
     RemoteShell self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
     SseSerializer serializer,
   );
 
@@ -1766,6 +1834,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_text_run(TextRun self, SseSerializer serializer);
 
   @protected
+  void sse_encode_touchpad_button(
+    TouchpadButton self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_transfer_progress(
     TransferProgress self,
     SseSerializer serializer,
@@ -2049,6 +2123,40 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void

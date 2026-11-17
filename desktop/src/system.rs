@@ -144,6 +144,7 @@ pub fn doctor() -> Vec<Check> {
             Some((_, false)) => check("Wake-on-LAN", Some(false), false, "off: run `multiplex setup`, and allow it in the firmware's settings"),
             None => check("Wake-on-LAN", None, false, "needs a wired network card managed by NetworkManager"),
         },
+        check("Touchpad and keys", Some(crate::input::available()), false, "the phone's touchpad needs Hyprland running and xkbcli (from libxkbcommon)"),
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }

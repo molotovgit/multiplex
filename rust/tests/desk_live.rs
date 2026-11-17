@@ -69,3 +69,40 @@ async fn the_desk_answers_over_ssh() {
     let err = desk::act(&conn, &DeskAction::Bind { keys: "NO + SUCH KEYS".into() }).await.unwrap_err();
     assert_eq!(err.to_string(), "The computer has no binding for NO + SUCH KEYS");
 }
+
+/// The touchpad starts on the computer and ends cleanly. Only a "still
+/// there" line is sent: nothing moves and no key is pressed.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_touchpad_starts_and_ends_without_touching_anything() {
+    use std::sync::{Arc, Mutex};
+
+    use multiplex_core::engine::events::EventRelay;
+    use multiplex_core::engine::touchpad::Touchpad;
+    use multiplex_proto::input::InputEvent;
+
+    let Some(conn) = connect().await else {
+        eprintln!("touchpad test skipped: set MPX_DESKTOP_HOST, MPX_DESKTOP_USER and MPX_DESKTOP_KEY");
+        return;
+    };
+    let ended = Arc::new(EventRelay::<String>::new());
+    let reasons = Arc::new(Mutex::new(Vec::<String>::new()));
+    let seen = reasons.clone();
+    ended.attach(Arc::new(move |reason| {
+        seen.lock().unwrap().push(reason);
+        true
+    }));
+    let started = std::time::Instant::now();
+    let pad = Touchpad::open(Arc::new(conn), ended).await.expect("the touchpad starts");
+    eprintln!("touchpad ready in {:?}", started.elapsed());
+    assert!(pad.send(InputEvent::Ping));
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    assert!(reasons.lock().unwrap().is_empty(), "it is still running");
+    pad.close();
+    for _ in 0..40 {
+        if !reasons.lock().unwrap().is_empty() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert_eq!(*reasons.lock().unwrap(), vec![String::new()], "closed from here: no reason to give");
+}

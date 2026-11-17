@@ -48,6 +48,17 @@ A paired computer has a **Panel** (on its card on Home, on its page, and on the 
 
 The panel does what the computer's own keys do. The phone runs `multiplex desk …` on the computer over the SSH connection it already has (nothing new listens on the network); that command asks Hyprland through `hyprctl`, takes the list of bindings from Omarchy's own key-binding menu, reads players over the session bus and the volume from `wpctl`. The state follows the computer by itself: switch a workspace at the desk and the phone shows it.
 
+## The touchpad: pointer and keys, no picture
+
+When the computer's screen is in sight (a TV across the room, the desk you are standing next to), the **Touchpad** tile turns the phone into its touchpad and keyboard. No picture is sent or decoded, so it costs a few bytes per movement and is as quick as the network.
+
+- One finger moves the pointer (slow is exact, quick crosses the screen); a tap clicks.
+- Hold still, then move, to drag. Or hold **Left click** under your thumb and move with the other hand.
+- Two fingers scroll; a two-finger tap is the right button, a three-finger tap the middle one.
+- The key bar has Super, Ctrl, Alt and Shift (tap: for the next key or click; double tap: locked), and the keyboard button opens Multiplex's keyboard. Text the US keyboard cannot type goes through the computer's clipboard (needs `wl-clipboard` there).
+
+On the computer this is `multiplex input`: an ordinary Wayland program that makes a virtual pointer and a virtual keyboard (with a US keymap from `xkbcli`) and reads one short line per event from the SSH connection. A key or button cannot stay down: everything is released when the phone leaves, and when it goes quiet for a few seconds while something is held.
+
 ## Waking the computer
 
 A paired computer's page has a **Wake** tile: it broadcasts a Wake-on-LAN signal for the computer's network card, whose address the pairing code carried. Three things have to hold:

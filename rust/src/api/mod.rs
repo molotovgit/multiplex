@@ -21,6 +21,7 @@ pub mod terminal;
 pub mod terminal_types;
 pub mod theme;
 pub mod theme_types;
+pub mod touchpad;
 pub mod transfer;
 pub mod transfer_types;
 pub mod tunnel;

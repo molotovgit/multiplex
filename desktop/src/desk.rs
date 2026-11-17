@@ -63,6 +63,18 @@ impl Session {
         Ok(Self { runtime, signature })
     }
 
+    /// The socket Wayland programs of this session talk to.
+    pub fn wayland_socket(&self) -> PathBuf {
+        // Hyprland writes its process id and its socket's name into a lock file.
+        let lock = std::fs::read_to_string(self.runtime.join("hypr").join(&self.signature).join("hyprland.lock")).unwrap_or_default();
+        let name = lock.lines().nth(1).map(str::trim).filter(|n| !n.is_empty() && !n.contains('/')).unwrap_or("wayland-1");
+        self.runtime.join(name)
+    }
+
+    pub fn runtime_dir(&self) -> &std::path::Path {
+        &self.runtime
+    }
+
     /// A command that can reach the session: Hyprland, the session bus
     /// and the sound server, with Omarchy's own commands on the path.
     fn command(&self, program: &str) -> Command {

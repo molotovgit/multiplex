@@ -8,6 +8,7 @@
 //!   checks it.
 
 mod desk;
+mod input;
 mod store;
 mod system;
 
@@ -40,6 +41,7 @@ The paired phone uses these over SSH:
   multiplex desk watch        The same, again whenever it changes
   multiplex desk binds        Every key binding with a description
   multiplex desk do <action>  Switch workspace, move focus, media keys, …
+  multiplex input             A touchpad and keyboard, driven by lines on standard input
 ";
 
 fn main() {
@@ -55,6 +57,8 @@ fn main() {
         ["setup", "--dry-run"] => setup(true),
         ["doctor"] => doctor(),
         ["desk", rest @ ..] => desk::run(rest),
+        ["input"] => input::run(false),
+        ["input", "--check"] => input::run(true),
         ["--version" | "version"] => {
             println!("multiplex {}", env!("CARGO_PKG_VERSION"));
             Ok(())

@@ -19,7 +19,8 @@ class DesktopKeyBar extends StatelessWidget {
   /// Shown with the phone's keyboard: back to Multiplex's keyboard.
   final VoidCallback? onSwitchKeyboard;
 
-  final DesktopController controller;
+  /// The desktop, or the touchpad without a picture.
+  final KeyTarget controller;
 
   /// Called after each press so the phone keyboard stays open.
   final VoidCallback keepFocus;

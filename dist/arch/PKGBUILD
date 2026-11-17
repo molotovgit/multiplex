@@ -7,13 +7,15 @@ pkgdesc="The Omarchy side of Multiplex: pair a phone by QR code and control the 
 arch=('x86_64' 'aarch64')
 url="https://github.com/molotovgit/multiplex"
 license=('custom')
-depends=('openssh' 'gliff' 'iproute2')
+depends=('openssh' 'gliff' 'iproute2' 'libxkbcommon')
 makedepends=('cargo')
 optdepends=(
   'tailscale: reach the computer from anywhere'
   'ufw: firewall rules written by multiplex setup'
   'fcitx5: the phone keyboard opens when a text field has the focus'
   'libnotify: a notification when a phone pairs'
+  'wl-clipboard: the phone touchpad types text outside the US keyboard through the clipboard'
+  'networkmanager: multiplex setup turns Wake-on-LAN on'
 )
 options=('!debug')
 

@@ -10,7 +10,7 @@ import 'desktop_keys.dart';
 class DesktopKeySink implements KeySink {
   DesktopKeySink(this.controller);
 
-  final DesktopController controller;
+  final KeyTarget controller;
 
   static const _keys = {
     TerminalKey.enter: LinuxKey.enter,

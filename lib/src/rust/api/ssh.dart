@@ -15,6 +15,7 @@ import 'sftp.dart';
 import 'ssh_types.dart';
 import 'terminal.dart';
 import 'terminal_types.dart';
+import 'touchpad.dart';
 import 'tunnel.dart';
 import 'tunnel_types.dart';
 import 'watch.dart';
@@ -64,6 +65,10 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.
   Future<RemoteShell> openShell({required ShellOptions options});
+
+  /// Starts a touchpad and keyboard on the computer. It is ready when
+  /// this returns.
+  Future<RemoteTouchpad> openTouchpad();
 
   /// Joins a shell whose connection dropped to this (new) connection.
   /// Its screen and history stay; the new shell carries on below them.

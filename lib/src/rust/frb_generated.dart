@@ -20,6 +20,7 @@ import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
 import 'api/theme_types.dart';
+import 'api/touchpad.dart';
 import 'api/transfer.dart';
 import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
@@ -92,7 +93,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1297866893;
+  int get rustContentHash => 854733452;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -389,6 +390,43 @@ abstract class RustLibApi extends BaseApi {
 
   String crateApiTerminalRemoteShellVisibleText({required RemoteShell that});
 
+  void crateApiTouchpadRemoteTouchpadButton({
+    required RemoteTouchpad that,
+    required TouchpadButton button,
+    required bool down,
+  });
+
+  void crateApiTouchpadRemoteTouchpadClose({required RemoteTouchpad that});
+
+  Stream<String> crateApiTouchpadRemoteTouchpadEnded({
+    required RemoteTouchpad that,
+  });
+
+  void crateApiTouchpadRemoteTouchpadKey({
+    required RemoteTouchpad that,
+    required int code,
+    required bool down,
+  });
+
+  void crateApiTouchpadRemoteTouchpadMoveBy({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  });
+
+  void crateApiTouchpadRemoteTouchpadPaste({
+    required RemoteTouchpad that,
+    required String text,
+  });
+
+  void crateApiTouchpadRemoteTouchpadReleaseAll({required RemoteTouchpad that});
+
+  void crateApiTouchpadRemoteTouchpadScroll({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  });
+
   Stream<String> crateApiWatchRemoteWatchLines({required RemoteWatch that});
 
   void crateApiWatchRemoteWatchStop({required RemoteWatch that});
@@ -439,6 +477,10 @@ abstract class RustLibApi extends BaseApi {
   Future<RemoteShell> crateApiSshSshSessionOpenShell({
     required SshSession that,
     required ShellOptions options,
+  });
+
+  Future<RemoteTouchpad> crateApiSshSshSessionOpenTouchpad({
+    required SshSession that,
   });
 
   Future<void> crateApiSshSshSessionReattachShell({
@@ -651,6 +693,15 @@ abstract class RustLibApi extends BaseApi {
   get rust_arc_decrement_strong_count_RemoteShell;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_RemoteShellPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteTouchpad;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteTouchpad;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteTouchpadPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_RemoteWatch;
@@ -2946,6 +2997,280 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  void crateApiTouchpadRemoteTouchpadButton({
+    required RemoteTouchpad that,
+    required TouchpadButton button,
+    required bool down,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_touchpad_button(button, serializer);
+          sse_encode_bool(down, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 69)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadButtonConstMeta,
+        argValues: [that, button, down],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadButtonConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_button",
+        argNames: ["that", "button", "down"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadClose({required RemoteTouchpad that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 70)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadCloseConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_close",
+        argNames: ["that"],
+      );
+
+  @override
+  Stream<String> crateApiTouchpadRemoteTouchpadEnded({
+    required RemoteTouchpad that,
+  }) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 71,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiTouchpadRemoteTouchpadEndedConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadEndedConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_ended",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadKey({
+    required RemoteTouchpad that,
+    required int code,
+    required bool down,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_u_32(code, serializer);
+          sse_encode_bool(down, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 72)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadKeyConstMeta,
+        argValues: [that, code, down],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadKeyConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_key",
+        argNames: ["that", "code", "down"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadMoveBy({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(dx, serializer);
+          sse_encode_f_64(dy, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 73)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadMoveByConstMeta,
+        argValues: [that, dx, dy],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadMoveByConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_move_by",
+        argNames: ["that", "dx", "dy"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadPaste({
+    required RemoteTouchpad that,
+    required String text,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 74)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadPasteConstMeta,
+        argValues: [that, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadPasteConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_paste",
+        argNames: ["that", "text"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadReleaseAll({
+    required RemoteTouchpad that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 75)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadReleaseAllConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadReleaseAllConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_release_all",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadScroll({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(dx, serializer);
+          sse_encode_f_64(dy, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 76)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadScrollConstMeta,
+        argValues: [that, dx, dy],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadScrollConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_scroll",
+        argNames: ["that", "dx", "dy"],
+      );
+
+  @override
   Stream<String> crateApiWatchRemoteWatchLines({required RemoteWatch that}) {
     final sink = RustStreamSink<String>();
     unawaited(
@@ -2961,7 +3286,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 69,
+              funcId: 77,
               port: port_,
             );
           },
@@ -2994,7 +3319,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 70)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 78)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -3027,7 +3352,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 71,
+            funcId: 79,
             port: port_,
           );
         },
@@ -3060,7 +3385,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 72,
+            funcId: 80,
             port: port_,
           );
         },
@@ -3097,7 +3422,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 73,
+            funcId: 81,
             port: port_,
           );
         },
@@ -3135,7 +3460,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 74,
+            funcId: 82,
             port: port_,
           );
         },
@@ -3169,7 +3494,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 75,
+            funcId: 83,
             port: port_,
           );
         },
@@ -3203,7 +3528,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 76,
+            funcId: 84,
             port: port_,
           );
         },
@@ -3238,7 +3563,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 77,
+            funcId: 85,
             port: port_,
           );
         },
@@ -3278,7 +3603,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 78,
+            funcId: 86,
             port: port_,
           );
         },
@@ -3308,7 +3633,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 79)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 87)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_session_info,
@@ -3334,7 +3659,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 80)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 88)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -3370,7 +3695,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 81,
+            funcId: 89,
             port: port_,
           );
         },
@@ -3407,7 +3732,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 82,
+            funcId: 90,
             port: port_,
           );
         },
@@ -3446,7 +3771,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 83,
+            funcId: 91,
             port: port_,
           );
         },
@@ -3466,6 +3791,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "SshSession_open_shell",
         argNames: ["that", "options"],
+      );
+
+  @override
+  Future<RemoteTouchpad> crateApiSshSshSessionOpenTouchpad({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 92,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenTouchpadConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenTouchpadConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_touchpad",
+        argNames: ["that"],
       );
 
   @override
@@ -3490,7 +3852,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 84,
+            funcId: 93,
             port: port_,
           );
         },
@@ -3528,7 +3890,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 85,
+            funcId: 94,
             port: port_,
           );
         },
@@ -3567,7 +3929,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 86,
+            funcId: 95,
             port: port_,
           );
         },
@@ -3602,7 +3964,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 87,
+            funcId: 96,
             port: port_,
           );
         },
@@ -3636,7 +3998,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 88,
+            funcId: 97,
             port: port_,
           );
         },
@@ -3687,7 +4049,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 89,
+            funcId: 98,
             port: port_,
           );
         },
@@ -3713,7 +4075,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 90)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 99)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3738,7 +4100,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 91,
+            funcId: 100,
             port: port_,
           );
         },
@@ -3765,7 +4127,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 92,
+            funcId: 101,
             port: port_,
           );
         },
@@ -3792,7 +4154,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 93,
+            funcId: 102,
             port: port_,
           );
         },
@@ -3819,7 +4181,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 94,
+            funcId: 103,
             port: port_,
           );
         },
@@ -3846,7 +4208,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 95,
+            funcId: 104,
             port: port_,
           );
         },
@@ -3873,7 +4235,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 96,
+            funcId: 105,
             port: port_,
           );
         },
@@ -3900,7 +4262,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 97,
+            funcId: 106,
             port: port_,
           );
         },
@@ -3927,7 +4289,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 98,
+            funcId: 107,
             port: port_,
           );
         },
@@ -3954,7 +4316,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 99,
+            funcId: 108,
             port: port_,
           );
         },
@@ -3988,7 +4350,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 100,
+            funcId: 109,
             port: port_,
           );
         },
@@ -4017,7 +4379,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 101,
+            funcId: 110,
             port: port_,
           );
         },
@@ -4049,7 +4411,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 102,
+            funcId: 111,
             port: port_,
           );
         },
@@ -4079,7 +4441,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 103,
+            funcId: 112,
             port: port_,
           );
         },
@@ -4107,7 +4469,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 104,
+            funcId: 113,
           )!;
         },
         codec: SseCodec(
@@ -4134,7 +4496,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 105,
+            funcId: 114,
           )!;
         },
         codec: SseCodec(
@@ -4169,7 +4531,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 106,
+            funcId: 115,
             port: port_,
           );
         },
@@ -4200,7 +4562,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 107,
+            funcId: 116,
           )!;
         },
         codec: SseCodec(
@@ -4227,7 +4589,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 108,
+            funcId: 117,
           )!;
         },
         codec: SseCodec(
@@ -4257,7 +4619,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 109,
+            funcId: 118,
           )!;
         },
         codec: SseCodec(
@@ -4288,7 +4650,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 110,
+            funcId: 119,
           )!;
         },
         codec: SseCodec(
@@ -4315,7 +4677,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 111,
+            funcId: 120,
           )!;
         },
         codec: SseCodec(
@@ -4363,7 +4725,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 112,
+            funcId: 121,
             port: port_,
           );
         },
@@ -4416,7 +4778,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 113,
+            funcId: 122,
             port: port_,
           );
         },
@@ -4461,7 +4823,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 114,
+            funcId: 123,
           )!;
         },
         codec: SseCodec(
@@ -4487,7 +4849,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 115,
+            funcId: 124,
             port: port_,
           );
         },
@@ -4514,7 +4876,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 116,
+            funcId: 125,
             port: port_,
           );
         },
@@ -4541,7 +4903,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 117,
+            funcId: 126,
             port: port_,
           );
         },
@@ -4573,7 +4935,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 118,
+            funcId: 127,
             port: port_,
           );
         },
@@ -4608,7 +4970,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 119,
+            funcId: 128,
             port: port_,
           );
         },
@@ -4638,7 +5000,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 120,
+            funcId: 129,
             port: port_,
           );
         },
@@ -4665,7 +5027,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 121,
+            funcId: 130,
             port: port_,
           );
         },
@@ -4692,7 +5054,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 122,
+            funcId: 131,
             port: port_,
           );
         },
@@ -4719,7 +5081,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 123,
+            funcId: 132,
             port: port_,
           );
         },
@@ -4751,7 +5113,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 124,
+            funcId: 133,
             port: port_,
           );
         },
@@ -4778,7 +5140,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           return pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 125,
+            funcId: 134,
           )!;
         },
         codec: SseCodec(
@@ -4811,7 +5173,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 126,
+            funcId: 135,
             port: port_,
           );
         },
@@ -4845,7 +5207,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 127,
+            funcId: 136,
             port: port_,
           );
         },
@@ -4920,6 +5282,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_RemoteShell => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteTouchpad => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteTouchpad => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_RemoteWatch => wire
@@ -5007,6 +5377,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   RemoteWatch
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     dynamic raw,
@@ -5088,6 +5467,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   RemoteWatch
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     dynamic raw,
@@ -5166,6 +5554,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return RemoteShellImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteTouchpad
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -6278,6 +6675,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TouchpadButton dco_decode_touchpad_button(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TouchpadButton.values[raw as int];
+  }
+
+  @protected
   TransferProgress dco_decode_transfer_progress(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -6452,6 +6855,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   RemoteWatch
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     SseDeserializer deserializer,
@@ -6560,6 +6975,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   RemoteWatch
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     SseDeserializer deserializer,
@@ -6662,6 +7089,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return RemoteShellImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteTouchpad
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -8044,6 +8483,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TouchpadButton sse_decode_touchpad_button(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TouchpadButton.values[inner];
+  }
+
+  @protected
   TransferProgress sse_decode_transfer_progress(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_transferred = sse_decode_u_64(deserializer);
@@ -8227,6 +8673,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     RemoteWatch self,
     SseSerializer serializer,
@@ -8344,6 +8803,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
     RemoteWatch self,
     SseSerializer serializer,
@@ -8455,6 +8927,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as RemoteShellImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -9692,6 +10177,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_touchpad_button(
+    TouchpadButton self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_transfer_progress(
     TransferProgress self,
     SseSerializer serializer,
@@ -10226,6 +10720,60 @@ class RemoteShellImpl extends RustOpaque implements RemoteShell {
 }
 
 @sealed
+class RemoteTouchpadImpl extends RustOpaque implements RemoteTouchpad {
+  // Not to be used by end users
+  RemoteTouchpadImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteTouchpadImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteTouchpad,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteTouchpad,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteTouchpadPtr,
+  );
+
+  void button({required TouchpadButton button, required bool down}) =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadButton(
+        that: this,
+        button: button,
+        down: down,
+      );
+
+  void close() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadClose(that: this);
+
+  /// Hears once why the touchpad stopped (empty when it was closed from
+  /// here). Listen once.
+  Stream<String> ended() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadEnded(that: this);
+
+  /// A key by its Linux code, pressed or released.
+  void key({required int code, required bool down}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadKey(that: this, code: code, down: down);
+
+  /// Moves the pointer by this much.
+  void moveBy({required double dx, required double dy}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadMoveBy(that: this, dx: dx, dy: dy);
+
+  /// Puts text on the computer's clipboard and pastes it (for text the
+  /// US keyboard cannot type).
+  void paste({required String text}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadPaste(that: this, text: text);
+
+  void releaseAll() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadReleaseAll(that: this);
+
+  void scroll({required double dx, required double dy}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadScroll(that: this, dx: dx, dy: dy);
+}
+
+@sealed
 class RemoteWatchImpl extends RustOpaque implements RemoteWatch {
   // Not to be used by end users
   RemoteWatchImpl.frbInternalDcoDecode(List<dynamic> wire)
@@ -10330,6 +10878,11 @@ class SshSessionImpl extends RustOpaque implements SshSession {
       .instance
       .api
       .crateApiSshSshSessionOpenShell(that: this, options: options);
+
+  /// Starts a touchpad and keyboard on the computer. It is ready when
+  /// this returns.
+  Future<RemoteTouchpad> openTouchpad() =>
+      RustLib.instance.api.crateApiSshSshSessionOpenTouchpad(that: this);
 
   /// Joins a shell whose connection dropped to this (new) connection.
   /// Its screen and history stay; the new shell carries on below them.
