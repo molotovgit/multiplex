@@ -28,6 +28,7 @@ import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
+import 'api/wake.dart';
 import 'api/watch.dart';
 
 import 'dart:async';

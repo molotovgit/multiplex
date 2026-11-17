@@ -8,8 +8,6 @@ import 'desk_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `desk_reply`, `problem`
-
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<DeskWatch>>
 abstract class DeskWatch implements RustOpaqueInterface {
   /// Each new state. Listen once.

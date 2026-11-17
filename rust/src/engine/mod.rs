@@ -20,3 +20,4 @@ pub mod theme_import;
 pub mod tree_copy;
 pub mod tunnel;
 pub mod vault;
+pub mod wol;

@@ -21,7 +21,13 @@ void main() {
   Future<void> home(WidgetTester tester) async {
     final sessions = SessionManager(store);
     addTearDown(sessions.dispose);
-    await tester.pumpWidget(AppScope(vault: store, manager: sessions, child: const MaterialApp(home: HostsScreen())));
+    await tester.pumpWidget(
+      AppScope(
+        vault: store,
+        manager: sessions,
+        child: const MaterialApp(home: HostsScreen()),
+      ),
+    );
     // Let the store's delayed save run, so no timer outlives the test.
     await tester.pump(const Duration(milliseconds: 500));
   }
@@ -59,9 +65,42 @@ void main() {
     await tester.tap(find.text('Desk'));
     await tester.pumpAndSettle();
     expect(find.byType(ComputerScreen), findsOneWidget);
-    for (final tile in ['Desktop', 'Terminal', 'Files', 'Extend screen', 'Tunnels', 'Status']) {
+    for (final tile in ['Desktop', 'Panel', 'Terminal', 'Files', 'Extend screen', 'Tunnels', 'Status']) {
       expect(find.text(tile), findsOneWidget, reason: tile);
     }
+  });
+
+  testWidgets('a computer whose network card is known can be woken', (tester) async {
+    store.saveHost(_desk.copyWith(mac: () => 'aa:bb:cc:dd:ee:ff'));
+    final sessions = SessionManager(store);
+    addTearDown(sessions.dispose);
+    final sent = <String>[];
+    await tester.pumpWidget(
+      AppScope(
+        vault: store,
+        manager: sessions,
+        child: MaterialApp(
+          home: Scaffold(
+            body: ComputerScreen(hostId: 'c', wake: (mac, home) async => sent.add('$mac $home')),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.ensureVisible(find.text('Wake'));
+    await tester.tap(find.text('Wake'));
+    await tester.pumpAndSettle();
+    expect(sent, ['aa:bb:cc:dd:ee:ff 192.168.0.10']);
+    expect(find.textContaining('Wake signal sent to Desk'), findsOneWidget);
+  });
+
+  testWidgets('without a network card address there is no Wake tile', (tester) async {
+    store.saveHost(_desk);
+    await home(tester);
+    await tester.tap(find.text('Desk'));
+    await tester.pumpAndSettle();
+    expect(find.text('Panel'), findsOneWidget);
+    expect(find.text('Wake'), findsNothing);
   });
 
   testWidgets('removing a computer takes it off Home', (tester) async {

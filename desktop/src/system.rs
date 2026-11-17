@@ -139,6 +139,11 @@ pub fn doctor() -> Vec<Check> {
         check("Hyprland", Some(hyprland_running()), true, if hyprland_running() { "a session is running" } else { "no session found (log in to the desktop)" }),
         check("Tailscale", Some(ts.is_some()), false, &ts.map(|n| format!("connected as {n}")).unwrap_or_else(|| "not connected: the phone reaches this computer on the home network only".into())),
         check("Automatic keyboard", Some(run("pgrep", &["-x", "fcitx5"]).is_some()), false, "needs fcitx5 running (it tells the phone when a text field has the focus)"),
+        match wake_on_lan() {
+            Some((_, true)) => check("Wake-on-LAN", Some(true), false, "on: the phone can switch this computer on from the home network (the firmware has to allow it too)"),
+            Some((_, false)) => check("Wake-on-LAN", Some(false), false, "off: run `multiplex setup`, and allow it in the firmware's settings"),
+            None => check("Wake-on-LAN", None, false, "needs a wired network card managed by NetworkManager"),
+        },
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ]
 }
@@ -162,6 +167,13 @@ pub fn setup_steps() -> Vec<(&'static str, Vec<String>)> {
     if !on_path("gliff-server") {
         steps.push(("Install gliff (the remote desktop)", sh("pacman -S --needed --noconfirm gliff")));
     }
+    if let Some((connection, false)) = wake_on_lan() {
+        // Applies the next time the network connects, so nothing drops now.
+        steps.push((
+            "Wake-on-LAN: let the phone switch this computer on (from the next network connection; the firmware has to allow it too)",
+            sh(&format!("nmcli connection modify '{}' 802-3-ethernet.wake-on-lan magic", connection.replace('\'', r"'\''"))),
+        ));
+    }
     steps
 }
 
@@ -171,4 +183,20 @@ fn home_network() -> Option<String> {
     let json = run("ip", &["-j", "-4", "route", "show", "dev", &device?])?;
     let routes: serde_json::Value = serde_json::from_str(&json).ok()?;
     routes.as_array()?.iter().filter_map(|r| r["dst"].as_str()).find(|d| d.contains('/')).map(str::to_owned)
+}
+
+/// The wired NetworkManager connection the default route uses, and whether
+/// it wakes the computer on a magic packet. None without such a connection.
+fn wake_on_lan() -> Option<(String, bool)> {
+    let (_, device) = default_route();
+    let device = device?;
+    let active = run("nmcli", &["-t", "-f", "NAME,DEVICE,TYPE", "connection", "show", "--active"])?;
+    let name = active.lines().find_map(|line| {
+        // NAME may hold escaped colons; DEVICE and TYPE never do.
+        let (rest, kind) = line.rsplit_once(':')?;
+        let (name, dev) = rest.rsplit_once(':')?;
+        (dev == device && kind == "802-3-ethernet").then(|| name.replace("\\:", ":"))
+    })?;
+    let setting = run("nmcli", &["-g", "802-3-ethernet.wake-on-lan", "connection", "show", &name])?;
+    Some((name, setting.split(',').any(|s| s.trim() == "magic")))
 }

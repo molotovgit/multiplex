@@ -25,6 +25,7 @@ import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
+import 'api/wake.dart';
 import 'api/watch.dart';
 
 import 'dart:async';
@@ -91,7 +92,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -740564317;
+  int get rustContentHash => -1297866893;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -587,6 +588,11 @@ abstract class RustLibApi extends BaseApi {
     required String path,
     required List<int> key,
     required String contents,
+  });
+
+  Future<void> crateApiWakeWakeOnLan({
+    required String mac,
+    String? homeAddress,
   });
 
   RustArcIncrementStrongCountFnType
@@ -4823,6 +4829,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiVaultVaultSaveConstMeta => const TaskConstMeta(
     debugName: "vault_save",
     argNames: ["path", "key", "contents"],
+  );
+
+  @override
+  Future<void> crateApiWakeWakeOnLan({
+    required String mac,
+    String? homeAddress,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(mac, serializer);
+          sse_encode_opt_String(homeAddress, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 127,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiWakeWakeOnLanConstMeta,
+        argValues: [mac, homeAddress],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWakeWakeOnLanConstMeta => const TaskConstMeta(
+    debugName: "wake_on_lan",
+    argNames: ["mac", "homeAddress"],
   );
 
   RustArcIncrementStrongCountFnType

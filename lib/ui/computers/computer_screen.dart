@@ -4,7 +4,9 @@ import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../app/theme_look.dart';
 import '../../data/models.dart';
+import '../../sessions/error_text.dart';
 import '../../sessions/tailscale_node.dart';
+import '../../src/rust/api/wake.dart';
 import '../common/widgets.dart';
 import '../desktop/desktop_settings.dart';
 import '../hosts/host_connector.dart';
@@ -19,11 +21,24 @@ import 'panel_screen.dart';
 /// Everything one paired computer can do, as a grid of tiles. New
 /// features arrive as one more tile here.
 class ComputerScreen extends StatelessWidget {
-  const ComputerScreen({super.key, required this.hostId});
+  const ComputerScreen({super.key, required this.hostId, this.wake});
 
   final String hostId;
 
+  /// Sends the wake signal (network card address, home address). Tests pass a stand-in.
+  final Future<void> Function(String mac, String? home)? wake;
+
   static Future<void> open(BuildContext context, Host host) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ComputerScreen(hostId: host.id)));
+
+  /// Sends the wake signal. Tests pass a stand-in for the sender.
+  Future<void> _wake(BuildContext context, Host host) async {
+    try {
+      await (wake ?? ((String mac, String? home) => wakeOnLan(mac: mac, homeAddress: home)))(host.mac!, host.viaTailscale ? null : host.address);
+      if (context.mounted) Toast.show(context, 'Wake signal sent to ${host.title}. It reaches the computer only on its home network.');
+    } catch (e) {
+      if (context.mounted) Toast.show(context, errorSentence(e, fallback: 'The wake signal could not be sent.'));
+    }
+  }
 
   Future<void> _remove(BuildContext context, Host host) async {
     final ok = await Confirm.ask(
@@ -61,6 +76,8 @@ class ComputerScreen extends StatelessWidget {
       ),
       _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
       _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
+      // Wake-on-LAN, with the network card's address saved at pairing.
+      if ((host.mac ?? '').isNotEmpty) _Tile(Icons.power_settings_new, 'Wake', 'Switch it on from the home network', () => _wake(context, host)),
     ];
     return Scaffold(
       appBar: AppBar(

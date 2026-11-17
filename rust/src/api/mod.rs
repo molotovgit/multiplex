@@ -26,4 +26,5 @@ pub mod transfer_types;
 pub mod tunnel;
 pub mod tunnel_types;
 pub mod vault;
+pub mod wake;
 pub mod watch;
