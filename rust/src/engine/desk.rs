@@ -18,6 +18,11 @@ fn problem(exit_code: Option<u32>, stderr: &str) -> anyhow::Error {
     if exit_code == Some(127) {
         return anyhow::anyhow!("This computer does not have the Multiplex package (or it is an old one). Install it there, then try again.");
     }
+    // The package answers a command it does not know with its list of
+    // commands: it is older than this app.
+    if exit_code == Some(2) && stderr.trim_start().starts_with("multiplex: the Omarchy side of Multiplex") {
+        return anyhow::anyhow!("The Multiplex package on this computer is older than this app and cannot do this yet. Update it there, then try again.");
+    }
     let said = stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or_default().trim();
     let said = said.strip_prefix("multiplex: ").unwrap_or(said);
     if said.is_empty() {
@@ -30,7 +35,7 @@ fn problem(exit_code: Option<u32>, stderr: &str) -> anyhow::Error {
     anyhow::anyhow!("{text}")
 }
 
-async fn reply(conn: &Connection, command: &str) -> anyhow::Result<String> {
+pub(crate) async fn reply(conn: &Connection, command: &str) -> anyhow::Result<String> {
     let out = conn.exec(command, MAX_REPLY).await?;
     if out.exit_code == Some(0) {
         Ok(out.stdout)
@@ -64,5 +69,11 @@ mod tests {
         assert!(problem(Some(127), "sh: multiplex: command not found").to_string().contains("Multiplex package"));
         assert_eq!(problem(Some(1), "multiplex: the computer has no binding for X\n").to_string(), "The computer has no binding for X");
         assert_eq!(problem(None, "").to_string(), "The computer did not answer.");
+        // An older package prints its help for a command it does not know;
+        // the last line of that is no reason to show anyone.
+        let help = "multiplex: the Omarchy side of Multiplex\n\n  multiplex pair              Show a QR code\n  multiplex speaker           The phone as a loudspeaker\n";
+        assert!(problem(Some(2), help).to_string().contains("older than this app"));
+        // Exit code 2 for another reason keeps its own words.
+        assert_eq!(problem(Some(2), "multiplex: usage: multiplex herd state | watch | do <action>").to_string(), "Usage: multiplex herd state | watch | do <action>");
     }
 }

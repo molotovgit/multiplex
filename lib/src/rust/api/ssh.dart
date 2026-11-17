@@ -9,6 +9,8 @@ import 'desk.dart';
 import 'desk_types.dart';
 import 'desktop.dart';
 import 'desktop_types.dart';
+import 'herd.dart';
+import 'herd_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
@@ -56,6 +58,37 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Runs one command and returns its output (each stream capped at
   /// `max_bytes`).
   Future<ExecOutput> exec({required String command, required int maxBytes});
+
+  /// Presses keys in a pane, by herdr's names for them: "esc", "enter",
+  /// "ctrl+c", "up", "2".
+  Future<void> herdKeys({
+    required String session,
+    required String pane,
+    required List<String> keys,
+  });
+
+  /// Gives a pane's agent this text and Enter, as one piece. In a plain
+  /// terminal it is typed, then Enter.
+  Future<void> herdPrompt({
+    required String session,
+    required String pane,
+    required String text,
+  });
+
+  /// A pane's recent output, as text, at most `lines` lines of it.
+  Future<String> herdRead({
+    required String session,
+    required String pane,
+    required int lines,
+  });
+
+  /// The herd now.
+  Future<HerdState> herdState();
+
+  /// The herd now, and again whenever something in it changes, until
+  /// [`HerdWatch::stop`]. The computer is told by herdr itself, so a
+  /// change is here as fast as the connection carries it.
+  Future<HerdWatch> herdWatch();
 
   SessionInfo info();
 

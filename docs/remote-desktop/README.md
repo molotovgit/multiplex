@@ -183,11 +183,30 @@ On a computer's page, **Scan text** opens the phone's page scanner (Google's: it
 
 ## Coding agents
 
-If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile: every agent with what it is doing and whether it is working, waiting for you, done or idle, those waiting first. A tap opens a terminal attached to that herdr session, in front of the agents.
+If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile. It is an inbox: every agent of every herdr session, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: herdr tells the computer of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
+
+A tap opens an agent without a terminal:
+
+- what it last wrote, read again whenever its state changes (and every two seconds while it works);
+- the keys its questions take: Esc, 1, 2, 3, the arrows, Tab, Enter;
+- a line to answer it or ask for more, sent as one piece with Enter;
+- **Open in a terminal** for the whole herdr screen, as before.
 
 While the phone is connected it is also told when an agent starts waiting for an answer or finishes: a notification, "Claude needs you" or "Claude is done", with what it was doing.
 
-On the computer this is `multiplex agents`, which reads `herdr api snapshot`; it changes nothing there.
+On the computer this is `multiplex herd`:
+
+```sh
+multiplex herd state      # sessions, workspaces, tabs, panes and their agents, as one line of JSON
+multiplex herd watch      # the same, and again whenever something changes
+multiplex herd do prompt <session> <pane> <text as base64>   # text and Enter for a pane's agent
+multiplex herd do keys <session> <pane> esc 2 enter          # keys, by herdr's names
+multiplex herd do read <session> <pane> 80                   # a pane's recent output
+```
+
+Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly herdr's shape and text travels as base64, so nothing a phone sends is ever read by a shell.
+
+More of the way [Herdr](https://herdr.dev) works is on its way: an agent's live terminal at the phone's own size, starting agents and tabs from the phone, and resuming sessions and earlier conversations.
 
 ## A yes from the phone
 

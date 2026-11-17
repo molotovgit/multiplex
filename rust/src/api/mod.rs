@@ -10,6 +10,8 @@ pub mod desk;
 pub mod desk_types;
 pub mod desktop;
 pub mod desktop_types;
+pub mod herd;
+pub mod herd_types;
 pub mod keys;
 pub mod pairing;
 pub mod share;

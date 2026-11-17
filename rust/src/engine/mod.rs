@@ -6,6 +6,7 @@
 pub mod desk;
 pub mod threads;
 pub mod desktop;
+pub mod herd;
 pub mod events;
 pub mod file_store;
 pub mod folder_sync;

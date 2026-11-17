@@ -12,6 +12,8 @@ import 'api/desk.dart';
 import 'api/desk_types.dart';
 import 'api/desktop.dart';
 import 'api/desktop_types.dart';
+import 'api/herd.dart';
+import 'api/herd_types.dart';
 import 'api/keys.dart';
 import 'api/pairing.dart';
 import 'api/screen.dart';
@@ -66,6 +68,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_FileTransferPtr => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_HerdWatchPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_RemoteDesktopPtr => wire
@@ -131,6 +137,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  HerdWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
     dynamic raw,
   );
 
@@ -219,6 +231,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  );
+
+  @protected
   RemoteDesktop
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     dynamic raw,
@@ -303,6 +321,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  );
+
+  @protected
   RemoteDesktop
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     dynamic raw,
@@ -372,6 +396,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustStreamSink<DesktopEvent> dco_decode_StreamSink_desktop_event_Sse(
     dynamic raw,
   );
+
+  @protected
+  RustStreamSink<HerdState> dco_decode_StreamSink_herd_state_Sse(dynamic raw);
 
   @protected
   RustStreamSink<Uint8List> dco_decode_StreamSink_list_prim_u_8_strict_Sse(
@@ -537,6 +564,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_f_64(dynamic raw);
 
   @protected
+  HerdAgent dco_decode_herd_agent(dynamic raw);
+
+  @protected
+  HerdPane dco_decode_herd_pane(dynamic raw);
+
+  @protected
+  HerdSession dco_decode_herd_session(dynamic raw);
+
+  @protected
+  HerdState dco_decode_herd_state(dynamic raw);
+
+  @protected
+  HerdTab dco_decode_herd_tab(dynamic raw);
+
+  @protected
+  HerdWorkspace dco_decode_herd_workspace(dynamic raw);
+
+  @protected
   HostKeyInfo dco_decode_host_key_info(dynamic raw);
 
   @protected
@@ -580,6 +625,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<EnvVar> dco_decode_list_env_var(dynamic raw);
+
+  @protected
+  List<HerdAgent> dco_decode_list_herd_agent(dynamic raw);
+
+  @protected
+  List<HerdPane> dco_decode_list_herd_pane(dynamic raw);
+
+  @protected
+  List<HerdSession> dco_decode_list_herd_session(dynamic raw);
+
+  @protected
+  List<HerdTab> dco_decode_list_herd_tab(dynamic raw);
+
+  @protected
+  List<HerdWorkspace> dco_decode_list_herd_workspace(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
@@ -777,6 +837,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteDesktop
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     SseDeserializer deserializer,
@@ -857,6 +923,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
     SseDeserializer deserializer,
   );
 
@@ -945,6 +1017,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteDesktop
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     SseDeserializer deserializer,
@@ -1016,6 +1094,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<DesktopEvent> sse_decode_StreamSink_desktop_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<HerdState> sse_decode_StreamSink_herd_state_Sse(
     SseDeserializer deserializer,
   );
 
@@ -1205,6 +1288,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
+  HerdAgent sse_decode_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  HerdPane sse_decode_herd_pane(SseDeserializer deserializer);
+
+  @protected
+  HerdSession sse_decode_herd_session(SseDeserializer deserializer);
+
+  @protected
+  HerdState sse_decode_herd_state(SseDeserializer deserializer);
+
+  @protected
+  HerdTab sse_decode_herd_tab(SseDeserializer deserializer);
+
+  @protected
+  HerdWorkspace sse_decode_herd_workspace(SseDeserializer deserializer);
+
+  @protected
   HostKeyInfo sse_decode_host_key_info(SseDeserializer deserializer);
 
   @protected
@@ -1250,6 +1351,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer);
+
+  @protected
+  List<HerdAgent> sse_decode_list_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer);
+
+  @protected
+  List<HerdSession> sse_decode_list_herd_session(SseDeserializer deserializer);
+
+  @protected
+  List<HerdTab> sse_decode_list_herd_tab(SseDeserializer deserializer);
+
+  @protected
+  List<HerdWorkspace> sse_decode_list_herd_workspace(
+    SseDeserializer deserializer,
+  );
 
   @protected
   List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
@@ -1469,6 +1587,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     RemoteDesktop self,
     SseSerializer serializer,
@@ -1562,6 +1687,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
     FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
     SseSerializer serializer,
   );
 
@@ -1665,6 +1797,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     RemoteDesktop self,
     SseSerializer serializer,
@@ -1748,6 +1887,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_StreamSink_desktop_event_Sse(
     RustStreamSink<DesktopEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_herd_state_Sse(
+    RustStreamSink<HerdState> self,
     SseSerializer serializer,
   );
 
@@ -1983,6 +2128,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_herd_agent(HerdAgent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_pane(HerdPane self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_session(HerdSession self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_state(HerdState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_tab(HerdTab self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_workspace(HerdWorkspace self, SseSerializer serializer);
+
+  @protected
   void sse_encode_host_key_info(HostKeyInfo self, SseSerializer serializer);
 
   @protected
@@ -2035,6 +2198,30 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_agent(
+    List<HerdAgent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_pane(List<HerdPane> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_session(
+    List<HerdSession> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_tab(List<HerdTab> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_workspace(
+    List<HerdWorkspace> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_32_loose(
@@ -2344,6 +2531,22 @@ class RustLibWire implements BaseWire {
       );
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+        ptr,
+      );
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     int ptr,
   ) => wasmModule
@@ -2547,6 +2750,16 @@ extension type RustLibWasmModule._(JSObject _) implements JSObject {
 
   external void
   rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    int ptr,
+  );
+
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
     int ptr,
   );
 

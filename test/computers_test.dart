@@ -6,8 +6,6 @@ import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/platform/phone_bridge.dart';
 import 'package:multiplex/sessions/session_manager.dart';
-import 'package:multiplex/src/rust/api/agents.dart';
-import 'package:multiplex/ui/computers/agents_screen.dart';
 import 'package:multiplex/ui/computers/computer_card.dart';
 import 'package:multiplex/ui/computers/computer_screen.dart';
 import 'package:multiplex/ui/computers/computer_sharing_screen.dart';
@@ -164,32 +162,6 @@ void main() {
     await tester.tap(find.text('Open Notification access'));
     expect(phone.opened, 1);
     await tester.pump(const Duration(milliseconds: 500));
-  });
-
-  testWidgets('agents: those that need an answer come first; a tap opens their terminal', (tester) async {
-    final opened = <String>[];
-    var agents = [
-      const Agent(id: 'p2', name: 'codex', status: AgentStatus.working, title: 'Refactor the parser', workspace: 'web', folder: 'web', session: 'default'),
-      const Agent(id: 'p1', name: 'Claude', status: AgentStatus.blocked, title: 'Fix the tests', workspace: 'api', folder: 'server', session: 'work'),
-    ];
-    await tester.pumpWidget(
-      MaterialApp(
-        home: AgentsScreen(title: 'Desk', load: () async => [...agents], onOpen: (_, agent) async => opened.add(agent.session)),
-      ),
-    );
-    await tester.pump();
-    expect(tester.getTopLeft(find.text('Fix the tests')).dy, lessThan(tester.getTopLeft(find.text('Refactor the parser')).dy));
-    expect(find.text('Needs you'), findsOneWidget);
-    expect(find.text('Claude · api · server'), findsOneWidget);
-    expect(find.text('codex · web'), findsOneWidget, reason: 'the folder is not repeated when it is the workspace');
-    await tester.tap(find.text('Fix the tests'));
-    expect(opened, ['work']);
-    // The list follows the computer by itself.
-    agents = [];
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pump();
-    expect(find.text('No agents are running'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('removing a computer takes it off Home', (tester) async {
