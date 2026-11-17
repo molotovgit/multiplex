@@ -31,11 +31,11 @@ class TerminalKeyboardPanel extends StatefulWidget {
     required this.onHide,
     required this.onSwitchToSystem,
     this.onHistory,
-  })  : sink = null,
-        onSent = null,
-        modifiers = null,
-        commands = null,
-        showCommands = true;
+  }) : sink = null,
+       onSent = null,
+       modifiers = null,
+       commands = null,
+       showCommands = true;
 
   /// The keyboard sending somewhere else: the settings preview and tests.
   const TerminalKeyboardPanel.withSink({
@@ -114,6 +114,14 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
     super.dispose();
   }
 
+  /// Sideways on a phone the keys part for the thumbs: the wider the
+  /// screen, the wider the gap (in key units).
+  static double _splitGap(BuildContext context, KeyboardSettings settings) {
+    final size = MediaQuery.sizeOf(context);
+    if (!settings.splitInLandscape || size.width <= size.height || size.width < 560) return 0;
+    return size.width >= 900 ? 4 : 3;
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = AppScope.watch(context);
@@ -166,12 +174,15 @@ class _TerminalKeyboardPanelState extends State<TerminalKeyboardPanel> {
                           autoHide: _commands is! NoCommandTarget,
                         ),
                       TerminalTopRow(keyBarIds: keyBar, engine: _engine, look: look),
-                      _PageKeys(
-                        // A new key per page and layout: key states never carry over.
-                        key: ValueKey((_engine.page, settings.layout)),
-                        rows: layout.page(_engine.page),
-                        engine: _engine,
-                        look: look,
+                      KeyboardSplit(
+                        gap: _splitGap(context, settings),
+                        child: _PageKeys(
+                          // A new key per page and layout: key states never carry over.
+                          key: ValueKey((_engine.page, settings.layout)),
+                          rows: layout.page(_engine.page),
+                          engine: _engine,
+                          look: look,
+                        ),
                       ),
                     ],
                   ),
@@ -195,7 +206,7 @@ class _PageKeys extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [for (final row in rows) KeyRow(keys: row, engine: engine, look: look)],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [for (final row in rows) KeyRow(keys: row, engine: engine, look: look)],
+  );
 }

@@ -50,6 +50,7 @@ class KeyboardSettings {
     this.haptics = true,
     this.sound = false,
     this.showRecentCommands = true,
+    this.splitInLandscape = true,
   });
 
   /// True: the built-in keyboard replaces the phone's keyboard in terminals.
@@ -73,6 +74,10 @@ class KeyboardSettings {
   /// A row of recent commands for this host above the keys.
   final bool showRecentCommands;
 
+  /// With the phone turned sideways, the keys part in two halves, one for
+  /// each thumb, as phone keyboards do.
+  final bool splitInLandscape;
+
   /// Reads the saved keyboard settings.
   static KeyboardSettings of(VaultStore store) => KeyboardSettings.fromJson(store.settings.keyboard);
 
@@ -91,34 +96,36 @@ class KeyboardSettings {
     bool? haptics,
     bool? sound,
     bool? showRecentCommands,
-  }) =>
-      KeyboardSettings(
-        enabled: enabled ?? this.enabled,
-        layout: layout ?? this.layout,
-        keyHeight: keyHeight ?? this.keyHeight,
-        shape: shape ?? this.shape,
-        boldLabels: boldLabels ?? this.boldLabels,
-        showAlternates: showAlternates ?? this.showAlternates,
-        swipeForSymbols: swipeForSymbols ?? this.swipeForSymbols,
-        keyPreview: keyPreview ?? this.keyPreview,
-        haptics: haptics ?? this.haptics,
-        sound: sound ?? this.sound,
-        showRecentCommands: showRecentCommands ?? this.showRecentCommands,
-      );
+    bool? splitInLandscape,
+  }) => KeyboardSettings(
+    enabled: enabled ?? this.enabled,
+    layout: layout ?? this.layout,
+    keyHeight: keyHeight ?? this.keyHeight,
+    shape: shape ?? this.shape,
+    boldLabels: boldLabels ?? this.boldLabels,
+    showAlternates: showAlternates ?? this.showAlternates,
+    swipeForSymbols: swipeForSymbols ?? this.swipeForSymbols,
+    keyPreview: keyPreview ?? this.keyPreview,
+    haptics: haptics ?? this.haptics,
+    sound: sound ?? this.sound,
+    showRecentCommands: showRecentCommands ?? this.showRecentCommands,
+    splitInLandscape: splitInLandscape ?? this.splitInLandscape,
+  );
 
   Map<String, dynamic> toJson() => {
-        'enabled': enabled,
-        'layout': layout.name,
-        'keyHeight': keyHeight.name,
-        'shape': shape.name,
-        'boldLabels': boldLabels,
-        'showAlternates': showAlternates,
-        'swipeForSymbols': swipeForSymbols,
-        'keyPreview': keyPreview,
-        'haptics': haptics,
-        'sound': sound,
-        'showRecentCommands': showRecentCommands,
-      };
+    'enabled': enabled,
+    'layout': layout.name,
+    'keyHeight': keyHeight.name,
+    'shape': shape.name,
+    'boldLabels': boldLabels,
+    'showAlternates': showAlternates,
+    'swipeForSymbols': swipeForSymbols,
+    'keyPreview': keyPreview,
+    'haptics': haptics,
+    'sound': sound,
+    'showRecentCommands': showRecentCommands,
+    'splitInLandscape': splitInLandscape,
+  };
 
   /// Unknown or missing values fall back to the defaults, so a backup
   /// from another version still loads.
@@ -136,6 +143,7 @@ class KeyboardSettings {
       haptics: Json.boolean(j, 'haptics', d.haptics),
       sound: Json.boolean(j, 'sound', d.sound),
       showRecentCommands: Json.boolean(j, 'showRecentCommands', d.showRecentCommands),
+      splitInLandscape: Json.boolean(j, 'splitInLandscape', d.splitInLandscape),
     );
   }
 
@@ -152,9 +160,22 @@ class KeyboardSettings {
       other.keyPreview == keyPreview &&
       other.haptics == haptics &&
       other.sound == sound &&
-      other.showRecentCommands == showRecentCommands;
+      other.showRecentCommands == showRecentCommands &&
+      other.splitInLandscape == splitInLandscape;
 
   @override
-  int get hashCode =>
-      Object.hash(enabled, layout, keyHeight, shape, boldLabels, showAlternates, swipeForSymbols, keyPreview, haptics, sound, showRecentCommands);
+  int get hashCode => Object.hash(
+    enabled,
+    layout,
+    keyHeight,
+    shape,
+    boldLabels,
+    showAlternates,
+    swipeForSymbols,
+    keyPreview,
+    haptics,
+    sound,
+    showRecentCommands,
+    splitInLandscape,
+  );
 }

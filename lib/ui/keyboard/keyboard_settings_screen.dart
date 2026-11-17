@@ -108,6 +108,12 @@ class KeyboardOptionsList extends StatelessWidget {
           onChanged: (on) => _save(context, settings.copyWith(showRecentCommands: on)),
         ),
         SwitchListTile(
+          title: const Text('Split keyboard in landscape'),
+          subtitle: const Text('With the phone turned sideways, the keys part in two halves, one for each thumb'),
+          value: settings.splitInLandscape,
+          onChanged: (on) => _save(context, settings.copyWith(splitInLandscape: on)),
+        ),
+        SwitchListTile(
           title: const Text('Swipe up for symbols'),
           subtitle: const Text('Swipe up on a key to type its alternate character'),
           value: settings.swipeForSymbols,

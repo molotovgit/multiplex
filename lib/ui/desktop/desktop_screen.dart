@@ -333,7 +333,13 @@ class _DesktopScreenState extends State<DesktopScreen> with WidgetsBindingObserv
               if (builtIn) WidgetsBinding.instance.addPostFrameCallback((_) => _measurePanel());
               final bottomInset = builtIn ? _panelHeight : keyboardHeight + (showKeys ? 52 : 0);
               final visible = bottomInset > 0 ? view.height - bottomInset : null;
-              if (visible != null && c.live) _viewport.follow(c.cursor, view, remote, visibleHeight: visible);
+              if (visible != null && c.live) {
+                _viewport.follow(c.cursor, view, remote, visibleHeight: visible);
+              } else {
+                // Keyboard gone: the picture settles back (no black band
+                // left where it had moved up).
+                _viewport.layout(view, remote);
+              }
 
               return DesktopKeyboard(
                 controller: c,

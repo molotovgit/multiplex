@@ -24,6 +24,8 @@ class KeyRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final split = KeyboardSplit.gapOf(context);
+    if (split > 0) return _split(split);
     final used = keys.fold<double>(0, (sum, k) => sum + k.width);
     final side = ((units - used) / 2 * _scale).round();
     return SizedBox(
@@ -42,6 +44,61 @@ class KeyRow extends StatelessWidget {
       ),
     );
   }
+
+  /// Two halves with [gap] key units between them, one for each thumb.
+  /// The halves meet at the middle of the row's keys; a wide key there
+  /// (the space bar) is cut in two, so each thumb has a part of it.
+  Widget _split(double gap) {
+    final used = keys.fold<double>(0, (sum, k) => sum + k.width);
+    final side = ((units - used) / 2 * _scale).round();
+    final half = used / 2;
+    final left = <Widget>[], right = <Widget>[];
+    var at = 0.0;
+    Widget cap(KeySpec k, double width) => Expanded(
+      flex: (width * _scale).round(),
+      child: KeyCap(spec: k, engine: engine, look: look),
+    );
+    for (final key in keys) {
+      final end = at + key.width;
+      if (end <= half + 0.01) {
+        left.add(cap(key, key.width));
+      } else if (at >= half - 0.01) {
+        right.add(cap(key, key.width));
+      } else if (key.width >= 2) {
+        left.add(cap(key, half - at));
+        right.add(cap(key, end - half));
+      } else {
+        (half - at >= end - half ? left : right).add(cap(key, key.width));
+      }
+      at = end;
+    }
+    return SizedBox(
+      height: look.metrics.rowHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (side > 0) Spacer(flex: side),
+          ...left,
+          Spacer(flex: (gap * _scale).round()),
+          ...right,
+          if (side > 0) Spacer(flex: side),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tells the key rows below to part in two halves (landscape).
+class KeyboardSplit extends InheritedWidget {
+  const KeyboardSplit({super.key, required this.gap, required super.child});
+
+  /// The space between the halves, in key units; 0 = not split.
+  final double gap;
+
+  static double gapOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<KeyboardSplit>()?.gap ?? 0;
+
+  @override
+  bool updateShouldNotify(KeyboardSplit old) => old.gap != gap;
 }
 
 /// The terminal row on top: the user's key bar keys in their order
@@ -65,11 +122,12 @@ class TerminalTopRow extends StatelessWidget {
       for (final id in const ['ctrl', 'alt'])
         if (!ids.contains(id)) KeyBarItems.byId(id)!,
     ];
-    return [for (final item in [...missing, ...items]) KeySpec.fromBarItem(item)];
+    return [
+      for (final item in [...missing, ...items]) KeySpec.fromBarItem(item),
+    ];
   }
 
-  static double widthOf(KeySpec key) =>
-      key.icon != null || key.label.length <= 2 ? KeyboardMetrics.topKeyWidth : KeyboardMetrics.topKeyWideWidth;
+  static double widthOf(KeySpec key) => key.icon != null || key.label.length <= 2 ? KeyboardMetrics.topKeyWidth : KeyboardMetrics.topKeyWideWidth;
 
   /// How much to widen or narrow the keys so the row ends on a whole key
   /// instead of half a key at the edge: the scale that fits a whole number
