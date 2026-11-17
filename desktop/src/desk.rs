@@ -89,7 +89,10 @@ impl Session {
         let mut command = Command::new(program);
         command.env("XDG_RUNTIME_DIR", &self.runtime).env("HYPRLAND_INSTANCE_SIGNATURE", &self.signature);
         if std::env::var_os("WAYLAND_DISPLAY").is_none() {
-            command.env("WAYLAND_DISPLAY", self.wayland_socket());
+            // By name, not by path: Omarchy's shell finds itself by the name.
+            if let Some(name) = self.wayland_socket().file_name() {
+                command.env("WAYLAND_DISPLAY", name);
+            }
         }
         // Over SSH there may be no locale at all, and tools then refuse
         // anything that is not ASCII (a name, a "·", an emoji).
@@ -148,7 +151,7 @@ impl Session {
 
     /// The whole state, as the phone shows it.
     pub fn state(&self) -> Result<DeskState> {
-        Ok(DeskState { monitors: self.monitors()?, window: self.window(), media: self.media(), volume: self.volume() })
+        Ok(DeskState { monitors: self.monitors()?, window: self.window(), media: self.media(), volume: self.volume(), dnd: self.dnd() })
     }
 
     fn monitors(&self) -> Result<Vec<DeskMonitor>> {
@@ -184,6 +187,50 @@ impl Session {
             }
         }
         paused
+    }
+
+    /// Whether notifications are silenced. Omarchy's shell is asked; with
+    /// another notification daemon it is simply not known.
+    fn dnd(&self) -> Option<bool> {
+        match self.output("omarchy-shell", &["notifications", "isDnd"])?.trim() {
+            "on" => Some(true),
+            "off" => Some(false),
+            _ => None,
+        }
+    }
+
+    fn set_dnd(&self, on: bool) -> Result<()> {
+        let word = if on { "on" } else { "off" };
+        if self.output("omarchy-shell", &["notifications", "setDnd", word]).is_some() {
+            // The bar's bell follows.
+            let _ = self.output("omarchy-shell", &["-q", "omarchy.indicators", "refresh"]);
+            return Ok(());
+        }
+        // Other notification daemons, where they are what runs.
+        if self.output("makoctl", &["mode", if on { "-a" } else { "-r" }, "do-not-disturb"]).is_some() || self.output("dunstctl", &["set-paused", if on { "true" } else { "false" }]).is_some() {
+            return Ok(());
+        }
+        bail!("notifications could not be silenced here")
+    }
+
+    /// Pauses every player that is playing; the answer is which ones.
+    pub fn pause_playing(&self) -> Vec<String> {
+        self.players()
+            .into_iter()
+            .filter(|p| self.player_property(p, "PlaybackStatus").is_some_and(|v| v == "Playing"))
+            .filter(|p| self.output("busctl", &["--user", "call", p, MPRIS_PATH, MPRIS_PLAYER, "Pause"]).is_some())
+            .collect()
+    }
+
+    /// Carries on with players that were paused for a call, unless the
+    /// user did something with them meanwhile (then they are left alone).
+    pub fn resume(&self, players: &[String]) {
+        let here = self.players();
+        for player in players.iter().filter(|p| here.contains(p)) {
+            if self.player_property(player, "PlaybackStatus").is_some_and(|v| v == "Paused") {
+                let _ = self.output("busctl", &["--user", "call", player, MPRIS_PATH, MPRIS_PLAYER, "Play"]);
+            }
+        }
     }
 
     fn volume(&self) -> Option<DeskVolume> {
@@ -304,6 +351,7 @@ impl Session {
             DeskAction::VolumeUp => self.media_key("XF86AudioRaiseVolume", || self.wpctl(&["set-volume", "-l", "1.0", SINK, "5%+"])),
             DeskAction::VolumeDown => self.media_key("XF86AudioLowerVolume", || self.wpctl(&["set-volume", SINK, "5%-"])),
             DeskAction::Mute => self.media_key("XF86AudioMute", || self.wpctl(&["set-mute", SINK, "toggle"])),
+            DeskAction::Dnd { on } => self.set_dnd(*on),
             DeskAction::Bind { keys } => match self.run_keys(keys)? {
                 true => Ok(()),
                 false => bail!("the computer has no binding for {keys}"),
@@ -336,7 +384,7 @@ impl Session {
         const SETTLE: Duration = Duration::from_millis(40);
 
         let mut last: Option<DeskState> = None;
-        let mut slow = (self.media(), self.volume());
+        let mut slow = (self.media(), self.volume(), self.dnd());
         let mut slow_at = Instant::now();
         let mut said_at = Instant::now();
         let mut titles_at = Instant::now();
@@ -345,7 +393,7 @@ impl Session {
         let mut line = String::new();
         loop {
             if slow_at.elapsed() >= SLOW {
-                let now = (self.media(), self.volume());
+                let now = (self.media(), self.volume(), self.dnd());
                 changed |= now != slow;
                 slow = now;
                 slow_at = Instant::now();
@@ -372,7 +420,7 @@ impl Session {
                 changed = false;
                 title_changed = false;
                 titles_at = Instant::now();
-                let state = DeskState { monitors: self.monitors()?, window: self.window(), media: slow.0.clone(), volume: slow.1.clone() };
+                let state = DeskState { monitors: self.monitors()?, window: self.window(), media: slow.0.clone(), volume: slow.1.clone(), dnd: slow.2 };
                 if last.as_ref() != Some(&state) {
                     writeln!(out, "{}", serde_json::to_string(&state)?)?;
                     out.flush()?;

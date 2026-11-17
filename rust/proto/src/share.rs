@@ -186,6 +186,12 @@ pub fn notice_command(phone: &str) -> String {
     command(&["phone", "notify", phone])
 }
 
+/// A call on the phone began or ended (the computer pauses what is
+/// playing, and carries on afterwards).
+pub fn call_command(phone: &str, active: bool) -> String {
+    command(&["phone", "call", phone, if active { "start" } else { "end" }])
+}
+
 pub fn done_command(id: &str) -> Result<String, ProtoError> {
     Ok(command(&["share", "done", &clean_id(id)?]))
 }

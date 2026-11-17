@@ -40,6 +40,9 @@ sealed class DeskAction with _$DeskAction {
   const factory DeskAction.volumeDown() = DeskAction_VolumeDown;
   const factory DeskAction.mute() = DeskAction_Mute;
 
+  /// Silence notifications (Do Not Disturb), or stop silencing them.
+  const factory DeskAction.dnd({required bool enabled}) = DeskAction_Dnd;
+
   /// Run the binding with these keys, as the computer lists it.
   const factory DeskAction.bind({required String keys}) = DeskAction_Bind;
 }
@@ -177,11 +180,16 @@ class DeskState {
   final DeskMedia? media;
   final DeskVolume? volume;
 
+  /// Whether notifications are silenced (Do Not Disturb), when the
+  /// computer can tell.
+  final bool? dnd;
+
   const DeskState({
     required this.monitors,
     this.window,
     this.media,
     this.volume,
+    this.dnd,
   });
 
   static Future<DeskState> default_() =>
@@ -189,7 +197,11 @@ class DeskState {
 
   @override
   int get hashCode =>
-      monitors.hashCode ^ window.hashCode ^ media.hashCode ^ volume.hashCode;
+      monitors.hashCode ^
+      window.hashCode ^
+      media.hashCode ^
+      volume.hashCode ^
+      dnd.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -199,7 +211,8 @@ class DeskState {
           monitors == other.monitors &&
           window == other.window &&
           media == other.media &&
-          volume == other.volume;
+          volume == other.volume &&
+          dnd == other.dnd;
 }
 
 class DeskVolume {

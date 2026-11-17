@@ -21,10 +21,15 @@ class PhoneNotification {
 /// What a link to a computer needs from the phone itself, which only
 /// Android can give: ringing out loud, the battery, the notifications.
 class PhoneBridge {
-  const PhoneBridge({this.channel = const MethodChannel('multiplex/phone'), this.notices = const EventChannel('multiplex/phone/notifications')});
+  const PhoneBridge({
+    this.channel = const MethodChannel('multiplex/phone'),
+    this.notices = const EventChannel('multiplex/phone/notifications'),
+    this.states = const EventChannel('multiplex/phone/state'),
+  });
 
   final MethodChannel channel;
   final EventChannel notices;
+  final EventChannel states;
 
   /// Rings out loud (also when the phone is silent) for at most [seconds],
   /// with a notification that stops it.
@@ -50,6 +55,18 @@ class PhoneBridge {
   /// has given Multiplex notification access in Android's settings.
   Stream<PhoneNotification> notifications() =>
       notices.receiveBroadcastStream().map(PhoneNotification.parse).where((n) => n != null).cast<PhoneNotification>().handleError((Object _) {});
+
+  /// What changes about the phone: `(call: true)` when a call rings or
+  /// starts and `(call: false)` when it ends; `(dnd: …)` when Do Not
+  /// Disturb goes on or off.
+  Stream<({bool? call, bool? dnd})> changes() => states
+      .receiveBroadcastStream()
+      .map(
+        (raw) => raw is Map
+            ? (call: raw['call'] is bool ? raw['call'] as bool : null, dnd: raw['dnd'] is bool ? raw['dnd'] as bool : null)
+            : (call: null, dnd: null),
+      )
+      .handleError((Object _) {});
 
   /// Whether Android lets Multiplex see notifications.
   Future<bool> notificationAccess() async {

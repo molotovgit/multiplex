@@ -79,6 +79,13 @@ impl SshSession {
         AsyncRuntime::run(async move { share::notice(&conn, &phone, &proto::PhoneNotice { app, title, text }).await }).await?
     }
 
+    /// A call on the phone began or ended: the computer pauses what is
+    /// playing, and carries on with it afterwards.
+    pub async fn phone_call(&self, phone: String, active: bool) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { share::call(&conn, &phone, active).await }).await?
+    }
+
     /// Hears what the computer has for this phone: files waiting (also
     /// ones sent while the phone was away) and clipboard changes. `phone`
     /// is the name this phone paired under; empty when it is the only one.

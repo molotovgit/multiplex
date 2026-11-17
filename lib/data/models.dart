@@ -51,6 +51,8 @@ class Host {
     this.shareClipboard = true,
     this.mirrorNotifications = false,
     this.mutedApps = const [],
+    this.pauseMediaOnCalls = true,
+    this.syncDnd = false,
     this.startupCommand,
     this.keepWithTmux = false,
     this.forwardAgent = false,
@@ -112,6 +114,13 @@ class Host {
   /// phone.
   final List<String> mutedApps;
 
+  /// Pause what is playing on the computer while the phone is in a call.
+  final bool pauseMediaOnCalls;
+
+  /// Silence the computer's notifications while the phone is on Do Not
+  /// Disturb.
+  final bool syncDnd;
+
   /// Typed automatically after the shell opens.
   final String? startupCommand;
 
@@ -168,6 +177,8 @@ class Host {
     bool? shareClipboard,
     bool? mirrorNotifications,
     List<String>? mutedApps,
+    bool? pauseMediaOnCalls,
+    bool? syncDnd,
     String? Function()? startupCommand,
     bool? keepWithTmux,
     bool? forwardAgent,
@@ -197,6 +208,8 @@ class Host {
         shareClipboard: shareClipboard ?? this.shareClipboard,
         mirrorNotifications: mirrorNotifications ?? this.mirrorNotifications,
         mutedApps: mutedApps ?? this.mutedApps,
+        pauseMediaOnCalls: pauseMediaOnCalls ?? this.pauseMediaOnCalls,
+        syncDnd: syncDnd ?? this.syncDnd,
         startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
         keepWithTmux: keepWithTmux ?? this.keepWithTmux,
         forwardAgent: forwardAgent ?? this.forwardAgent,
@@ -227,6 +240,8 @@ class Host {
         'shareClipboard': shareClipboard,
         'mirrorNotifications': mirrorNotifications,
         'mutedApps': mutedApps,
+        'pauseMediaOnCalls': pauseMediaOnCalls,
+        'syncDnd': syncDnd,
         'startupCommand': startupCommand,
         'keepWithTmux': keepWithTmux,
         'forwardAgent': forwardAgent,
@@ -257,6 +272,8 @@ class Host {
         shareClipboard: Json.boolean(j, 'shareClipboard', true),
         mirrorNotifications: Json.boolean(j, 'mirrorNotifications', false),
         mutedApps: [for (final a in (j['mutedApps'] as List?) ?? const []) if (a is String) a],
+        pauseMediaOnCalls: Json.boolean(j, 'pauseMediaOnCalls', true),
+        syncDnd: Json.boolean(j, 'syncDnd', false),
         startupCommand: Json.strOrNull(j, 'startupCommand'),
         keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
         forwardAgent: Json.boolean(j, 'forwardAgent', false),

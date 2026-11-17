@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../platform/phone_bridge.dart';
+import '../src/rust/api/desk_types.dart';
 import '../src/rust/api/sftp_types.dart';
 import '../src/rust/api/share.dart';
 import '../ui/files/transfer_queue.dart';
@@ -34,6 +35,12 @@ abstract class ShareChannel {
 
   /// Shows one of the phone's notifications on the computer.
   Future<void> notice(String phone, PhoneNotification notification);
+
+  /// A call on the phone began or ended.
+  Future<void> call(String phone, {required bool active});
+
+  /// Silences the computer's notifications, or stops silencing them.
+  Future<void> dnd({required bool on});
 
   /// Uploads files that waited on the phone into the computer's inbox and
   /// has it say what arrived. The answer is the ones that got there.
@@ -102,6 +109,12 @@ class SshShareChannel implements ShareChannel {
   @override
   Future<void> notice(String phone, PhoneNotification notification) =>
       session.ssh.phoneNotice(phone: phone, app: notification.app, title: notification.title, text: notification.text);
+
+  @override
+  Future<void> call(String phone, {required bool active}) => session.ssh.phoneCall(phone: phone, active: active);
+
+  @override
+  Future<void> dnd({required bool on}) => session.ssh.deskDo(action: DeskAction.dnd(enabled: on));
 
   @override
   Future<List<WaitingFile>> send(List<WaitingFile> files, {required String phone}) async {
@@ -176,11 +189,18 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     _sessions.addListener(_sync);
     WidgetsBinding.instance.addObserver(this);
     _phoneNotices = _phone.notifications().listen(_mirror);
+    _phoneChanges = _phone.changes().listen((change) {
+      for (final link in _links.values) {
+        if (change.call != null) link.call(change.call!);
+        if (change.dnd != null) link.dnd(change.dnd!);
+      }
+    });
     _sync();
   }
 
   final PhoneBridge _phone;
   StreamSubscription<PhoneNotification>? _phoneNotices;
+  StreamSubscription<({bool? call, bool? dnd})>? _phoneChanges;
 
   /// Apps that have posted a notification since the app started, for the
   /// list where each can be kept off the computer.
@@ -275,6 +295,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     _sessions.removeListener(_sync);
     WidgetsBinding.instance.removeObserver(this);
     _phoneNotices?.cancel();
+    _phoneChanges?.cancel();
     for (final link in _links.values) {
       link.close();
     }
@@ -351,6 +372,18 @@ class _Link {
     } catch (_) {
       // An older package: the rest still works.
     }
+  }
+
+  /// A call began or ended: the computer pauses, then carries on.
+  void call(bool active) {
+    if (_closed || !host.pauseMediaOnCalls) return;
+    unawaited(channel.call(_name, active: active).catchError((Object _) {}));
+  }
+
+  /// The phone's Do Not Disturb went on or off.
+  void dnd(bool on) {
+    if (_closed || !host.syncDnd) return;
+    unawaited(channel.dnd(on: on).catchError((Object _) {}));
   }
 
   void mirror(PhoneNotification notification) {

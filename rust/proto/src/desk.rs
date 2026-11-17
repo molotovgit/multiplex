@@ -29,6 +29,10 @@ pub struct DeskState {
     pub media: Option<DeskMedia>,
     #[serde(default)]
     pub volume: Option<DeskVolume>,
+    /// Whether notifications are silenced (Do Not Disturb), when the
+    /// computer can tell.
+    #[serde(default)]
+    pub dnd: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
@@ -137,6 +141,8 @@ pub enum DeskAction {
     VolumeUp,
     VolumeDown,
     Mute,
+    /// Silence notifications (Do Not Disturb), or stop silencing them.
+    Dnd { on: bool },
     /// Run the binding with these keys, as the computer lists it.
     Bind { keys: String },
 }
@@ -200,6 +206,7 @@ impl DeskAction {
             DeskAction::VolumeUp => one("volume-up"),
             DeskAction::VolumeDown => one("volume-down"),
             DeskAction::Mute => one("mute"),
+            DeskAction::Dnd { on } => vec!["dnd".to_owned(), if *on { "on" } else { "off" }.to_owned()],
             DeskAction::Bind { keys } => vec!["bind".to_owned(), keys.clone()],
         }
     }
@@ -224,6 +231,8 @@ impl DeskAction {
             ["volume-up"] => DeskAction::VolumeUp,
             ["volume-down"] => DeskAction::VolumeDown,
             ["mute"] => DeskAction::Mute,
+            ["dnd", "on"] => DeskAction::Dnd { on: true },
+            ["dnd", "off"] => DeskAction::Dnd { on: false },
             ["bind", keys] => DeskAction::Bind { keys: clean_keys(keys)? },
             _ => return Err(ProtoError::Invalid("this is not something the desktop can be asked to do")),
         })
@@ -287,6 +296,8 @@ mod tests {
             DeskAction::VolumeUp,
             DeskAction::VolumeDown,
             DeskAction::Mute,
+            DeskAction::Dnd { on: true },
+            DeskAction::Dnd { on: false },
             DeskAction::Bind { keys: "SUPER SHIFT + RETURN".into() },
         ];
         for action in all {
@@ -307,6 +318,7 @@ mod tests {
             vec!["monitor", "a b"],
             vec!["focus", "x"],
             vec!["bind", ""],
+            vec!["dnd", "maybe"],
             vec!["bind", "SUPER + W\nrm"],
             vec!["shutdown"],
             vec![],
@@ -331,6 +343,7 @@ mod tests {
             window: Some(DeskWindow { title: "notes".into(), class: "foot".into(), floating: false, fullscreen: true }),
             media: None,
             volume: Some(DeskVolume { percent: 40, muted: false }),
+            dnd: Some(true),
         };
         assert_eq!(parse_state(&serde_json::to_string(&state).unwrap()).unwrap(), state);
         assert_eq!(parse_state("{}").unwrap(), DeskState::default());

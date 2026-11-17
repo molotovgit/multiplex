@@ -58,6 +58,12 @@ class _Computer implements ShareChannel {
   @override
   Future<void> notice(String phone, PhoneNotification notification) async => log.add('notice ${notification.app}: ${notification.title}');
 
+  @override
+  Future<void> call(String phone, {required bool active}) async => log.add('call ${active ? 'started' : 'ended'}');
+
+  @override
+  Future<void> dnd({required bool on}) async => log.add('quiet ${on ? 'on' : 'off'}');
+
   /// Names that do not make it across.
   final failing = <String>{};
 
@@ -76,6 +82,7 @@ class _Phone extends PhoneBridge {
   _Phone();
 
   final posted = StreamController<PhoneNotification>.broadcast();
+  final changed = StreamController<({bool? call, bool? dnd})>.broadcast();
   final rang = <int>[];
 
   @override
@@ -86,6 +93,9 @@ class _Phone extends PhoneBridge {
 
   @override
   Stream<PhoneNotification> notifications() => posted.stream;
+
+  @override
+  Stream<({bool? call, bool? dnd})> changes() => changed.stream;
 }
 
 /// Sessions, without connecting anywhere.
@@ -264,6 +274,24 @@ void main() {
     phone.posted.add(const PhoneNotification(app: 'Games', title: 'Come back!', text: 'Your crops are ready'));
     await Future<void>.delayed(Duration.zero);
     expect(computer.log, ['notice Messages: Sam']);
+  });
+
+  test('a call pauses the computer; Do Not Disturb follows only when asked to', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    phone.changed.add((call: true, dnd: null));
+    phone.changed.add((call: false, dnd: null));
+    phone.changed.add((call: null, dnd: true));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['call started', 'call ended'], reason: 'pausing for calls is on by default, quiet together is not');
+
+    computer.log.clear();
+    store.saveHost(desk.copyWith(syncDnd: true, pauseMediaOnCalls: false));
+    phone.changed.add((call: true, dnd: null));
+    phone.changed.add((call: null, dnd: true));
+    phone.changed.add((call: null, dnd: false));
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['quiet on', 'quiet off']);
   });
 
   test('the link ends with the connection', () async {

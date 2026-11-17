@@ -98,6 +98,12 @@ pub async fn notice(conn: &Connection, phone: &str, notice: &proto::PhoneNotice)
     tell(conn, &proto::notice_command(phone), serde_json::to_string(&notice.cleaned())?).await
 }
 
+/// A call on the phone began or ended: the computer pauses what is
+/// playing, and carries on with it afterwards.
+pub async fn call(conn: &Connection, phone: &str, active: bool) -> anyhow::Result<()> {
+    run(conn, &proto::call_command(phone, active)).await.map(|_| ())
+}
+
 /// The phone has fetched a waiting file: the computer forgets it.
 pub async fn done(conn: &Connection, id: &str) -> anyhow::Result<()> {
     let command = proto::done_command(id).map_err(|err| anyhow::anyhow!("{err}"))?;

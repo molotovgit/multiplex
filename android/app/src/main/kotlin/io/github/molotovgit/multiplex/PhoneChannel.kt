@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioAttributes
+import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.BatteryManager
@@ -29,6 +30,7 @@ import io.flutter.plugin.common.MethodChannel
 object PhoneChannel {
     private const val CHANNEL = "multiplex/phone"
     private const val NOTICES = "multiplex/phone/notifications"
+    private const val STATES = "multiplex/phone/state"
     private const val RING_CHANNEL_ID = "ring"
     private const val RING_NOTIFICATION_ID = 4207
     const val ACTION_STOP_RING = "io.github.molotovgit.multiplex.STOP_RING"
@@ -36,6 +38,12 @@ object PhoneChannel {
     private val main = Handler(Looper.getMainLooper())
     private var sink: EventChannel.EventSink? = null
     private var ringtone: Ringtone? = null
+
+    // Calls and Do Not Disturb, told to Flutter as they change.
+    private var stateSink: EventChannel.EventSink? = null
+    private var modeListener: Any? = null
+    private var quietReceiver: BroadcastReceiver? = null
+    private var inCall = false
     private val stopLater = Runnable { ringtone?.stop(); ringtone = null }
 
     fun register(messenger: BinaryMessenger, context: Context) {
@@ -72,6 +80,73 @@ object PhoneChannel {
                 sink = null
             }
         })
+        EventChannel(messenger, STATES).setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+                stateSink = events
+                watchState(app)
+            }
+
+            override fun onCancel(arguments: Any?) {
+                stateSink = null
+                unwatchState(app)
+            }
+        })
+    }
+
+    private fun calling(mode: Int) =
+        mode == AudioManager.MODE_RINGTONE || mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
+
+    /**
+     * Watches for calls (through the audio mode, which needs no permission
+     * and also sees internet calls; Android 12 and later) and for Do Not
+     * Disturb going on or off.
+     */
+    private fun watchState(context: Context) {
+        val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        inCall = calling(audio.mode)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && modeListener == null) {
+            val listener = AudioManager.OnModeChangedListener { mode ->
+                val now = calling(mode)
+                if (now != inCall) {
+                    inCall = now
+                    main.post { stateSink?.success(mapOf("call" to now)) }
+                }
+            }
+            audio.addOnModeChangedListener(context.mainExecutor, listener)
+            modeListener = listener
+        }
+        if (quietReceiver == null) {
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context, intent: Intent) {
+                    val manager = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    val quiet = manager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
+                    main.post { stateSink?.success(mapOf("dnd" to quiet)) }
+                }
+            }
+            val filter = IntentFilter(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(receiver, filter)
+            }
+            quietReceiver = receiver
+        }
+    }
+
+    private fun unwatchState(context: Context) {
+        val listener = modeListener
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && listener is AudioManager.OnModeChangedListener) {
+            (context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).removeOnModeChangedListener(listener)
+        }
+        modeListener = null
+        quietReceiver?.let {
+            try {
+                context.unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+                // Already gone.
+            }
+        }
+        quietReceiver = null
     }
 
     /** A notification the phone showed, for Flutter (which applies the rules). */

@@ -371,7 +371,26 @@ pub fn phone(args: &[&str]) -> Result<()> {
             }
             println!("ok");
         }
-        _ => bail!("use: multiplex phone status <phone> | notify <phone>"),
+        ["call", phone, state @ ("start" | "end")] => {
+            the_phone(phone)?;
+            let session = Session::find()?;
+            // What was paused for the call is written down, to carry on with after it.
+            let note = runtime_dir().join("paused-for-a-call.json");
+            if *state == "start" {
+                let paused = session.pause_playing();
+                if !paused.is_empty() {
+                    std::fs::create_dir_all(runtime_dir())?;
+                    std::fs::write(&note, serde_json::to_vec(&paused)?)?;
+                }
+                println!("{}", paused.len());
+            } else {
+                let paused: Vec<String> = std::fs::read(&note).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
+                let _ = std::fs::remove_file(&note);
+                session.resume(&paused);
+                println!("{}", paused.len());
+            }
+        }
+        _ => bail!("use: multiplex phone status <phone> | notify <phone> | call <phone> start|end"),
     }
     Ok(())
 }

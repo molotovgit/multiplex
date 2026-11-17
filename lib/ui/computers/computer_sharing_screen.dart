@@ -79,6 +79,19 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                   value: host.shareClipboard,
                   onChanged: (on) => store.saveHost(host.copyWith(shareClipboard: on)),
                 ),
+                const SectionHeader('Calls and quiet'),
+                SwitchListTile(
+                  title: const Text('Pause what is playing during calls'),
+                  subtitle: Text('Music and video on ${host.title} pause when this phone rings, and carry on after the call'),
+                  value: host.pauseMediaOnCalls,
+                  onChanged: (on) => store.saveHost(host.copyWith(pauseMediaOnCalls: on)),
+                ),
+                SwitchListTile(
+                  title: const Text('Do Not Disturb together'),
+                  subtitle: Text('${host.title} silences its notifications while this phone is on Do Not Disturb'),
+                  value: host.syncDnd,
+                  onChanged: (on) => store.saveHost(host.copyWith(syncDnd: on)),
+                ),
                 const SectionHeader('Notifications'),
                 SwitchListTile(
                   title: Text('Show this phone\'s notifications on ${host.title}'),

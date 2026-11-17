@@ -158,9 +158,9 @@ impl Devices {
 
     /// Puts text on the clipboard (with `wl-copy`) and presses Ctrl+V.
     fn paste(&mut self, text: &str) {
-        let copy = Command::new("wl-copy")
-            .env("XDG_RUNTIME_DIR", self.session.runtime_dir())
-            .env("WAYLAND_DISPLAY", self.session.wayland_socket())
+        let copy = self
+            .session
+            .command("wl-copy")
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

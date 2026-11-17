@@ -71,6 +71,10 @@ abstract class SshSession implements RustOpaqueInterface {
   /// this returns.
   Future<RemoteTouchpad> openTouchpad();
 
+  /// A call on the phone began or ended: the computer pauses what is
+  /// playing, and carries on with it afterwards.
+  Future<void> phoneCall({required String phone, required bool active});
+
   /// Shows one of the phone's notifications on the computer's screen.
   Future<void> phoneNotice({
     required String phone,

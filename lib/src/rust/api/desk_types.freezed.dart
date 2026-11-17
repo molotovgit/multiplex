@@ -56,7 +56,7 @@ extension DeskActionPatterns on DeskAction {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DeskAction_Workspace value)?  workspace,TResult Function( DeskAction_MoveWindow value)?  moveWindow,TResult Function( DeskAction_FocusMonitor value)?  focusMonitor,TResult Function( DeskAction_Focus value)?  focus,TResult Function( DeskAction_Swap value)?  swap,TResult Function( DeskAction_Close value)?  close,TResult Function( DeskAction_Fullscreen value)?  fullscreen,TResult Function( DeskAction_Float value)?  float,TResult Function( DeskAction_Split value)?  split,TResult Function( DeskAction_PlayPause value)?  playPause,TResult Function( DeskAction_Next value)?  next,TResult Function( DeskAction_Previous value)?  previous,TResult Function( DeskAction_VolumeUp value)?  volumeUp,TResult Function( DeskAction_VolumeDown value)?  volumeDown,TResult Function( DeskAction_Mute value)?  mute,TResult Function( DeskAction_Bind value)?  bind,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DeskAction_Workspace value)?  workspace,TResult Function( DeskAction_MoveWindow value)?  moveWindow,TResult Function( DeskAction_FocusMonitor value)?  focusMonitor,TResult Function( DeskAction_Focus value)?  focus,TResult Function( DeskAction_Swap value)?  swap,TResult Function( DeskAction_Close value)?  close,TResult Function( DeskAction_Fullscreen value)?  fullscreen,TResult Function( DeskAction_Float value)?  float,TResult Function( DeskAction_Split value)?  split,TResult Function( DeskAction_PlayPause value)?  playPause,TResult Function( DeskAction_Next value)?  next,TResult Function( DeskAction_Previous value)?  previous,TResult Function( DeskAction_VolumeUp value)?  volumeUp,TResult Function( DeskAction_VolumeDown value)?  volumeDown,TResult Function( DeskAction_Mute value)?  mute,TResult Function( DeskAction_Dnd value)?  dnd,TResult Function( DeskAction_Bind value)?  bind,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case DeskAction_Workspace() when workspace != null:
@@ -74,7 +74,8 @@ return next(_that);case DeskAction_Previous() when previous != null:
 return previous(_that);case DeskAction_VolumeUp() when volumeUp != null:
 return volumeUp(_that);case DeskAction_VolumeDown() when volumeDown != null:
 return volumeDown(_that);case DeskAction_Mute() when mute != null:
-return mute(_that);case DeskAction_Bind() when bind != null:
+return mute(_that);case DeskAction_Dnd() when dnd != null:
+return dnd(_that);case DeskAction_Bind() when bind != null:
 return bind(_that);case _:
   return orElse();
 
@@ -93,7 +94,7 @@ return bind(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DeskAction_Workspace value)  workspace,required TResult Function( DeskAction_MoveWindow value)  moveWindow,required TResult Function( DeskAction_FocusMonitor value)  focusMonitor,required TResult Function( DeskAction_Focus value)  focus,required TResult Function( DeskAction_Swap value)  swap,required TResult Function( DeskAction_Close value)  close,required TResult Function( DeskAction_Fullscreen value)  fullscreen,required TResult Function( DeskAction_Float value)  float,required TResult Function( DeskAction_Split value)  split,required TResult Function( DeskAction_PlayPause value)  playPause,required TResult Function( DeskAction_Next value)  next,required TResult Function( DeskAction_Previous value)  previous,required TResult Function( DeskAction_VolumeUp value)  volumeUp,required TResult Function( DeskAction_VolumeDown value)  volumeDown,required TResult Function( DeskAction_Mute value)  mute,required TResult Function( DeskAction_Bind value)  bind,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DeskAction_Workspace value)  workspace,required TResult Function( DeskAction_MoveWindow value)  moveWindow,required TResult Function( DeskAction_FocusMonitor value)  focusMonitor,required TResult Function( DeskAction_Focus value)  focus,required TResult Function( DeskAction_Swap value)  swap,required TResult Function( DeskAction_Close value)  close,required TResult Function( DeskAction_Fullscreen value)  fullscreen,required TResult Function( DeskAction_Float value)  float,required TResult Function( DeskAction_Split value)  split,required TResult Function( DeskAction_PlayPause value)  playPause,required TResult Function( DeskAction_Next value)  next,required TResult Function( DeskAction_Previous value)  previous,required TResult Function( DeskAction_VolumeUp value)  volumeUp,required TResult Function( DeskAction_VolumeDown value)  volumeDown,required TResult Function( DeskAction_Mute value)  mute,required TResult Function( DeskAction_Dnd value)  dnd,required TResult Function( DeskAction_Bind value)  bind,}){
 final _that = this;
 switch (_that) {
 case DeskAction_Workspace():
@@ -111,7 +112,8 @@ return next(_that);case DeskAction_Previous():
 return previous(_that);case DeskAction_VolumeUp():
 return volumeUp(_that);case DeskAction_VolumeDown():
 return volumeDown(_that);case DeskAction_Mute():
-return mute(_that);case DeskAction_Bind():
+return mute(_that);case DeskAction_Dnd():
+return dnd(_that);case DeskAction_Bind():
 return bind(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -126,7 +128,7 @@ return bind(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DeskAction_Workspace value)?  workspace,TResult? Function( DeskAction_MoveWindow value)?  moveWindow,TResult? Function( DeskAction_FocusMonitor value)?  focusMonitor,TResult? Function( DeskAction_Focus value)?  focus,TResult? Function( DeskAction_Swap value)?  swap,TResult? Function( DeskAction_Close value)?  close,TResult? Function( DeskAction_Fullscreen value)?  fullscreen,TResult? Function( DeskAction_Float value)?  float,TResult? Function( DeskAction_Split value)?  split,TResult? Function( DeskAction_PlayPause value)?  playPause,TResult? Function( DeskAction_Next value)?  next,TResult? Function( DeskAction_Previous value)?  previous,TResult? Function( DeskAction_VolumeUp value)?  volumeUp,TResult? Function( DeskAction_VolumeDown value)?  volumeDown,TResult? Function( DeskAction_Mute value)?  mute,TResult? Function( DeskAction_Bind value)?  bind,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DeskAction_Workspace value)?  workspace,TResult? Function( DeskAction_MoveWindow value)?  moveWindow,TResult? Function( DeskAction_FocusMonitor value)?  focusMonitor,TResult? Function( DeskAction_Focus value)?  focus,TResult? Function( DeskAction_Swap value)?  swap,TResult? Function( DeskAction_Close value)?  close,TResult? Function( DeskAction_Fullscreen value)?  fullscreen,TResult? Function( DeskAction_Float value)?  float,TResult? Function( DeskAction_Split value)?  split,TResult? Function( DeskAction_PlayPause value)?  playPause,TResult? Function( DeskAction_Next value)?  next,TResult? Function( DeskAction_Previous value)?  previous,TResult? Function( DeskAction_VolumeUp value)?  volumeUp,TResult? Function( DeskAction_VolumeDown value)?  volumeDown,TResult? Function( DeskAction_Mute value)?  mute,TResult? Function( DeskAction_Dnd value)?  dnd,TResult? Function( DeskAction_Bind value)?  bind,}){
 final _that = this;
 switch (_that) {
 case DeskAction_Workspace() when workspace != null:
@@ -144,7 +146,8 @@ return next(_that);case DeskAction_Previous() when previous != null:
 return previous(_that);case DeskAction_VolumeUp() when volumeUp != null:
 return volumeUp(_that);case DeskAction_VolumeDown() when volumeDown != null:
 return volumeDown(_that);case DeskAction_Mute() when mute != null:
-return mute(_that);case DeskAction_Bind() when bind != null:
+return mute(_that);case DeskAction_Dnd() when dnd != null:
+return dnd(_that);case DeskAction_Bind() when bind != null:
 return bind(_that);case _:
   return null;
 
@@ -162,7 +165,7 @@ return bind(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int slot,  String? monitor)?  workspace,TResult Function( int slot)?  moveWindow,TResult Function( String name)?  focusMonitor,TResult Function( DeskDirection direction)?  focus,TResult Function( DeskDirection direction)?  swap,TResult Function()?  close,TResult Function()?  fullscreen,TResult Function()?  float,TResult Function()?  split,TResult Function()?  playPause,TResult Function()?  next,TResult Function()?  previous,TResult Function()?  volumeUp,TResult Function()?  volumeDown,TResult Function()?  mute,TResult Function( String keys)?  bind,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int slot,  String? monitor)?  workspace,TResult Function( int slot)?  moveWindow,TResult Function( String name)?  focusMonitor,TResult Function( DeskDirection direction)?  focus,TResult Function( DeskDirection direction)?  swap,TResult Function()?  close,TResult Function()?  fullscreen,TResult Function()?  float,TResult Function()?  split,TResult Function()?  playPause,TResult Function()?  next,TResult Function()?  previous,TResult Function()?  volumeUp,TResult Function()?  volumeDown,TResult Function()?  mute,TResult Function( bool enabled)?  dnd,TResult Function( String keys)?  bind,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DeskAction_Workspace() when workspace != null:
 return workspace(_that.slot,_that.monitor);case DeskAction_MoveWindow() when moveWindow != null:
@@ -179,7 +182,8 @@ return next();case DeskAction_Previous() when previous != null:
 return previous();case DeskAction_VolumeUp() when volumeUp != null:
 return volumeUp();case DeskAction_VolumeDown() when volumeDown != null:
 return volumeDown();case DeskAction_Mute() when mute != null:
-return mute();case DeskAction_Bind() when bind != null:
+return mute();case DeskAction_Dnd() when dnd != null:
+return dnd(_that.enabled);case DeskAction_Bind() when bind != null:
 return bind(_that.keys);case _:
   return orElse();
 
@@ -198,7 +202,7 @@ return bind(_that.keys);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int slot,  String? monitor)  workspace,required TResult Function( int slot)  moveWindow,required TResult Function( String name)  focusMonitor,required TResult Function( DeskDirection direction)  focus,required TResult Function( DeskDirection direction)  swap,required TResult Function()  close,required TResult Function()  fullscreen,required TResult Function()  float,required TResult Function()  split,required TResult Function()  playPause,required TResult Function()  next,required TResult Function()  previous,required TResult Function()  volumeUp,required TResult Function()  volumeDown,required TResult Function()  mute,required TResult Function( String keys)  bind,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int slot,  String? monitor)  workspace,required TResult Function( int slot)  moveWindow,required TResult Function( String name)  focusMonitor,required TResult Function( DeskDirection direction)  focus,required TResult Function( DeskDirection direction)  swap,required TResult Function()  close,required TResult Function()  fullscreen,required TResult Function()  float,required TResult Function()  split,required TResult Function()  playPause,required TResult Function()  next,required TResult Function()  previous,required TResult Function()  volumeUp,required TResult Function()  volumeDown,required TResult Function()  mute,required TResult Function( bool enabled)  dnd,required TResult Function( String keys)  bind,}) {final _that = this;
 switch (_that) {
 case DeskAction_Workspace():
 return workspace(_that.slot,_that.monitor);case DeskAction_MoveWindow():
@@ -215,7 +219,8 @@ return next();case DeskAction_Previous():
 return previous();case DeskAction_VolumeUp():
 return volumeUp();case DeskAction_VolumeDown():
 return volumeDown();case DeskAction_Mute():
-return mute();case DeskAction_Bind():
+return mute();case DeskAction_Dnd():
+return dnd(_that.enabled);case DeskAction_Bind():
 return bind(_that.keys);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -230,7 +235,7 @@ return bind(_that.keys);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int slot,  String? monitor)?  workspace,TResult? Function( int slot)?  moveWindow,TResult? Function( String name)?  focusMonitor,TResult? Function( DeskDirection direction)?  focus,TResult? Function( DeskDirection direction)?  swap,TResult? Function()?  close,TResult? Function()?  fullscreen,TResult? Function()?  float,TResult? Function()?  split,TResult? Function()?  playPause,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function()?  volumeUp,TResult? Function()?  volumeDown,TResult? Function()?  mute,TResult? Function( String keys)?  bind,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int slot,  String? monitor)?  workspace,TResult? Function( int slot)?  moveWindow,TResult? Function( String name)?  focusMonitor,TResult? Function( DeskDirection direction)?  focus,TResult? Function( DeskDirection direction)?  swap,TResult? Function()?  close,TResult? Function()?  fullscreen,TResult? Function()?  float,TResult? Function()?  split,TResult? Function()?  playPause,TResult? Function()?  next,TResult? Function()?  previous,TResult? Function()?  volumeUp,TResult? Function()?  volumeDown,TResult? Function()?  mute,TResult? Function( bool enabled)?  dnd,TResult? Function( String keys)?  bind,}) {final _that = this;
 switch (_that) {
 case DeskAction_Workspace() when workspace != null:
 return workspace(_that.slot,_that.monitor);case DeskAction_MoveWindow() when moveWindow != null:
@@ -247,7 +252,8 @@ return next();case DeskAction_Previous() when previous != null:
 return previous();case DeskAction_VolumeUp() when volumeUp != null:
 return volumeUp();case DeskAction_VolumeDown() when volumeDown != null:
 return volumeDown();case DeskAction_Mute() when mute != null:
-return mute();case DeskAction_Bind() when bind != null:
+return mute();case DeskAction_Dnd() when dnd != null:
+return dnd(_that.enabled);case DeskAction_Bind() when bind != null:
 return bind(_that.keys);case _:
   return null;
 
@@ -917,6 +923,74 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class DeskAction_Dnd extends DeskAction {
+  const DeskAction_Dnd({required this.enabled}): super._();
+  
+
+ final  bool enabled;
+
+/// Create a copy of DeskAction
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DeskAction_DndCopyWith<DeskAction_Dnd> get copyWith => _$DeskAction_DndCopyWithImpl<DeskAction_Dnd>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DeskAction_Dnd&&(identical(other.enabled, enabled) || other.enabled == enabled));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,enabled);
+}
+
+@override
+String toString() {
+    return 'DeskAction.dnd(enabled: $enabled)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DeskAction_DndCopyWith<$Res> implements $DeskActionCopyWith<$Res> {
+  factory $DeskAction_DndCopyWith(DeskAction_Dnd value, $Res Function(DeskAction_Dnd) _then) = _$DeskAction_DndCopyWithImpl;
+@useResult
+$Res call({
+ bool enabled
+});
+
+
+
+
+}
+/// @nodoc
+class _$DeskAction_DndCopyWithImpl<$Res>
+    implements $DeskAction_DndCopyWith<$Res> {
+  _$DeskAction_DndCopyWithImpl(this._self, this._then);
+
+  final DeskAction_Dnd _self;
+  final $Res Function(DeskAction_Dnd) _then;
+
+/// Create a copy of DeskAction
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? enabled = null,}) {
+  return _then(DeskAction_Dnd(
+enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
 
 /// @nodoc
 

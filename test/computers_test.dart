@@ -129,6 +129,8 @@ void main() {
     await tester.tap(find.textContaining("Show this phone's notifications"));
     await tester.pumpAndSettle();
     expect(store.host('c')!.mirrorNotifications, isTrue);
+    await tester.ensureVisible(find.text('Open Notification access'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Open Notification access'));
     expect(phone.opened, 1);
     await tester.pump(const Duration(milliseconds: 500));

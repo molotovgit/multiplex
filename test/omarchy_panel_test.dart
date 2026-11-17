@@ -72,6 +72,7 @@ DeskState _state({int active = 2, bool playing = false, bool floating = false}) 
   window: DeskWindow(title: 'notes.md', class_: 'foot', floating: floating, fullscreen: false),
   media: DeskMedia(player: 'Spotify', playing: playing, title: 'A song', artist: 'A band'),
   volume: const DeskVolume(percent: 40, muted: false),
+  dnd: false,
 );
 
 void main() {
@@ -200,6 +201,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(phoneClipboard, 'fresh from the desk');
 
+    // Silencing the computer's notifications is one tap.
+    await tester.tap(find.text('Do Not Disturb'));
+    await tester.pumpAndSettle();
+    expect(link.asked.last, const DeskAction.dnd(enabled: true));
+
     // Nothing to send: said so, and the computer's is left alone.
     phoneClipboard = '';
     await tester.tap(find.text('Phone to computer'));
@@ -226,7 +232,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: OmarchyPanel(controller: controller, pins: const [], onPinsChanged: (_) {}),
+          body: SingleChildScrollView(
+            child: OmarchyPanel(controller: controller, pins: const [], onPinsChanged: (_) {}),
+          ),
         ),
       ),
     );

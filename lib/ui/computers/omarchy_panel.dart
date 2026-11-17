@@ -160,7 +160,7 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
               onAll: _allShortcuts,
             ),
             gap,
-            if (!widget.dense) const _Heading('Clipboard'),
+            if (!widget.dense) const _Heading('Clipboard and quiet'),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -177,6 +177,16 @@ class _OmarchyPanelState extends State<OmarchyPanel> {
                   tooltip: 'Put the computer\'s clipboard on the phone\'s',
                   onPressed: _fetchClipboard,
                 ),
+                // Silence the computer's notifications from here.
+                if (state.dnd case final dnd?)
+                  FilterChip(
+                    avatar: Icon(dnd ? Icons.notifications_off_outlined : Icons.notifications_none, size: 18),
+                    label: const Text('Do Not Disturb'),
+                    tooltip: dnd ? 'Notifications are silenced on the computer: tap to let them through' : 'Silence the computer\'s notifications',
+                    selected: dnd,
+                    showCheckmark: false,
+                    onSelected: (on) => _run(DeskAction.dnd(enabled: on)),
+                  ),
               ],
             ),
             if (state.media != null || state.volume != null) ...[

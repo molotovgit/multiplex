@@ -13,6 +13,9 @@ pub struct DeskState {
     /// What is playing or paused, when a player is open.
     pub media: Option<DeskMedia>,
     pub volume: Option<DeskVolume>,
+    /// Whether notifications are silenced (Do Not Disturb), when the
+    /// computer can tell.
+    pub dnd: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -93,6 +96,8 @@ pub enum DeskAction {
     VolumeUp,
     VolumeDown,
     Mute,
+    /// Silence notifications (Do Not Disturb), or stop silencing them.
+    Dnd { enabled: bool },
     /// Run the binding with these keys, as the computer lists it.
     Bind { keys: String },
 }
@@ -126,6 +131,7 @@ impl From<DeskAction> for proto::DeskAction {
             DeskAction::VolumeUp => proto::DeskAction::VolumeUp,
             DeskAction::VolumeDown => proto::DeskAction::VolumeDown,
             DeskAction::Mute => proto::DeskAction::Mute,
+            DeskAction::Dnd { enabled } => proto::DeskAction::Dnd { on: enabled },
             DeskAction::Bind { keys } => proto::DeskAction::Bind { keys },
         }
     }
@@ -146,6 +152,7 @@ impl From<proto::DeskState> for DeskState {
             window: state.window.map(|w| DeskWindow { title: w.title, class: w.class, floating: w.floating, fullscreen: w.fullscreen }),
             media: state.media.map(|m| DeskMedia { player: m.player, playing: m.playing, title: m.title, artist: m.artist }),
             volume: state.volume.map(|v| DeskVolume { percent: v.percent, muted: v.muted }),
+            dnd: state.dnd,
         }
     }
 }
