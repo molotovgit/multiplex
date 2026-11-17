@@ -61,6 +61,7 @@ class MainActivity : FlutterFragmentActivity() {
         DesktopVideo.register(flutterEngine, this)
         PairChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         PhoneChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
+        ShareTargets.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->

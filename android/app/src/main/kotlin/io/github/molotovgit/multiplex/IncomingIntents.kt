@@ -76,8 +76,10 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
             // The text itself goes along too: a paired computer takes it on
             // its clipboard, or opens it when it is a link.
             val shared = if (links.isEmpty() && !text.isNullOrEmpty()) mapOf("text" to text) else emptyMap()
+            // Chosen by name in the share sheet: it goes straight to that computer.
+            val target = ShareTargets.hostId(intent)?.let { mapOf("target" to it) } ?: emptyMap()
             if (files.isNotEmpty()) {
-                add(mapOf("type" to "share", "files" to files) + shared)
+                add(mapOf("type" to "share", "files" to files) + shared + target)
             } else {
                 // Nothing could be read (the other app gave no access): say so
                 // rather than doing nothing.

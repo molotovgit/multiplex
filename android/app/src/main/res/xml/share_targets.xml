@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paired computers show by name in Android's share sheet. Each is a
+     shortcut in this category; choosing one shares straight to it. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <share-target android:targetClass="io.github.molotovgit.multiplex.MainActivity">
+        <data android:mimeType="*/*" />
+        <category android:name="io.github.molotovgit.multiplex.category.COMPUTER" />
+    </share-target>
+</shortcuts>

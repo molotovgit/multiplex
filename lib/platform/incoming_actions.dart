@@ -21,7 +21,10 @@ sealed class IncomingAction {
             if (f is Map && f['name'] is String && f['path'] is String) SharedFile(name: f['name'] as String, path: f['path'] as String),
         ];
         final text = raw['text'];
-        return parsed.isEmpty ? null : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null);
+        final target = raw['target'];
+        return parsed.isEmpty
+            ? null
+            : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null, targetHostId: target is String && target.isNotEmpty ? target : null);
       case 'shareFailed':
         return const ShareFailedAction();
     }
@@ -39,7 +42,11 @@ class ConnectAction extends IncomingAction {
 /// Upload these files to a server. The native side has already copied
 /// each one into the app's cache, at [SharedFile.path].
 class ShareAction extends IncomingAction {
-  const ShareAction(this.files, {this.text});
+  const ShareAction(this.files, {this.text, this.targetHostId});
+
+  /// The paired computer picked by name in Android's share sheet, if one
+  /// was: the share goes straight to it.
+  final String? targetHostId;
 
   final List<SharedFile> files;
 

@@ -7,6 +7,7 @@ import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'platform/home_widget_sync.dart';
+import 'platform/share_targets_sync.dart';
 import 'sessions/computer_links.dart';
 import 'sessions/background_keeper.dart';
 import 'sessions/network_watcher.dart';
@@ -29,6 +30,8 @@ Future<void> main() async {
   BackgroundKeeper(sessions);
   // Keeps the home-screen widget's favourite hosts current.
   HomeWidgetSync(store);
+  // Paired computers by name in Android's share sheet.
+  ShareTargetsSync(store);
   // Reconnects at once when the phone's network comes back.
   NetworkWatcher(sessions);
   // Links each connected, paired computer: files it sends arrive, and the

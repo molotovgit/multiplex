@@ -61,7 +61,7 @@ On the computer this is `multiplex input`: an ordinary Wayland program that make
 
 ## Sharing: files, the clipboard, links
 
-**From the phone.** Share anything to Multiplex from another app. A paired computer is offered first:
+**From the phone.** Paired computers appear by name in Android's share sheet: pick one and the files go to it with nothing more to tap. Or share to Multiplex itself, where a paired computer is offered first:
 
 - files: **Send to <computer>** puts them in its Downloads folder, and the computer says on its screen what arrived;
 - text: **Copy to <computer>** puts it on its clipboard; a web link can also **Open on <computer>**, in its browser.

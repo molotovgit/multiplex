@@ -57,6 +57,8 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Paired computers as direct targets in the share sheet. -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/share_targets" />
             <!-- "Share" from other apps: upload the files to a server. -->
             <intent-filter android:label="Upload to a server">
                 <action android:name="android.intent.action.SEND"/>

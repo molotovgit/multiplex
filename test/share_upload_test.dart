@@ -261,6 +261,43 @@ void main() {
       expect(find.text('Done'), findsOneWidget);
     });
 
+    testWidgets('picked by name in the share sheet: files are sent with nothing more to tap', (tester) async {
+      final remote = FakeFiles();
+      final queue = TransferQueue(newTransfer: FakeTransfer.new);
+      tester.view.physicalSize = const Size(420, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      asked.clear();
+      final store = await VaultStore.open(MemoryBackend());
+      store.saveHost(const Host(id: 'desk', label: 'Desk', address: 'desk', username: 'ann', computer: true, pairedAs: 'My phone'));
+      final sessions = SessionManager(store);
+      addTearDown(sessions.dispose);
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          AppScope(
+            vault: store,
+            manager: sessions,
+            child: MaterialApp(
+              theme: AppTheme.build(BuiltInThemes.matteBlack),
+              home: ShareUploadScreen(
+                files: [shared('photo.jpg')],
+                sendTo: 'desk',
+                connect: (_, host) async => LiveSession(id: 's', host: host, ssh: FakeSsh(remote)),
+                queueFor: (_) => queue,
+                computer: _FakeComputer(asked),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(remote.uploads, ['/home/ann/Downloads/photo.jpg']);
+      expect(find.text('Sent 1 of 1 to Desk, into its Downloads folder.'), findsOneWidget);
+    });
+
     testWidgets('shared text goes onto its clipboard', (tester) async {
       await pumpWithDesk(tester, [shared('shared-text.txt')], text: 'a note to self');
       expect(find.text('Share text'), findsOneWidget);

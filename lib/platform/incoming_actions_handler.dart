@@ -58,8 +58,8 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
           return;
         }
         await HostConnector.openTerminal(context, host);
-      case ShareAction(:final files, :final text):
-        await ShareUploadScreen.open(context, files, text: text);
+      case ShareAction(:final files, :final text, :final targetHostId):
+        await ShareUploadScreen.open(context, files, text: text, sendTo: targetHostId);
       case ShareFailedAction():
         Toast.show(context, 'Multiplex could not read what was shared. Try sharing it from another app.');
     }

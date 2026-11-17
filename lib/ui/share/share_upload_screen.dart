@@ -70,10 +70,23 @@ class ComputerShare {
 /// host and a folder there (the one used last time for that host, or the
 /// home folder), then the files upload over SFTP with progress.
 class ShareUploadScreen extends StatefulWidget {
-  const ShareUploadScreen({super.key, required this.files, this.text, this.connect, this.queueFor, this.computer = const ComputerShare(), this.outbox});
+  const ShareUploadScreen({
+    super.key,
+    required this.files,
+    this.text,
+    this.connect,
+    this.queueFor,
+    this.computer = const ComputerShare(),
+    this.outbox,
+    this.sendTo,
+  });
 
   /// Where files wait for a computer that is out of reach. Replaced in tests.
   final PhoneOutbox? outbox;
+
+  /// The id of the paired computer chosen by name in Android's share
+  /// sheet: files go to it at once, with nothing more to tap.
+  final String? sendTo;
 
   final List<SharedFile> files;
 
@@ -88,9 +101,9 @@ class ShareUploadScreen extends StatefulWidget {
   final Future<LiveSession?> Function(BuildContext context, Host host)? connect;
   final TransferQueue Function(LiveSession session)? queueFor;
 
-  static Future<void> open(BuildContext context, List<SharedFile> files, {String? text}) => Navigator.of(context).push(
+  static Future<void> open(BuildContext context, List<SharedFile> files, {String? text, String? sendTo}) => Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => ShareUploadScreen(files: files, text: text),
+      builder: (_) => ShareUploadScreen(files: files, text: text, sendTo: sendTo),
     ),
   );
 
@@ -121,7 +134,16 @@ class _ShareUploadScreenState extends State<ShareUploadScreen> {
     // Most of the time there is only one question left: which server. With
     // a paired computer, that one is offered first, one tap away.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && AppScope.store(context).hosts.every((h) => !h.computer)) _pickHost();
+      if (!mounted) return;
+      final store = AppScope.store(context);
+      // Picked by name in the share sheet: files are on their way already.
+      // (For text there is still a choice: its clipboard, or its browser.)
+      final chosen = store.host(widget.sendTo);
+      if (chosen != null && chosen.computer && widget.text == null) {
+        _sendTo(chosen);
+      } else if (store.hosts.every((h) => !h.computer)) {
+        _pickHost();
+      }
     });
   }
 
