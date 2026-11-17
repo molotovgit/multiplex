@@ -250,7 +250,16 @@ fn clipboard_text(session: &Session) -> Option<String> {
 }
 
 fn set_clipboard(session: &Session, text: &str) -> Result<()> {
-    let mut copy = session.command("wl-copy").stdin(Stdio::piped()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().context("wl-copy (from wl-clipboard) is needed for the clipboard")?;
+    // Said to be text: left to guess, wl-copy calls a very short text
+    // (a single character, a line break) binary, and nothing can paste it.
+    let mut copy = session
+        .command("wl-copy")
+        .args(["--type", "text/plain"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .context("wl-copy (from wl-clipboard) is needed for the clipboard")?;
     copy.stdin.take().ok_or_else(|| anyhow!("wl-copy did not take the text"))?.write_all(text.as_bytes())?;
     if !copy.wait()?.success() {
         bail!("the clipboard did not take the text");

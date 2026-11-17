@@ -492,6 +492,12 @@ class _Link {
   /// The text both clipboards last agreed on, so nothing bounces back.
   String? _lastClip;
 
+  /// Whether [_lastClip] is really what the phone's clipboard held. Android
+  /// only lets the app in front read it, so a link that starts while the
+  /// app is not on screen does not know yet; until it does, nothing on
+  /// the phone counts as new.
+  bool _clipKnown = false;
+
   /// Files being fetched, so one is not fetched twice.
   final Set<String> _fetching = {};
 
@@ -499,7 +505,11 @@ class _Link {
 
   Future<void> start() async {
     // What is on the phone's clipboard now is not news for the computer.
-    _lastClip = await owner._readClipboard();
+    final now = await owner._readClipboard();
+    if (now != null) {
+      _lastClip = now;
+      _clipKnown = true;
+    }
     try {
       final (events, stop) = await channel.link(_name);
       if (_closed) {
@@ -524,6 +534,7 @@ class _Link {
       case ShareEvent_Clip(:final text):
         if (!host.shareClipboard || text == _lastClip) return;
         _lastClip = text;
+        _clipKnown = true;
         // Sizes only: what is on a clipboard is nobody's business.
         if (kDebugMode) debugPrint('mpxlink clipboard to the phone (${text.length} characters)');
         unawaited(owner._writeClipboard(text));
@@ -657,8 +668,18 @@ class _Link {
   Future<bool> sendPhoneClipboard({bool force = false}) async {
     if (_closed || (!force && !host.shareClipboard)) return false;
     final text = await owner._readClipboard();
-    if (text == null || text.isEmpty || (!force && text == _lastClip)) return false;
+    if (text == null) return false;
+    // The first look only notes what is there: it was copied before this
+    // link could see the clipboard, so it is not news, and it must not
+    // replace what the computer holds.
+    if (!force && !_clipKnown) {
+      _lastClip = text;
+      _clipKnown = true;
+      return false;
+    }
+    if (text.isEmpty || (!force && text == _lastClip)) return false;
     _lastClip = text;
+    _clipKnown = true;
     try {
       await channel.copy(text);
       if (kDebugMode) debugPrint('mpxlink clipboard to the computer (${text.length} characters)');

@@ -161,6 +161,7 @@ impl Devices {
         let copy = self
             .session
             .command("wl-copy")
+            .args(["--type", "text/plain"])
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

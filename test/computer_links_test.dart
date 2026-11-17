@@ -326,6 +326,20 @@ void main() {
     expect(computer.log, ['copy copied on the phone']);
   });
 
+  test('a link that starts before the clipboard can be read sends nothing old to the computer', () async {
+    // Android only lets the app in front read the clipboard.
+    phoneClipboard = null;
+    await connect();
+    phoneClipboard = 'copied yesterday';
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, isEmpty, reason: 'the first look only notes what is there');
+    phoneClipboard = 'copied just now';
+    links.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(computer.log, ['copy copied just now']);
+  });
+
   test('with clipboard sharing off nothing moves by itself, but a request still does', () async {
     store.saveHost(desk.copyWith(shareClipboard: false));
     final session = await connect();
