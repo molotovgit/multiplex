@@ -61,7 +61,7 @@ class DesktopSettings {
     this.haptics = true,
     this.syncClipboard = true,
     this.warmRadio = true,
-    this.directVideo = false,
+    this.directVideo = true,
   });
 
   final DesktopScreenMode screen;
