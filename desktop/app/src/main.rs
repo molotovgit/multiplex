@@ -11,9 +11,22 @@ mod logic;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QQuickStyle, QString, QUrl};
 
 fn main() {
-    if std::env::args().nth(1).as_deref() == Some("--version") {
-        println!("multiplex-app {}", env!("CARGO_PKG_VERSION"));
-        return;
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        Some("--version") => {
+            println!("multiplex-app {}", env!("CARGO_PKG_VERSION"));
+            return;
+        }
+        Some("--help" | "-h") => {
+            print!("{}", logic::USAGE);
+            return;
+        }
+        _ => {}
+    }
+    // Said before any window opens, and with the usage beside it.
+    if let Err(problem) = logic::first_actions(&args, "") {
+        eprintln!("multiplex-app: {problem}\n\n{}", logic::USAGE);
+        std::process::exit(2);
     }
     // A picture of the window is taken without a screen, whatever the
     // desktop says programs should draw on: Omarchy sets QT_QPA_PLATFORM

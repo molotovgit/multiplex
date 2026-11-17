@@ -44,6 +44,10 @@ check() {
   # The window is driven without a screen against a stand-in command.
   cd "$_repo/desktop/app-tests"
   MULTIPLEX_APP_BIN="$_repo/desktop/app/target/release/multiplex-app" cargo test --locked
+  # The bar widget's logic, where node is at hand; it is not needed to build.
+  if command -v node >/dev/null; then
+    node --test "$_repo/dist/omarchy/multiplex.phones/tests/"
+  fi
 }
 
 package() {

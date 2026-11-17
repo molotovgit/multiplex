@@ -227,6 +227,43 @@ fn unescaped(text: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
+/// What `multiplex-app --help` prints.
+pub const USAGE: &str = "\
+multiplex-app: the Multiplex window (also: `multiplex open`)
+
+  multiplex-app                   open the window
+  multiplex-app --pair            open it showing a pairing code
+  multiplex-app --phone <name>    open it with this phone picked
+  multiplex-app --send <name>     open it and choose files to send to this phone
+  multiplex-app --version
+";
+
+/// What the window does first, from how it was started: a JSON list of
+/// the same actions its keys ask for. `--pair`, `--phone <name>` and
+/// `--send <name>` come from the command line (the bar widget and
+/// `multiplex open` use them); `view` is the comma-separated list the
+/// tests give in `MULTIPLEX_APP_VIEW`. An argument that is not known is an
+/// error, so a typo does not silently open a plain window.
+pub fn first_actions(args: &[String], view: &str) -> Result<String, String> {
+    let mut actions: Vec<String> = Vec::new();
+    let mut rest = args.iter();
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--pair" => actions.push("pair".to_owned()),
+            "--phone" | "--send" => {
+                let name = rest.next().filter(|name| !name.is_empty()).ok_or_else(|| format!("{arg} needs the phone's name"))?;
+                actions.push(format!("phone:{name}"));
+                if arg == "--send" {
+                    actions.push("send".to_owned());
+                }
+            }
+            other => return Err(format!("`{other}` is not something the window can be started with")),
+        }
+    }
+    actions.extend(view.split(',').filter(|one| !one.is_empty()).map(str::to_owned));
+    Ok(serde_json::to_string(&actions).unwrap_or_else(|_| "[]".to_owned()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -319,5 +356,20 @@ mod tests {
         assert!(files_in("").is_empty());
         // A stray percent sign is left as it is.
         assert_eq!(files_in("file:///tmp/100%.txt"), [PathBuf::from("/tmp/100%.txt")]);
+    }
+
+    #[test]
+    fn the_command_line_becomes_what_the_window_does_first() {
+        let args = |list: &[&str]| list.iter().map(|one| (*one).to_owned()).collect::<Vec<_>>();
+        assert_eq!(first_actions(&[], "").unwrap(), "[]");
+        assert_eq!(first_actions(&args(&["--pair"]), "").unwrap(), r#"["pair"]"#);
+        assert_eq!(first_actions(&args(&["--phone", "Sam's Pixel"]), "").unwrap(), r#"["phone:Sam's Pixel"]"#);
+        // A name keeps its commas and quotes: it is one action, not several.
+        assert_eq!(first_actions(&args(&["--send", "A, \"B\""]), "").unwrap(), r#"["phone:A, \"B\"","send"]"#);
+        // The tests' list comes after, as before.
+        assert_eq!(first_actions(&args(&["--pair"]), "close,down").unwrap(), r#"["pair","close","down"]"#);
+        assert!(first_actions(&args(&["--send"]), "").unwrap_err().contains("needs the phone's name"));
+        assert!(first_actions(&args(&["--phone", ""]), "").is_err());
+        assert!(first_actions(&args(&["--pear"]), "").unwrap_err().contains("--pear"));
     }
 }

@@ -127,7 +127,7 @@ pub fn doctor() -> Vec<Check> {
     let passwords = sshd_setting("passwordauthentication").map(|v| v.eq_ignore_ascii_case("no"));
     let ufw = run("systemctl", &["is-active", "ufw"]).is_some();
     let ts = tailscale_name();
-    vec![
+    let mut checks = vec![
         check("SSH server", Some(sshd), true, if sshd { "running" } else { "not running: run `multiplex setup`" }),
         check("SSH host key", Some(host_key), true, if host_key { "ed25519 key present" } else { "no ed25519 host key: run `multiplex setup`" }),
         check("Key-only logins", passwords, true, match passwords {
@@ -158,7 +158,22 @@ pub fn doctor() -> Vec<Check> {
             languages => check("Reading text", Some(true), false, &format!("in pictures from the phone, in: {} (more: sudo pacman -S tesseract-data-<language>)", languages.join(", "))),
         },
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
-    ]
+    ];
+    // Only where there is an Omarchy bar to be in.
+    if let Some((ok, detail)) = bar_widget() {
+        checks.push(check("Bar widget", ok, false, &detail));
+    }
+    checks
+}
+
+/// How the bar widget stands, where the Omarchy shell is installed.
+fn bar_widget() -> Option<(Option<bool>, String)> {
+    if !(on_path("omarchy-shell") && on_path("omarchy")) {
+        return None;
+    }
+    let dir = crate::bar::plugin_dir().ok()?;
+    let command = std::env::current_exe().ok()?;
+    Some(crate::bar::status(&dir, &command, true))
 }
 
 /// The commands of `multiplex setup`, in order, each with what it is for.

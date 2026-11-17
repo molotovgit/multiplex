@@ -14,6 +14,7 @@ cd multiplex/dist/arch
 makepkg -si          # installs the `multiplex` command and the Multiplex window
 multiplex setup      # asks for sudo; `multiplex setup --dry-run` shows the steps first
 multiplex doctor     # checks that everything is ready
+multiplex bar on     # optional: Multiplex in the Omarchy bar
 ```
 
 `multiplex setup` turns the SSH server on with key-only logins, opens the firewall for SSH from the home network and Tailscale only, and makes sure gliff is installed. For access away from home, also join your tailnet: `sudo tailscale up`.
@@ -52,6 +53,21 @@ Building Tailscale into the app needs Go and the Android NDK. Run `native/tailsc
 ![Pairing: the code for the phone's camera](pictures/window-pairing.png)
 
 The window follows Omarchy's theme while it is open: its accent, and Hyprland's corner rounding. It is a thin layer over the command: everything it shows and does, it gets by running `multiplex`, so the two cannot disagree, and a script can do all of it too (`multiplex devices --json`, `access --json`, `doctor --json`, `pair --json`). Like the phone app (Rust with a Flutter screen), it is Rust with a QML screen, in `desktop/app`.
+
+### In the bar
+
+On Omarchy, `multiplex bar on` puts Multiplex in the bar; `multiplex bar off` takes it out again and leaves the bar's settings as they were.
+
+![Multiplex in the bar: the paired phones](pictures/bar-widget.png)
+
+- The icon is a phone while one is connected, a crossed-out one when none is, and turns to the warning colour when a connected phone's battery is at 15% or less and not charging.
+- A click opens the list of paired phones with their battery. Beside each: send it files, and (while it is connected) make it ring. Below: **Pair a phone** and **Open Multiplex**. Arrow keys move, Enter does, Escape closes, as in Omarchy's own panels.
+- A right click opens the Multiplex window straight away; a middle click shows or hides the battery beside the icon.
+- `omarchy-shell multiplex.phones toggle` opens it from a key binding.
+
+The widget is a plugin of the Omarchy shell (`dist/omarchy/multiplex.phones`: QML, because that is what the shell runs, with its logic apart in `Model.js` and tested with `node --test`). It travels inside the `multiplex` command, which writes it to `~/.config/omarchy/plugins/` and points it at itself. It only ever runs `multiplex`, about every ten seconds for the list (which takes a millisecond). After an update of Multiplex, run `multiplex bar on` again; the Omarchy shell (seen on 4.5) keeps a widget it has loaded until it starts again, so the renewed one shows after `omarchy restart shell` or the next login.
+
+`multiplex open --pair`, `--phone <name>` and `--send <name>` open the window at that place; the widget's buttons use them.
 
 ## The panel: the desktop without its picture
 

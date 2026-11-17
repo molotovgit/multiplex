@@ -103,9 +103,9 @@ pub struct BackendRust {
     radius: i32,
     /// Something asked for is still being done.
     busy: bool,
-    /// For pictures of the window: where to save one, and which part to
-    /// show (`pair`, `checks`, `help`). Empty in normal use.
+    /// For pictures of the window: where to save one. Empty in normal use.
     shot: QString,
+    /// What to do first, as a JSON list of actions (`logic::first_actions`).
     view: QString,
 
     command: Arc<Command>,
@@ -130,7 +130,11 @@ impl Default for BackendRust {
             radius: if command.demo() { 0 } else { logic::rounding() },
             busy: false,
             shot: QString::from(&std::env::var("MULTIPLEX_APP_SHOT").unwrap_or_default()),
-            view: QString::from(&std::env::var("MULTIPLEX_APP_VIEW").unwrap_or_default()),
+            view: QString::from(&{
+                // `main` has already refused a command line this cannot read.
+                let args: Vec<String> = std::env::args().skip(1).collect();
+                logic::first_actions(&args, &std::env::var("MULTIPLEX_APP_VIEW").unwrap_or_default()).unwrap_or_else(|_| "[]".to_owned())
+            }),
             command,
             pairing_process: Arc::new(Mutex::new(None)),
         }

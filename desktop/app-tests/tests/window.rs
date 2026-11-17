@@ -40,8 +40,14 @@ fn window() -> PathBuf {
 /// Runs the window, has it do `first`, and gives back what the stand-in
 /// was asked and whether a picture was taken.
 fn run(dir: &Path, bin: &Path, first: &str) -> (Vec<String>, bool) {
+    run_started_with(dir, bin, &[], first)
+}
+
+/// The same, with the window started with `args` on its command line.
+fn run_started_with(dir: &Path, bin: &Path, args: &[&str], first: &str) -> (Vec<String>, bool) {
     let shot = dir.join("window.png");
     let done = Command::new(window())
+        .args(args)
         .env("MULTIPLEX_BIN", bin)
         .env("MULTIPLEX_APP_VIEW", first)
         .env("MULTIPLEX_APP_SHOT", &shot)
@@ -93,6 +99,38 @@ fn dropped_files_are_sent_to_the_picked_phone() {
     let bin = stand_in(dir.path(), PHONES, "true");
     let (asked, _) = run(dir.path(), &bin, "drop:https://example.com/page");
     assert!(asked.is_empty(), "{asked:?}");
+}
+
+#[test]
+fn started_for_one_phone_the_window_acts_on_that_phone() {
+    // As the bar widget starts it: the phone is picked by its name.
+    let dir = tempfile::tempdir().unwrap();
+    let bin = stand_in(dir.path(), PHONES, "true");
+    let (asked, _) = run_started_with(dir.path(), &bin, &["--phone", "Old tablet"], "ring");
+    assert_eq!(asked, ["[ring][--to][Old tablet]"]);
+    // A name that is not paired (any more) leaves the first one picked.
+    let dir = tempfile::tempdir().unwrap();
+    let bin = stand_in(dir.path(), PHONES, "true");
+    let (asked, _) = run_started_with(dir.path(), &bin, &["--phone", "Nobody's phone"], "ring");
+    assert_eq!(asked, ["[ring][--to][Sam's Pixel]"]);
+}
+
+#[test]
+fn started_with_pair_the_window_asks_for_a_code_at_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let asked_file = dir.path().join("asked");
+    let bin = stand_in(dir.path(), PHONES, &format!("echo '[pair][--json]' >> '{}'", asked_file.display()));
+    let (asked, pictured) = run_started_with(dir.path(), &bin, &["--pair"], "");
+    assert!(pictured);
+    assert_eq!(asked, ["[pair][--json]"]);
+}
+
+#[test]
+fn a_command_line_the_window_cannot_read_is_refused_before_it_opens() {
+    let done = Command::new(window()).arg("--pear").output().expect("the window starts");
+    assert_eq!(done.status.code(), Some(2));
+    let said = String::from_utf8_lossy(&done.stderr);
+    assert!(said.contains("--pear") && said.contains("--pair"), "{said}");
 }
 
 #[test]

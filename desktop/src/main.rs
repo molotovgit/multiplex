@@ -9,6 +9,7 @@
 
 mod agent;
 mod agents;
+mod bar;
 mod camera;
 mod desk;
 mod feed;
@@ -43,7 +44,8 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
 
   multiplex pair              Show a QR code to pair a phone (scan it in the app)
   multiplex pair --code-only  Print only the pairing code, for scripts
-  multiplex open              Open the Multiplex window
+  multiplex open              Open the Multiplex window (--pair, --phone <name>, --send <name>)
+  multiplex bar [on|off]      Put Multiplex in the Omarchy bar, or take it out
   multiplex devices           List the paired phones
   multiplex devices --json    The same as a list a script or a bar widget can read
   multiplex unpair <name>     Remove a paired phone
@@ -81,7 +83,8 @@ fn main() {
         ["pair"] => pair(PairAs::Terminal),
         ["pair", "--code-only"] => pair(PairAs::CodeOnly),
         ["pair", "--json"] => pair(PairAs::Json),
-        ["open"] => open_app(),
+        ["open", how @ ..] => open_app(how),
+        ["bar", how @ ..] => bar::run(how),
         ["pair-accept", id] => accept(id),
         ["devices"] => devices(),
         ["devices", "--json"] => devices_json(),
@@ -166,12 +169,13 @@ fn qr_rows(qr: &QrCode) -> Vec<String> {
 
 /// `multiplex open`: the window (the `multiplex-app` program beside this
 /// one, or on the path).
-fn open_app() -> anyhow::Result<()> {
+fn open_app(how: &[&str]) -> anyhow::Result<()> {
     use std::os::unix::process::CommandExt;
     let beside = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|dir| dir.join("multiplex-app"))).filter(|app| app.is_file());
     let app = beside.unwrap_or_else(|| "multiplex-app".into());
     // Replaces this command with the app; only returns when that failed.
-    let err = std::process::Command::new(&app).exec();
+    // `--pair`, `--phone <name>`, `--send <name>`: the window reads them.
+    let err = std::process::Command::new(&app).args(how).exec();
     bail!("the Multiplex window could not be started ({err}); it is the `multiplex-app` program from the same package")
 }
 
@@ -399,6 +403,9 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
         }
     }
     println!("\nDone. `multiplex doctor` checks the result; `multiplex pair` pairs a phone.");
+    if system::on_path("omarchy-shell") {
+        println!("`multiplex bar on` puts Multiplex in the Omarchy bar.");
+    }
     Ok(())
 }
 

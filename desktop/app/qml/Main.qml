@@ -114,6 +114,11 @@ ApplicationWindow {
         else if (what === "checks") {
             overlay = "checks"
             backend.checkComputer()
+        } else if (what.indexOf("phone:") === 0) {
+            // By name: the bar widget opens the window on one phone.
+            for (var i = 0; i < phones.length; i++)
+                if (phones[i].name === what.substring(6))
+                    picked = i
         } else if (what === "up")
             pick(-1)
         else if (what === "down")
@@ -642,10 +647,10 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        // For pictures of the window (see MULTIPLEX_APP_SHOT in main.rs).
-        // MULTIPLEX_APP_VIEW names things to do first, as keys would, one
-        // after the other: "down,unpair" or "switch:3".
-        var first = backend.view.length > 0 ? backend.view.split(",") : []
+        // What to do first, as keys would, one after the other: from how
+        // the window was started (`--pair`, `--send <phone>`), and for its
+        // tests and pictures from MULTIPLEX_APP_VIEW ("down,unpair").
+        var first = JSON.parse(backend.view)
         for (var i = 0; i < first.length; i++)
             win.act(first[i])
         if (backend.shot.length > 0) {
