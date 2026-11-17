@@ -28,6 +28,19 @@ abstract final class PhoneClipboardPictures {
     }
   }
 
+  /// Puts text on the phone's clipboard without going through the app's
+  /// screen: for when a paired computer's clipboard arrives while the app
+  /// has none (swiped away, or started with the phone).
+  static Future<bool> writeText(String text) async {
+    try {
+      return await _channel.invokeMethod<bool>('writeText', text) ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   static Future<void> write(ClipboardPicture picture) async {
     try {
       await _channel.invokeMethod<bool>('write', {'kind': picture.kind, 'bytes': picture.bytes});

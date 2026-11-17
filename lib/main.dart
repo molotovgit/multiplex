@@ -8,7 +8,10 @@ import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'platform/home_widget_sync.dart';
 import 'platform/share_targets_sync.dart';
+import 'sessions/app_life.dart';
 import 'sessions/computer_links.dart';
+import 'sessions/phone_speaker.dart';
+import 'sessions/screen_cast.dart';
 import 'sessions/background_keeper.dart';
 import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
@@ -37,6 +40,19 @@ Future<void> main() async {
   // Links each connected, paired computer: files it sends arrive, and the
   // clipboards follow each other.
   ComputerLinks.app = ComputerLinks(sessions, store);
+  // Without its screen (swiped away, or started with the phone) the app
+  // keeps those links and closes the rest.
+  AppLife(
+    sessions,
+    store,
+    closeScreens: () {
+      MultiplexApp.navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      for (final cast in [PhoneCast.screen, PhoneCast.camera, PhoneCast.microphone]) {
+        unawaited(cast.stop());
+      }
+      unawaited(PhoneSpeaker.app.stop());
+    },
+  );
   // Looks for a new version on GitHub (Android, at most once a day).
   final updates = UpdateController(store: store, platform: const AndroidUpdatePlatform());
   runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));

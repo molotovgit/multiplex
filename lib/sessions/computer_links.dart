@@ -247,7 +247,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
        _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
        _readClipboard = readClipboard ?? _phoneClipboard,
-       _writeClipboard = writeClipboard ?? ((text) => Clipboard.setData(ClipboardData(text: text))),
+       _writeClipboard = writeClipboard ?? _setPhoneClipboard,
        _readPicture = readPicture ?? PhoneClipboardPictures.read,
        _writePicture = writePicture ?? PhoneClipboardPictures.write,
        _markOf = markOf ?? ((picture) => sharePictureMark(picture: picture)) {
@@ -432,10 +432,31 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
 
   static Future<String?> _phoneClipboard() async {
     try {
-      return (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+      // With a time limit: while the app has no screen (swiped away, or
+      // started with the phone) Flutter's clipboard call is never
+      // answered, and a link must not wait on it.
+      return (await Clipboard.getData(Clipboard.kTextPlain).timeout(const Duration(seconds: 1)))?.text;
+    } on TimeoutException {
+      return null;
     } on PlatformException {
       // Android only lets the app in front read the clipboard.
       return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  static Future<void> _setPhoneClipboard(String text) async {
+    // Android's own way first: it works with or without a screen.
+    if (await PhoneClipboardPictures.writeText(text)) return;
+    try {
+      await Clipboard.setData(ClipboardData(text: text)).timeout(const Duration(seconds: 2));
+    } on TimeoutException {
+      // No screen to answer.
+    } on MissingPluginException {
+      // No clipboard on this platform.
+    } on PlatformException {
+      // A clipboard is never worth an error.
     }
   }
 

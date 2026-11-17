@@ -134,8 +134,8 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                 SwitchListTile(
                   title: const Text('Stay connected'),
                   subtitle: Text(
-                    'Links this phone to ${host.title} whenever Multiplex runs, also in the background, so files, the clipboard and '
-                    'finding the phone work without opening anything. Uses some battery',
+                    'Keeps this phone linked to ${host.title}: after the phone starts, in the background, and when Multiplex is swiped away. '
+                    'Files, the clipboard and finding the phone then work without opening anything. Uses some battery',
                   ),
                   value: host.stayConnected,
                   onChanged: (on) => store.saveHost(host.copyWith(stayConnected: on)),

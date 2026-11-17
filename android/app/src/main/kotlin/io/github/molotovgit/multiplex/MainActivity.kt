@@ -2,12 +2,11 @@ package io.github.molotovgit.multiplex
 
 import android.content.Intent
 import android.os.Bundle
-import android.net.ConnectivityManager
-import android.net.Network
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.lang.ref.WeakReference
 
 /**
  * The app's only screen. It is a FragmentActivity because the fingerprint
@@ -28,13 +27,19 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterFragmentActivity() {
     private var incomingChannel: MethodChannel? = null
     private val incoming = IncomingIntents(this) { runOnUiThread { incomingChannel?.invokeMethod("changed", null) } }
-    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The engine outlives this screen (see AppEngine): made here if the
+        // app was not already running without one.
+        AppEngine.ensure(this)
+        AppEngine.activity = WeakReference(this)
+        PhoneChannel.attach(this)
         super.onCreate(savedInstanceState)
         // A recreated activity already handled the intent that started it.
         if (savedInstanceState == null) incoming.read(intent)
     }
+
+    override fun getCachedEngineId(): String = AppEngine.ID
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -49,25 +54,12 @@ class MainActivity : FlutterFragmentActivity() {
                 if (call.method == "take") result.success(incoming.take()) else result.notImplemented()
             }
         }
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WIDGET_CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "setFavourites") {
-                FavouritesWidget.save(this, call.argument<String>("json") ?: "[]")
-                result.success(null)
-            } else {
-                result.notImplemented()
-            }
-        }
-        PdfChannel.register(flutterEngine.dartExecutor.binaryMessenger)
         DesktopVideo.register(flutterEngine, this)
         PairChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
-        PhoneChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
-        ShareTargets.register(flutterEngine.dartExecutor.binaryMessenger, this)
         ScreenCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         CameraCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MicCast.register(flutterEngine.dartExecutor.binaryMessenger, this)
-        SpeakerPlay.register(flutterEngine.dartExecutor.binaryMessenger, this)
         TextScan.register(flutterEngine.dartExecutor.binaryMessenger, this)
-        ClipPictures.register(flutterEngine.dartExecutor.binaryMessenger, this)
         StorageChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREEN_CHANNEL).setMethodCallHandler { call, result ->
@@ -98,42 +90,10 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> result.notImplemented()
             }
         }
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SESSIONS_CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "setOpenSessions" -> {
-                    val count = call.argument<Int>("count") ?: 0
-                    val summary = call.argument<String>("summary") ?: ""
-                    if (count > 0) askForNotificationsOnce()
-                    SessionService.update(this, count, summary)
-                    result.success(null)
-                }
-                "notifyDone" -> {
-                    SessionService.notifyDone(this, call.argument<String>("title") ?: "", call.argument<String>("body") ?: "")
-                    result.success(null)
-                }
-                else -> result.notImplemented()
-            }
-        }
-        watchNetwork(MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NETWORK_CHANNEL))
-    }
-
-    private fun watchNetwork(channel: MethodChannel) {
-        val manager = getSystemService(ConnectivityManager::class.java) ?: return
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                runOnUiThread { channel.invokeMethod("networkAvailable", null) }
-            }
-        }
-        try {
-            manager.registerDefaultNetworkCallback(callback)
-            networkCallback = callback
-        } catch (e: RuntimeException) {
-            // Without it, reconnects simply wait for their next try.
-        }
     }
 
     /** Android 13+ hides the "connected" notification without this. */
-    private fun askForNotificationsOnce() {
+    fun askForNotificationsOnce() {
         if (android.os.Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
         ) {
@@ -155,21 +115,20 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     override fun onDestroy() {
-        // The app is being closed for good: let the connections go too.
-        if (isFinishing) SessionService.update(this, 0, "")
-        networkCallback?.let { callback ->
-            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(callback)
+        // The engine and its connections carry on without this screen. What
+        // stays open when the app is swiped away is Flutter's to decide
+        // (see AppEngine.taskRemoved).
+        if (AppEngine.activity.get() === this) {
+            AppEngine.activity = WeakReference(null)
+            PhoneChannel.attach(null)
         }
-        networkCallback = null
+        incomingChannel = null
         super.onDestroy()
     }
 
     private companion object {
         const val SCREEN_CHANNEL = "multiplex/screen"
-        const val SESSIONS_CHANNEL = "multiplex/sessions"
         const val PRIVACY_CHANNEL = "multiplex/privacy"
-        const val WIDGET_CHANNEL = "multiplex/widget"
         const val INCOMING_CHANNEL = "multiplex/incoming"
-        const val NETWORK_CHANNEL = "multiplex/network"
     }
 }

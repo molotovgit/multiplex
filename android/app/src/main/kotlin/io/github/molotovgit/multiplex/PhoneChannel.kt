@@ -75,6 +75,11 @@ object PhoneChannel {
         }
     }
 
+    /** The screen, when there is one (a permission question needs it). */
+    fun attach(screen: Activity?) {
+        activity = WeakReference(screen)
+    }
+
     fun register(messenger: BinaryMessenger, context: Context) {
         val app = context.applicationContext
         if (context is Activity) activity = WeakReference(context)

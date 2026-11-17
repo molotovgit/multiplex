@@ -39,6 +39,21 @@ object ClipPictures {
                         null
                     },
                 )
+                // Text, for when the app has no screen (Flutter's own clipboard
+                // calls need one).
+                "writeText" -> result.success(
+                    try {
+                        val text = call.arguments as? String
+                        if (text == null) {
+                            false
+                        } else {
+                            app.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Text", text))
+                            true
+                        }
+                    } catch (_: Exception) {
+                        false
+                    },
+                )
                 "write" -> {
                     val bytes = call.argument<ByteArray>("bytes")
                     val kind = call.argument<String>("kind")

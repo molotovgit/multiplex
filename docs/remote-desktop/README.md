@@ -78,7 +78,7 @@ multiplex send --to "Sam's phone" notes.txt     # with several phones paired
 multiplex send                                  # what is still waiting
 ```
 
-The file waits in an outbox until the phone is connected to the computer. With **Stay connected** (on by default, in the computer's **Sharing and notifications**) that is whenever Multiplex is running, also in the background, with nothing opened in it; then the phone fetches it into its Multiplex downloads and shows a notification, and the computer says it was delivered. What is sent while the phone is away simply waits: the outbox is the queue.
+The file waits in an outbox until the phone is connected to the computer. With **Stay connected** (on by default, in the computer's **Sharing and notifications**) that is nearly always: Multiplex links the computer when the phone has started (once it was unlocked), keeps the link in the background, and keeps it when the app is swiped away, with nothing opened in it. A notification on the phone shows the open connection. Swiping the app away still closes everything else (terminals on other servers, a remote desktop). It costs some battery; switch it off per computer to link only while the app is open. Once connected, the phone fetches the file into its Multiplex downloads and shows a notification, and the computer says it was delivered. What is sent while the phone is away simply waits: the outbox is the queue.
 
 **A newer app.** `multiplex send multiplex.apk` also updates the phone: when a received file is a newer version of Multiplex itself, signed with the same key as the one installed, the phone says so, and that computer's **Sharing and notifications** page has an **Install** button. Any other app file is just a file in the downloads.
 
