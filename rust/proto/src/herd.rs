@@ -34,11 +34,25 @@ fn yes() -> bool {
     true
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Session {
     pub name: String,
+    /// False for a session herdr remembers but does not run now: its
+    /// terminals ended with it, and it starts again when it is opened.
+    #[serde(default = "yes", skip_serializing_if = "is_true")]
+    pub running: bool,
     #[serde(default)]
     pub workspaces: Vec<Workspace>,
+}
+
+impl Default for Session {
+    fn default() -> Self {
+        Session { name: String::new(), running: true, workspaces: Vec::new() }
+    }
+}
+
+fn is_true(value: &bool) -> bool {
+    *value
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
@@ -313,6 +327,7 @@ mod tests {
             sessions: vec![
                 Session {
                     name: "default".into(),
+                    running: true,
                     workspaces: vec![Workspace {
                         id: "w1".into(),
                         label: "api".into(),
@@ -322,7 +337,7 @@ mod tests {
                         ],
                     }],
                 },
-                Session { name: "night".into(), workspaces: vec![Workspace { id: "w1".into(), label: "site".into(), tabs: vec![Tab { id: "w1:t1".into(), label: "1".into(), panes: vec![pane("w1:p1", Some(("Claude", AgentStatus::Done)), "/"), pane("w1:p4", Some(("pi", AgentStatus::Blocked)), "")] }] }] },
+                Session { name: "night".into(), running: true, workspaces: vec![Workspace { id: "w1".into(), label: "site".into(), tabs: vec![Tab { id: "w1:t1".into(), label: "1".into(), panes: vec![pane("w1:p1", Some(("Claude", AgentStatus::Done)), "/"), pane("w1:p4", Some(("pi", AgentStatus::Blocked)), "")] }] }] },
             ],
         }
     }
@@ -339,6 +354,13 @@ mod tests {
         assert!(other.available);
         assert_eq!(other.sessions[0].workspaces[0].tabs[0].panes[0].agent.as_ref().unwrap().status, AgentStatus::Unknown);
         assert!(parse_state("not json").is_err());
+        // A session that is not running says so, and has nothing in it; a
+        // running one says nothing about it (an older computer never does).
+        let stopped = Herd { available: true, sessions: vec![Session { name: "old".into(), running: false, workspaces: vec![] }, Session { name: "now".into(), ..Session::default() }] };
+        let line = serde_json::to_string(&stopped).unwrap();
+        assert_eq!(line, r#"{"available":true,"sessions":[{"name":"old","running":false,"workspaces":[]},{"name":"now","workspaces":[]}]}"#);
+        assert_eq!(parse_state(&line).unwrap(), stopped);
+        assert!(parse_state(r#"{"sessions":[{"name":"a"}]}"#).unwrap().sessions[0].running);
         // A computer without herdr.
         let none = parse_state(&serde_json::to_string(&Herd::missing()).unwrap()).unwrap();
         assert!(!none.available && none.sessions.is_empty());

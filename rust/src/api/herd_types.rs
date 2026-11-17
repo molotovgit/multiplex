@@ -22,6 +22,9 @@ pub struct HerdState {
 #[derive(Debug, Clone, Default)]
 pub struct HerdSession {
     pub name: String,
+    /// False for a session herdr remembers but does not run now; it
+    /// starts again when its screen is opened.
+    pub running: bool,
     pub workspaces: Vec<HerdWorkspace>,
 }
 
@@ -101,6 +104,7 @@ impl From<proto::Herd> for HerdState {
             .into_iter()
             .map(|s| HerdSession {
                 name: s.name,
+                running: s.running,
                 workspaces: s
                     .workspaces
                     .into_iter()
@@ -132,6 +136,10 @@ mod tests {
         assert_eq!((panes[0].agent.as_deref(), panes[0].status, panes[0].folder_name.as_str(), panes[0].focused), (Some("Claude"), AgentStatus::Working, "api", true));
         // A plain terminal: no agent, and no status to speak of.
         assert_eq!((panes[1].agent.as_deref(), panes[1].status, panes[1].folder.as_str(), panes[1].folder_name.as_str()), (None, AgentStatus::Unknown, "/home/sam", "sam"));
+        assert!(state.sessions[0].running);
+        // A session that is not running comes as that, with nothing in it.
+        let stopped: HerdState = proto::parse_state(r#"{"sessions":[{"name":"old","running":false,"workspaces":[]}]}"#).unwrap().into();
+        assert_eq!((stopped.sessions[0].name.as_str(), stopped.sessions[0].running, stopped.sessions[0].workspaces.len()), ("old", false, 0));
         // A computer without herdr.
         let none: HerdState = proto::Herd::missing().into();
         assert!(!none.available && none.sessions.is_empty() && none.inbox.is_empty() && none.waiting == 0);

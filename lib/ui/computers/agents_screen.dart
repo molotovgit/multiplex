@@ -39,9 +39,9 @@ class AgentsScreen extends StatefulWidget {
   /// The computer's herdr. Tests pass a stand-in.
   final HerdLink link;
 
-  /// Opens a terminal in front of one agent: its pane alone, drawn at the
-  /// phone's size.
-  final Future<void> Function(BuildContext context, HerdAgent agent) onOpenTerminal;
+  /// Opens a terminal in front of one pane alone, drawn at the phone's
+  /// size: an agent's, or a plain terminal's.
+  final Future<void> Function(BuildContext context, String session, String pane) onOpenTerminal;
 
   /// Opens a terminal with a herdr session's whole screen.
   final Future<void> Function(BuildContext context, String session) onOpenHerdr;
@@ -55,7 +55,7 @@ class AgentsScreen extends StatefulWidget {
         builder: (_) => AgentsScreen(
           title: host.title,
           link: SshHerdLink(() => session.ssh),
-          onOpenTerminal: (context, agent) => _run(context, session, herdPaneCommand(session: agent.session, pane: agent.pane)),
+          onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane)),
           onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
         ),
       ),
@@ -101,14 +101,33 @@ class _AgentsScreenState extends State<AgentsScreen> {
   }
 
   void _open(HerdAgent agent) {
-    unawaited(AgentSheet.show(context, herd: _herd, agent: agent, onOpenTerminal: () => widget.onOpenTerminal(context, agent)));
+    unawaited(AgentSheet.show(context, herd: _herd, agent: agent, onOpenTerminal: () => widget.onOpenTerminal(context, agent.session, agent.pane)));
   }
 
   @override
   Widget build(BuildContext context) {
+    // The tabs are there once there is a herd to show under them.
+    return DefaultTabController(
+      length: 2,
+      child: ListenableBuilder(
+        listenable: _herd,
+        builder: (context, _) => _page(context, tabs: _herd.state?.available ?? false),
+      ),
+    );
+  }
+
+  Widget _page(BuildContext context, {required bool tabs}) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Agents on ${widget.title}'),
+        bottom: tabs
+            ? const TabBar(
+                tabs: [
+                  Tab(text: 'Inbox'),
+                  Tab(text: 'Everything'),
+                ],
+              )
+            : null,
         actions: [
           ListenableBuilder(
             listenable: _herd,
@@ -159,38 +178,131 @@ class _AgentsScreenState extends State<AgentsScreen> {
                 message: 'herdr keeps coding agents running in terminals that outlive every window. Install it on the computer and start an agent in it; it shows up here.',
               );
             }
-            if (state.inbox.isEmpty) {
-              final terminals = state.sessions.expand((s) => s.workspaces).expand((w) => w.tabs).fold<int>(0, (sum, tab) => sum + tab.panes.length);
-              return EmptyState(
-                icon: Icons.smart_toy_outlined,
-                title: 'No agents are running',
-                message: terminals == 0
-                    ? 'Coding agents started under herdr on this computer show up here, with what each is doing.'
-                    : 'herdr has ${terminals == 1 ? 'one terminal' : '$terminals terminals'} open, none with an agent in it. An agent started there shows up here.',
-              );
-            }
-            final several = state.sessions.length > 1;
-            final rows = <Widget>[
-              if (problem != null)
-                Padding(
-                  padding: const EdgeInsets.all(SettingsLayout.gutter),
-                  child: NoticeBox(tone: NoticeTone.error, text: problem),
+            return TabBarView(
+              children: [
+                _inbox(context, state, problem),
+                _Everything(
+                  state: state,
+                  onPane: (session, pane) {
+                    // An agent opens as an agent; a plain terminal as itself.
+                    final agent = _herd.agent(session, pane);
+                    if (agent != null) {
+                      _open(agent);
+                    } else {
+                      unawaited(widget.onOpenTerminal(context, session, pane));
+                    }
+                  },
+                  onStart: (session) => widget.onOpenHerdr(context, session),
                 ),
-            ];
-            AgentStatus? group;
-            for (final agent in state.inbox) {
-              if (agent.status != group) {
-                group = agent.status;
-                final count = state.inbox.where((a) => a.status == group).length;
-                rows.add(SectionHeader('${agentLook(AppColorsTheme.of(context), agent.status).label} · $count'));
-              }
-              rows.add(_AgentTile(key: ValueKey('${agent.session}/${agent.pane}'), agent: agent, showSession: several, onTap: () => _open(agent)));
-            }
-            return ListView(children: rows);
+              ],
+            );
           },
         ),
       ),
     );
+  }
+
+  Widget _inbox(BuildContext context, HerdState state, String? problem) {
+    if (state.inbox.isEmpty) {
+      final terminals = state.sessions.expand((s) => s.workspaces).expand((w) => w.tabs).fold<int>(0, (sum, tab) => sum + tab.panes.length);
+      return EmptyState(
+        icon: Icons.smart_toy_outlined,
+        title: 'No agents are running',
+        message: terminals == 0
+            ? 'Coding agents started under herdr on this computer show up here, with what each is doing.'
+            : 'herdr has ${terminals == 1 ? 'one terminal' : '$terminals terminals'} open, none with an agent in it. They are under Everything; an agent started in one shows up here.',
+      );
+    }
+    final several = state.sessions.length > 1;
+    final rows = <Widget>[
+      if (problem != null)
+        Padding(
+          padding: const EdgeInsets.all(SettingsLayout.gutter),
+          child: NoticeBox(tone: NoticeTone.error, text: problem),
+        ),
+    ];
+    AgentStatus? group;
+    for (final agent in state.inbox) {
+      if (agent.status != group) {
+        group = agent.status;
+        final count = state.inbox.where((a) => a.status == group).length;
+        rows.add(SectionHeader('${agentLook(AppColorsTheme.of(context), agent.status).label} · $count'));
+      }
+      rows.add(_AgentTile(key: ValueKey('${agent.session}/${agent.pane}'), agent: agent, showSession: several, onTap: () => _open(agent)));
+    }
+    return ListView(children: rows);
+  }
+}
+
+/// All that herdr holds on the computer, in its own order: sessions,
+/// their workspaces, each workspace's tabs, each tab's panes. An agent's
+/// pane opens the agent; a plain terminal opens as a terminal.
+class _Everything extends StatelessWidget {
+  const _Everything({required this.state, required this.onPane, required this.onStart});
+
+  final HerdState state;
+  final void Function(String session, String pane) onPane;
+  final void Function(String session) onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    if (state.sessions.isEmpty) {
+      return const EmptyState(
+        icon: Icons.dashboard_outlined,
+        title: 'herdr holds nothing yet',
+        message: 'Open herdr on the computer, or from here once it has a session, and what runs in it shows up.',
+      );
+    }
+    // One running session needs no heading of its own.
+    final named = state.sessions.length > 1 || state.sessions.any((session) => !session.running);
+    final rows = <Widget>[];
+    for (final session in state.sessions) {
+      if (named) {
+        rows.add(
+          SectionHeader(
+            session.running ? session.name : '${session.name} · not running',
+            trailing: session.running ? null : TextButton(onPressed: () => onStart(session.name), child: const Text('Start')),
+          ),
+        );
+      }
+      if (session.running && session.workspaces.isEmpty) {
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: Text('Nothing is open in it.', style: textTheme.bodyMedium?.copyWith(color: colors.muted)),
+          ),
+        );
+      }
+      for (final workspace in session.workspaces) {
+        final label = workspace.label.isEmpty ? workspace.id : workspace.label;
+        for (final tab in workspace.tabs) {
+          // A workspace with one tab is headed by its own name alone.
+          rows.add(SectionHeader(workspace.tabs.length == 1 ? label : '$label · ${tab.label.isEmpty ? tab.id : tab.label}'));
+          for (final pane in tab.panes) {
+            final agent = pane.agent;
+            final look = agent == null ? null : agentLook(colors, pane.status);
+            final title = pane.title.isNotEmpty ? pane.title : (agent ?? 'Terminal');
+            rows.add(
+              ListTile(
+                key: ValueKey('everything/${session.name}/${pane.id}'),
+                leading: Icon(look?.icon ?? Icons.terminal, color: look?.color ?? colors.muted),
+                title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                  [if (agent != null) '$agent · ${look!.label}' else 'Terminal', if (pane.folderName.isNotEmpty) pane.folderName].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => onPane(session.name, pane.id),
+              ),
+            );
+          }
+        }
+      }
+    }
+    return ListView(children: rows);
   }
 }
 

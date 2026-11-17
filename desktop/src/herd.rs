@@ -33,26 +33,36 @@ pub struct Running {
     pub socket: PathBuf,
 }
 
-/// The running sessions in what `herdr session list` prints: a table with
-/// the name first, the status second and the socket last.
-pub fn running_in(table: &str) -> Vec<Running> {
+/// herdr's sessions in what `herdr session list` prints: a table with the
+/// name first, the status second and the socket last. A session that is
+/// not running has no socket to ask.
+pub fn sessions_in(table: &str) -> Vec<(String, Option<PathBuf>)> {
     table
         .lines()
         .skip(1)
         .filter_map(|line| {
             let words: Vec<&str> = line.split_whitespace().collect();
             let (name, status, socket) = (words.first()?, words.get(1)?, words.last()?);
-            (*status == "running" && words.len() >= 4 && socket.ends_with(".sock")).then(|| clean_session_name(name).ok()).flatten().map(|name| Running { name, socket: PathBuf::from(socket) })
+            if words.len() < 4 || !socket.ends_with(".sock") {
+                return None;
+            }
+            let name = clean_session_name(name).ok()?;
+            Some((name, (*status == "running").then(|| PathBuf::from(socket))))
         })
         .collect()
 }
 
-/// None: herdr is not installed. With `MULTIPLEX_HERD_SESSION` set, only
-/// that session is looked at: the tests keep to a session of their own.
-fn running() -> Option<Vec<Running>> {
+/// Every session herdr knows, running or not, in its order. None: herdr
+/// is not installed. With `MULTIPLEX_HERD_SESSION` set, only that session
+/// is looked at: the tests keep to a session of their own.
+fn known() -> Option<Vec<(String, Option<PathBuf>)>> {
     let out = Command::new("herdr").args(["session", "list"]).output().ok()?;
     let only = std::env::var("MULTIPLEX_HERD_SESSION").ok().filter(|name| !name.is_empty());
-    Some(running_in(&String::from_utf8_lossy(&out.stdout)).into_iter().filter(|session| only.as_ref().is_none_or(|only| &session.name == only)).collect())
+    Some(sessions_in(&String::from_utf8_lossy(&out.stdout)).into_iter().filter(|(name, _)| only.as_ref().is_none_or(|only| name == only)).collect())
+}
+
+fn stopped(name: &str) -> Session {
+    Session { name: name.to_owned(), running: false, workspaces: Vec::new() }
 }
 
 /// One question to a session's socket, and its answer's `result`.
@@ -91,6 +101,7 @@ pub fn build(name: &str, snapshot: &Value) -> Session {
     workspaces.sort_by_key(number);
     Session {
         name: name.to_owned(),
+        running: true,
         workspaces: workspaces
             .iter()
             .filter_map(|workspace| {
@@ -121,11 +132,18 @@ fn panes_of(session: &Session) -> BTreeSet<String> {
     session.workspaces.iter().flat_map(|w| &w.tabs).flat_map(|t| &t.panes).map(|p| p.id.clone()).collect()
 }
 
-/// Everything, once. A session that does not answer is left out.
+/// Everything, once. A session that is not running, or does not answer,
+/// is there by name with nothing in it.
 pub fn state() -> Herd {
-    match running() {
+    match known() {
         None => Herd::missing(),
-        Some(sessions) => Herd { available: true, sessions: sessions.iter().filter_map(|session| snapshot(session).ok()).collect() },
+        Some(sessions) => Herd {
+            available: true,
+            sessions: sessions
+                .into_iter()
+                .map(|(name, socket)| socket.and_then(|socket| snapshot(&Running { name: name.clone(), socket }).ok()).unwrap_or_else(|| stopped(&name)))
+                .collect(),
+        },
     }
 }
 
@@ -239,10 +257,11 @@ pub fn watch() -> Result<()> {
     loop {
         if sessions_at.is_none_or(|at| at.elapsed() >= SESSIONS) {
             sessions_at = Some(Instant::now());
-            let found = running();
-            available = found.is_some();
-            let found = found.unwrap_or_default();
-            order = found.iter().map(|session| session.name.clone()).collect();
+            let known = known();
+            available = known.is_some();
+            let known = known.unwrap_or_default();
+            order = known.iter().map(|(name, _)| name.clone()).collect();
+            let found: Vec<Running> = known.into_iter().filter_map(|(name, socket)| Some(Running { name, socket: socket? })).collect();
             watched.retain(|name, one| {
                 let stays = found.iter().any(|session| &session.name == name && session.socket == one.session.socket);
                 if !stays {
@@ -269,7 +288,9 @@ pub fn watch() -> Result<()> {
                 }
             }
         }
-        let herd = Herd { available, sessions: order.iter().filter_map(|name| watched.get(name)?.seen.clone()).collect() };
+        // A session that is not running (or has not answered yet) is
+        // there by name, with nothing in it.
+        let herd = Herd { available, sessions: order.iter().map(|name| watched.get(name).and_then(|one| one.seen.clone()).unwrap_or_else(|| stopped(name))).collect() };
         if last.as_ref() != Some(&herd) {
             writeln!(out, "{}", serde_json::to_string(&herd)?)?;
             out.flush()?;
@@ -366,19 +387,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn running_sessions_are_read_from_herdrs_table() {
+    fn sessions_are_read_from_herdrs_table() {
         let table = "name                 status   directory                                        socket\n\
                      default              running  /home/sam/.config/herdr                          /home/sam/.config/herdr/herdr.sock\n\
                      night-shift          stopped  /home/sam/.config/herdr/sessions/night-shift     /home/sam/.config/herdr/sessions/night-shift/herdr.sock\n\
                      work.api             running  /home/sam/.config/herdr/sessions/work.api        /home/sam/.config/herdr/sessions/work.api/herdr.sock\n\
                      bad;name             running  /x                                               /x/herdr.sock\n\
                      short                running\n";
-        assert_eq!(running_in(table), [
-            Running { name: "default".into(), socket: "/home/sam/.config/herdr/herdr.sock".into() },
-            Running { name: "work.api".into(), socket: "/home/sam/.config/herdr/sessions/work.api/herdr.sock".into() },
+        // A name herdr would not allow, and a line that is not a session's, are left out.
+        assert_eq!(sessions_in(table).iter().filter_map(|(name, socket)| Some((name.as_str(), socket.as_ref()?.to_str()?))).collect::<Vec<_>>(), [
+            ("default", "/home/sam/.config/herdr/herdr.sock"),
+            ("work.api", "/home/sam/.config/herdr/sessions/work.api/herdr.sock"),
         ]);
-        assert!(running_in("").is_empty());
-        assert!(running_in("name status directory socket\n").is_empty());
+        assert!(sessions_in("").is_empty());
+        assert!(sessions_in("name status directory socket\n").is_empty());
+        // All of them, in herdr's order; one that is not running has no socket to ask.
+        assert_eq!(sessions_in(table).iter().map(|(name, socket)| (name.as_str(), socket.is_some())).collect::<Vec<_>>(), [("default", true), ("night-shift", false), ("work.api", true)]);
+        assert_eq!(stopped("night-shift"), Session { name: "night-shift".into(), running: false, workspaces: vec![] });
     }
 
     fn snapshot() -> Value {
@@ -419,7 +444,7 @@ mod tests {
         assert!(session.workspaces[1].tabs[0].panes.is_empty());
         assert_eq!(panes_of(&session), ["w1:p1", "w1:p2", "w1:p3"].map(str::to_owned).into());
         // Nothing at all is an empty session, not an error.
-        assert_eq!(build("x", &json!({})), Session { name: "x".into(), workspaces: vec![] });
+        assert_eq!(build("x", &json!({})), Session { name: "x".into(), running: true, workspaces: vec![] });
     }
 
     #[test]

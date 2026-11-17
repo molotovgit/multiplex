@@ -65,6 +65,7 @@ HerdState _state(List<HerdAgent> agents, {bool available = true, List<HerdSessio
 
 HerdSession _session(String name, {int panes = 0}) => HerdSession(
   name: name,
+  running: true,
   workspaces: [
     HerdWorkspace(
       id: 'w1',
@@ -90,7 +91,7 @@ void main() {
         home: AgentsScreen(
           title: 'Desk',
           link: herd,
-          onOpenTerminal: (_, agent) async => terminals?.add('${agent.session}/${agent.pane}'),
+          onOpenTerminal: (_, session, pane) async => terminals?.add('$session/$pane'),
           onOpenHerdr: (_, session) async => terminals?.add('herdr of $session'),
         ),
       ),
@@ -173,10 +174,97 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('everything herdr holds: sessions, workspaces, tabs, and plain terminals too', (tester) async {
+    final terminals = <String>[];
+    HerdPane pane(String id, String title, {String? agent, AgentStatus status = AgentStatus.unknown, String folder = 'api'}) =>
+        HerdPane(id: id, title: title, folder: '/home/sam/code/$folder', folderName: folder, focused: false, agent: agent, status: status);
+    final herd = _Herd(
+      _state(
+        [_agent('w1:p3', AgentStatus.blocked, 'Allow this command?', name: 'codex')],
+        sessions: [
+          HerdSession(
+            name: 'default',
+            running: true,
+            workspaces: [
+              HerdWorkspace(
+                id: 'w1',
+                label: 'api',
+                tabs: [
+                  HerdTab(id: 'w1:t1', label: '1', panes: [pane('w1:p2', 'sam@desk:~/code/api')]),
+                  HerdTab(
+                    id: 'w1:t2',
+                    label: 'review',
+                    panes: [pane('w1:p3', 'Allow this command?', agent: 'codex', status: AgentStatus.blocked)],
+                  ),
+                ],
+              ),
+              HerdWorkspace(
+                id: 'w2',
+                label: '',
+                tabs: [
+                  HerdTab(
+                    id: 'w2:t1',
+                    label: '1',
+                    panes: [pane('w2:p1', '', folder: 'notes')],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const HerdSession(name: 'night', running: false, workspaces: []),
+        ],
+      ),
+    );
+    await open(tester, herd, terminals: terminals);
+    await tester.tap(find.text('Everything'));
+    await tester.pumpAndSettle();
+    final order = ['default', 'api · 1', 'sam@desk:~/code/api', 'api · review', 'Allow this command?', 'w2', 'Terminal', 'night · not running'];
+    final tops = [for (final text in order) tester.getTopLeft(find.text(text)).dy];
+    expect(tops, [...tops]..sort(), reason: "in herdr's own order, a workspace with one tab under its name alone");
+    expect(find.text('Terminal · api'), findsOneWidget);
+    expect(find.text('codex · Needs you · api'), findsOneWidget);
+    expect(find.text('Terminal · notes'), findsOneWidget);
+
+    // A plain terminal opens as a terminal, at once.
+    await tester.tap(find.text('sam@desk:~/code/api'));
+    await tester.pump();
+    expect(terminals, ['default/w1:p2']);
+    // An agent's pane opens the agent.
+    herd.output = 'Run it?';
+    await tester.tap(find.text('Allow this command?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Run it?'), findsOneWidget);
+    expect(find.byTooltip('Send'), findsOneWidget);
+    Navigator.of(tester.element(find.byTooltip('Send'))).pop();
+    await tester.pumpAndSettle();
+    // A session that is not running starts when its screen is opened.
+    terminals.clear();
+    await tester.tap(find.text('Start'));
+    expect(terminals, ['herdr of night']);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('one running session with nothing open says so, without a heading of its own', (tester) async {
+    final herd = _Herd(
+      _state(
+        [],
+        sessions: [const HerdSession(name: 'default', running: true, workspaces: [])],
+      ),
+    );
+    await open(tester, herd);
+    await tester.tap(find.text('Everything'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing is open in it.'), findsOneWidget);
+    expect(find.text('default'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('a computer without herdr, and one that does not answer', (tester) async {
     final none = _Herd(_state([], available: false));
     await open(tester, none);
     expect(find.text('herdr is not on this computer'), findsOneWidget);
+    expect(find.text('Everything'), findsNothing, reason: 'no tabs over nothing');
     await tester.pumpWidget(const SizedBox.shrink());
 
     final herd = _Herd(_state([_agent('w1:p1', AgentStatus.done, 'Tests fixed')]))

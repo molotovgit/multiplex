@@ -188,5 +188,18 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
     // `state` says the same as the last line of `watch`.
     let (ok, printed) = own.multiplex(&["herd", "state"]);
     assert!(ok);
-    assert_eq!(parse_state(&printed).unwrap().sessions[0].workspaces[0].tabs.len(), 2);
+    let state = parse_state(&printed).unwrap();
+    assert!(state.sessions[0].running);
+    assert_eq!(state.sessions[0].workspaces[0].tabs.len(), 2);
+
+    // The session stops: herdr still knows it by name, and so does the
+    // phone, as one that is not running and has nothing in it. `watch`
+    // notices by itself (it looks for sessions every few seconds).
+    own.herdr(&["server", "stop"]);
+    let herd = next(&lines, Duration::from_secs(12), "the session stopped", |herd| herd.sessions.first().is_some_and(|session| !session.running));
+    assert_eq!((herd.sessions[0].name.as_str(), herd.sessions[0].workspaces.len()), (name.as_str(), 0));
+    let (ok, printed) = own.multiplex(&["herd", "state"]);
+    assert!(ok);
+    let state = parse_state(&printed).unwrap();
+    assert_eq!((state.sessions.len(), state.sessions[0].running, state.agents().len()), (1, false, 0));
 }

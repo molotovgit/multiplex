@@ -185,7 +185,9 @@ On a computer's page, **Scan text** opens the phone's page scanner (Google's: it
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile. It is an inbox: every agent of every herdr session, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: herdr tells the computer of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
 
-A tap opens an agent without a terminal:
+Beside the inbox, **Everything** shows all that herdr holds, in herdr's own order: each session (one that is not running too, with **Start**), its workspaces, their tabs and every pane, plain terminals included. A pane with an agent opens the agent; a plain terminal opens as a terminal.
+
+A tap on an agent opens it without a terminal:
 
 - what it last wrote, read again whenever its state changes (and every two seconds while it works);
 - the keys its questions take: Esc, 1, 2, 3, the arrows, Tab, Enter;

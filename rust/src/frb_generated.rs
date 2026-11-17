@@ -10399,10 +10399,12 @@ impl SseDecode for crate::api::herd_types::HerdSession {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_running = <bool>::sse_decode(deserializer);
         let mut var_workspaces =
             <Vec<crate::api::herd_types::HerdWorkspace>>::sse_decode(deserializer);
         return crate::api::herd_types::HerdSession {
             name: var_name,
+            running: var_running,
             workspaces: var_workspaces,
         };
     }
@@ -13077,6 +13079,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::herd_types::HerdSession {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.name.into_into_dart().into_dart(),
+            self.running.into_into_dart().into_dart(),
             self.workspaces.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -15009,6 +15012,7 @@ impl SseEncode for crate::api::herd_types::HerdSession {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.name, serializer);
+        <bool>::sse_encode(self.running, serializer);
         <Vec<crate::api::herd_types::HerdWorkspace>>::sse_encode(self.workspaces, serializer);
     }
 }

@@ -114,15 +114,23 @@ class HerdPane {
 
 class HerdSession {
   final String name;
+
+  /// False for a session herdr remembers but does not run now; it
+  /// starts again when its screen is opened.
+  final bool running;
   final List<HerdWorkspace> workspaces;
 
-  const HerdSession({required this.name, required this.workspaces});
+  const HerdSession({
+    required this.name,
+    required this.running,
+    required this.workspaces,
+  });
 
   static Future<HerdSession> default_() =>
       RustLib.instance.api.crateApiHerdTypesHerdSessionDefault();
 
   @override
-  int get hashCode => name.hashCode ^ workspaces.hashCode;
+  int get hashCode => name.hashCode ^ running.hashCode ^ workspaces.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -130,6 +138,7 @@ class HerdSession {
       other is HerdSession &&
           runtimeType == other.runtimeType &&
           name == other.name &&
+          running == other.running &&
           workspaces == other.workspaces;
 }
 
