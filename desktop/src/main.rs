@@ -44,6 +44,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex pair              Show a QR code to pair a phone (scan it in the app)
   multiplex pair --code-only  Print only the pairing code, for scripts
   multiplex devices           List the paired phones
+  multiplex devices --json    The same as a list a script or a bar widget can read
   multiplex unpair <name>     Remove a paired phone
   multiplex access [<name>]   What each phone may do here; `multiplex access <name> <what> on|off`
   multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
@@ -80,6 +81,7 @@ fn main() {
         ["pair", "--code-only"] => pair(true),
         ["pair-accept", id] => accept(id),
         ["devices"] => devices(),
+        ["devices", "--json"] => devices_json(),
         ["unpair", name] => unpair(name),
         ["setup"] => setup(false),
         ["setup", "--dry-run"] => setup(true),
@@ -267,6 +269,29 @@ fn devices() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// One paired phone, as `multiplex devices --json` prints it.
+#[derive(serde::Serialize, Debug, PartialEq)]
+struct DeviceState {
+    name: String,
+    /// The phone is linked right now.
+    connected: bool,
+    /// What it last said about itself, when that is recent.
+    battery: Option<u8>,
+    charging: Option<bool>,
+}
+
+fn device_state(name: &str, connected: bool, seen: Option<(u8, bool)>) -> DeviceState {
+    DeviceState { name: name.to_owned(), connected, battery: seen.map(|(battery, _)| battery), charging: seen.map(|(_, charging)| charging) }
+}
+
+/// `multiplex devices --json`: the same as `devices`, for a bar widget or
+/// a script to read. Always a list, also when no phone is paired.
+fn devices_json() -> anyhow::Result<()> {
+    let states: Vec<DeviceState> = Store::open()?.devices()?.iter().map(|d| device_state(&d.name, share::linked(&d.name), share::seen(&d.name).map(|seen| (seen.battery, seen.charging)))).collect();
+    println!("{}", serde_json::to_string(&states)?);
+    Ok(())
+}
+
 fn unpair(name: &str) -> anyhow::Result<()> {
     match Store::open()?.unpair(name)? {
         0 => bail!("no paired phone is called \"{name}\" (see `multiplex devices`)"),
@@ -318,4 +343,18 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
     }
     println!("\nDone. `multiplex doctor` checks the result; `multiplex pair` pairs a phone.");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_phones_state_reads_the_same_for_a_script_every_time() {
+        let linked = serde_json::to_string(&device_state("Sam's phone", true, Some((81, true)))).unwrap();
+        assert_eq!(linked, r#"{"name":"Sam's phone","connected":true,"battery":81,"charging":true}"#);
+        // Not heard from lately: the fields are there, and say so.
+        let away = serde_json::to_string(&device_state("Old phone", false, None)).unwrap();
+        assert_eq!(away, r#"{"name":"Old phone","connected":false,"battery":null,"charging":null}"#);
+    }
 }
