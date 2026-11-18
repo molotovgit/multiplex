@@ -70,25 +70,30 @@ void main() {
     expect(HostArrangement.of(store).entries.whereType<HostEntry>().map((e) => e.host.id), ['s']);
   });
 
-  testWidgets('a computer card opens its page: every feature as a tile', (tester) async {
+  testWidgets('a computer card opens its page: every feature as a tile, in groups', (tester) async {
     store.saveHost(_desk);
     await home(tester);
     await tester.tap(find.text('Desk'));
     await tester.pumpAndSettle();
     expect(find.byType(ComputerScreen), findsOneWidget);
+    // In groups by what one comes for, work first.
     for (final tile in [
+      'Work',
+      'Agents',
+      'Terminal',
+      'Files',
+      'Control',
       'Desktop',
       'Panel',
       'Touchpad',
-      'Terminal',
-      'Files',
       'Extend screen',
+      'Lend the phone',
       'Phone screen',
       'Camera',
       'Microphone',
       'Speaker',
       'Scan text',
-      'Agents',
+      'Connection',
       'Tunnels',
       'Status',
     ]) {

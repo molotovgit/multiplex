@@ -69,28 +69,51 @@ class ComputerScreen extends StatelessWidget {
     if (host == null) return const Scaffold(body: SizedBox.shrink());
     final colors = AppColorsTheme.of(context);
     final text = Theme.of(context).textTheme;
-    final tiles = <_Tile>[
-      _Tile(Icons.desktop_windows_outlined, 'Desktop', 'See and control the screen', () => HostConnector.openDesktop(context, host), primary: true),
-      _Tile(Icons.space_dashboard_outlined, 'Panel', 'Workspaces, windows, media', () => PanelScreen.open(context, host)),
-      _Tile(Icons.touch_app_outlined, 'Touchpad', 'Pointer and keys, no picture', () => TouchpadScreen.show(context, host)),
-      _Tile(Icons.terminal, 'Terminal', 'A shell on the computer', () => HostConnector.openTerminal(context, host)),
-      _Tile(Icons.folder_outlined, 'Files', 'Browse, send and fetch', () => ComputerCard.openFiles(context, host)),
-      _Tile(
-        Icons.add_to_queue_outlined,
-        'Extend screen',
-        'The phone as one more monitor',
-        () => HostConnector.openDesktop(context, host, screen: DesktopScreenMode.fitted),
+    // In groups by what one comes for, not a wall of tiles: work on the
+    // computer first, then controlling it, then what the phone lends it,
+    // then the connection itself.
+    final groups = <(String, List<_Tile>)>[
+      (
+        'Work',
+        [
+          _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host), primary: true),
+          _Tile(Icons.terminal, 'Terminal', 'A shell on the computer', () => HostConnector.openTerminal(context, host)),
+          _Tile(Icons.folder_outlined, 'Files', 'Browse, send and fetch', () => ComputerCard.openFiles(context, host)),
+        ],
       ),
-      _Tile(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
-      _Tile(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
-      _Tile(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
-      _Tile(Icons.speaker_phone, 'Speaker', 'The computer\'s sound on this phone', () => SpeakerScreen.show(context, host)),
-      _Tile(Icons.document_scanner_outlined, 'Scan text', 'From paper to the computer\'s clipboard', () => ScanText.fromCamera(context, host)),
-      _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host)),
-      _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
-      _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
-      // Wake-on-LAN, with the network card's address saved at pairing.
-      if ((host.mac ?? '').isNotEmpty) _Tile(Icons.power_settings_new, 'Wake', 'Switch it on from the home network', () => _wake(context, host)),
+      (
+        'Control',
+        [
+          _Tile(Icons.desktop_windows_outlined, 'Desktop', 'See and control the screen', () => HostConnector.openDesktop(context, host), primary: true),
+          _Tile(Icons.space_dashboard_outlined, 'Panel', 'Workspaces, windows, media', () => PanelScreen.open(context, host)),
+          _Tile(Icons.touch_app_outlined, 'Touchpad', 'Pointer and keys, no picture', () => TouchpadScreen.show(context, host)),
+          _Tile(
+            Icons.add_to_queue_outlined,
+            'Extend screen',
+            'The phone as one more monitor',
+            () => HostConnector.openDesktop(context, host, screen: DesktopScreenMode.fitted),
+          ),
+        ],
+      ),
+      (
+        'Lend the phone',
+        [
+          _Tile(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
+          _Tile(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
+          _Tile(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
+          _Tile(Icons.speaker_phone, 'Speaker', 'The computer\'s sound on this phone', () => SpeakerScreen.show(context, host)),
+          _Tile(Icons.document_scanner_outlined, 'Scan text', 'From paper to the computer\'s clipboard', () => ScanText.fromCamera(context, host)),
+        ],
+      ),
+      (
+        'Connection',
+        [
+          _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
+          _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
+          // Wake-on-LAN, with the network card's address saved at pairing.
+          if ((host.mac ?? '').isNotEmpty) _Tile(Icons.power_settings_new, 'Wake', 'Switch it on from the home network', () => _wake(context, host)),
+        ],
+      ),
     ];
     return Scaffold(
       appBar: AppBar(
@@ -141,20 +164,24 @@ class ComputerScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 24),
-                  // A fixed height, not a ratio: with three or four tiles in
-                  // a row they get narrow, and a ratio would squeeze the text.
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 220,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      mainAxisExtent: 132,
+                for (final (name, tiles) in groups) ...[
+                  SliverToBoxAdapter(child: SectionHeader(name)),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 12),
+                    // A fixed height, not a ratio: with three or four tiles in
+                    // a row they get narrow, and a ratio would squeeze the text.
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 220,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        mainAxisExtent: 132,
+                      ),
+                      delegate: SliverChildListDelegate([for (final t in tiles) _TileCard(tile: t)]),
                     ),
-                    delegate: SliverChildListDelegate([for (final t in tiles) _TileCard(tile: t)]),
                   ),
-                ),
+                ],
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
             );
           },

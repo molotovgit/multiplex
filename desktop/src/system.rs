@@ -162,6 +162,8 @@ pub fn doctor() -> Vec<Check> {
     if let Some((on, detail)) = crate::sudo::standing_here() {
         checks.push(check("sudo by phone", Some(on), false, &detail));
     }
+    let (ok, detail) = crate::sessions::standing();
+    checks.push(check("Sessions", Some(ok), false, &detail));
     // Only where there is an Omarchy bar to be in.
     if let Some((ok, detail)) = bar_widget() {
         checks.push(check("Bar widget", ok, false, &detail));

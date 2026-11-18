@@ -1298,6 +1298,33 @@ pub fn setup_service(on: bool, dry_run: bool) -> Result<()> {
     Ok(())
 }
 
+/// For `multiplex doctor`: whether sessions are all set up, and in words
+/// what is and what is not.
+pub fn standing() -> (bool, String) {
+    let home = PathBuf::from(std::env::var_os("HOME").unwrap_or_default());
+    let serving = UnixStream::connect(socket_path()).is_ok();
+    let service = Command::new("systemctl").args(["--user", "is-enabled", "--quiet", UNIT]).status().is_ok_and(|status| status.success());
+    let terminals = [".bashrc", ".zshrc"].iter().any(|name| std::fs::read_to_string(home.join(name)).is_ok_and(|text| text.contains(MARK_BEGIN)));
+    let hooks = std::fs::read_to_string(home.join(".claude/settings.json")).is_ok_and(|text| text.contains("multiplex agent hook "));
+    let kept = if serving { ask(&socket_path(), &Request::List).map_or(0, |(answer, _)| answer.terminals.len()) } else { 0 };
+    let mut missing = Vec::new();
+    if !service {
+        missing.push("not a service (multiplex setup --service)");
+    }
+    if !terminals {
+        missing.push("new terminals are not kept (multiplex setup --terminals)");
+    }
+    if !hooks {
+        missing.push("Claude Code does not report (multiplex setup --agents)");
+    }
+    let state = if serving { format!("the server runs and keeps {kept} terminal{}", if kept == 1 { "" } else { "s" }) } else { "the server is not running (it starts when first asked)".to_owned() };
+    if missing.is_empty() {
+        (true, format!("{state}; every new terminal is kept, and Claude Code reports to it"))
+    } else {
+        (false, format!("{state}; {}", missing.join("; ")))
+    }
+}
+
 /// What `multiplex here --window` exits with when this terminal could
 /// not be handed to the server: the shell that asked carries on as a
 /// plain one.

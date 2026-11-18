@@ -419,6 +419,7 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
             println!("      {}", command.join(" "));
         }
     }
+    println!("  • Sessions: the session server as a service, Claude Code's hooks, and every new terminal window kept (no administrator rights; each has an -off twin)");
     if dry_run {
         println!("\n{}", sudo::only_a_plan("multiplex setup"));
         return Ok(());
@@ -431,6 +432,15 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
             bail!("\"{what}\" failed; nothing after it was run");
         }
     }
+    // What needs no administrator: terminals that keep running and can be
+    // picked up from the phone. Each can be turned off again on its own.
+    println!("\n→ Sessions: the session server as a service, Claude Code's hooks, and every new terminal window kept");
+    for (what, done) in [("the service", sessions::setup_service(true, false)), ("the agents' hooks", sessions::setup_agents(true, false)), ("the terminals", sessions::setup_terminals(true, false))] {
+        if let Err(err) = done {
+            println!("  {what} could not be set up: {err:#}");
+        }
+    }
+    println!("  (undo any of them: multiplex setup --service-off | --agents-off | --terminals-off)");
     println!("\nDone. `multiplex doctor` checks the result; `multiplex pair` pairs a phone.");
     if system::on_path("omarchy-shell") {
         println!("`multiplex bar on` puts Multiplex in the Omarchy bar.");
