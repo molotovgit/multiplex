@@ -116,6 +116,14 @@ fn main() {
         ["herd", rest @ ..] => herd::run(rest),
         ["sessions", rest @ ..] => sessions::run(rest),
         ["here"] => sessions::here(false),
+        ["agent", "hook", agent, event] => {
+            sessions::hook(agent, event);
+            Ok(())
+        }
+        ["setup", "--agents"] => sessions::setup_agents(true, false),
+        ["setup", "--agents", "--dry-run"] => sessions::setup_agents(true, true),
+        ["setup", "--agents-off"] => sessions::setup_agents(false, false),
+        ["setup", "--agents-off", "--dry-run"] => sessions::setup_agents(false, true),
         ["here", "--window"] => sessions::here(true),
         ["setup", "--terminals"] => sessions::setup_terminals(true, false),
         ["setup", "--terminals", "--dry-run"] => sessions::setup_terminals(true, true),

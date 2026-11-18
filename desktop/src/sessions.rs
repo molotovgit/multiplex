@@ -82,8 +82,15 @@ pub enum Request {
     Keys { id: String, keys: Vec<String> },
     /// Text as one piece, then Enter.
     Text { id: String, text: String },
-    /// An agent says what it is doing (from its own hooks).
-    Report { id: String, agent: String, state: String },
+    /// An agent says what it is doing (from its own hooks), and which
+    /// conversation of its it is in, for continuing it later.
+    Report {
+        id: String,
+        agent: String,
+        state: String,
+        #[serde(default)]
+        conversation: String,
+    },
     /// End the server and every terminal it keeps.
     Stop,
 }
@@ -185,6 +192,8 @@ struct Terminal {
     viewers: Vec<Viewer>,
     /// What an agent's own hooks last said: its name and state.
     reported: Option<(String, AgentStatus)>,
+    /// The agent's conversation, by the agent's own id for it.
+    conversation: String,
     /// When the program last wrote, and when a viewer last typed.
     wrote: Instant,
     typed: Instant,
@@ -194,6 +203,9 @@ struct Terminal {
     was_working: bool,
     /// It stands in for a plain terminal window.
     window: bool,
+    /// Since when it is being ended (its window closed with nothing
+    /// running).
+    ending: Option<Instant>,
 }
 
 impl Terminal {
@@ -204,10 +216,25 @@ impl Terminal {
 
     /// Its last viewer went: a window's stand-in with nothing running
     /// ends, as closing the window would have ended its shell.
-    fn left_alone(&self) {
+    fn left_alone(&mut self) {
         if self.window && self.viewers.is_empty() && self.at_its_shell() {
             unsafe { libc::kill(-(self.child.id() as i32), libc::SIGHUP) };
+            self.ending = Some(Instant::now());
         }
+    }
+
+    /// A shell can miss a hang-up that arrives just before it waits for
+    /// input (seen with bash). One that is being ended is told again, and
+    /// after a few seconds ended without being asked.
+    fn still_ending(&mut self) {
+        let Some(since) = self.ending else { return };
+        if !self.viewers.is_empty() || !self.at_its_shell() {
+            // Someone came back to it, or something runs in it after all.
+            self.ending = None;
+            return;
+        }
+        let signal = if since.elapsed() > Duration::from_secs(3) { libc::SIGKILL } else { libc::SIGHUP };
+        unsafe { libc::kill(-(self.child.id() as i32), signal) };
     }
 
     fn resize(&mut self, cols: u16, rows: u16) {
@@ -242,16 +269,17 @@ impl Terminal {
 
     /// What its agent is doing: as its hooks said, or as its screen shows.
     fn status(&mut self, agent: bool) -> AgentStatus {
-        let working = match &self.reported {
-            Some((_, status)) if agent => return self.seen_or_done(*status),
-            _ => self.wrote.elapsed() < WORKING_FOR && self.wrote.duration_since(self.typed) > ECHO,
-        };
         if !agent {
             return AgentStatus::Unknown;
         }
+        // A question by choice on its screen is waiting, whatever else is
+        // known. Otherwise its own word counts; without one, it works
+        // while it writes.
         let status = if !asked(&self.screen.screen().contents()).choices.is_empty() {
             AgentStatus::Blocked
-        } else if working {
+        } else if let Some((_, said)) = &self.reported {
+            *said
+        } else if self.wrote.elapsed() < WORKING_FOR && self.wrote.duration_since(self.typed) > ECHO {
             AgentStatus::Working
         } else {
             AgentStatus::Idle
@@ -389,14 +417,28 @@ fn nz(n: u16) -> std::num::NonZero<u16> {
 }
 
 fn open_pty(cols: u16, rows: u16) -> Result<(File, OwnedFd)> {
-    let (mut master, mut slave) = (0, 0);
-    let size = libc::winsize { ws_row: rows, ws_col: cols, ws_xpixel: 0, ws_ypixel: 0 };
-    if unsafe { libc::openpty(&mut master, &mut slave, std::ptr::null_mut(), std::ptr::null(), &size) } != 0 {
-        bail!("no terminal could be made: {}", std::io::Error::last_os_error());
-    }
+    // Both ends are opened already marked to be closed in any program
+    // started from here. Marked a moment later instead, a program started
+    // at that very moment (by another request) inherited them, and the
+    // terminal then never ended: its other end was still open somewhere.
+    let failed = || anyhow!("no terminal could be made: {}", std::io::Error::last_os_error());
     unsafe {
-        libc::fcntl(master, libc::F_SETFD, libc::FD_CLOEXEC);
-        Ok((File::from_raw_fd(master), OwnedFd::from_raw_fd(slave)))
+        let master = libc::posix_openpt(libc::O_RDWR | libc::O_NOCTTY | libc::O_CLOEXEC);
+        if master < 0 {
+            return Err(failed());
+        }
+        let master = File::from_raw_fd(master);
+        let mut name = [0 as libc::c_char; 128];
+        if libc::grantpt(master.as_raw_fd()) != 0 || libc::unlockpt(master.as_raw_fd()) != 0 || libc::ptsname_r(master.as_raw_fd(), name.as_mut_ptr(), name.len()) != 0 {
+            return Err(failed());
+        }
+        let slave = libc::open(name.as_ptr(), libc::O_RDWR | libc::O_NOCTTY | libc::O_CLOEXEC);
+        if slave < 0 {
+            return Err(failed());
+        }
+        let size = libc::winsize { ws_row: rows, ws_col: cols, ws_xpixel: 0, ws_ypixel: 0 };
+        libc::ioctl(master.as_raw_fd(), libc::TIOCSWINSZ, &size);
+        Ok((master, OwnedFd::from_raw_fd(slave)))
     }
 }
 
@@ -447,6 +489,12 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
     // Its own session, with the PTY as the terminal it is in charge of.
     unsafe {
         spawn.pre_exec(|| {
+            // Signals as a fresh terminal gives them: a server started by
+            // something that ignores hang-ups (nohup, say) would otherwise
+            // hand that on, and a shell told its window closed would stay.
+            for signal in [libc::SIGHUP, libc::SIGINT, libc::SIGQUIT, libc::SIGTERM, libc::SIGPIPE, libc::SIGTSTP, libc::SIGTTIN, libc::SIGTTOU] {
+                libc::signal(signal, libc::SIG_DFL);
+            }
             if libc::setsid() < 0 || libc::ioctl(0, libc::TIOCSCTTY as _, 0) < 0 {
                 return Err(std::io::Error::last_os_error());
             }
@@ -466,11 +514,13 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
         screen: vt100::Parser::new_with_callbacks(nz(rows), nz(cols), SCROLLBACK, Title::default()),
         viewers: Vec::new(),
         reported: None,
+        conversation: String::new(),
         wrote: now,
         typed: now,
         unseen: false,
         was_working: false,
         window,
+        ending: None,
     };
     kept.terminals.insert(id.clone(), terminal);
     kept.tell();
@@ -637,11 +687,14 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             master.write_all(b"\r")?;
             return answer(&mut stream, Answer { id, ..Answer::default() });
         }
-        Request::Report { id, agent, state } => {
+        Request::Report { id, agent, state, conversation } => {
             let mut kept = shared.lock().unwrap();
             let Some(terminal) = kept.terminals.get_mut(&id) else { return answer(&mut stream, missing(&id)) };
             let Ok(status) = serde_json::from_value::<AgentStatus>(serde_json::Value::String(state)) else { return answer(&mut stream, Answer::error("That is not a state.")) };
             terminal.reported = (status != AgentStatus::Unknown).then_some((agent, status));
+            if !conversation.is_empty() && conversation.len() <= 128 && conversation.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+                terminal.conversation = conversation;
+            }
             kept.tell();
             return answer(&mut stream, Answer { id, ..Answer::default() });
         }
@@ -712,7 +765,11 @@ pub fn serve(socket: &Path) -> Result<()> {
     let ticking = shared.clone();
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_millis(500));
-        ticking.lock().unwrap().tell();
+        let mut kept = ticking.lock().unwrap();
+        for terminal in kept.terminals.values_mut() {
+            terminal.still_ending();
+        }
+        kept.tell();
     });
     for (viewer, stream) in listener.incoming().flatten().enumerate() {
         let shared = shared.clone();
@@ -848,7 +905,7 @@ pub fn run(args: &[&str]) -> Result<()> {
             ask(&socket, &Request::Kill { id: (*id).to_owned() })?;
         }
         ["report", id, agent, state] => {
-            ask(&socket, &Request::Report { id: (*id).to_owned(), agent: (*agent).to_owned(), state: (*state).to_owned() })?;
+            ask(&socket, &Request::Report { id: (*id).to_owned(), agent: (*agent).to_owned(), state: (*state).to_owned(), conversation: String::new() })?;
         }
         ["stop"] => {
             // Not started just to be stopped.
@@ -858,6 +915,114 @@ pub fn run(args: &[&str]) -> Result<()> {
         }
         _ => bail!("usage: multiplex sessions serve | list | attach <id> | kill <id> | report <id> <agent> <state> | stop"),
     }
+    Ok(())
+}
+
+/// What an agent's hook says, as a state: the event's name, and for a
+/// notice whether it is the agent sitting idle rather than asking.
+pub fn hook_state(event: &str, told: &serde_json::Value) -> Option<&'static str> {
+    Some(match event {
+        "start" | "stop" => "idle",
+        "prompt" | "tool" => "working",
+        "notice" => {
+            let kind = told["notification_type"].as_str().unwrap_or_default();
+            let words = told["message"].as_str().unwrap_or_default().to_lowercase();
+            if kind == "idle_prompt" || words.contains("waiting for your input") {
+                "idle"
+            } else {
+                "blocked"
+            }
+        }
+        "end" => "unknown",
+        _ => return None,
+    })
+}
+
+/// `multiplex agent hook <agent> <event>`: called by an agent's own hooks
+/// (see `multiplex setup --agents`). Says nothing and never fails: an
+/// agent outside a kept terminal, or with no server, is none of its
+/// business, and a hook must not hold an agent up.
+pub fn hook(agent: &str, event: &str) {
+    let Ok(id) = std::env::var("MULTIPLEX_SESSION") else { return };
+    let socket = socket_path();
+    if UnixStream::connect(&socket).is_err() {
+        return;
+    }
+    // What the agent tells its hook, when it does: a little JSON.
+    let mut told = String::new();
+    let _ = std::io::stdin().take(64 * 1024).read_to_string(&mut told);
+    let told: serde_json::Value = serde_json::from_str(&told).unwrap_or_default();
+    let Some(state) = hook_state(event, &told) else { return };
+    let conversation = told["session_id"].as_str().unwrap_or_default().to_owned();
+    let _ = ask(&socket, &Request::Report { id, agent: agent.to_owned(), state: state.to_owned(), conversation });
+}
+
+/// The hooks Claude Code is given, by its name for the event and ours.
+const CLAUDE_HOOKS: &[(&str, &str)] = &[("SessionStart", "start"), ("UserPromptSubmit", "prompt"), ("PreToolUse", "tool"), ("Notification", "notice"), ("Stop", "stop"), ("SessionEnd", "end")];
+
+fn is_our_hook(entry: &serde_json::Value) -> bool {
+    entry["hooks"].as_array().is_some_and(|hooks| hooks.iter().any(|hook| hook["command"].as_str().is_some_and(|command| command.starts_with("multiplex agent hook "))))
+}
+
+/// Claude Code's settings with our hooks in them (`on`) or without. What
+/// else is there, other hooks too, stays as it is.
+pub fn with_claude_hooks(mut settings: serde_json::Value, on: bool) -> serde_json::Value {
+    if !settings.is_object() {
+        settings = serde_json::json!({});
+    }
+    let mut hooks = settings["hooks"].as_object().cloned().unwrap_or_default();
+    for (event, ours) in CLAUDE_HOOKS {
+        let mut entries: Vec<serde_json::Value> = hooks.get(*event).and_then(|list| list.as_array()).cloned().unwrap_or_default();
+        entries.retain(|entry| !is_our_hook(entry));
+        if on {
+            entries.push(serde_json::json!({ "hooks": [{ "type": "command", "command": format!("multiplex agent hook claude {ours}"), "timeout": 5 }] }));
+        }
+        if entries.is_empty() {
+            hooks.remove(*event);
+        } else {
+            hooks.insert((*event).to_owned(), serde_json::Value::Array(entries));
+        }
+    }
+    let map = settings.as_object_mut().expect("made an object above");
+    if hooks.is_empty() {
+        map.remove("hooks");
+    } else {
+        map.insert("hooks".to_owned(), serde_json::Value::Object(hooks));
+    }
+    settings
+}
+
+/// `multiplex setup --agents` and `--agents-off`: Claude Code tells
+/// Multiplex itself when it starts to work, asks, and stops.
+pub fn setup_agents(on: bool, dry_run: bool) -> Result<()> {
+    let home = PathBuf::from(std::env::var_os("HOME").ok_or_else(|| anyhow!("There is no home folder to set this up in."))?);
+    let file = home.join(".claude/settings.json");
+    let text = match std::fs::read_to_string(&file) {
+        Ok(text) => text,
+        Err(_) if on && home.join(".claude").is_dir() => "{}".to_owned(),
+        Err(_) => {
+            println!("Claude Code has no settings here ({}): nothing to do.", file.display());
+            return Ok(());
+        }
+    };
+    let before: serde_json::Value = serde_json::from_str(&text).map_err(|_| anyhow!("{} is not JSON that can be read; it was left alone.", file.display()))?;
+    let after = with_claude_hooks(before.clone(), on);
+    if after == before {
+        println!("{}: already {}.", file.display(), if on { "set up" } else { "without Multiplex's hooks" });
+        return Ok(());
+    }
+    if dry_run {
+        println!("{}: would {} Multiplex's hooks ({}).", file.display(), if on { "get" } else { "lose" }, CLAUDE_HOOKS.iter().map(|(event, _)| *event).collect::<Vec<_>>().join(", "));
+        return Ok(());
+    }
+    let kept = home.join(".claude/settings.json.before-multiplex");
+    if !kept.exists() && file.exists() {
+        std::fs::copy(&file, &kept)?;
+    }
+    let beside = home.join(".claude/settings.json.multiplex-new");
+    std::fs::write(&beside, serde_json::to_string_pretty(&after)? + "\n")?;
+    std::fs::rename(&beside, &file)?;
+    println!("{}: {}.", file.display(), if on { "Claude Code now tells Multiplex when it works, asks and stops (in sessions started from now on)" } else { "Multiplex's hooks are out" });
     Ok(())
 }
 
@@ -1076,7 +1241,7 @@ mod tests {
         let gone = |what: &str| {
             let started = Instant::now();
             while count() != 0 {
-                assert!(started.elapsed() < Duration::from_secs(5), "{what}");
+                assert!(started.elapsed() < Duration::from_secs(8), "{what}");
                 std::thread::sleep(Duration::from_millis(20));
             }
         };
@@ -1093,15 +1258,40 @@ mod tests {
         // Something runs in it: it is kept, and can be come back to.
         let id = ask(&socket, &window(Vec::new())).unwrap().0.id;
         let (_, mut view) = ask(&socket, &Request::Attach { id: id.clone(), cols: 80, rows: 24 }).unwrap();
-        write_frame(&mut view, b'I', b"sleep 30\n").unwrap();
-        std::thread::sleep(Duration::from_millis(300));
+        write_frame(&mut view, b'I', b"echo started; sleep 30\n").unwrap();
+        shown(&mut view, "started\r\n");
+        std::thread::sleep(Duration::from_millis(200));
         drop(view);
         std::thread::sleep(Duration::from_millis(300));
         assert_eq!(count(), 1, "a stand-in with something running was ended");
         let (_, mut again) = ask(&socket, &Request::Attach { id, cols: 80, rows: 24 }).unwrap();
         write_frame(&mut again, b'I', &[3]).unwrap();
-        std::thread::sleep(Duration::from_millis(300));
+        // Seen to be back at its shell (the command gone) before leaving.
+        write_frame(&mut again, b'I', b"echo back-$((1+1))\n").unwrap();
+        shown(&mut again, "back-2");
         drop(again);
         gone("back at its shell and left again, it stayed");
+    }
+
+    #[test]
+    fn claude_codes_settings_get_our_hooks_and_lose_only_ours() {
+        use serde_json::json;
+        let theirs = json!({"model": "x", "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify-send done"}]}]}});
+        let on = with_claude_hooks(theirs.clone(), true);
+        assert_eq!(on["model"], "x");
+        assert_eq!(on["hooks"]["Stop"].as_array().unwrap().len(), 2, "their own hook stays beside ours");
+        assert_eq!(on["hooks"]["Notification"][0]["hooks"][0]["command"], "multiplex agent hook claude notice");
+        assert_eq!(on["hooks"].as_object().unwrap().len(), CLAUDE_HOOKS.len());
+        assert_eq!(with_claude_hooks(on.clone(), true), on, "a second time changes nothing");
+        assert_eq!(with_claude_hooks(on, false), theirs);
+        // Settings without hooks come back without a trace.
+        assert_eq!(with_claude_hooks(with_claude_hooks(json!({"theme": "dark"}), true), false), json!({"theme": "dark"}));
+        // What a hook is told becomes a state.
+        assert_eq!(hook_state("prompt", &json!({})), Some("working"));
+        assert_eq!(hook_state("notice", &json!({"message": "Claude needs your permission to use Bash"})), Some("blocked"));
+        assert_eq!(hook_state("notice", &json!({"notification_type": "idle_prompt"})), Some("idle"));
+        assert_eq!(hook_state("notice", &json!({"message": "Claude is waiting for your input"})), Some("idle"));
+        assert_eq!(hook_state("stop", &json!({})), Some("idle"));
+        assert_eq!(hook_state("dance", &json!({})), None);
     }
 }
