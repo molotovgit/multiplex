@@ -204,6 +204,19 @@ void main() {
     expect(herd.stopped, 1, reason: 'leaving the screen stops the listening');
   });
 
+  testWidgets('a swipe across an agent goes straight to its terminal, and the agent stays in the list', (tester) async {
+    final terminals = <String>[];
+    final herd = _Herd(_state([_agent('w1:p3', AgentStatus.blocked, 'Allow this command?')]));
+    await open(tester, herd, terminals: terminals);
+    await tester.drag(find.text('Allow this command?'), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(terminals, ['default/w1:p3']);
+    expect(find.text('Allow this command?'), findsOneWidget);
+    expect(herd.asked.where((what) => what.startsWith('read')), isEmpty, reason: 'its sheet was not opened on the way');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 3));
+  });
+
   testWidgets('the list follows the computer as it tells, without asking again', (tester) async {
     final herd = _Herd(_state([_agent('w1:p1', AgentStatus.working, 'Refactor the parser')]));
     await open(tester, herd);

@@ -539,7 +539,15 @@ class _AgentsScreenState extends State<AgentsScreen> {
         final count = state.inbox.where((a) => a.status == group).length;
         rows.add(SectionHeader('${agentLook(AppColorsTheme.of(context), agent.status).label} · $count'));
       }
-      rows.add(_AgentTile(key: ValueKey('${agent.session}/${agent.pane}'), agent: agent, showSession: several, onTap: () => _open(agent)));
+      rows.add(
+        _AgentTile(
+          key: ValueKey('${agent.session}/${agent.pane}'),
+          agent: agent,
+          showSession: several,
+          onTap: () => _open(agent),
+          onSwipe: () => widget.onOpenTerminal(context, agent.session, agent.pane),
+        ),
+      );
     }
     return ListView(children: rows);
   }
@@ -709,11 +717,14 @@ class _Everything extends StatelessWidget {
 }
 
 class _AgentTile extends StatelessWidget {
-  const _AgentTile({super.key, required this.agent, required this.showSession, required this.onTap});
+  const _AgentTile({super.key, required this.agent, required this.showSession, required this.onTap, this.onSwipe});
 
   final HerdAgent agent;
   final bool showSession;
   final VoidCallback onTap;
+
+  /// A swipe across it goes straight to its terminal, past its sheet.
+  final VoidCallback? onSwipe;
 
   @override
   Widget build(BuildContext context) {
@@ -724,7 +735,7 @@ class _AgentTile extends StatelessWidget {
       if (agent.folder.isNotEmpty && agent.folder != agent.workspace) agent.folder,
       if (showSession) agent.session,
     ].join(' · ');
-    return ListTile(
+    final tile = ListTile(
       leading: AnimatedSwitcher(
         duration: const Duration(milliseconds: 180),
         child: Icon(look.icon, key: ValueKey(agent.status), color: look.color),
@@ -733,6 +744,33 @@ class _AgentTile extends StatelessWidget {
       subtitle: Text(where, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+    final swipe = onSwipe;
+    if (swipe == null) return tile;
+    final colors = AppColorsTheme.of(context);
+    // It slides aside to show where the swipe leads, and comes back: the
+    // agent stays in the list.
+    return Dismissible(
+      key: ValueKey('swipe/${agent.session}/${agent.pane}'),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) async {
+        swipe();
+        return false;
+      },
+      background: Container(
+        color: colors.raised,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Its terminal', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: colors.muted)),
+            const SizedBox(width: 8),
+            Icon(Icons.terminal, color: colors.muted),
+          ],
+        ),
+      ),
+      child: tile,
     );
   }
 }

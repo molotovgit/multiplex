@@ -272,6 +272,8 @@ The pencil beside a workspace's name in **Everything** renames it.
 
 **Agents outside.** An agent started in a terminal Multiplex does not keep (one opened before the switch was turned on, or inside another program) cannot be entered from anywhere else. **Everything** lists these under **Running outside Multiplex**; a tap offers to continue its latest conversation in that folder in a new terminal that can be reached (`claude --continue`, `codex resume --last`). Close the other one first: two at once on one conversation get in each other's way. On the computer: `multiplex herd outside`.
 
+A swipe across an agent in the inbox goes straight to its terminal, past its sheet.
+
 **Pictures for an agent.** The picture button beside the sheet's text field picks pictures on the phone, puts them on the computer (in the folder for what phones send, each under a name of its own) and writes where they are into your answer; add your words and send. Agents read a picture from its path.
 
 ## A yes from the phone
