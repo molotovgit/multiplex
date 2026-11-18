@@ -90,6 +90,16 @@ test("the battery beside the icon is the first connected phone's, when asked for
   assert.equal(M.barLabel(M.summary(two()), true), "81%")
   assert.equal(M.barLabel(M.summary(two()), false), "")
   assert.equal(M.barLabel(M.summary([]), true), "")
+  // Agents that wait for an answer come first in the bar's words.
+  const agents = JSON.stringify([{ status: "blocked" }, { status: "working" }, { status: "blocked" }, null, { status: 3 }])
+  assert.equal(M.agentsWaiting(agents), 2)
+  assert.equal(M.agentsWaiting("[]"), 0)
+  assert.equal(M.agentsWaiting("not json"), 0)
+  assert.equal(M.agentsWaiting('{"status":"blocked"}'), 0)
+  assert.equal(M.agentsWaiting(undefined), 0)
+  assert.equal(M.withWaiting("81%", "2 waiting"), "2 waiting \u00b7 81%")
+  assert.equal(M.withWaiting("", "2 waiting"), "2 waiting")
+  assert.equal(M.withWaiting("81%", ""), "81%")
   assert.equal(M.barLabel(M.summary(M.parseDevices('[{"name":"a","connected":true}]')), true), "")
 })
 

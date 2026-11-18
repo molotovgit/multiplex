@@ -31,6 +31,9 @@ Panel {
   property string ringing: ""
 
   readonly property var state: Model.summary(phones, found)
+  // Coding agents on this computer that wait for an answer.
+  property int agentsWaiting: 0
+  readonly property string waitingWords: agentsWaiting > 0 ? strings.t("bar.waiting").arg(agentsWaiting) : ""
   readonly property bool showBattery: setting("showBattery", false) === true
   readonly property int every: Math.max(3, Math.min(600, Math.round(Number(setting("refreshIntervalSec", 10))) || 10))
   readonly property color foreground: bar ? bar.foreground : Commons.Color.foreground
@@ -63,6 +66,7 @@ Panel {
     }
     root.waiting = true
     listProc.running = true
+    if (!agentsProc.running) agentsProc.running = true
   }
 
   function setCursor(toRow, toCol) {
@@ -138,6 +142,15 @@ Panel {
   }
 
   Process {
+    id: agentsProc
+    command: [Where.multiplex, "agents"]
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.agentsWaiting = Model.agentsWaiting(text)
+    }
+  }
+
+  Process {
     id: ringProc
     onExited: function(exitCode) {
       root.notice = strings.t(exitCode === 0 ? "ring.asked" : "ring.failed").arg(root.ringing)
@@ -159,11 +172,11 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     text: Model.icon(root.state)
-    labelText: vertical ? "" : Model.barLabel(root.state, root.showBattery)
+    labelText: vertical ? "" : Model.withWaiting(Model.barLabel(root.state, root.showBattery), root.waitingWords)
     slotSize: Style.bar.iconSlot * (labelText !== "" ? 2 : 1)
     dimmed: root.state.connected === 0
     active: root.state.low
-    tooltipText: root.opened ? "" : root.tooltip
+    tooltipText: root.opened ? "" : (root.agentsWaiting > 0 ? strings.tn("tooltip.agents", root.agentsWaiting).arg(root.agentsWaiting) + "\n" + root.tooltip : root.tooltip)
     onPressed: function(b) {
       if (b === Qt.RightButton) root.run({ kind: "open" })
       else if (b === Qt.MiddleButton) root.toggleBattery()

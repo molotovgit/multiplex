@@ -4,6 +4,8 @@
   "status.none": "No phone paired",
   "status.away": "No phone connected",
   "status.connected": { "one": "%1 phone connected", "other": "%1 phones connected" },
+  "bar.waiting": "%1 waiting",
+  "tooltip.agents": { "one": "%1 agent waits for your answer", "other": "%1 agents wait for your answer" },
   "tooltip.missing": "Multiplex is not answering",
   "tooltip.none": "Multiplex: no phone paired",
   "tooltip.away": "Multiplex: no phone connected",

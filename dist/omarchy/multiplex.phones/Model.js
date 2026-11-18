@@ -94,6 +94,30 @@ function barLabel(state, show) {
   return state.first.battery + "%"
 }
 
+// How many of this computer's coding agents wait for an answer, from
+// what `multiplex agents` prints (a list with each one's status).
+// Anything else is none.
+function agentsWaiting(raw) {
+  var list
+  try {
+    list = JSON.parse(String(raw === undefined || raw === null ? "" : raw))
+  } catch (e) {
+    return 0
+  }
+  if (!(list instanceof Array)) return 0
+  var waiting = 0
+  for (var i = 0; i < list.length; i++) {
+    if (list[i] && typeof list[i] === "object" && list[i].status === "blocked") waiting++
+  }
+  return Math.min(waiting, 99)
+}
+
+// The bar's words with agents waiting put first: they are the news.
+function withWaiting(label, waitingWords) {
+  if (!waitingWords) return label
+  return label ? waitingWords + " \u00b7 " + label : waitingWords
+}
+
 function phoneStatusKey(phone) {
   if (!phone.connected) return "phone.away"
   if (phone.battery === null) return "phone.connected"
@@ -150,6 +174,8 @@ if (typeof module !== "undefined") {
     icon: icon,
     statusKey: statusKey,
     barLabel: barLabel,
+    agentsWaiting: agentsWaiting,
+    withWaiting: withWaiting,
     phoneStatusKey: phoneStatusKey,
     rows: rows,
     columns: columns,

@@ -56,7 +56,7 @@ The window follows Omarchy's theme while it is open: its accent, and Hyprland's 
 
 ### In the bar
 
-On Omarchy, `multiplex bar on` puts Multiplex in the bar; `multiplex bar off` takes it out again and leaves the bar's settings as they were.
+On Omarchy, `multiplex bar on` puts Multiplex in the bar; `multiplex bar off` takes it out again and leaves the bar's settings as they were. When coding agents in kept terminals wait for an answer, the bar says how many ("2 waiting"), before the phone's battery.
 
 ![Multiplex in the bar: the paired phones](pictures/bar-widget.png)
 
