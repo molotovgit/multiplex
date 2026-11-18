@@ -151,6 +151,30 @@ pub fn click_reports(button: u8) -> [[u8; 3]; 2] {
     [[button & 0x07, 0, 0], [0, 0, 0]]
 }
 
+/// Reports as they travel in a line of the link: hex, nothing else.
+pub fn to_hex<const N: usize>(reports: &[[u8; N]]) -> String {
+    reports.iter().flatten().map(|byte| format!("{byte:02x}")).collect()
+}
+
+/// Read back, checked: whole reports of `N` bytes each, and not more of
+/// them than a long text makes.
+pub fn from_hex<const N: usize>(hex: &str) -> Result<Vec<[u8; N]>, ProtoError> {
+    let bad = ProtoError::Invalid("these are not keyboard or mouse reports");
+    if hex.len() % (2 * N) != 0 || hex.len() > 2 * N * 2 * (MAX_TEXT + 64) || !hex.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return Err(bad);
+    }
+    hex.as_bytes()
+        .chunks(2 * N)
+        .map(|chunk| {
+            let mut report = [0u8; N];
+            for (at, pair) in chunk.chunks(2).enumerate() {
+                report[at] = u8::from_str_radix(std::str::from_utf8(pair).map_err(|_| ProtoError::Invalid("these are not keyboard or mouse reports"))?, 16).map_err(|_| ProtoError::Invalid("these are not keyboard or mouse reports"))?;
+            }
+            Ok(report)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,6 +205,19 @@ mod tests {
         let made = reports(&strokes("aa").unwrap());
         assert_eq!(made, [[0, 0, 0x04, 0, 0, 0, 0, 0], UP, [0, 0, 0x04, 0, 0, 0, 0, 0], UP]);
         assert_eq!(reports(&[stroke_named("ctrl+a").unwrap()])[0], [LEFT_CTRL, 0, 0x04, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn reports_travel_as_hex_and_only_whole_ones_come_back() {
+        let made = reports(&strokes("Ok").unwrap());
+        let hex = to_hex(&made);
+        assert_eq!(&hex[..16], "0200120000000000");
+        assert_eq!(from_hex::<8>(&hex).unwrap(), made);
+        assert_eq!(from_hex::<3>(&to_hex(&click_reports(1))).unwrap(), click_reports(1));
+        assert!(from_hex::<8>("").unwrap().is_empty());
+        for odd in ["02", "zz00120000000000", "0200120000000000ff"] {
+            assert!(from_hex::<8>(odd).is_err(), "{odd}");
+        }
     }
 
     #[test]

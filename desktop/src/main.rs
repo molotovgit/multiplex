@@ -15,6 +15,7 @@ mod desk;
 mod feed;
 mod gate;
 mod h264;
+mod device;
 mod herd;
 mod sessions;
 mod input;
@@ -61,6 +62,7 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex agent             An SSH agent whose key lives on the phone (each use confirmed there)
   multiplex key [<name>]      The phones' public keys, for servers and for Git signing
   multiplex sms <number> <text>  Send a text message from the phone (it has to allow this computer to)
+  multiplex device …          The phone as keyboard and mouse of the device it is connected to: type, keys, move, click, look
   multiplex doctor            Check that everything is ready
 
 The paired phone uses these over SSH:
@@ -143,6 +145,7 @@ fn main() {
         ["ring", rest @ ..] => share::ring(rest),
         ["approve", rest @ ..] => share::approve(rest),
         ["sms", rest @ ..] => share::sms(rest),
+        ["device", rest @ ..] => device::run(rest),
         ["phone", rest @ ..] => share::phone(rest),
         ["share", rest @ ..] => share::share(rest),
         ["link"] => share::link(""),

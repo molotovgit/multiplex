@@ -108,6 +108,21 @@ pub enum LinkEvent {
     /// login, or an SSH signature (see [`crate::sign`]). `data` is the
     /// request in base64; the phone reads it itself.
     Sign { id: String, data: String },
+    /// Someone at the computer (an agent) wants the phone to be the
+    /// keyboard and mouse of whatever device it is connected to: `keys`
+    /// and `pointer` are keyboard and mouse reports in hex (see
+    /// [`crate::hid`]), sent in that order; with `look`, a picture from
+    /// the phone's camera is wanted back. The phone answers `ok`, the
+    /// name of the picture it sent, or `no: ` and why.
+    Hands {
+        id: String,
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        keys: String,
+        #[serde(default, skip_serializing_if = "String::is_empty")]
+        pointer: String,
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        look: bool,
+    },
 }
 
 /// What `multiplex share paste` prints.
