@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:multiplex/platform/agent_notices.dart';
+import 'package:multiplex/sessions/computer_links.dart';
 import 'package:multiplex/sessions/herd_controller.dart';
 import 'package:multiplex/sessions/herd_hub.dart';
 import 'package:multiplex/src/rust/api/agents.dart';
@@ -283,6 +285,41 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   });
 
+  testWidgets('Home says which files arrived, the newest few', (tester) async {
+    store.saveHost(_desk);
+    final connected = _Connected(store);
+    final links = ComputerLinks(
+      connected,
+      store,
+      notify: (_, _) async {},
+      agentNotices: _NoNotices(),
+      readClipboard: () async => null,
+      writeClipboard: (_) async {},
+    );
+    ComputerLinks.app = links;
+    addTearDown(() {
+      ComputerLinks.app = null;
+      links.dispose();
+      connected.dispose();
+    });
+    await home(tester);
+    expect(find.text('Arrived'), findsNothing);
+    for (final name in ['one.txt', 'two.pdf', 'three.png', 'four.zip']) {
+      links.received.insert(0, ReceivedFile(name: name, path: '/downloads/$name', from: 'Desk', at: DateTime(2026, 11, 18)));
+    }
+    // (The link tells its listeners itself when a file arrives.)
+    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+    links.notifyListeners();
+    await tester.pump();
+    expect(find.text('Arrived'), findsOneWidget);
+    expect(find.text('four.zip'), findsOneWidget, reason: 'the newest first');
+    expect(find.text('From Desk · saved in Multiplex downloads'), findsNWidgets(3));
+    expect(find.text('one.txt'), findsNothing);
+    expect(find.text('and 1 more'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Arrived')).dy, lessThan(tester.getTopLeft(find.text('Computers')).dy));
+    await tester.pump(const Duration(seconds: 3));
+  });
+
   testWidgets("Home's search goes to anything: a computer's feature, an agent", (tester) async {
     store.saveHost(_desk);
     HerdAgent agent(String pane, AgentStatus status, String title) =>
@@ -337,6 +374,21 @@ void main() {
     expect(store.hosts, isEmpty);
     expect(find.text('Pair your computer'), findsOneWidget);
   });
+}
+
+/// Notifications about agents that go nowhere.
+class _NoNotices implements AgentNotices {
+  @override
+  Future<void> post(AgentNotice notice) async {}
+
+  @override
+  Future<void> withdraw(String tag) async {}
+
+  @override
+  void listen(Future<String?> Function(AgentAnswer answer) onAnswer) {}
+
+  @override
+  void stop() {}
 }
 
 /// A connection that is up and does nothing.

@@ -7,6 +7,9 @@ import '../../data/resume_place.dart';
 import '../computers/computer_screen.dart';
 import '../computers/agents_screen.dart';
 import '../../sessions/herd_hub.dart';
+import '../../sessions/computer_links.dart';
+import '../computers/computer_sharing_screen.dart';
+import '../settings/settings_widgets.dart';
 import '../common/widgets.dart';
 import '../update/update_card.dart';
 import 'arranged_host_list.dart';
@@ -59,7 +62,7 @@ class _HostsScreenState extends State<HostsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _openEditor(), icon: const Icon(Icons.add), label: const Text('New host')),
       body: ListenableBuilder(
-        listenable: Listenable.merge([store, sessions, ?HerdHub.app]),
+        listenable: Listenable.merge([store, sessions, ?HerdHub.app, ?ComputerLinks.app]),
         builder: (context, _) {
           final hosts = store.hosts;
           if (hosts.isEmpty && _query.isEmpty) {
@@ -75,6 +78,7 @@ class _HostsScreenState extends State<HostsScreen> {
             const UpdateBanner(),
             _SearchField(controller: _search, onChanged: _onQuery),
             ..._agents(context),
+            ..._arrived(context, computers),
             ..._continue(context, store.settings.resume, computers),
             if (computers.isNotEmpty) ...[
               const SectionHeader('Computers'),
@@ -102,6 +106,35 @@ class _HostsScreenState extends State<HostsScreen> {
   }
 
   void _onQuery(String value) => setState(() => _query = value.trim());
+
+  /// Files a computer sent since the app started, the newest few: they
+  /// are news until looked at. A tap goes to that computer's sharing
+  /// page, where all of them are listed with where they were saved.
+  List<Widget> _arrived(BuildContext context, List<Host> computers) {
+    final received = ComputerLinks.app?.received ?? const <ReceivedFile>[];
+    if (received.isEmpty) return const [];
+    const most = 3;
+    return [
+      const SectionHeader('Arrived'),
+      for (final file in received.take(most))
+        ListTile(
+          key: ValueKey('arrived-${file.path}'),
+          leading: const Icon(Icons.download_done_outlined),
+          title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text('From ${file.from} · saved in Multiplex downloads', maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            final host = computers.where((host) => host.title == file.from).firstOrNull;
+            if (host != null) ComputerSharingScreen.open(context, host.id);
+          },
+        ),
+      if (received.length > most)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(SettingsLayout.gutter, 0, SettingsLayout.gutter, 8),
+          child: Text('and ${received.length - most} more', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColorsTheme.of(context).muted)),
+        ),
+    ];
+  }
 
   /// The agents that want the owner, on whichever connected computer:
   /// those that wait for an answer first, then those that finished. One
