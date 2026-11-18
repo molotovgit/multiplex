@@ -25,6 +25,7 @@ serde_json = "1"
 wayland-client = "0.31"
 wayland-protocols-wlr = { version = "0.3", features = ["client"] }
 wayland-protocols-misc = { version = "0.3", features = ["client"] }
+vt100 = "0.18.1"
 
 [dev-dependencies]
 tempfile = "3"

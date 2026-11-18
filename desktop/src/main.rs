@@ -16,6 +16,7 @@ mod feed;
 mod gate;
 mod h264;
 mod herd;
+mod sessions;
 mod input;
 mod mic;
 mod pane;
@@ -73,6 +74,8 @@ The paired phone uses these over SSH:
   multiplex phone …           The phone's battery, and its notifications for this screen
   multiplex agents            Coding agents under herdr, with their state
   multiplex herd …            herdr's sessions, tabs and panes: state, watch (again on every change), news, do
+  multiplex here              This terminal, kept running by Multiplex and reachable from the phone
+  multiplex sessions …        The terminals Multiplex keeps: serve, list, attach <id>, kill <id>
   multiplex herd pane <session> <pane>   One pane in this terminal, at this terminal's size (Ctrl+\\ leaves)
   multiplex screen            The phone's screen in a window (the phone sends the picture)
   multiplex camera            The phone's camera as a camera of this computer (the phone sends the picture)
@@ -111,6 +114,8 @@ fn main() {
         ["gate", phone] => gate::gate(phone),
         ["agents"] => agents::run(),
         ["herd", rest @ ..] => herd::run(rest),
+        ["sessions", rest @ ..] => sessions::run(rest),
+        ["here"] => sessions::here(),
         ["screen", rest @ ..] => screen::run(rest),
         ["camera", rest @ ..] => camera::run(rest),
         ["mic", rest @ ..] => mic::run(rest),

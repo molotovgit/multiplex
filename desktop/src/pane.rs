@@ -118,19 +118,19 @@ pub fn sensible(cols: u16, rows: u16) -> (u16, u16) {
 }
 
 /// The size of the terminal this runs in; none when it is not one.
-fn terminal_size() -> Option<(u16, u16)> {
+pub(crate) fn terminal_size() -> Option<(u16, u16)> {
     let mut size: libc::winsize = unsafe { std::mem::zeroed() };
     let ok = unsafe { libc::ioctl(libc::STDOUT_FILENO, libc::TIOCGWINSZ, &mut size) } == 0;
     (ok && size.ws_col > 0 && size.ws_row > 0).then(|| sensible(size.ws_col, size.ws_row))
 }
 
 /// The terminal handing over every key as it is typed, until dropped.
-struct Raw {
+pub(crate) struct Raw {
     before: libc::termios,
 }
 
 impl Raw {
-    fn on() -> Option<Self> {
+    pub(crate) fn on() -> Option<Self> {
         if unsafe { libc::isatty(libc::STDIN_FILENO) } != 1 {
             return None;
         }

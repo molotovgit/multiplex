@@ -245,6 +245,8 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             // The names of the user's folders, for opening one: the
             // terminal's own power, like opening it.
             ["herd", "do" | "pane", ..] | ["herd", "places" | "news"] | ["herd", "folders", _] => need(access.terminal, "terminal"),
+            // The terminals Multiplex keeps: seeing and using them is the terminal's power.
+            ["sessions", "list" | "attach" | "kill", ..] => need(access.terminal, "terminal"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
             ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
