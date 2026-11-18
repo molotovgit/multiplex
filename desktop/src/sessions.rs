@@ -91,6 +91,8 @@ pub enum Request {
         #[serde(default)]
         conversation: String,
     },
+    /// Another name for a workspace.
+    Rename { workspace: String, label: String },
     /// End the server and every terminal it keeps.
     Stop,
 }
@@ -715,6 +717,13 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             let _ = std::fs::remove_file(remembered_file());
             let _ = std::fs::remove_file(socket_path());
             std::process::exit(0);
+        }
+        Request::Rename { workspace, label } => {
+            let mut kept = shared.lock().unwrap();
+            let Some(space) = kept.spaces.iter_mut().find(|space| format!("w{}", space.number) == workspace) else { return answer(&mut stream, Answer::error(format!("There is no workspace {workspace}."))) };
+            space.label = label;
+            kept.tell();
+            return answer(&mut stream, Answer { workspace, ..Answer::default() });
         }
         Request::Kill { id } => {
             let mut kept = shared.lock().unwrap();

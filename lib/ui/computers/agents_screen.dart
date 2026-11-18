@@ -267,6 +267,32 @@ class _AgentsScreenState extends State<AgentsScreen> {
   }
 
   /// Closes a pane, asked about first: what runs in it ends with it.
+  /// Another name for a workspace, asked for in a small dialog.
+  Future<void> _rename(String session, HerdWorkspace workspace) async {
+    final name = TextEditingController(text: workspace.label);
+    final next = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename this workspace'),
+        content: TextField(
+          controller: name,
+          autofocus: true,
+          maxLength: 48,
+          textInputAction: TextInputAction.done,
+          decoration: const InputDecoration(hintText: 'A name'),
+          onSubmitted: (text) => Navigator.of(context).pop(text),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(name.text), child: const Text('Rename')),
+        ],
+      ),
+    );
+    final label = next?.trim() ?? '';
+    if (label.isEmpty || label == workspace.label || !mounted) return;
+    if (!await _herd.rename(session, workspace.id, label) && mounted) Toast.show(context, _herd.problem ?? 'It could not be renamed.');
+  }
+
   Future<void> _close(String session, HerdPane pane) async {
     final what = pane.title.isNotEmpty ? pane.title : (pane.agent ?? 'this terminal');
     final sure = await showDialog<bool>(
@@ -354,6 +380,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                   },
                   onStart: (session) => widget.onStartSession?.call(context, session),
                   onNew: _new,
+                  onRename: _rename,
                   onClose: _close,
                   onOpenFolder: _openFolder,
                 ),
@@ -401,7 +428,15 @@ class _AgentsScreenState extends State<AgentsScreen> {
 /// their workspaces, each workspace's tabs, each tab's panes. An agent's
 /// pane opens the agent; a plain terminal opens as a terminal.
 class _Everything extends StatelessWidget {
-  const _Everything({required this.state, required this.onPane, required this.onStart, required this.onNew, required this.onClose, required this.onOpenFolder});
+  const _Everything({
+    required this.state,
+    required this.onPane,
+    required this.onStart,
+    required this.onNew,
+    required this.onRename,
+    required this.onClose,
+    required this.onOpenFolder,
+  });
 
   final HerdState state;
   final void Function(String session, String pane) onPane;
@@ -409,6 +444,7 @@ class _Everything extends StatelessWidget {
 
   /// Something new in a workspace: a terminal, or an agent.
   final void Function(String session, HerdWorkspace workspace) onNew;
+  final void Function(String session, HerdWorkspace workspace) onRename;
 
   /// Close a pane (asked about by the caller).
   final void Function(String session, HerdPane pane) onClose;
@@ -466,11 +502,22 @@ class _Everything extends StatelessWidget {
               workspace.tabs.length == 1 ? label : '$label · ${tab.label.isEmpty ? tab.id : tab.label}',
               // Once per workspace, on its first heading.
               trailing: tab == workspace.tabs.first
-                  ? IconButton(
-                      tooltip: 'New in $label',
-                      icon: const Icon(Icons.add),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => onNew(session.name, workspace),
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Rename $label',
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => onRename(session.name, workspace),
+                        ),
+                        IconButton(
+                          tooltip: 'New in $label',
+                          icon: const Icon(Icons.add),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => onNew(session.name, workspace),
+                        ),
+                      ],
                     )
                   : null,
             ),

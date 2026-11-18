@@ -45,6 +45,9 @@ abstract class HerdLink {
   /// Closes a pane and what runs in it.
   Future<void> closePane(String session, String pane);
 
+  /// Another name for a workspace.
+  Future<void> rename(String session, String workspace, String label);
+
   /// Folders worth offering for a new workspace.
   Future<List<HerdPlace>> places();
 
@@ -98,6 +101,9 @@ class SshHerdLink implements HerdLink {
 
   @override
   Future<void> closePane(String session, String pane) => ssh().herdClosePane(session: session, pane: pane);
+
+  @override
+  Future<void> rename(String session, String workspace, String label) => ssh().herdRename(session: session, workspace: workspace, label: label);
 
   @override
   Future<List<HerdPlace>> places() => ssh().herdPlaces();
@@ -240,6 +246,9 @@ class HerdController extends ChangeNotifier {
 
   /// Starts an agent of [kind] in the pane. False when it could not.
   Future<bool> startAgent(String session, String pane, String kind) => _ask(() => _link.start(session, pane, kind));
+
+  /// Gives a workspace another name. False when it could not.
+  Future<bool> rename(String session, String workspace, String label) => _ask(() => _link.rename(session, workspace, label));
 
   /// Closes the pane and what runs in it. False when it could not.
   Future<bool> closePane(String session, String pane) => _ask(() => _link.closePane(session, pane));

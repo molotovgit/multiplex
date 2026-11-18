@@ -76,6 +76,13 @@ impl SshSession {
         Ok(())
     }
 
+    /// Gives a workspace another name.
+    pub async fn herd_rename(&self, session: String, workspace: String, label: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::Rename { session, workspace, label }).await }).await??;
+        Ok(())
+    }
+
     /// Closes a tab with all its panes.
     pub async fn herd_close_tab(&self, session: String, tab: String) -> anyhow::Result<()> {
         let conn = self.conn.clone();

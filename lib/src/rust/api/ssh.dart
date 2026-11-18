@@ -137,6 +137,13 @@ abstract class SshSession implements RustOpaqueInterface {
     required int lines,
   });
 
+  /// Gives a workspace another name.
+  Future<void> herdRename({
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
   /// Starts an agent of this kind in a pane that sits at its prompt.
   /// Returns once the agent is ready there, or says why it is not.
   Future<void> herdStartAgent({

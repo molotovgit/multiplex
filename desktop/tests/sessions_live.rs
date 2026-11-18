@@ -169,6 +169,11 @@ fn the_phone_sees_makes_uses_and_answers_what_the_server_keeps() {
     let (ok, said) = own.asked(&["herd", "do", "read", "other", &pane, "10"]);
     assert!(!ok && said.contains("no session other"), "{said}");
 
+    // A workspace renamed: whoever watches sees the new name.
+    assert!(own.asked(&["herd", "do", "rename", "main", &made.workspace, &packed("the project")]).0);
+    next(&watch, "the new name", |herd| herd.sessions[0].workspaces[0].label == "the project");
+    assert!(!own.asked(&["herd", "do", "rename", "main", "w99", &packed("nothing")]).0);
+
     // Text arrives as written, whatever a shell would have made of it on
     // the way, and is run; keys are pressed; what it shows is read.
     let (ok, said) = own.asked(&["herd", "do", "prompt", "main", &pane, &packed(r#"echo "live $((20+22)) it's `echo fine`""#)]);

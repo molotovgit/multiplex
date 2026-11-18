@@ -385,6 +385,10 @@ fn act(action: &HerdAction) -> Result<()> {
             // A tab holds one terminal, whose number it shares.
             server(&Request::Kill { id: tab.replacen(":t", ":p", 1) })?;
         }
+        HerdAction::Rename { session, workspace, label } => {
+            ours(session)?;
+            server(&Request::Rename { workspace: workspace.clone(), label: label.clone() })?;
+        }
         HerdAction::Prompt { session, pane, text } => {
             ours(session)?;
             server(&Request::Text { id: pane.clone(), text: text.clone() })?;

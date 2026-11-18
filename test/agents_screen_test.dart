@@ -88,6 +88,9 @@ class _Herd implements HerdLink {
   @override
   Future<void> closePane(String session, String pane) async => asked.add('close $session $pane');
 
+  @override
+  Future<void> rename(String session, String workspace, String label) async => asked.add('rename $session $workspace "$label"');
+
   /// The folders the computer offers; null: it cannot say.
   List<HerdPlace>? offers = const [
     HerdPlace(path: '/home/sam/code/api', shown: '~/code/api', name: 'api', project: true),
@@ -507,6 +510,26 @@ void main() {
       await tester.tap(find.text('Open a folder'));
       await tester.pumpAndSettle();
       expect(find.text('The computer did not answer.'), findsWidgets);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('a workspace takes another name', (tester) async {
+      final herd = _Herd(one());
+      await everything(tester, herd, [], []);
+      await tester.tap(find.byTooltip('Rename api'));
+      await tester.pumpAndSettle();
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'api', reason: 'starting from the name it has');
+      // The same name, or none, changes nothing.
+      await tester.tap(find.text('Rename'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, isEmpty);
+      await tester.tap(find.byTooltip('Rename api'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '  the billing api ');
+      await tester.tap(find.text('Rename'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['rename default w1 "the billing api"']);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 3));
     });

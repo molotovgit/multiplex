@@ -262,6 +262,8 @@ pub enum HerdAction {
     Start { session: String, pane: String, kind: String },
     ClosePane { session: String, pane: String },
     CloseTab { session: String, tab: String },
+    /// Another name for a workspace.
+    Rename { session: String, workspace: String, label: String },
     /// Answer what an agent asked, if it still asks it: `mark` is the
     /// mark of the question the answer was given to (empty when it was
     /// not a choice). See [`crate::asked::may_answer`].
@@ -321,6 +323,7 @@ impl HerdAction {
             HerdAction::Start { session, pane, kind } => vec!["start".to_owned(), session.clone(), pane.clone(), kind.clone()],
             HerdAction::ClosePane { session, pane } => vec!["close-pane".to_owned(), session.clone(), pane.clone()],
             HerdAction::CloseTab { session, tab } => vec!["close-tab".to_owned(), session.clone(), tab.clone()],
+            HerdAction::Rename { session, workspace, label } => vec!["rename".to_owned(), session.clone(), workspace.clone(), packed(label)],
             HerdAction::Answer { session, pane, mark, with } => {
                 // A dash stands for "it was not a choice": no word is empty.
                 let mut args = vec!["answer".to_owned(), session.clone(), pane.clone(), if mark.is_empty() { "-".to_owned() } else { mark.clone() }];
@@ -350,6 +353,7 @@ impl HerdAction {
             ["start", session, pane, kind] => HerdAction::Start { session: clean_session_name(session)?, pane: clean_pane_id(pane)?, kind: clean_kind(kind)? },
             ["close-pane", session, pane] => HerdAction::ClosePane { session: clean_session_name(session)?, pane: clean_pane_id(pane)? },
             ["close-tab", session, tab] => HerdAction::CloseTab { session: clean_session_name(session)?, tab: clean_tab_id(tab)? },
+            ["rename", session, workspace, label] => HerdAction::Rename { session: clean_session_name(session)?, workspace: clean_workspace_id(workspace)?, label: clean_label(&unpacked(label)?)? },
             ["answer", session, pane, mark, how, what] => HerdAction::Answer {
                 session: clean_session_name(session)?,
                 pane: clean_pane_id(pane)?,
@@ -627,6 +631,11 @@ mod tests {
         assert!(HerdAction::parse(&["prompt", "default", "w1:p1", &URL_SAFE_NO_PAD.encode([0xff, 0xfe])]).is_err());
         // A session or pane the phone was handed that is not one: refused before any command line exists.
         assert!(HerdAction::Keys { session: "a b".into(), pane: "w1:p1".into(), keys: vec!["esc".into()] }.command_line().is_err());
+        let rename = HerdAction::Rename { session: "main".into(), workspace: "w2".into(), label: "the api; really".into() };
+        let args = rename.to_args();
+        assert_eq!(HerdAction::parse(&args.iter().map(String::as_str).collect::<Vec<_>>()).unwrap(), rename);
+        assert!(!rename.command_line().unwrap().contains("really"), "a name travels packed");
+        assert!(HerdAction::parse(&["rename", "main", "w2:p1", "eA"]).is_err());
         // An answer travels with the mark of the question it was given to.
         let yes = HerdAction::Answer { session: "night".into(), pane: "w1:p4".into(), mark: "0123456789abcdef".into(), with: Reply::Choice("2".into()) };
         assert!(yes.command_line().unwrap().ends_with(" herd do 'answer' 'night' 'w1:p4' '0123456789abcdef' 'choice' '2'"));
