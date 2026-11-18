@@ -890,6 +890,49 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
+  testWidgets('pictures for an agent are named in the answer by where they are on the computer', (tester) async {
+    final herd = _Herd(_state([_agent('w1:p3', AgentStatus.idle, 'Design the page')]));
+    final controller = HerdController(herd);
+    await controller.start();
+    var picked = <String>['/home/sam/inbox/from-phone-1-1-sketch.png', '/home/sam/in box/from-phone-1-2-photo.jpg'];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AgentSheet(herd: controller, session: 'default', pane: 'w1:p3', onOpenTerminal: () {}, attachPictures: () async => picked),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Make it like this');
+    await tester.tap(find.byTooltip('Show it pictures'));
+    await tester.pump();
+    await tester.pump();
+    // After the owner's words, a path with a blank in it quoted.
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'Make it like this /home/sam/inbox/from-phone-1-1-sketch.png "/home/sam/in box/from-phone-1-2-photo.jpg" ',
+    );
+    herd.asked.clear();
+    await tester.tap(find.byTooltip('Send'));
+    await tester.pump();
+    expect(herd.asked.first, 'prompt default w1:p3: Make it like this /home/sam/inbox/from-phone-1-1-sketch.png "/home/sam/in box/from-phone-1-2-photo.jpg"');
+    // None picked changes nothing.
+    await tester.pump(const Duration(milliseconds: 400));
+    picked = [];
+    await tester.tap(find.byTooltip('Show it pictures'));
+    await tester.pump();
+    await tester.pump();
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+    // A name on the computer has nothing in it that a path would trip over.
+    expect(AgentsScreen.pictureName('My Photo (1).JPG', 1700, 0), 'from-phone-1700-1-My-Photo-1.jpg');
+    expect(AgentsScreen.pictureName('../../etc/x; rm', 1700, 1), 'from-phone-1700-2.png');
+    expect(AgentsScreen.pictureName('shot of api; rm -rf.png', 1700, 1), 'from-phone-1700-2-shot-of-api-rm-rf.png');
+    expect(AgentsScreen.pictureName('', 1700, 2), 'from-phone-1700-3.png');
+    await tester.pumpWidget(const SizedBox.shrink());
+    controller.dispose();
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('a request the computer refuses is said in the sheet', (tester) async {
     final herd = _RefusingHerd(_state([_agent('w1:p1', AgentStatus.blocked, 'Allow this?')]));
     await open(tester, herd);

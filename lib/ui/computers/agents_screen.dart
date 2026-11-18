@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_scope.dart';
@@ -15,6 +16,8 @@ import '../../src/rust/api/herd.dart';
 import '../../src/rust/api/herd_types.dart';
 import '../../src/rust/api/terminal_types.dart';
 import '../common/widgets.dart';
+import '../files/transfer_queue.dart';
+import '../files/transfer_tasks.dart';
 import '../hosts/host_connector.dart';
 import '../settings/settings_widgets.dart';
 import '../terminal/terminal_screen.dart';
@@ -39,6 +42,7 @@ class AgentsScreen extends StatefulWidget {
     required this.link,
     required this.onOpenTerminal,
     this.onStartSession,
+    this.attachPictures,
     this.openAt,
     this.onVisited,
     this.herd,
@@ -62,6 +66,11 @@ class AgentsScreen extends StatefulWidget {
   /// Starts a session that is not running (none is, with one server).
   final Future<void> Function(BuildContext context, String session)? onStartSession;
 
+  /// Lets the owner pick pictures on the phone, puts them on the
+  /// computer, and says where they are there, for an agent to be shown
+  /// them. None: the sheet has no button for it.
+  final Future<List<String>> Function(BuildContext context)? attachPictures;
+
   /// A pane to go straight to once the herd is known: where the owner
   /// was last (Home's "Continue").
   final ({String session, String pane})? openAt;
@@ -83,6 +92,7 @@ class AgentsScreen extends StatefulWidget {
           title: host.title,
           link: SshHerdLink(() => session.ssh),
           herd: HerdHub.app?.herdOf(host.id),
+          attachPictures: (context) => _pictures(context, session),
           onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane), aView: true),
           openAt: place == null ? null : (session: place.session, pane: place.pane),
           onVisited: (name, pane, title, agent) => store.updateSettings(
@@ -93,6 +103,64 @@ class AgentsScreen extends StatefulWidget {
         ),
       ),
     );
+  }
+
+  /// Pictures picked on the phone, put into the computer's folder for
+  /// what phones send, each under a name of its own: where they are there.
+  static Future<List<String>> _pictures(BuildContext context, LiveSession session) async {
+    final List<PlatformFile> picked;
+    try {
+      picked = await FilePicker.pickFiles(dialogTitle: 'Pictures for the agent', type: FileType.image);
+    } catch (error) {
+      if (context.mounted) Toast.show(context, 'The pictures could not be picked.');
+      return const [];
+    }
+    final files = [
+      for (final file in picked)
+        if (file.path != null) file,
+    ];
+    if (files.isEmpty) return const [];
+    try {
+      final remote = await session.ssh.openFiles();
+      final inbox = await session.ssh.shareInbox();
+      final queue = TransferQueue.of(session);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final jobs = <String, TransferJob>{};
+      for (final (n, file) in files.indexed) {
+        final name = pictureName(file.name, stamp, n);
+        jobs['$inbox/$name'] = queue.add(
+          UploadTask(
+            files: remote,
+            source: UploadSource(name: name, path: file.path!),
+            remoteFolder: inbox,
+          ),
+        );
+      }
+      while (jobs.values.any((job) => job.isActive)) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      final arrived = [
+        for (final entry in jobs.entries)
+          if (entry.value.state == TransferState.done) entry.key,
+      ];
+      if (arrived.length < jobs.length && context.mounted)
+        Toast.show(context, arrived.isEmpty ? 'The pictures did not reach the computer.' : 'Not every picture reached the computer.');
+      return arrived;
+    } catch (error) {
+      if (context.mounted) Toast.show(context, errorSentence(error, fallback: 'The pictures did not reach the computer.'));
+      return const [];
+    }
+  }
+
+  /// A picture's name on the computer: told apart from every other by
+  /// when it was sent, and with nothing in it that a path or a prompt
+  /// would trip over.
+  static String pictureName(String name, int stamp, int n) {
+    final dot = name.lastIndexOf('.');
+    final ending = dot > 0 ? name.substring(dot).toLowerCase().replaceAll(RegExp(r'[^a-z0-9.]'), '') : '';
+    final words = (dot > 0 ? name.substring(0, dot) : name).replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
+    final short = words.length > 40 ? words.substring(0, 40) : words;
+    return 'from-phone-$stamp-${n + 1}${short.isEmpty ? '' : '-$short'}${ending.length > 1 && ending.length <= 6 ? ending : '.png'}';
   }
 
   /// Opens a terminal on the computer and types [command] there; the
@@ -352,7 +420,16 @@ class _AgentsScreenState extends State<AgentsScreen> {
   }
 
   void _show(HerdAgent agent) {
-    unawaited(AgentSheet.show(context, herd: _herd, agent: agent, onOpenTerminal: () => widget.onOpenTerminal(context, agent.session, agent.pane)));
+    final attach = widget.attachPictures;
+    unawaited(
+      AgentSheet.show(
+        context,
+        herd: _herd,
+        agent: agent,
+        onOpenTerminal: () => widget.onOpenTerminal(context, agent.session, agent.pane),
+        attachPictures: attach == null ? null : () => attach(context),
+      ),
+    );
   }
 
   @override
@@ -911,14 +988,24 @@ class _OpenFolderSheetState extends State<OpenFolderSheet> {
 /// wrote, the keys its questions take, and a line to write to it. Its own
 /// terminal, at the phone's size, is one tap further.
 class AgentSheet extends StatefulWidget {
-  const AgentSheet({super.key, required this.herd, required this.session, required this.pane, required this.onOpenTerminal});
+  const AgentSheet({super.key, required this.herd, required this.session, required this.pane, required this.onOpenTerminal, this.attachPictures});
 
   final HerdController herd;
   final String session;
   final String pane;
   final VoidCallback onOpenTerminal;
 
-  static Future<void> show(BuildContext context, {required HerdController herd, required HerdAgent agent, required VoidCallback onOpenTerminal}) {
+  /// Pictures picked on the phone and put on the computer: where they
+  /// are there.
+  final Future<List<String>> Function()? attachPictures;
+
+  static Future<void> show(
+    BuildContext context, {
+    required HerdController herd,
+    required HerdAgent agent,
+    required VoidCallback onOpenTerminal,
+    Future<List<String>> Function()? attachPictures,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -926,7 +1013,7 @@ class AgentSheet extends StatefulWidget {
       showDragHandle: true,
       builder: (_) => FractionallySizedBox(
         heightFactor: 0.92,
-        child: AgentSheet(herd: herd, session: agent.session, pane: agent.pane, onOpenTerminal: onOpenTerminal),
+        child: AgentSheet(herd: herd, session: agent.session, pane: agent.pane, onOpenTerminal: onOpenTerminal, attachPictures: attachPictures),
       ),
     );
   }
@@ -1038,6 +1125,25 @@ class _AgentSheetState extends State<AgentSheet> {
     });
     await Future<void>.delayed(_afterAsking);
     if (mounted) unawaited(_read());
+  }
+
+  bool _attaching = false;
+
+  /// Pictures for the agent: picked on the phone, put on the computer,
+  /// and named in the answer by where they are there (agents read a
+  /// picture from its path). The owner adds their words and sends.
+  Future<void> _attach() async {
+    final attach = widget.attachPictures;
+    if (attach == null || _attaching) return;
+    setState(() => _attaching = true);
+    final paths = await attach();
+    if (!mounted) return;
+    setState(() => _attaching = false);
+    if (paths.isEmpty) return;
+    final before = _answer.text;
+    final joined = paths.map((path) => path.contains(' ') ? '"$path"' : path).join(' ');
+    _answer.text = before.trim().isEmpty ? '$joined ' : '${before.trimRight()} $joined ';
+    _answer.selection = TextSelection.collapsed(offset: _answer.text.length);
   }
 
   Future<void> _press(String key) async {
@@ -1169,6 +1275,12 @@ class _AgentSheetState extends State<AgentSheet> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (widget.attachPictures != null)
+                IconButton(
+                  tooltip: 'Show it pictures',
+                  onPressed: agent == null || _attaching ? null : _attach,
+                  icon: _attaching ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.image_outlined),
+                ),
               Expanded(
                 child: TextField(
                   controller: _answer,
