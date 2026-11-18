@@ -5,9 +5,10 @@
 use std::sync::Arc;
 
 use flutter_rust_bridge::frb;
+use multiplex_proto::asked::Reply;
 use multiplex_proto::herd as proto;
 
-use super::herd_types::{HerdKind, HerdMade, HerdPlace, HerdState};
+use super::herd_types::{tidy_asked, HerdKind, HerdMade, HerdPlace, HerdState, HerdText};
 use super::ssh::SshSession;
 use super::watch::RemoteWatch;
 use crate::engine::herd;
@@ -106,10 +107,31 @@ impl SshSession {
         Ok(places.into_iter().map(Into::into).collect())
     }
 
-    /// A pane's recent output, as text, at most `lines` lines of it.
-    pub async fn herd_read(&self, session: String, pane: String, lines: u32) -> anyhow::Result<String> {
+    /// A pane's recent output, as text, at most `lines` lines of it; and
+    /// what its agent asks, when it waits on a choice.
+    pub async fn herd_read(&self, session: String, pane: String, lines: u32) -> anyhow::Result<HerdText> {
         let conn = self.conn.clone();
-        AsyncRuntime::run(async move { herd::read(&conn, session, pane, lines).await }).await?
+        let read = AsyncRuntime::run(async move { herd::read(&conn, session, pane, lines).await }).await??;
+        let asked = read.asked.as_ref().and_then(|asked| tidy_asked(&asked.question, &asked.choices, &asked.mark));
+        Ok(HerdText { text: read.text, asked })
+    }
+
+    /// Takes one of the choices an agent offers, if it still asks the
+    /// question the choice was shown for (`mark`). Otherwise nothing is
+    /// sent, and the error says why in words for the owner.
+    pub async fn herd_answer_choice(&self, session: String, pane: String, mark: String, choice: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::Answer { session, pane, mark, with: Reply::Choice(choice) }).await }).await??;
+        Ok(())
+    }
+
+    /// Gives an agent that finished, or asks in its own words, this text
+    /// and Enter: only if it is not working again and no choice has come
+    /// up on its screen (`mark` is empty when none was shown).
+    pub async fn herd_answer_text(&self, session: String, pane: String, mark: String, text: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::Answer { session, pane, mark, with: Reply::Text(text) }).await }).await??;
+        Ok(())
     }
 }
 

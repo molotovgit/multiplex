@@ -48,6 +48,7 @@ fn build_agents(session: &str, snapshot: &Value) -> Vec<Agent> {
                         workspace: pane["workspace_id"].as_str().and_then(|id| workspaces.get(id)).map(|l| (*l).to_owned()).unwrap_or_default(),
                         folder: folder.trim_end_matches('/').rsplit('/').next().unwrap_or_default().to_owned(),
                         session: session.to_owned(),
+                        ..Agent::default()
                     })
                 })
                 .collect()
@@ -73,18 +74,6 @@ pub fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The agents whose state is news for the phone: those that began to
-/// wait for an answer, or finished, since `before`.
-pub fn news(before: &HashMap<String, AgentStatus>, now: &[Agent]) -> Vec<Agent> {
-    now.iter()
-        .filter(|agent| matches!(agent.status, AgentStatus::Blocked | AgentStatus::Done))
-        // An agent seen for the first time in that state is not news: the
-        // phone has just connected, or the agent has just been listed.
-        .filter(|agent| before.get(&agent.id).is_some_and(|was| *was != agent.status))
-        .cloned()
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,20 +94,9 @@ mod tests {
     fn panes_with_an_agent_become_agents() {
         let agents = build_agents("default", &snapshot());
         assert_eq!(agents.len(), 2, "a plain terminal is not an agent");
-        assert_eq!(agents[0], Agent { id: "p1".into(), name: "Claude".into(), status: AgentStatus::Blocked, title: "Fix the tests".into(), workspace: "api".into(), folder: "api".into(), session: "default".into() });
+        assert_eq!(agents[0], Agent { id: "p1".into(), name: "Claude".into(), status: AgentStatus::Blocked, title: "Fix the tests".into(), workspace: "api".into(), folder: "api".into(), session: "default".into(), ..Agent::default() });
         assert_eq!((agents[1].name.as_str(), agents[1].status, agents[1].title.as_str(), agents[1].folder.as_str(), agents[1].workspace.as_str()), ("codex", AgentStatus::Unknown, "Refactor", "web", ""));
         assert!(build_agents("default", &json!({"result": {"snapshot": {"panes": [], "workspaces": []}}})).is_empty());
         assert!(build_agents("default", &json!({})).is_empty());
-    }
-
-    #[test]
-    fn only_a_change_to_waiting_or_done_is_news() {
-        let now = build_agents("default", &snapshot());
-        // Just connected: nothing is news, whatever state the agents are in.
-        assert!(news(&HashMap::new(), &now).is_empty());
-        let before: HashMap<String, AgentStatus> = [("p1".to_owned(), AgentStatus::Working), ("p3".to_owned(), AgentStatus::Working)].into();
-        assert_eq!(news(&before, &now).iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), ["p1"], "p3 went to an unknown state, which is not worth a notice");
-        let same: HashMap<String, AgentStatus> = [("p1".to_owned(), AgentStatus::Blocked)].into();
-        assert!(news(&same, &now).is_empty(), "still waiting is not news again");
     }
 }

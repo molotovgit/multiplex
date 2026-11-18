@@ -80,6 +80,7 @@ object AppEngine {
         ShareTargets.register(messenger, app)
         SpeakerPlay.register(messenger, app)
         ClipPictures.register(messenger, app)
+        AgentNotices.register(messenger, app)
         watchNetwork(MethodChannel(messenger, NETWORK_CHANNEL), app)
         life = MethodChannel(messenger, LIFE_CHANNEL).apply {
             setMethodCallHandler { call, result ->

@@ -12,13 +12,17 @@ import 'package:flutter/widgets.dart';
 import '../app/lock_gate.dart';
 import '../data/models.dart';
 import '../data/vault_store.dart';
+import '../platform/agent_notices.dart';
 import '../platform/phone_bridge.dart';
 import '../src/rust/api/desk_types.dart';
+import '../src/rust/api/herd_types.dart';
 import '../src/rust/api/sftp_types.dart';
 import '../src/rust/api/share.dart';
 import '../ui/files/transfer_queue.dart';
 import '../ui/files/transfer_tasks.dart';
 import '../update/update_platform.dart';
+import 'error_text.dart';
+import 'herd_controller.dart';
 import 'phone_outbox.dart';
 import 'session_manager.dart';
 import 'shell_launch.dart';
@@ -215,6 +219,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     this._store, {
     ShareChannel Function(LiveSession session)? channel,
     Future<void> Function(String title, String body)? notify,
+    AgentNotices? agentNotices,
+    HerdLink Function(LiveSession session)? herd,
+    Duration answerWithin = const Duration(seconds: 15),
     Future<String?> Function()? readClipboard,
     Future<void> Function(String text)? writeClipboard,
     Future<ClipboardPicture?> Function()? readPicture,
@@ -246,6 +253,10 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
        _phone = phone,
        _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
+       _agentNotices = agentNotices ?? PhoneAgentNotices(),
+       _herd = herd ?? ((session) => SshHerdLink(() => session.ssh)),
+       // ignore: prefer_initializing_formals
+       _answerWithin = answerWithin,
        _readClipboard = readClipboard ?? _phoneClipboard,
        _writeClipboard = writeClipboard ?? _setPhoneClipboard,
        _readPicture = readPicture ?? PhoneClipboardPictures.read,
@@ -254,6 +265,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     _sessions.addListener(_sync);
     _store.addListener(_keepConnected);
     WidgetsBinding.instance.addObserver(this);
+    _agentNotices.listen(_answerAgent);
     // A moment after start (Tailscale is still coming up), then now and
     // again: a computer that was out of reach may be back.
     _firstTry = Timer(const Duration(seconds: 2), _keepConnected);
@@ -386,6 +398,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   final VaultStore _store;
   final ShareChannel Function(LiveSession session) _channel;
   final Future<void> Function(String title, String body) _notify;
+  final AgentNotices _agentNotices;
+  final HerdLink Function(LiveSession session) _herd;
+  final Duration _answerWithin;
   final Future<String?> Function() _readClipboard;
   final Future<void> Function(String text) _writeClipboard;
   final Future<ClipboardPicture?> Function() _readPicture;
@@ -442,6 +457,77 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     }
     await _updates.install(app.path);
     return true;
+  }
+
+  /// An agent on [host] began to wait, or finished: a notification that
+  /// can be answered where it is. Its choices become buttons; without
+  /// choices an answer can be typed into it. A tap opens the agent.
+  ///
+  /// With the app lock on there are no buttons and nothing to type into:
+  /// an answer then waits for the app to be opened and unlocked.
+  Future<void> _tellOfAgent(
+    Host host, {
+    required String name,
+    required String title,
+    required String workspace,
+    required bool waiting,
+    required String session,
+    required String pane,
+    required HerdAsked? asked,
+  }) async {
+    final where = [if (title.isNotEmpty) title, if (workspace.isNotEmpty) workspace, host.title].join(' · ');
+    final heading = waiting ? '$name needs you' : '$name is done';
+    // The computer did not say where it is: told as it always was.
+    if (session.isEmpty || pane.isEmpty) return _notify(heading, where);
+    final question = asked?.question.trim() ?? '';
+    final answerable = !_store.settings.appLock;
+    await _agentNotices.post(
+      AgentNotice(
+        place: AgentPlace(hostId: host.id, session: session, pane: pane, mark: asked?.mark ?? ''),
+        title: heading,
+        waiting: waiting,
+        summary: question.isEmpty ? where : question.split('\n').where((line) => line.trim().isNotEmpty).join(' · '),
+        body: question.isEmpty ? where : '$question\n\n$where',
+        choices: [
+          if (answerable && asked != null)
+            for (final choice in asked.choices) (key: choice.key, label: choice.label),
+        ],
+        reply: answerable && asked == null,
+      ),
+    );
+  }
+
+  /// An answer given in a notification. Null when it was sent; otherwise
+  /// the words that say why not. The computer sends it on only while the
+  /// agent still asks what the answer was given to.
+  Future<String?> _answerAgent(AgentAnswer answer) async {
+    final place = answer.place;
+    final host = _store.host(place.hostId);
+    if (host == null || !host.computer) return 'That computer is no longer paired with this phone.';
+    if (_store.settings.appLock) return 'Open Multiplex to answer.';
+    final (choice, text) = (answer.choice, answer.text?.trim() ?? '');
+    if (choice == null && text.isEmpty) return 'There was nothing to send.';
+    // The app may have just been started for this: the link comes up first.
+    _keepConnected();
+    final until = DateTime.now().add(_answerWithin);
+    LiveSession? connected() => _sessions.sessions.where((s) => s.host.id == host.id && s.connected).firstOrNull;
+    var session = connected();
+    while (session == null && DateTime.now().isBefore(until)) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      session = connected();
+    }
+    if (session == null) return '${host.title} is not connected. Open Multiplex to answer.';
+    try {
+      final herd = _herd(session);
+      if (choice != null) {
+        await herd.answerChoice(place.session, place.pane, place.mark, choice);
+      } else {
+        await herd.answerText(place.session, place.pane, place.mark, text);
+      }
+      return null;
+    } catch (e) {
+      return errorSentence(e, fallback: '${host.title} did not answer. Nothing was sent.');
+    }
   }
 
   static const _notices = MethodChannel('multiplex/sessions');
@@ -546,6 +632,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
       timer.cancel();
     }
     WidgetsBinding.instance.removeObserver(this);
+    _agentNotices.stop();
     _phoneNotices?.cancel();
     _phoneChanges?.cancel();
     for (final link in _links.values) {
@@ -647,10 +734,12 @@ class _Link {
         unawaited(_approve(id, reason, challenge));
       case ShareEvent_Sign(:final id, :final data):
         unawaited(_signFor(id, data));
-      case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting):
+      case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting, :final session, :final pane, :final asked):
         // A coding agent on the computer wants an answer, or is done.
-        final where = [if (title.isNotEmpty) title, if (workspace.isNotEmpty) workspace, host.title].join(' · ');
-        unawaited(owner._notify(waiting ? '$name needs you' : '$name is done', where));
+        unawaited(owner._tellOfAgent(host, name: name, title: title, workspace: workspace, waiting: waiting, session: session, pane: pane, asked: asked));
+      case ShareEvent_Settled(:final session, :final pane):
+        // It was answered at the computer, went on, or closed.
+        unawaited(owner._agentNotices.withdraw(AgentPlace(hostId: host.id, session: session, pane: pane).tag));
     }
   }
 

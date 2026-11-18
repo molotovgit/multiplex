@@ -715,6 +715,14 @@ fn asks_for(phone: &str) -> Vec<LinkEvent> {
         .collect()
 }
 
+/// What wakes a link between its looks at the clock.
+enum Woke {
+    /// The clipboard changed.
+    Clipboard,
+    /// Something about a coding agent, ready to be said.
+    News(Box<LinkEvent>),
+}
+
 /// `multiplex link <phone>`: prints what waits for the phone, now and as
 /// it comes, and the clipboard's text when it changes, one line of JSON
 /// each, until the phone hangs up.
@@ -727,12 +735,20 @@ pub fn link(phone: &str) -> Result<()> {
     let session = Session::find().ok().filter(|_| clipboard);
 
     // The clipboard is watched by wl-paste, which says a word per change.
-    let (changes, changed) = mpsc::channel::<()>();
+    let (changes, changed) = mpsc::channel::<Woke>();
+    // Coding agents (under herdr): the phone hears when one starts
+    // waiting for an answer or finishes, told by herdr as it happens.
+    // Only to a phone that may see them; what one asks, only to a phone
+    // that may use the terminals it is read from.
+    if allowed("AGENTS") {
+        let (news, questions) = (changes.clone(), allowed("QUESTIONS"));
+        std::thread::spawn(move || crate::herd::tell_news(questions, |event| news.send(Woke::News(Box::new(event))).is_ok()));
+    }
     let mut watcher = session.as_ref().and_then(|s| s.command("wl-paste").args(["--watch", "echo", "changed"]).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().ok());
     if let Some(out) = watcher.as_mut().and_then(|w| w.stdout.take()) {
         std::thread::spawn(move || {
             for line in BufReader::new(out).lines() {
-                if line.is_err() || changes.send(()).is_err() {
+                if line.is_err() || changes.send(Woke::Clipboard).is_err() {
                     break;
                 }
             }
@@ -769,10 +785,6 @@ pub fn link(phone: &str) -> Result<()> {
             clipboard_told.picture = session.as_ref().and_then(clipboard_picture).map(|(_, bytes)| picture_mark(&bytes));
         }
         let mut alive = Instant::now();
-        // Coding agents (under herdr): the phone hears when one starts
-        // waiting for an answer or finishes. Looked at every few seconds.
-        let mut agents: std::collections::HashMap<String, multiplex_proto::agents::AgentStatus> = std::collections::HashMap::new();
-        let mut agents_at: Option<Instant> = None;
         loop {
             if std::fs::read_to_string(&here).ok().as_deref() != Some(me.as_str()) {
                 return Ok(());
@@ -782,17 +794,6 @@ pub fn link(phone: &str) -> Result<()> {
                 return Ok(());
             }
             std::fs::write(&here, &me)?;
-            if agents_at.is_none_or(|at| at.elapsed() > Duration::from_secs(3)) {
-                let now = crate::agents::list();
-                if agents_at.is_some() {
-                    for agent in crate::agents::news(&agents, &now) {
-                        say(Some(&LinkEvent::Agent(agent)))?;
-                        alive = Instant::now();
-                    }
-                }
-                agents = now.into_iter().map(|a| (a.id, a.status)).collect();
-                agents_at = Some(Instant::now());
-            }
             for ask in asks_for(phone) {
                 say(Some(&ask))?;
                 alive = Instant::now();
@@ -804,10 +805,19 @@ pub fn link(phone: &str) -> Result<()> {
                 }
             }
             match changed.recv_timeout(Duration::from_secs(1)) {
-                Ok(()) => {
+                Ok(Woke::News(event)) => {
+                    say(Some(&event))?;
+                    alive = Instant::now();
+                }
+                Ok(Woke::Clipboard) => {
                     // Let a burst of changes settle, then look once.
                     std::thread::sleep(Duration::from_millis(60));
-                    while changed.try_recv().is_ok() {}
+                    while let Ok(more) = changed.try_recv() {
+                        if let Woke::News(event) = more {
+                            say(Some(&event))?;
+                            alive = Instant::now();
+                        }
+                    }
                     let now = session.as_ref().and_then(clipboard_text);
                     if clipboard_told.text_is_news(&now) {
                         if let Some(text) = now.clone() {

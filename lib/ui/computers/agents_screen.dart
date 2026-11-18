@@ -863,6 +863,13 @@ class _AgentSheetState extends State<AgentSheet> {
   final _answer = TextEditingController();
   final _scroll = ScrollController();
   String? _output;
+
+  /// What it asks by choice, as last read off its screen.
+  HerdAsked? _asked;
+
+  /// Why the last answer was not sent. It stays in sight until the next
+  /// thing is tried: reading the screen again must not wipe it away.
+  String? _refused;
   AgentStatus? _status;
   Timer? _follow;
   bool _reading = false;
@@ -911,13 +918,38 @@ class _AgentSheetState extends State<AgentSheet> {
   Future<void> _read() async {
     if (_reading) return;
     _reading = true;
-    final text = await widget.herd.read(widget.session, widget.pane);
+    final read = await widget.herd.read(widget.session, widget.pane);
     _reading = false;
-    if (!mounted || text == null) return;
-    setState(() => _output = text.trimRight());
+    if (!mounted || read == null) return;
+    setState(() {
+      _output = read.text.trimRight();
+      _asked = read.asked;
+    });
+  }
+
+  /// Takes one of the agent's choices. The computer sends it on only if
+  /// the agent still asks that question; if not, it says so, and what the
+  /// agent shows now is read again.
+  Future<void> _choose(HerdAsked asked, HerdChoice choice) async {
+    if (_sending) return;
+    setState(() {
+      _sending = true;
+      _refused = null;
+    });
+    final sent = await widget.herd.answer(widget.session, widget.pane, asked.mark, choice.key);
+    if (!mounted) return;
+    setState(() {
+      _sending = false;
+      // Either way these buttons are over: answered, or no longer asked.
+      _asked = null;
+      if (!sent) _refused = widget.herd.problem;
+    });
+    await Future<void>.delayed(_afterAsking);
+    if (mounted) unawaited(_read());
   }
 
   Future<void> _press(String key) async {
+    if (_refused != null) setState(() => _refused = null);
     if (await widget.herd.press(widget.session, widget.pane, [key])) {
       await Future<void>.delayed(_afterAsking);
       if (mounted) unawaited(_read());
@@ -927,7 +959,10 @@ class _AgentSheetState extends State<AgentSheet> {
   Future<void> _send() async {
     final text = _answer.text.trim();
     if (text.isEmpty || _sending) return;
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _refused = null;
+    });
     final sent = await widget.herd.prompt(widget.session, widget.pane, text);
     if (!mounted) return;
     setState(() => _sending = false);
@@ -942,8 +977,9 @@ class _AgentSheetState extends State<AgentSheet> {
     final colors = AppColorsTheme.of(context);
     final textTheme = Theme.of(context).textTheme;
     final agent = widget.herd.agent(widget.session, widget.pane);
-    final problem = widget.herd.problem;
+    final problem = widget.herd.problem ?? _refused;
     final output = _output;
+    final asked = agent == null ? null : _asked;
     final look = agent == null ? null : agentLook(colors, agent.status);
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + MediaQuery.viewInsetsOf(context).bottom),
@@ -1000,6 +1036,24 @@ class _AgentSheetState extends State<AgentSheet> {
             ),
           ),
           const SizedBox(height: 8),
+          // What it offers, in its own words: one tap answers it.
+          if (asked != null) ...[
+            for (final choice in asked.choices)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: FilledButton.tonal(
+                  key: ValueKey('choice-${choice.key}'),
+                  onPressed: _sending ? null : () => _choose(asked, choice),
+                  style: FilledButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    minimumSize: const Size.fromHeight(44),
+                  ),
+                  child: Text(choice.label, maxLines: 2, overflow: TextOverflow.ellipsis),
+                ),
+              ),
+            const SizedBox(height: 2),
+          ],
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(

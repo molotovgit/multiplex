@@ -46,6 +46,23 @@ impl Default for Access {
     }
 }
 
+/// What a link leaves out for a phone whose access is limited, as the
+/// names it is told by. Files and the clipboard go by their own
+/// switches. Which coding agents wait is part of seeing the desktop or
+/// the terminals; what one asks is read off a terminal, so it goes only
+/// to a phone that may use them.
+pub fn link_limits(access: &Access) -> Vec<&'static str> {
+    [
+        (access.files, "MULTIPLEX_LINK_FILES"),
+        (access.clipboard, "MULTIPLEX_LINK_CLIPBOARD"),
+        (access.desktop || access.terminal, "MULTIPLEX_LINK_AGENTS"),
+        (access.terminal, "MULTIPLEX_LINK_QUESTIONS"),
+    ]
+    .into_iter()
+    .filter_map(|(allowed, name)| (!allowed).then_some(name))
+    .collect()
+}
+
 /// One argument for a POSIX shell.
 fn shell_quote(arg: &str) -> String {
     format!("'{}'", arg.replace('\'', r"'\''"))
@@ -227,7 +244,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["herd", "state" | "watch" | "kinds"] => need(access.desktop || access.terminal, "desktop"),
             // The names of the user's folders, for opening one: the
             // terminal's own power, like opening it.
-            ["herd", "do" | "pane", ..] | ["herd", "places"] | ["herd", "folders", _] => need(access.terminal, "terminal"),
+            ["herd", "do" | "pane", ..] | ["herd", "places" | "news"] | ["herd", "folders", _] => need(access.terminal, "terminal"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
             ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
@@ -281,13 +298,10 @@ pub fn gate(phone: &str) -> Result<()> {
         }
         Wanted::Multiplex(args) => {
             let mut command = Command::new(std::env::current_exe()?);
-            // A link carries files and the clipboard; each only if allowed.
+            // A link carries several things; each only if allowed.
             if args.first().is_some_and(|a| a == "link") {
-                if !access.files {
-                    command.env("MULTIPLEX_LINK_FILES", "off");
-                }
-                if !access.clipboard {
-                    command.env("MULTIPLEX_LINK_CLIPBOARD", "off");
+                for left_out in link_limits(&access) {
+                    command.env(left_out, "off");
                 }
             }
             command.args(args).exec()
@@ -472,6 +486,13 @@ mod tests {
         assert_eq!(permits(&no_files, &multiplex(&["share", "inbox"])), Err("files"));
         assert!(permits(&no_files, &multiplex(&["share", "clip"])).is_ok());
         assert!(permits(&no_files, &multiplex(&["link", "Phone"])).is_ok(), "the clipboard still travels");
+        // What a link leaves out: each thing by its own switch; an agent's
+        // question is terminal content, which agents wait is less.
+        assert!(link_limits(&Access::default()).is_empty());
+        assert_eq!(link_limits(&Access { files: false, clipboard: false, ..Access::default() }), ["MULTIPLEX_LINK_FILES", "MULTIPLEX_LINK_CLIPBOARD"]);
+        assert_eq!(link_limits(&Access { terminal: false, ..Access::default() }), ["MULTIPLEX_LINK_QUESTIONS"]);
+        assert_eq!(link_limits(&Access { terminal: false, desktop: false, ..Access::default() }), ["MULTIPLEX_LINK_AGENTS", "MULTIPLEX_LINK_QUESTIONS"]);
+        assert!(permits(&Access { terminal: false, ..Access::default() }, &multiplex(&["herd", "do", "answer", "default", "w1:p1", "-", "choice", "1"])).is_err(), "answering is typing into a terminal");
         assert!(permits(&no_files, &multiplex(&["phone", "status", "Phone"])).is_ok());
     }
 

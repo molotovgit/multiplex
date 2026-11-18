@@ -4,11 +4,13 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'herd_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'share.freezed.dart';
 
+// These functions are ignored because they are not marked as `pub`: `agent_event`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
 /// A short name for exactly this picture: the same on both sides, so a
@@ -116,13 +118,25 @@ sealed class ShareEvent with _$ShareEvent {
       ShareEvent_Sms;
 
   /// A coding agent on the computer now waits for an answer
-  /// (`waiting`), or has finished.
+  /// (`waiting`), or has finished. `session` and `pane` say where it
+  /// is (empty when the computer's word for them was not in order);
+  /// `asked` is its question and choices when it waits on a choice.
   const factory ShareEvent.agent({
     required String name,
     required String title,
     required String workspace,
     required bool waiting,
+    required String session,
+    required String pane,
+    HerdAsked? asked,
   }) = ShareEvent_Agent;
+
+  /// That agent no longer waits and is no longer just done: what was
+  /// shown about it can go.
+  const factory ShareEvent.settled({
+    required String session,
+    required String pane,
+  }) = ShareEvent_Settled;
 
   /// Someone at the computer asks the phone's owner to approve
   /// something (`reason`). Answer with [`SshSession::share_approved`].

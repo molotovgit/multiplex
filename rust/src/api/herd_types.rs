@@ -102,6 +102,51 @@ pub struct HerdKind {
     pub installed: bool,
 }
 
+/// One answer an agent offers on its screen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HerdChoice {
+    /// What names it in an answer: its number, or its place in the list.
+    pub key: String,
+    pub label: String,
+}
+
+/// What an agent asks by choice.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HerdAsked {
+    /// The lines above the choices: what is being decided.
+    pub question: String,
+    pub choices: Vec<HerdChoice>,
+    /// Goes back with an answer, so that it reaches this question only.
+    pub mark: String,
+}
+
+/// A pane's recent output, and what its agent asks if it waits on a
+/// choice.
+#[derive(Debug, Clone)]
+pub struct HerdText {
+    pub text: String,
+    pub asked: Option<HerdAsked>,
+}
+
+/// What a computer says an agent asks, checked before it is shown or
+/// made into buttons: a real mark, two to nine choices named by one
+/// digit, and nothing in the words but words.
+pub(crate) fn tidy_asked(question: &str, choices: &[multiplex_proto::asked::Choice], mark: &str) -> Option<HerdAsked> {
+    let mark = multiplex_proto::asked::clean_mark(mark).ok().filter(|mark| !mark.is_empty())?;
+    if !(2..=9).contains(&choices.len()) {
+        return None;
+    }
+    let words = |text: &str, most: usize, lines: bool| text.chars().filter(|c| !c.is_control() || (lines && *c == '\n')).take(most).collect::<String>();
+    let choices = choices
+        .iter()
+        .map(|choice| {
+            let label = words(&choice.label, 120, false);
+            (choice.key.len() == 1 && choice.key.as_bytes()[0].is_ascii_digit() && !label.trim().is_empty()).then(|| HerdChoice { key: choice.key.clone(), label })
+        })
+        .collect::<Option<Vec<_>>>()?;
+    Some(HerdAsked { question: words(question, 600, true), choices, mark })
+}
+
 /// One agent with where it is.
 #[derive(Debug, Clone)]
 pub struct HerdAgent {
@@ -164,6 +209,28 @@ impl From<proto::Herd> for HerdState {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn what_a_computer_says_an_agent_asks_is_checked_before_it_becomes_buttons() {
+        use multiplex_proto::asked::Choice;
+        let choice = |key: &str, label: &str| Choice { key: key.to_owned(), label: label.to_owned() };
+        let two = [choice("1", "Yes"), choice("2", "No, and tell it what to do")];
+        let asked = tidy_asked("Bash command\n\nmake test", &two, "0123456789abcdef").unwrap();
+        assert_eq!(asked.question, "Bash command\n\nmake test");
+        assert_eq!(asked.choices, [HerdChoice { key: "1".into(), label: "Yes".into() }, HerdChoice { key: "2".into(), label: "No, and tell it what to do".into() }]);
+        // No mark, no answering; nor with one choice, a key that is not a
+        // digit, or a label of nothing.
+        assert!(tidy_asked("q", &two, "").is_none());
+        assert!(tidy_asked("q", &two, "not-a-mark").is_none());
+        assert!(tidy_asked("q", &two[..1], "0123456789abcdef").is_none());
+        assert!(tidy_asked("q", &[choice("1", "Yes"), choice("enter", "No")], "0123456789abcdef").is_none());
+        assert!(tidy_asked("q", &[choice("1", "Yes"), choice("2", " ")], "0123456789abcdef").is_none());
+        // Words stay words: nothing that moves a cursor, and no more of
+        // them than fit a notification.
+        let odd = tidy_asked(&"long ".repeat(400), &[choice("1", "Yes\u{1b}[2J\nreally"), choice("2", "No")], "0123456789abcdef").unwrap();
+        assert_eq!(odd.question.chars().count(), 600);
+        assert_eq!(odd.choices[0].label, "Yes[2Jreally");
+    }
 
     #[test]
     fn the_herd_arrives_with_its_inbox_already_in_order() {

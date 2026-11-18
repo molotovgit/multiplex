@@ -1,7 +1,10 @@
 import 'package:flutter/services.dart';
 
+import 'agent_notices.dart';
+
 /// Something Android asked the app to do from outside: a tap on a host in
-/// the home-screen widget, or files shared from another app.
+/// the home-screen widget, files shared from another app, or a tap on the
+/// notification about a coding agent.
 sealed class IncomingAction {
   const IncomingAction();
 
@@ -27,6 +30,9 @@ sealed class IncomingAction {
             : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null, targetHostId: target is String && target.isNotEmpty ? target : null);
       case 'shareFailed':
         return const ShareFailedAction();
+      case 'agent':
+        final place = AgentPlace.decode(raw['details']);
+        return place == null ? null : OpenAgentAction(place);
     }
     return null;
   }
@@ -53,6 +59,13 @@ class ShareAction extends IncomingAction {
   /// Set when text (a link, a note) was shared rather than files; [files]
   /// then holds it as one text file, for servers.
   final String? text;
+}
+
+/// A tap on the notification about a coding agent: open that agent.
+class OpenAgentAction extends IncomingAction {
+  const OpenAgentAction(this.place);
+
+  final AgentPlace place;
 }
 
 /// Something was shared, but none of it could be read.

@@ -15,6 +15,7 @@
 //! and the checks.
 
 pub mod agents;
+pub mod asked;
 pub mod desk;
 pub mod herd;
 pub mod input;

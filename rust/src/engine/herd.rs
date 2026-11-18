@@ -43,8 +43,8 @@ pub async fn folders(conn: &Connection, inside: &str) -> anyhow::Result<Vec<prot
     proto::parse_places(&reply(conn, &command).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
 }
 
-/// A pane's recent output.
-pub async fn read(conn: &Connection, session: String, pane: String, lines: u32) -> anyhow::Result<String> {
+/// A pane's recent output, and what its agent asks by choice.
+pub async fn read(conn: &Connection, session: String, pane: String, lines: u32) -> anyhow::Result<proto::PaneText> {
     let printed = act(conn, &HerdAction::Read { session, pane, lines }).await?;
-    Ok(proto::parse_text(&printed).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))?.text)
+    proto::parse_text(&printed).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
 }

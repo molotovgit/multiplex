@@ -22,8 +22,10 @@ use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
-use multiplex_proto::agents::{clean_session_name, AgentStatus};
-use multiplex_proto::herd::{clean_folder, clean_kind, Herd, HerdAction, Kind, Made, Pane, PaneAgent, PaneText, Place, Session, Tab, Workspace};
+use multiplex_proto::agents::{clean_session_name, Agent, AgentStatus};
+use multiplex_proto::asked::{asked, keys_for, may_answer, Asked, Reply};
+use multiplex_proto::herd::{clean_folder, clean_kind, Herd, HerdAction, HerdAgent, Kind, Made, Pane, PaneAgent, PaneText, Place, Session, Tab, Workspace};
+use multiplex_proto::share::LinkEvent;
 use serde_json::{json, Value};
 
 /// One of herdr's running sessions: its name and where its socket is.
@@ -237,22 +239,38 @@ impl Watched {
 
 /// `multiplex herd watch`: the herd now, and again whenever it changes.
 pub fn watch() -> Result<()> {
+    // An empty line now and then, so a phone that hung up is noticed.
+    const ALIVE: Duration = Duration::from_secs(10);
+    let mut out = std::io::stdout().lock();
+    let mut said_at = Instant::now();
+    follow(|herd| {
+        match herd {
+            Some(herd) => writeln!(out, "{}", serde_json::to_string(herd)?)?,
+            None if said_at.elapsed() >= ALIVE => writeln!(out)?,
+            None => return Ok(true),
+        }
+        out.flush()?;
+        said_at = Instant::now();
+        Ok(true)
+    })
+}
+
+/// Follows the herd: `on` gets it now and again whenever it changes, and
+/// nothing (`None`) about once a second in between, so it can do what it
+/// does by the clock. It ends when `on` says false or fails.
+pub fn follow(mut on: impl FnMut(Option<&Herd>) -> Result<bool>) -> Result<()> {
     // Events come in bursts (a new tab is five of them): looked at once
     // they settle.
     const SETTLE: Duration = Duration::from_millis(30);
     // Sessions start and stop without an event: looked for now and then.
     const SESSIONS: Duration = Duration::from_secs(5);
-    // An empty line now and then, so a phone that hung up is noticed.
-    const ALIVE: Duration = Duration::from_secs(10);
 
-    let mut out = std::io::stdout().lock();
     let (tell, told) = channel::<Told>();
     let mut watched: HashMap<String, Watched> = HashMap::new();
     let mut order: Vec<String> = Vec::new();
     let mut dirty: BTreeSet<String> = BTreeSet::new();
     let mut last: Option<Herd> = None;
     let mut sessions_at: Option<Instant> = None;
-    let mut said_at = Instant::now();
     let mut available = true;
     loop {
         if sessions_at.is_none_or(|at| at.elapsed() >= SESSIONS) {
@@ -291,15 +309,12 @@ pub fn watch() -> Result<()> {
         // A session that is not running (or has not answered yet) is
         // there by name, with nothing in it.
         let herd = Herd { available, sessions: order.iter().map(|name| watched.get(name).and_then(|one| one.seen.clone()).unwrap_or_else(|| stopped(name))).collect() };
-        if last.as_ref() != Some(&herd) {
-            writeln!(out, "{}", serde_json::to_string(&herd)?)?;
-            out.flush()?;
-            said_at = Instant::now();
+        let changed = last.as_ref() != Some(&herd);
+        if !on(changed.then_some(&herd))? {
+            return Ok(());
+        }
+        if changed {
             last = Some(herd);
-        } else if said_at.elapsed() >= ALIVE {
-            writeln!(out)?;
-            out.flush()?;
-            said_at = Instant::now();
         }
 
         // Wait for news; then for the burst to end.
@@ -325,6 +340,105 @@ pub fn watch() -> Result<()> {
             }
         }
     }
+}
+
+/// What in the herd is news for a phone that is not looking.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct News {
+    /// Agents that began to wait for an answer, or finished.
+    pub wants: Vec<HerdAgent>,
+    /// Session and pane of agents that waited or were done, and are not
+    /// any more: answered at the computer, gone on, or closed.
+    pub settled: Vec<(String, String)>,
+}
+
+/// Every agent's state, by session and pane.
+pub fn statuses(herd: &Herd) -> HashMap<(String, String), AgentStatus> {
+    herd.agents().into_iter().map(|agent| ((agent.session, agent.pane), agent.status)).collect()
+}
+
+pub fn news(before: &HashMap<(String, String), AgentStatus>, now: &Herd) -> News {
+    let wants_owner = |status: AgentStatus| matches!(status, AgentStatus::Blocked | AgentStatus::Done);
+    let agents = now.agents();
+    let wants = agents
+        .iter()
+        .filter(|agent| wants_owner(agent.status))
+        // An agent seen for the first time in that state is not news: the
+        // phone has just connected, or the agent has just been listed.
+        .filter(|agent| before.get(&(agent.session.clone(), agent.pane.clone())).is_some_and(|was| *was != agent.status))
+        .cloned()
+        .collect();
+    let mut settled: Vec<(String, String)> = before
+        .iter()
+        .filter(|(_, was)| wants_owner(**was))
+        .filter(|(key, _)| !agents.iter().any(|agent| (&agent.session, &agent.pane) == (&key.0, &key.1) && wants_owner(agent.status)))
+        .map(|(key, _)| key.clone())
+        .collect();
+    settled.sort();
+    News { wants, settled }
+}
+
+/// What a pane shows now.
+fn screen(session: &str, pane: &str) -> Result<String> {
+    Ok(read_text(&herdr(session, &["pane", "read", pane, "--source", "visible"])?))
+}
+
+/// What the agent in a pane is doing now. None: no agent is there.
+fn status_of(session: &str, pane: &str) -> Result<Option<AgentStatus>> {
+    let socket = known().into_iter().flatten().find(|(name, _)| name == session).and_then(|(_, socket)| socket).ok_or_else(|| anyhow!("The session {session} is not running."))?;
+    let now = snapshot(&Running { name: session.to_owned(), socket })?;
+    Ok(now.workspaces.iter().flat_map(|w| &w.tabs).flat_map(|t| &t.panes).find(|p| p.id == pane).and_then(|p| p.agent.as_ref()).map(|agent| agent.status))
+}
+
+/// What an agent that has just begun to wait asks by choice. Its screen
+/// may be a moment behind its state, so a screen without choices is read
+/// once more before it is taken to ask in words.
+fn asked_soon(session: &str, pane: &str) -> Asked {
+    let read = || screen(session, pane).map(|text| asked(&text)).unwrap_or_default();
+    let first = read();
+    if !first.choices.is_empty() {
+        return first;
+    }
+    std::thread::sleep(Duration::from_millis(400));
+    read()
+}
+
+/// For `multiplex link`: says what is news for the phone, as it happens,
+/// until `tell` says the phone is gone. An agent that waits on a choice
+/// is told with its question and choices, when `questions` may be told.
+pub fn tell_news(questions: bool, mut tell: impl FnMut(LinkEvent) -> bool) {
+    let mut before: Option<HashMap<(String, String), AgentStatus>> = None;
+    let _ = follow(|herd| {
+        let Some(herd) = herd else { return Ok(true) };
+        if let Some(before) = &before {
+            let news = news(before, herd);
+            for agent in news.wants {
+                let asked = if questions && agent.status == AgentStatus::Blocked { asked_soon(&agent.session, &agent.pane) } else { Asked::default() };
+                let event = LinkEvent::Agent(Agent {
+                    id: agent.pane,
+                    name: agent.name,
+                    status: agent.status,
+                    title: agent.title,
+                    workspace: agent.workspace,
+                    folder: agent.folder,
+                    session: agent.session,
+                    question: asked.question,
+                    choices: asked.choices,
+                    mark: asked.mark,
+                });
+                if !tell(event) {
+                    return Ok(false);
+                }
+            }
+            for (session, pane) in news.settled {
+                if !tell(LinkEvent::Settled { session, pane }) {
+                    return Ok(false);
+                }
+            }
+        }
+        before = Some(statuses(herd));
+        Ok(true)
+    });
 }
 
 /// herdr's own command, for one session, and what it printed.
@@ -589,9 +703,29 @@ fn act(action: &HerdAction) -> Result<()> {
             args.extend(keys.iter().map(String::as_str));
             herdr(session, &args)?;
         }
+        HerdAction::Answer { session, pane, mark, with } => {
+            // Only while it still asks what the answer was given to.
+            let status = status_of(session, pane)?;
+            let now = if status == Some(AgentStatus::Blocked) { asked(&screen(session, pane)?) } else { Asked::default() };
+            may_answer(status, &now, mark, with).map_err(|why| anyhow!(why))?;
+            match with {
+                Reply::Choice(key) => {
+                    let keys = keys_for(&now, key).ok_or_else(|| anyhow!("That is not one of its choices. Nothing was sent."))?;
+                    let mut args = vec!["pane", "send-keys", pane.as_str()];
+                    args.extend(keys.iter().map(String::as_str));
+                    herdr(session, &args)?;
+                }
+                Reply::Text(text) => return act(&HerdAction::Prompt { session: session.clone(), pane: pane.clone(), text: text.clone() }),
+            }
+        }
         HerdAction::Read { session, pane, lines } => {
             let printed = herdr(session, &["pane", "read", pane, "--source", "recent-unwrapped", "--lines", &lines.to_string()])?;
-            println!("{}", serde_json::to_string(&PaneText { text: read_text(&printed) })?);
+            // With what its agent asks by choice, if it waits on one: read
+            // off the screen as it stands, which is what an answer is
+            // checked against.
+            let waits = status_of(session, pane).ok().flatten() == Some(AgentStatus::Blocked);
+            let asked = waits.then(|| screen(session, pane).map(|text| asked(&text)).unwrap_or_default()).filter(|asked| !asked.choices.is_empty());
+            println!("{}", serde_json::to_string(&PaneText { text: read_text(&printed), asked })?);
         }
     }
     Ok(())
@@ -601,6 +735,13 @@ pub fn run(args: &[&str]) -> Result<()> {
     match args {
         ["state"] => println!("{}", serde_json::to_string(&state())?),
         ["watch"] => watch()?,
+        ["news"] => {
+            // What a linked phone is told about agents, for scripts: a
+            // line of JSON when one begins to wait (with what it asks) or
+            // finishes, and when one no longer does.
+            let mut out = std::io::stdout().lock();
+            tell_news(true, |event| serde_json::to_string(&event).is_ok_and(|line| writeln!(out, "{line}").is_ok() && out.flush().is_ok()));
+        }
         ["kinds"] => println!("{}", serde_json::to_string(&kinds())?),
         ["places"] => println!("{}", serde_json::to_string(&places())?),
         ["folders", word] => {
@@ -612,7 +753,7 @@ pub fn run(args: &[&str]) -> Result<()> {
         }
         ["do", rest @ ..] => act(&HerdAction::parse(rest).map_err(|e| anyhow!("{e}"))?)?,
         ["pane", rest @ ..] => crate::pane::run(rest)?,
-        _ => bail!("usage: multiplex herd state | watch | kinds | places | do <action> | pane <session> <pane>"),
+        _ => bail!("usage: multiplex herd state | watch | news | kinds | places | do <action> | pane <session> <pane>"),
     }
     Ok(())
 }
@@ -680,6 +821,51 @@ mod tests {
         assert_eq!(panes_of(&session), ["w1:p1", "w1:p2", "w1:p3"].map(str::to_owned).into());
         // Nothing at all is an empty session, not an error.
         assert_eq!(build("x", &json!({})), Session { name: "x".into(), running: true, workspaces: vec![] });
+    }
+
+    #[test]
+    fn a_phone_that_is_not_looking_hears_who_began_to_wait_and_who_no_longer_does() {
+        let herd = |states: &[(&str, &str)]| Herd {
+            available: true,
+            sessions: vec![Session {
+                name: "default".into(),
+                running: true,
+                workspaces: vec![Workspace {
+                    id: "w1".into(),
+                    label: "api".into(),
+                    tabs: vec![Tab {
+                        id: "w1:t1".into(),
+                        label: "1".into(),
+                        panes: states
+                            .iter()
+                            .map(|(id, status)| Pane {
+                                id: (*id).into(),
+                                title: format!("title of {id}"),
+                                folder: "/home/sam/api".into(),
+                                focused: false,
+                                agent: (!status.is_empty()).then(|| PaneAgent { name: "claude".into(), status: serde_json::from_value(json!(status)).unwrap() }),
+                            })
+                            .collect(),
+                    }],
+                }],
+            }],
+        };
+        let key = |pane: &str| ("default".to_owned(), pane.to_owned());
+        let before = statuses(&herd(&[("w1:p1", "working"), ("w1:p2", "blocked"), ("w1:p3", "done"), ("w1:p4", "working"), ("w1:p5", "blocked"), ("w1:p6", "")]));
+        assert_eq!(before.len(), 5, "a plain terminal has no state");
+        // Just connected: nothing is news, whatever state the agents are in.
+        assert_eq!(news(&HashMap::new(), &herd(&[("w1:p1", "blocked")])), News::default());
+        // p1 began to wait; p2 was answered; p3 is still done (not news
+        // again); p4 finished; p5's pane closed; p6 is a new agent that
+        // already waits (listed for the first time: not news).
+        let now = herd(&[("w1:p1", "blocked"), ("w1:p2", "working"), ("w1:p3", "done"), ("w1:p4", "done"), ("w1:p6", "blocked")]);
+        let told = news(&before, &now);
+        assert_eq!(told.wants.iter().map(|a| (a.pane.as_str(), a.status, a.workspace.as_str())).collect::<Vec<_>>(), [("w1:p1", AgentStatus::Blocked, "api"), ("w1:p4", AgentStatus::Done, "api")]);
+        assert_eq!(told.settled, [key("w1:p2"), key("w1:p5")]);
+        // From waiting to done is news, and nothing is withdrawn: the one
+        // notice takes the other's place.
+        let told = news(&statuses(&herd(&[("w1:p1", "blocked")])), &herd(&[("w1:p1", "done")]));
+        assert_eq!((told.wants.len(), told.settled.len()), (1, 0));
     }
 
     #[test]

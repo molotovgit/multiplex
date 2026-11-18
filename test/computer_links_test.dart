@@ -7,10 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/data/models.dart';
 import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
+import 'package:multiplex/platform/agent_notices.dart';
 import 'package:multiplex/platform/phone_bridge.dart';
 import 'package:multiplex/sessions/computer_links.dart';
+import 'package:multiplex/sessions/herd_controller.dart';
 import 'package:multiplex/sessions/phone_outbox.dart';
 import 'package:multiplex/sessions/session_manager.dart';
+import 'package:multiplex/src/rust/api/herd_types.dart';
 import 'package:multiplex/src/rust/api/share.dart';
 import 'package:multiplex/src/rust/api/ssh.dart';
 import 'package:multiplex/update/update_platform.dart';
@@ -22,6 +25,48 @@ class _Ssh implements SshSession {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// The phone's notifications about agents, written down.
+class _AgentNotices implements AgentNotices {
+  final posted = <AgentNotice>[];
+  final withdrawn = <String>[];
+
+  /// What the app does with an answer given in a notification.
+  Future<String?> Function(AgentAnswer answer)? answer;
+
+  @override
+  Future<void> post(AgentNotice notice) async => posted.add(notice);
+
+  @override
+  Future<void> withdraw(String tag) async => withdrawn.add(tag);
+
+  @override
+  void listen(Future<String?> Function(AgentAnswer answer) onAnswer) => answer = onAnswer;
+
+  @override
+  void stop() => answer = null;
+}
+
+/// A computer's herdr that writes down the answers it is given.
+class _AnsweredHerd implements HerdLink {
+  final log = <String>[];
+  Object? refuses;
+
+  @override
+  Future<void> answerChoice(String session, String pane, String mark, String choice) async {
+    if (refuses != null) throw refuses!;
+    log.add('choice $session $pane [$mark] $choice');
+  }
+
+  @override
+  Future<void> answerText(String session, String pane, String mark, String text) async {
+    if (refuses != null) throw refuses!;
+    log.add('text $session $pane [$mark] $text');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// A computer that writes down what the phone asked of it.
@@ -184,6 +229,8 @@ void main() {
   late PhoneOutbox outbox;
   late _Phone phone;
   late _Updater updater;
+  late _AgentNotices agentNotices;
+  late _AnsweredHerd herd;
   final dialled = <String>[];
   var reachable = false;
   final asked = <String>[];
@@ -205,6 +252,8 @@ void main() {
     sessions = _Sessions(store);
     computer = _Computer();
     notices = [];
+    agentNotices = _AgentNotices();
+    herd = _AnsweredHerd();
     phoneClipboard = 'on the phone already';
     phonePicture = null;
     temp = Directory.systemTemp.createTempSync('outbox-test');
@@ -235,6 +284,9 @@ void main() {
       store,
       channel: (_) => computer,
       notify: (title, body) async => notices.add('$title | $body'),
+      agentNotices: agentNotices,
+      herd: (_) => herd,
+      answerWithin: const Duration(milliseconds: 400),
       readClipboard: () async => phoneClipboard,
       writeClipboard: (text) async => phoneClipboard = text,
       readPicture: () async => phonePicture,
@@ -531,13 +583,126 @@ void main() {
     expect(computer.log, ['notice Messages: Not sent to +15550100']);
   });
 
-  test('an agent that wants an answer, or is done, is announced on the phone', () async {
-    await connect();
-    await Future<void>.delayed(const Duration(milliseconds: 20));
-    computer.events.add(const ShareEvent.agent(name: 'Claude', title: 'Fix the tests', workspace: 'api', waiting: true));
-    computer.events.add(const ShareEvent.agent(name: 'codex', title: '', workspace: '', waiting: false));
-    await Future<void>.delayed(Duration.zero);
-    expect(notices, ['Claude needs you | Fix the tests · api · Desk', 'codex is done | Desk']);
+  group('coding agents', () {
+    const asked = HerdAsked(
+      question: 'Bash command\n\nmake test\n\nDo you want to proceed?',
+      choices: [
+        HerdChoice(key: '1', label: 'Yes'),
+        HerdChoice(key: '2', label: "Yes, and don't ask again for make commands in this folder"),
+        HerdChoice(key: '3', label: 'No, and tell Claude what to do differently'),
+      ],
+      mark: '0123456789abcdef',
+    );
+    const waits = ShareEvent.agent(name: 'Claude', title: 'Fix the tests', workspace: 'api', waiting: true, session: 'default', pane: 'w1:p1', asked: asked);
+
+    test('one that waits on a choice is announced with its question, and its choices to press', () async {
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(waits);
+      await Future<void>.delayed(Duration.zero);
+      final notice = agentNotices.posted.single;
+      expect(notice.title, 'Claude needs you');
+      expect(notice.summary, 'Bash command · make test · Do you want to proceed?');
+      expect(notice.body, 'Bash command\n\nmake test\n\nDo you want to proceed?\n\nFix the tests · api · Desk');
+      expect(notice.choices.map((c) => '${c.key}=${c.label}'), [
+        '1=Yes',
+        "2=Yes, and don't ask again for make commands in this folder",
+        '3=No, and tell Claude what to do differently',
+      ]);
+      expect(notice.reply, isFalse, reason: 'it wants one of its choices, not words');
+      expect((notice.place.tag, notice.place.mark), ('c/default/w1:p1', '0123456789abcdef'));
+      expect(AgentNotice.onButton(notice.choices[1].label), "Yes, and don't ask again fo…");
+      expect(notices, isEmpty, reason: 'not told twice');
+    });
+
+    test('one that is done, or asks in its own words, can be answered in words', () async {
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(const ShareEvent.agent(name: 'codex', title: '', workspace: '', waiting: false, session: 'default', pane: 'w1:p2'));
+      computer.events.add(const ShareEvent.agent(name: 'Claude', title: 'Which name?', workspace: 'api', waiting: true, session: 'default', pane: 'w1:p1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        agentNotices.posted.map((n) => '${n.title} | ${n.summary} | ${n.body} | reply ${n.reply} | ${n.choices.length} choices | mark "${n.place.mark}"'),
+        [
+          'codex is done | Desk | Desk | reply true | 0 choices | mark ""',
+          'Claude needs you | Which name? · api · Desk | Which name? · api · Desk | reply true | 0 choices | mark ""',
+        ],
+      );
+      expect(agentNotices.posted.map((n) => n.waiting), [false, true], reason: 'only one that waits comes up on top of the screen');
+    });
+
+    test('one the computer could not place is announced as before, with nothing to press', () async {
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(const ShareEvent.agent(name: 'Claude', title: 'Fix the tests', workspace: 'api', waiting: true, session: '', pane: ''));
+      await Future<void>.delayed(Duration.zero);
+      expect(notices, ['Claude needs you | Fix the tests · api · Desk']);
+      expect(agentNotices.posted, isEmpty);
+    });
+
+    test('one that no longer waits has its notification taken back', () async {
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(waits);
+      computer.events.add(const ShareEvent.settled(session: 'default', pane: 'w1:p1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(agentNotices.withdrawn, ['c/default/w1:p1']);
+    });
+
+    test('with the app lock on, an answer waits for the app: nothing to press or type', () async {
+      store.updateSettings(store.settings.copyWith(appLock: true));
+      await connect();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      computer.events.add(waits);
+      computer.events.add(const ShareEvent.agent(name: 'codex', title: '', workspace: '', waiting: false, session: 'default', pane: 'w1:p2'));
+      await Future<void>.delayed(Duration.zero);
+      expect(agentNotices.posted.map((n) => (n.choices.length, n.reply)), [(0, false), (0, false)]);
+      expect(agentNotices.posted.first.body, contains('make test'), reason: 'what it asks is still said');
+      // And one pressed all the same (a notification from before the lock was turned on) is not sent.
+      const place = AgentPlace(hostId: 'c', session: 'default', pane: 'w1:p1', mark: '0123456789abcdef');
+      expect(await agentNotices.answer!(const AgentAnswer(place: place, choice: '1')), 'Open Multiplex to answer.');
+      expect(herd.log, isEmpty);
+    });
+
+    test('an answer given in the notification goes to the computer, which says if it was too late', () async {
+      await connect();
+      const place = AgentPlace(hostId: 'c', session: 'default', pane: 'w1:p1', mark: '0123456789abcdef');
+      expect(await agentNotices.answer!(const AgentAnswer(place: place, choice: '3')), isNull);
+      expect(herd.log, ['choice default w1:p1 [0123456789abcdef] 3']);
+      // Words, for one that asked in words or finished.
+      const other = AgentPlace(hostId: 'c', session: 'default', pane: 'w1:p2');
+      expect(await agentNotices.answer!(const AgentAnswer(place: other, text: '  now run the linter  ')), isNull);
+      expect(herd.log.last, 'text default w1:p2 [] now run the linter');
+      // The agent has moved on: the computer sent nothing, and its words reach the owner.
+      herd.refuses = Exception('That is no longer what it asks. Nothing was sent.');
+      expect(await agentNotices.answer!(const AgentAnswer(place: place, choice: '1')), 'That is no longer what it asks. Nothing was sent.');
+      // Nothing to send; a computer that is no longer paired.
+      herd.log.clear();
+      expect(await agentNotices.answer!(const AgentAnswer(place: other, text: '   ')), 'There was nothing to send.');
+      expect(
+        await agentNotices.answer!(
+          const AgentAnswer(
+            place: AgentPlace(hostId: 'gone', session: 'default', pane: 'w1:p1'),
+            choice: '1',
+          ),
+        ),
+        'That computer is no longer paired with this phone.',
+      );
+      expect(herd.log, isEmpty);
+    });
+
+    test('an answer given while the computer is not connected waits for the link, and says so if there is none', () async {
+      const place = AgentPlace(hostId: 'c', session: 'default', pane: 'w1:p1', mark: '0123456789abcdef');
+      // Out of reach: said, after the link was tried.
+      expect(await agentNotices.answer!(const AgentAnswer(place: place, choice: '1')), 'Desk is not connected. Open Multiplex to answer.');
+      expect(dialled, contains('Desk'));
+      expect(herd.log, isEmpty);
+      // In reach (the app had only just been started for this): it connects, and the answer goes.
+      reachable = true;
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(await agentNotices.answer!(const AgentAnswer(place: place, choice: '1')), isNull);
+      expect(herd.log, ['choice default w1:p1 [0123456789abcdef] 1']);
+    });
   });
 
   group('approving something for the computer', () {

@@ -52,7 +52,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1273916544;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1937583875;
 
 // Section: executor
 
@@ -5375,6 +5375,138 @@ fn wire__crate__api__ssh__SshSession_exec_impl(
                             &*api_that_guard,
                             api_command,
                             api_max_bytes,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__ssh__SshSession_herd_answer_choice_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SshSession_herd_answer_choice",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>,
+            >>::sse_decode(&mut deserializer);
+            let api_session = <String>::sse_decode(&mut deserializer);
+            let api_pane = <String>::sse_decode(&mut deserializer);
+            let api_mark = <String>::sse_decode(&mut deserializer);
+            let api_choice = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::api::ssh::SshSession::herd_answer_choice(
+                            &*api_that_guard,
+                            api_session,
+                            api_pane,
+                            api_mark,
+                            api_choice,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__ssh__SshSession_herd_answer_text_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "SshSession_herd_answer_text",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>,
+            >>::sse_decode(&mut deserializer);
+            let api_session = <String>::sse_decode(&mut deserializer);
+            let api_pane = <String>::sse_decode(&mut deserializer);
+            let api_mark = <String>::sse_decode(&mut deserializer);
+            let api_text = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || async move {
+                        let mut api_that_guard = None;
+                        let decode_indices_ =
+                            flutter_rust_bridge::for_generated::lockable_compute_decode_order(
+                                vec![flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                    &api_that, 0, false,
+                                )],
+                            );
+                        for i in decode_indices_ {
+                            match i {
+                                0 => {
+                                    api_that_guard =
+                                        Some(api_that.lockable_decode_async_ref().await)
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        let api_that_guard = api_that_guard.unwrap();
+                        let output_ok = crate::api::ssh::SshSession::herd_answer_text(
+                            &*api_that_guard,
+                            api_session,
+                            api_pane,
+                            api_mark,
+                            api_text,
                         )
                         .await?;
                         std::result::Result::Ok(output_ok)
@@ -10891,6 +11023,32 @@ impl SseDecode for crate::api::herd_types::HerdAgent {
     }
 }
 
+impl SseDecode for crate::api::herd_types::HerdAsked {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_question = <String>::sse_decode(deserializer);
+        let mut var_choices = <Vec<crate::api::herd_types::HerdChoice>>::sse_decode(deserializer);
+        let mut var_mark = <String>::sse_decode(deserializer);
+        return crate::api::herd_types::HerdAsked {
+            question: var_question,
+            choices: var_choices,
+            mark: var_mark,
+        };
+    }
+}
+
+impl SseDecode for crate::api::herd_types::HerdChoice {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_key = <String>::sse_decode(deserializer);
+        let mut var_label = <String>::sse_decode(deserializer);
+        return crate::api::herd_types::HerdChoice {
+            key: var_key,
+            label: var_label,
+        };
+    }
+}
+
 impl SseDecode for crate::api::herd_types::HerdKind {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -10996,6 +11154,18 @@ impl SseDecode for crate::api::herd_types::HerdTab {
             id: var_id,
             label: var_label,
             panes: var_panes,
+        };
+    }
+}
+
+impl SseDecode for crate::api::herd_types::HerdText {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_asked = <Option<crate::api::herd_types::HerdAsked>>::sse_decode(deserializer);
+        return crate::api::herd_types::HerdText {
+            text: var_text,
+            asked: var_asked,
         };
     }
 }
@@ -11229,6 +11399,20 @@ impl SseDecode for Vec<crate::api::herd_types::HerdAgent> {
         let mut ans_ = Vec::with_capacity(len_ as usize);
         for idx_ in 0..len_ {
             ans_.push(<crate::api::herd_types::HerdAgent>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::herd_types::HerdChoice> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::herd_types::HerdChoice>::sse_decode(
                 deserializer,
             ));
         }
@@ -11496,6 +11680,19 @@ impl SseDecode for Option<crate::api::desk_types::DeskWindow> {
     }
 }
 
+impl SseDecode for Option<crate::api::herd_types::HerdAsked> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::herd_types::HerdAsked>::sse_decode(
+                deserializer,
+            ));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for Option<i32> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -11733,14 +11930,29 @@ impl SseDecode for crate::api::share::ShareEvent {
                 let mut var_title = <String>::sse_decode(deserializer);
                 let mut var_workspace = <String>::sse_decode(deserializer);
                 let mut var_waiting = <bool>::sse_decode(deserializer);
+                let mut var_session = <String>::sse_decode(deserializer);
+                let mut var_pane = <String>::sse_decode(deserializer);
+                let mut var_asked =
+                    <Option<crate::api::herd_types::HerdAsked>>::sse_decode(deserializer);
                 return crate::api::share::ShareEvent::Agent {
                     name: var_name,
                     title: var_title,
                     workspace: var_workspace,
                     waiting: var_waiting,
+                    session: var_session,
+                    pane: var_pane,
+                    asked: var_asked,
                 };
             }
             6 => {
+                let mut var_session = <String>::sse_decode(deserializer);
+                let mut var_pane = <String>::sse_decode(deserializer);
+                return crate::api::share::ShareEvent::Settled {
+                    session: var_session,
+                    pane: var_pane,
+                };
+            }
+            7 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 let mut var_reason = <String>::sse_decode(deserializer);
                 let mut var_challenge = <String>::sse_decode(deserializer);
@@ -11750,7 +11962,7 @@ impl SseDecode for crate::api::share::ShareEvent {
                     challenge: var_challenge,
                 };
             }
-            7 => {
+            8 => {
                 let mut var_id = <String>::sse_decode(deserializer);
                 let mut var_data = <String>::sse_decode(deserializer);
                 return crate::api::share::ShareEvent::Sign {
@@ -12280,224 +12492,236 @@ fn pde_ffi_dispatcher_primary_impl(
         100 => wire__crate__api__ssh__SshSession_desk_watch_impl(port, ptr, rust_vec_len, data_len),
         101 => wire__crate__api__ssh__SshSession_disconnect_impl(port, ptr, rust_vec_len, data_len),
         102 => wire__crate__api__ssh__SshSession_exec_impl(port, ptr, rust_vec_len, data_len),
-        103 => wire__crate__api__ssh__SshSession_herd_close_pane_impl(
+        103 => wire__crate__api__ssh__SshSession_herd_answer_choice_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        104 => {
+        104 => wire__crate__api__ssh__SshSession_herd_answer_text_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        105 => wire__crate__api__ssh__SshSession_herd_close_pane_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        106 => {
             wire__crate__api__ssh__SshSession_herd_close_tab_impl(port, ptr, rust_vec_len, data_len)
         }
-        105 => {
+        107 => {
             wire__crate__api__ssh__SshSession_herd_folders_impl(port, ptr, rust_vec_len, data_len)
         }
-        106 => wire__crate__api__ssh__SshSession_herd_keys_impl(port, ptr, rust_vec_len, data_len),
-        107 => wire__crate__api__ssh__SshSession_herd_kinds_impl(port, ptr, rust_vec_len, data_len),
-        108 => {
+        108 => wire__crate__api__ssh__SshSession_herd_keys_impl(port, ptr, rust_vec_len, data_len),
+        109 => wire__crate__api__ssh__SshSession_herd_kinds_impl(port, ptr, rust_vec_len, data_len),
+        110 => {
             wire__crate__api__ssh__SshSession_herd_new_tab_impl(port, ptr, rust_vec_len, data_len)
         }
-        109 => wire__crate__api__ssh__SshSession_herd_new_workspace_impl(
+        111 => wire__crate__api__ssh__SshSession_herd_new_workspace_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        110 => {
+        112 => {
             wire__crate__api__ssh__SshSession_herd_places_impl(port, ptr, rust_vec_len, data_len)
         }
-        111 => {
+        113 => {
             wire__crate__api__ssh__SshSession_herd_prompt_impl(port, ptr, rust_vec_len, data_len)
         }
-        112 => wire__crate__api__ssh__SshSession_herd_read_impl(port, ptr, rust_vec_len, data_len),
-        113 => wire__crate__api__ssh__SshSession_herd_start_agent_impl(
+        114 => wire__crate__api__ssh__SshSession_herd_read_impl(port, ptr, rust_vec_len, data_len),
+        115 => wire__crate__api__ssh__SshSession_herd_start_agent_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        114 => wire__crate__api__ssh__SshSession_herd_state_impl(port, ptr, rust_vec_len, data_len),
-        115 => wire__crate__api__ssh__SshSession_herd_watch_impl(port, ptr, rust_vec_len, data_len),
-        118 => {
+        116 => wire__crate__api__ssh__SshSession_herd_state_impl(port, ptr, rust_vec_len, data_len),
+        117 => wire__crate__api__ssh__SshSession_herd_watch_impl(port, ptr, rust_vec_len, data_len),
+        120 => {
             wire__crate__api__ssh__SshSession_open_camera_impl(port, ptr, rust_vec_len, data_len)
         }
-        119 => {
+        121 => {
             wire__crate__api__ssh__SshSession_open_desktop_impl(port, ptr, rust_vec_len, data_len)
         }
-        120 => wire__crate__api__ssh__SshSession_open_files_impl(port, ptr, rust_vec_len, data_len),
-        121 => wire__crate__api__ssh__SshSession_open_mic_impl(port, ptr, rust_vec_len, data_len),
-        122 => {
+        122 => wire__crate__api__ssh__SshSession_open_files_impl(port, ptr, rust_vec_len, data_len),
+        123 => wire__crate__api__ssh__SshSession_open_mic_impl(port, ptr, rust_vec_len, data_len),
+        124 => {
             wire__crate__api__ssh__SshSession_open_screen_impl(port, ptr, rust_vec_len, data_len)
         }
-        123 => wire__crate__api__ssh__SshSession_open_shell_impl(port, ptr, rust_vec_len, data_len),
-        124 => {
+        125 => wire__crate__api__ssh__SshSession_open_shell_impl(port, ptr, rust_vec_len, data_len),
+        126 => {
             wire__crate__api__ssh__SshSession_open_speaker_impl(port, ptr, rust_vec_len, data_len)
         }
-        125 => {
+        127 => {
             wire__crate__api__ssh__SshSession_open_touchpad_impl(port, ptr, rust_vec_len, data_len)
         }
-        126 => wire__crate__api__ssh__SshSession_phone_call_impl(port, ptr, rust_vec_len, data_len),
-        127 => {
+        128 => wire__crate__api__ssh__SshSession_phone_call_impl(port, ptr, rust_vec_len, data_len),
+        129 => {
             wire__crate__api__ssh__SshSession_phone_notice_impl(port, ptr, rust_vec_len, data_len)
         }
-        128 => {
+        130 => {
             wire__crate__api__ssh__SshSession_phone_status_impl(port, ptr, rust_vec_len, data_len)
         }
-        129 => {
+        131 => {
             wire__crate__api__ssh__SshSession_reattach_shell_impl(port, ptr, rust_vec_len, data_len)
         }
-        130 => {
+        132 => {
             wire__crate__api__ssh__SshSession_share_approved_impl(port, ptr, rust_vec_len, data_len)
         }
-        131 => wire__crate__api__ssh__SshSession_share_copy_impl(port, ptr, rust_vec_len, data_len),
-        132 => wire__crate__api__ssh__SshSession_share_copy_picture_impl(
+        133 => wire__crate__api__ssh__SshSession_share_copy_impl(port, ptr, rust_vec_len, data_len),
+        134 => wire__crate__api__ssh__SshSession_share_copy_picture_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        133 => wire__crate__api__ssh__SshSession_share_done_impl(port, ptr, rust_vec_len, data_len),
-        134 => {
+        135 => wire__crate__api__ssh__SshSession_share_done_impl(port, ptr, rust_vec_len, data_len),
+        136 => {
             wire__crate__api__ssh__SshSession_share_inbox_impl(port, ptr, rust_vec_len, data_len)
         }
-        135 => wire__crate__api__ssh__SshSession_share_link_impl(port, ptr, rust_vec_len, data_len),
-        136 => wire__crate__api__ssh__SshSession_share_open_impl(port, ptr, rust_vec_len, data_len),
-        137 => {
+        137 => wire__crate__api__ssh__SshSession_share_link_impl(port, ptr, rust_vec_len, data_len),
+        138 => wire__crate__api__ssh__SshSession_share_open_impl(port, ptr, rust_vec_len, data_len),
+        139 => {
             wire__crate__api__ssh__SshSession_share_paste_impl(port, ptr, rust_vec_len, data_len)
         }
-        138 => wire__crate__api__ssh__SshSession_share_paste_picture_impl(
+        140 => wire__crate__api__ssh__SshSession_share_paste_picture_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        139 => wire__crate__api__ssh__SshSession_share_read_text_impl(
+        141 => wire__crate__api__ssh__SshSession_share_read_text_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        140 => {
+        142 => {
             wire__crate__api__ssh__SshSession_share_received_impl(port, ptr, rust_vec_len, data_len)
         }
-        141 => {
+        143 => {
             wire__crate__api__ssh__SshSession_start_tunnel_impl(port, ptr, rust_vec_len, data_len)
         }
-        142 => wire__crate__api__ssh__SshSession_watch_impl(port, ptr, rust_vec_len, data_len),
-        145 => wire__crate__api__vault__backup_open_impl(port, ptr, rust_vec_len, data_len),
-        146 => wire__crate__api__vault__backup_seal_impl(port, ptr, rust_vec_len, data_len),
-        147 => wire__crate__api__transfer__copy_item_impl(port, ptr, rust_vec_len, data_len),
-        149 => {
+        144 => wire__crate__api__ssh__SshSession_watch_impl(port, ptr, rust_vec_len, data_len),
+        147 => wire__crate__api__vault__backup_open_impl(port, ptr, rust_vec_len, data_len),
+        148 => wire__crate__api__vault__backup_seal_impl(port, ptr, rust_vec_len, data_len),
+        149 => wire__crate__api__transfer__copy_item_impl(port, ptr, rust_vec_len, data_len),
+        151 => {
             wire__crate__api__ssh_types__credentials_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        150 => wire__crate__api__desk_types__desk_binding_default_impl(
-            port,
-            ptr,
-            rust_vec_len,
-            data_len,
-        ),
-        151 => {
-            wire__crate__api__desk_types__desk_media_default_impl(port, ptr, rust_vec_len, data_len)
-        }
-        152 => wire__crate__api__desk_types__desk_monitor_default_impl(
+        152 => wire__crate__api__desk_types__desk_binding_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
         153 => {
+            wire__crate__api__desk_types__desk_media_default_impl(port, ptr, rust_vec_len, data_len)
+        }
+        154 => wire__crate__api__desk_types__desk_monitor_default_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        155 => {
             wire__crate__api__desk_types__desk_slot_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        154 => {
+        156 => {
             wire__crate__api__desk_types__desk_state_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        155 => wire__crate__api__desk_types__desk_volume_default_impl(
+        157 => wire__crate__api__desk_types__desk_volume_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        156 => wire__crate__api__desk_types__desk_window_default_impl(
+        158 => wire__crate__api__desk_types__desk_window_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        157 => wire__crate__api__desktop_types__desktop_stats_default_impl(
+        159 => wire__crate__api__desktop_types__desktop_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        158 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
-        159 => {
+        160 => wire__crate__api__keys__generate_key_impl(port, ptr, rust_vec_len, data_len),
+        161 => {
             wire__crate__api__herd_types__herd_made_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        161 => wire__crate__api__herd_types__herd_session_default_impl(
+        163 => wire__crate__api__herd_types__herd_session_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        162 => {
+        164 => {
             wire__crate__api__herd_types__herd_state_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        163 => {
+        165 => {
             wire__crate__api__herd_types__herd_tab_default_impl(port, ptr, rust_vec_len, data_len)
         }
-        164 => wire__crate__api__herd_types__herd_workspace_default_impl(
+        166 => wire__crate__api__herd_types__herd_workspace_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        165 => wire__crate__api__app__init_app_impl(port, ptr, rust_vec_len, data_len),
-        166 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
-        167 => wire__crate__api__terminal_types__key_modifiers_default_impl(
+        167 => wire__crate__api__app__init_app_impl(port, ptr, rust_vec_len, data_len),
+        168 => wire__crate__api__keys__inspect_private_key_impl(port, ptr, rust_vec_len, data_len),
+        169 => wire__crate__api__terminal_types__key_modifiers_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        170 => wire__crate__api__pairing__pairing_register_impl(port, ptr, rust_vec_len, data_len),
-        181 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
-        182 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
-        184 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
+        172 => wire__crate__api__pairing__pairing_register_impl(port, ptr, rust_vec_len, data_len),
+        183 => wire__crate__api__transfer__sync_apply_impl(port, ptr, rust_vec_len, data_len),
+        184 => wire__crate__api__transfer__sync_plan_impl(port, ptr, rust_vec_len, data_len),
+        186 => wire__crate__api__tailscale_types__tailscale_device_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        185 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
-        186 => {
+        187 => wire__crate__api__tailscale__tailscale_login_impl(port, ptr, rust_vec_len, data_len),
+        188 => {
             wire__crate__api__tailscale__tailscale_logout_impl(port, ptr, rust_vec_len, data_len)
         }
-        187 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
-        188 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
-        189 => {
+        189 => wire__crate__api__tailscale__tailscale_ping_impl(port, ptr, rust_vec_len, data_len),
+        190 => wire__crate__api__tailscale__tailscale_start_impl(port, ptr, rust_vec_len, data_len),
+        191 => {
             wire__crate__api__tailscale__tailscale_status_impl(port, ptr, rust_vec_len, data_len)
         }
-        190 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
+        192 => wire__crate__api__tailscale_types__tailscale_status_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        191 => wire__crate__api__terminal_types__terminal_palette_default_impl(
+        193 => wire__crate__api__terminal_types__terminal_palette_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        192 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
+        194 => wire__crate__api__tunnel_types__tunnel_stats_default_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        193 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
-        195 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
-        196 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
+        195 => wire__crate__api__vault__vault_load_impl(port, ptr, rust_vec_len, data_len),
+        197 => wire__crate__api__vault__vault_save_impl(port, ptr, rust_vec_len, data_len),
+        198 => wire__crate__api__wake__wake_on_lan_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -12607,26 +12831,26 @@ fn pde_ffi_dispatcher_sync_impl(
         89 => wire__crate__api__screen__SoundStream_status_impl(ptr, rust_vec_len, data_len),
         90 => wire__crate__api__screen__SoundStream_write_impl(ptr, rust_vec_len, data_len),
         91 => wire__crate__api__speaker__SpeakerStream_close_impl(ptr, rust_vec_len, data_len),
-        116 => wire__crate__api__ssh__SshSession_info_impl(ptr, rust_vec_len, data_len),
-        117 => wire__crate__api__ssh__SshSession_is_connected_impl(ptr, rust_vec_len, data_len),
-        143 => wire__crate__api__agents__agent_attach_command_impl(ptr, rust_vec_len, data_len),
-        144 => wire__crate__api__share__approval_sign_impl(ptr, rust_vec_len, data_len),
-        148 => wire__crate__api__app__core_version_impl(ptr, rust_vec_len, data_len),
-        160 => wire__crate__api__herd__herd_pane_command_impl(ptr, rust_vec_len, data_len),
-        168 => wire__crate__api__pairing__pairing_is_code_impl(ptr, rust_vec_len, data_len),
-        169 => wire__crate__api__pairing__pairing_read_impl(ptr, rust_vec_len, data_len),
-        171 => wire__crate__api__theme__parse_theme_file_impl(ptr, rust_vec_len, data_len),
-        172 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
-        173 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
-        174 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
-        175 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
-        176 => wire__crate__api__screen__screen_start_bitrate_impl(ptr, rust_vec_len, data_len),
-        177 => wire__crate__api__share__share_is_link_impl(ptr, rust_vec_len, data_len),
-        178 => wire__crate__api__share__share_picture_mark_impl(ptr, rust_vec_len, data_len),
-        179 => wire__crate__api__share__signing_describe_impl(ptr, rust_vec_len, data_len),
-        180 => wire__crate__api__share__signing_sign_impl(ptr, rust_vec_len, data_len),
-        183 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
-        194 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
+        118 => wire__crate__api__ssh__SshSession_info_impl(ptr, rust_vec_len, data_len),
+        119 => wire__crate__api__ssh__SshSession_is_connected_impl(ptr, rust_vec_len, data_len),
+        145 => wire__crate__api__agents__agent_attach_command_impl(ptr, rust_vec_len, data_len),
+        146 => wire__crate__api__share__approval_sign_impl(ptr, rust_vec_len, data_len),
+        150 => wire__crate__api__app__core_version_impl(ptr, rust_vec_len, data_len),
+        162 => wire__crate__api__herd__herd_pane_command_impl(ptr, rust_vec_len, data_len),
+        170 => wire__crate__api__pairing__pairing_is_code_impl(ptr, rust_vec_len, data_len),
+        171 => wire__crate__api__pairing__pairing_read_impl(ptr, rust_vec_len, data_len),
+        173 => wire__crate__api__theme__parse_theme_file_impl(ptr, rust_vec_len, data_len),
+        174 => wire__crate__api__keys__private_key_is_encrypted_impl(ptr, rust_vec_len, data_len),
+        175 => wire__crate__api__keys__public_key_fingerprint_impl(ptr, rust_vec_len, data_len),
+        176 => wire__crate__api__sftp__remote_join_impl(ptr, rust_vec_len, data_len),
+        177 => wire__crate__api__sftp__remote_parent_impl(ptr, rust_vec_len, data_len),
+        178 => wire__crate__api__screen__screen_start_bitrate_impl(ptr, rust_vec_len, data_len),
+        179 => wire__crate__api__share__share_is_link_impl(ptr, rust_vec_len, data_len),
+        180 => wire__crate__api__share__share_picture_mark_impl(ptr, rust_vec_len, data_len),
+        181 => wire__crate__api__share__signing_describe_impl(ptr, rust_vec_len, data_len),
+        182 => wire__crate__api__share__signing_sign_impl(ptr, rust_vec_len, data_len),
+        185 => wire__crate__api__tailscale__tailscale_available_impl(ptr, rust_vec_len, data_len),
+        196 => wire__crate__api__vault__vault_new_key_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -13669,6 +13893,49 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::herd_types::HerdAgent>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::herd_types::HerdAsked {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.question.into_into_dart().into_dart(),
+            self.choices.into_into_dart().into_dart(),
+            self.mark.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::herd_types::HerdAsked
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::herd_types::HerdAsked>
+    for crate::api::herd_types::HerdAsked
+{
+    fn into_into_dart(self) -> crate::api::herd_types::HerdAsked {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::herd_types::HerdChoice {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.key.into_into_dart().into_dart(),
+            self.label.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::herd_types::HerdChoice
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::herd_types::HerdChoice>
+    for crate::api::herd_types::HerdChoice
+{
+    fn into_into_dart(self) -> crate::api::herd_types::HerdChoice {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::herd_types::HerdKind {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
@@ -13824,6 +14091,27 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::herd_types::HerdTab>
     for crate::api::herd_types::HerdTab
 {
     fn into_into_dart(self) -> crate::api::herd_types::HerdTab {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::herd_types::HerdText {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.text.into_into_dart().into_dart(),
+            self.asked.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::herd_types::HerdText
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::herd_types::HerdText>
+    for crate::api::herd_types::HerdText
+{
+    fn into_into_dart(self) -> crate::api::herd_types::HerdText {
         self
     }
 }
@@ -14194,12 +14482,24 @@ impl flutter_rust_bridge::IntoDart for crate::api::share::ShareEvent {
                 title,
                 workspace,
                 waiting,
+                session,
+                pane,
+                asked,
             } => [
                 5.into_dart(),
                 name.into_into_dart().into_dart(),
                 title.into_into_dart().into_dart(),
                 workspace.into_into_dart().into_dart(),
                 waiting.into_into_dart().into_dart(),
+                session.into_into_dart().into_dart(),
+                pane.into_into_dart().into_dart(),
+                asked.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::share::ShareEvent::Settled { session, pane } => [
+                6.into_dart(),
+                session.into_into_dart().into_dart(),
+                pane.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::api::share::ShareEvent::Approve {
@@ -14207,14 +14507,14 @@ impl flutter_rust_bridge::IntoDart for crate::api::share::ShareEvent {
                 reason,
                 challenge,
             } => [
-                6.into_dart(),
+                7.into_dart(),
                 id.into_into_dart().into_dart(),
                 reason.into_into_dart().into_dart(),
                 challenge.into_into_dart().into_dart(),
             ]
             .into_dart(),
             crate::api::share::ShareEvent::Sign { id, data } => [
-                7.into_dart(),
+                8.into_dart(),
                 id.into_into_dart().into_dart(),
                 data.into_into_dart().into_dart(),
             ]
@@ -15681,6 +15981,23 @@ impl SseEncode for crate::api::herd_types::HerdAgent {
     }
 }
 
+impl SseEncode for crate::api::herd_types::HerdAsked {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.question, serializer);
+        <Vec<crate::api::herd_types::HerdChoice>>::sse_encode(self.choices, serializer);
+        <String>::sse_encode(self.mark, serializer);
+    }
+}
+
+impl SseEncode for crate::api::herd_types::HerdChoice {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.key, serializer);
+        <String>::sse_encode(self.label, serializer);
+    }
+}
+
 impl SseEncode for crate::api::herd_types::HerdKind {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -15746,6 +16063,14 @@ impl SseEncode for crate::api::herd_types::HerdTab {
         <String>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.label, serializer);
         <Vec<crate::api::herd_types::HerdPane>>::sse_encode(self.panes, serializer);
+    }
+}
+
+impl SseEncode for crate::api::herd_types::HerdText {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.text, serializer);
+        <Option<crate::api::herd_types::HerdAsked>>::sse_encode(self.asked, serializer);
     }
 }
 
@@ -15920,6 +16245,16 @@ impl SseEncode for Vec<crate::api::herd_types::HerdAgent> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::herd_types::HerdAgent>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::herd_types::HerdChoice> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::herd_types::HerdChoice>::sse_encode(item, serializer);
         }
     }
 }
@@ -16124,6 +16459,16 @@ impl SseEncode for Option<crate::api::desk_types::DeskWindow> {
     }
 }
 
+impl SseEncode for Option<crate::api::herd_types::HerdAsked> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::herd_types::HerdAsked>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for Option<i32> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -16293,25 +16638,36 @@ impl SseEncode for crate::api::share::ShareEvent {
                 title,
                 workspace,
                 waiting,
+                session,
+                pane,
+                asked,
             } => {
                 <i32>::sse_encode(5, serializer);
                 <String>::sse_encode(name, serializer);
                 <String>::sse_encode(title, serializer);
                 <String>::sse_encode(workspace, serializer);
                 <bool>::sse_encode(waiting, serializer);
+                <String>::sse_encode(session, serializer);
+                <String>::sse_encode(pane, serializer);
+                <Option<crate::api::herd_types::HerdAsked>>::sse_encode(asked, serializer);
+            }
+            crate::api::share::ShareEvent::Settled { session, pane } => {
+                <i32>::sse_encode(6, serializer);
+                <String>::sse_encode(session, serializer);
+                <String>::sse_encode(pane, serializer);
             }
             crate::api::share::ShareEvent::Approve {
                 id,
                 reason,
                 challenge,
             } => {
-                <i32>::sse_encode(6, serializer);
+                <i32>::sse_encode(7, serializer);
                 <String>::sse_encode(id, serializer);
                 <String>::sse_encode(reason, serializer);
                 <String>::sse_encode(challenge, serializer);
             }
             crate::api::share::ShareEvent::Sign { id, data } => {
-                <i32>::sse_encode(7, serializer);
+                <i32>::sse_encode(8, serializer);
                 <String>::sse_encode(id, serializer);
                 <String>::sse_encode(data, serializer);
             }

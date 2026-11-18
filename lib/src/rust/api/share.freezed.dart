@@ -56,7 +56,7 @@ extension ShareEventPatterns on ShareEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShareEvent_File value)?  file,TResult Function( ShareEvent_Clip value)?  clip,TResult Function( ShareEvent_Picture value)?  picture,TResult Function( ShareEvent_Ring value)?  ring,TResult Function( ShareEvent_Sms value)?  sms,TResult Function( ShareEvent_Agent value)?  agent,TResult Function( ShareEvent_Approve value)?  approve,TResult Function( ShareEvent_Sign value)?  sign,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ShareEvent_File value)?  file,TResult Function( ShareEvent_Clip value)?  clip,TResult Function( ShareEvent_Picture value)?  picture,TResult Function( ShareEvent_Ring value)?  ring,TResult Function( ShareEvent_Sms value)?  sms,TResult Function( ShareEvent_Agent value)?  agent,TResult Function( ShareEvent_Settled value)?  settled,TResult Function( ShareEvent_Approve value)?  approve,TResult Function( ShareEvent_Sign value)?  sign,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
@@ -65,7 +65,8 @@ return clip(_that);case ShareEvent_Picture() when picture != null:
 return picture(_that);case ShareEvent_Ring() when ring != null:
 return ring(_that);case ShareEvent_Sms() when sms != null:
 return sms(_that);case ShareEvent_Agent() when agent != null:
-return agent(_that);case ShareEvent_Approve() when approve != null:
+return agent(_that);case ShareEvent_Settled() when settled != null:
+return settled(_that);case ShareEvent_Approve() when approve != null:
 return approve(_that);case ShareEvent_Sign() when sign != null:
 return sign(_that);case _:
   return orElse();
@@ -85,7 +86,7 @@ return sign(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShareEvent_File value)  file,required TResult Function( ShareEvent_Clip value)  clip,required TResult Function( ShareEvent_Picture value)  picture,required TResult Function( ShareEvent_Ring value)  ring,required TResult Function( ShareEvent_Sms value)  sms,required TResult Function( ShareEvent_Agent value)  agent,required TResult Function( ShareEvent_Approve value)  approve,required TResult Function( ShareEvent_Sign value)  sign,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ShareEvent_File value)  file,required TResult Function( ShareEvent_Clip value)  clip,required TResult Function( ShareEvent_Picture value)  picture,required TResult Function( ShareEvent_Ring value)  ring,required TResult Function( ShareEvent_Sms value)  sms,required TResult Function( ShareEvent_Agent value)  agent,required TResult Function( ShareEvent_Settled value)  settled,required TResult Function( ShareEvent_Approve value)  approve,required TResult Function( ShareEvent_Sign value)  sign,}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File():
@@ -94,7 +95,8 @@ return clip(_that);case ShareEvent_Picture():
 return picture(_that);case ShareEvent_Ring():
 return ring(_that);case ShareEvent_Sms():
 return sms(_that);case ShareEvent_Agent():
-return agent(_that);case ShareEvent_Approve():
+return agent(_that);case ShareEvent_Settled():
+return settled(_that);case ShareEvent_Approve():
 return approve(_that);case ShareEvent_Sign():
 return sign(_that);}
 }
@@ -110,7 +112,7 @@ return sign(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShareEvent_File value)?  file,TResult? Function( ShareEvent_Clip value)?  clip,TResult? Function( ShareEvent_Picture value)?  picture,TResult? Function( ShareEvent_Ring value)?  ring,TResult? Function( ShareEvent_Sms value)?  sms,TResult? Function( ShareEvent_Agent value)?  agent,TResult? Function( ShareEvent_Approve value)?  approve,TResult? Function( ShareEvent_Sign value)?  sign,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ShareEvent_File value)?  file,TResult? Function( ShareEvent_Clip value)?  clip,TResult? Function( ShareEvent_Picture value)?  picture,TResult? Function( ShareEvent_Ring value)?  ring,TResult? Function( ShareEvent_Sms value)?  sms,TResult? Function( ShareEvent_Agent value)?  agent,TResult? Function( ShareEvent_Settled value)?  settled,TResult? Function( ShareEvent_Approve value)?  approve,TResult? Function( ShareEvent_Sign value)?  sign,}){
 final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
@@ -119,7 +121,8 @@ return clip(_that);case ShareEvent_Picture() when picture != null:
 return picture(_that);case ShareEvent_Ring() when ring != null:
 return ring(_that);case ShareEvent_Sms() when sms != null:
 return sms(_that);case ShareEvent_Agent() when agent != null:
-return agent(_that);case ShareEvent_Approve() when approve != null:
+return agent(_that);case ShareEvent_Settled() when settled != null:
+return settled(_that);case ShareEvent_Approve() when approve != null:
 return approve(_that);case ShareEvent_Sign() when sign != null:
 return sign(_that);case _:
   return null;
@@ -138,7 +141,7 @@ return sign(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  BigInt size,  String path)?  file,TResult Function( String text)?  clip,TResult Function( String kind,  BigInt size,  String mark)?  picture,TResult Function( int seconds)?  ring,TResult Function( String to,  String text)?  sms,TResult Function( String name,  String title,  String workspace,  bool waiting)?  agent,TResult Function( String id,  String reason,  String challenge)?  approve,TResult Function( String id,  String data)?  sign,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  BigInt size,  String path)?  file,TResult Function( String text)?  clip,TResult Function( String kind,  BigInt size,  String mark)?  picture,TResult Function( int seconds)?  ring,TResult Function( String to,  String text)?  sms,TResult Function( String name,  String title,  String workspace,  bool waiting,  String session,  String pane,  HerdAsked? asked)?  agent,TResult Function( String session,  String pane)?  settled,TResult Function( String id,  String reason,  String challenge)?  approve,TResult Function( String id,  String data)?  sign,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip() when clip != null:
@@ -146,7 +149,8 @@ return clip(_that.text);case ShareEvent_Picture() when picture != null:
 return picture(_that.kind,_that.size,_that.mark);case ShareEvent_Ring() when ring != null:
 return ring(_that.seconds);case ShareEvent_Sms() when sms != null:
 return sms(_that.to,_that.text);case ShareEvent_Agent() when agent != null:
-return agent(_that.name,_that.title,_that.workspace,_that.waiting);case ShareEvent_Approve() when approve != null:
+return agent(_that.name,_that.title,_that.workspace,_that.waiting,_that.session,_that.pane,_that.asked);case ShareEvent_Settled() when settled != null:
+return settled(_that.session,_that.pane);case ShareEvent_Approve() when approve != null:
 return approve(_that.id,_that.reason,_that.challenge);case ShareEvent_Sign() when sign != null:
 return sign(_that.id,_that.data);case _:
   return orElse();
@@ -166,7 +170,7 @@ return sign(_that.id,_that.data);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  BigInt size,  String path)  file,required TResult Function( String text)  clip,required TResult Function( String kind,  BigInt size,  String mark)  picture,required TResult Function( int seconds)  ring,required TResult Function( String to,  String text)  sms,required TResult Function( String name,  String title,  String workspace,  bool waiting)  agent,required TResult Function( String id,  String reason,  String challenge)  approve,required TResult Function( String id,  String data)  sign,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  BigInt size,  String path)  file,required TResult Function( String text)  clip,required TResult Function( String kind,  BigInt size,  String mark)  picture,required TResult Function( int seconds)  ring,required TResult Function( String to,  String text)  sms,required TResult Function( String name,  String title,  String workspace,  bool waiting,  String session,  String pane,  HerdAsked? asked)  agent,required TResult Function( String session,  String pane)  settled,required TResult Function( String id,  String reason,  String challenge)  approve,required TResult Function( String id,  String data)  sign,}) {final _that = this;
 switch (_that) {
 case ShareEvent_File():
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip():
@@ -174,7 +178,8 @@ return clip(_that.text);case ShareEvent_Picture():
 return picture(_that.kind,_that.size,_that.mark);case ShareEvent_Ring():
 return ring(_that.seconds);case ShareEvent_Sms():
 return sms(_that.to,_that.text);case ShareEvent_Agent():
-return agent(_that.name,_that.title,_that.workspace,_that.waiting);case ShareEvent_Approve():
+return agent(_that.name,_that.title,_that.workspace,_that.waiting,_that.session,_that.pane,_that.asked);case ShareEvent_Settled():
+return settled(_that.session,_that.pane);case ShareEvent_Approve():
 return approve(_that.id,_that.reason,_that.challenge);case ShareEvent_Sign():
 return sign(_that.id,_that.data);}
 }
@@ -190,7 +195,7 @@ return sign(_that.id,_that.data);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  BigInt size,  String path)?  file,TResult? Function( String text)?  clip,TResult? Function( String kind,  BigInt size,  String mark)?  picture,TResult? Function( int seconds)?  ring,TResult? Function( String to,  String text)?  sms,TResult? Function( String name,  String title,  String workspace,  bool waiting)?  agent,TResult? Function( String id,  String reason,  String challenge)?  approve,TResult? Function( String id,  String data)?  sign,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  BigInt size,  String path)?  file,TResult? Function( String text)?  clip,TResult? Function( String kind,  BigInt size,  String mark)?  picture,TResult? Function( int seconds)?  ring,TResult? Function( String to,  String text)?  sms,TResult? Function( String name,  String title,  String workspace,  bool waiting,  String session,  String pane,  HerdAsked? asked)?  agent,TResult? Function( String session,  String pane)?  settled,TResult? Function( String id,  String reason,  String challenge)?  approve,TResult? Function( String id,  String data)?  sign,}) {final _that = this;
 switch (_that) {
 case ShareEvent_File() when file != null:
 return file(_that.id,_that.name,_that.size,_that.path);case ShareEvent_Clip() when clip != null:
@@ -198,7 +203,8 @@ return clip(_that.text);case ShareEvent_Picture() when picture != null:
 return picture(_that.kind,_that.size,_that.mark);case ShareEvent_Ring() when ring != null:
 return ring(_that.seconds);case ShareEvent_Sms() when sms != null:
 return sms(_that.to,_that.text);case ShareEvent_Agent() when agent != null:
-return agent(_that.name,_that.title,_that.workspace,_that.waiting);case ShareEvent_Approve() when approve != null:
+return agent(_that.name,_that.title,_that.workspace,_that.waiting,_that.session,_that.pane,_that.asked);case ShareEvent_Settled() when settled != null:
+return settled(_that.session,_that.pane);case ShareEvent_Approve() when approve != null:
 return approve(_that.id,_that.reason,_that.challenge);case ShareEvent_Sign() when sign != null:
 return sign(_that.id,_that.data);case _:
   return null;
@@ -565,13 +571,16 @@ as String,
 
 
 class ShareEvent_Agent extends ShareEvent {
-  const ShareEvent_Agent({required this.name, required this.title, required this.workspace, required this.waiting}): super._();
+  const ShareEvent_Agent({required this.name, required this.title, required this.workspace, required this.waiting, required this.session, required this.pane, this.asked}): super._();
   
 
  final  String name;
  final  String title;
  final  String workspace;
  final  bool waiting;
+ final  String session;
+ final  String pane;
+ final  HerdAsked? asked;
 
 /// Create a copy of ShareEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -583,18 +592,18 @@ $ShareEvent_AgentCopyWith<ShareEvent_Agent> get copyWith => _$ShareEvent_AgentCo
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShareEvent_Agent&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.workspace, workspace) || other.workspace == workspace)&&(identical(other.waiting, waiting) || other.waiting == waiting));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShareEvent_Agent&&(identical(other.name, name) || other.name == name)&&(identical(other.title, title) || other.title == title)&&(identical(other.workspace, workspace) || other.workspace == workspace)&&(identical(other.waiting, waiting) || other.waiting == waiting)&&(identical(other.session, session) || other.session == session)&&(identical(other.pane, pane) || other.pane == pane)&&(identical(other.asked, asked) || other.asked == asked));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,title,workspace,waiting);
+    return Object.hash(runtimeType,name,title,workspace,waiting,session,pane,asked);
 }
 
 @override
 String toString() {
-    return 'ShareEvent.agent(name: $name, title: $title, workspace: $workspace, waiting: $waiting)';
+    return 'ShareEvent.agent(name: $name, title: $title, workspace: $workspace, waiting: $waiting, session: $session, pane: $pane, asked: $asked)';
 }
 
 
@@ -605,7 +614,7 @@ abstract mixin class $ShareEvent_AgentCopyWith<$Res> implements $ShareEventCopyW
   factory $ShareEvent_AgentCopyWith(ShareEvent_Agent value, $Res Function(ShareEvent_Agent) _then) = _$ShareEvent_AgentCopyWithImpl;
 @useResult
 $Res call({
- String name, String title, String workspace, bool waiting
+ String name, String title, String workspace, bool waiting, String session, String pane, HerdAsked? asked
 });
 
 
@@ -622,13 +631,86 @@ class _$ShareEvent_AgentCopyWithImpl<$Res>
 
 /// Create a copy of ShareEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? title = null,Object? workspace = null,Object? waiting = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? title = null,Object? workspace = null,Object? waiting = null,Object? session = null,Object? pane = null,Object? asked = freezed,}) {
   return _then(ShareEvent_Agent(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,workspace: null == workspace ? _self.workspace : workspace // ignore: cast_nullable_to_non_nullable
 as String,waiting: null == waiting ? _self.waiting : waiting // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
+as String,pane: null == pane ? _self.pane : pane // ignore: cast_nullable_to_non_nullable
+as String,asked: freezed == asked ? _self.asked : asked // ignore: cast_nullable_to_non_nullable
+as HerdAsked?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ShareEvent_Settled extends ShareEvent {
+  const ShareEvent_Settled({required this.session, required this.pane}): super._();
+  
+
+ final  String session;
+ final  String pane;
+
+/// Create a copy of ShareEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ShareEvent_SettledCopyWith<ShareEvent_Settled> get copyWith => _$ShareEvent_SettledCopyWithImpl<ShareEvent_Settled>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ShareEvent_Settled&&(identical(other.session, session) || other.session == session)&&(identical(other.pane, pane) || other.pane == pane));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,session,pane);
+}
+
+@override
+String toString() {
+    return 'ShareEvent.settled(session: $session, pane: $pane)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ShareEvent_SettledCopyWith<$Res> implements $ShareEventCopyWith<$Res> {
+  factory $ShareEvent_SettledCopyWith(ShareEvent_Settled value, $Res Function(ShareEvent_Settled) _then) = _$ShareEvent_SettledCopyWithImpl;
+@useResult
+$Res call({
+ String session, String pane
+});
+
+
+
+
+}
+/// @nodoc
+class _$ShareEvent_SettledCopyWithImpl<$Res>
+    implements $ShareEvent_SettledCopyWith<$Res> {
+  _$ShareEvent_SettledCopyWithImpl(this._self, this._then);
+
+  final ShareEvent_Settled _self;
+  final $Res Function(ShareEvent_Settled) _then;
+
+/// Create a copy of ShareEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? session = null,Object? pane = null,}) {
+  return _then(ShareEvent_Settled(
+session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
+as String,pane: null == pane ? _self.pane : pane // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

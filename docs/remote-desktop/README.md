@@ -198,16 +198,28 @@ Home itself says who wants you: under **Agents**, the agents that wait for an an
 
 The app remembers the agent or terminal you opened last. Home offers it first, under **Continue**: one tap connects and puts you back in front of it (or says that it is no longer running, and shows what is).
 
-While the phone is connected it is also told when an agent starts waiting for an answer or finishes: a notification, "Claude needs you" or "Claude is done", with what it was doing.
+**Answering where you are.** While the phone is connected it is told when an agent starts waiting for an answer or finishes, also with the app out of sight: a notification, "Claude needs you" or "Claude is done". herdr tells the computer the moment it happens, and the computer tells the phone. When the agent waits on a choice (a command to allow, a list to pick from), the notification says what it asks and has a button for each of its choices, in the agent's own words; press one and that is the answer. When it finished or asks in its own words, **Reply** takes an answer typed into the notification. A tap on the notification opens the agent in the app, where its sheet shows the same choices as buttons.
+
+An answer may let a command run on your computer, so it is handled with care:
+
+- An answer goes only to the question it was shown for. The computer reads the agent's screen again when the answer arrives; if the agent asks something else by then, went back to work, or is gone, nothing is sent and the phone says so ("That is no longer what it asks"). A notification left over from an earlier question cannot say yes to a later one.
+- A choice is taken by moving the agent's own pointer to it and pressing Enter, which works in every agent's list; lists with and without numbers are read.
+- The buttons work only with the phone unlocked (Android asks first; this needs Android 12 or later, older phones get the notification without buttons). What an agent asks is on the lock screen only if you let notifications show their content there.
+- With Multiplex's own app lock on, notifications have no buttons: an answer waits until you open the app.
+- When the agent is answered at the computer, goes on, or its pane closes, its notification is taken back.
+- What an agent asks is read off its terminal, so it is told only to a phone with the Terminal switch on; a phone without the Desktop and Terminal switches is not told about agents at all.
 
 On the computer this is `multiplex herd`:
 
 ```sh
 multiplex herd state      # sessions, workspaces, tabs, panes and their agents, as one line of JSON
 multiplex herd watch      # the same, and again whenever something changes
+multiplex herd news       # a line when an agent starts to wait (with its question and choices) or finishes, and when one no longer does
 multiplex herd do prompt <session> <pane> <text as base64>   # text and Enter for a pane's agent
 multiplex herd do keys <session> <pane> esc 2 enter          # keys, by herdr's names
-multiplex herd do read <session> <pane> 80                   # a pane's recent output
+multiplex herd do read <session> <pane> 80                   # a pane's recent output, and what its agent asks by choice
+multiplex herd do answer <session> <pane> <mark> choice 2    # take a choice, only while that question (its mark, from news or read) is asked
+multiplex herd do answer <session> <pane> - text <base64>    # words for an agent that finished or asks in words ("-": no choice was shown)
 multiplex herd do new-tab <session> <workspace> [<name as base64>]   # a new tab with a terminal; prints its ids
 multiplex herd do new-workspace <session> <folder as base64> [<name as base64>]
 multiplex herd do start <session> <pane> claude              # start an agent of a kind in a pane at its prompt
@@ -222,7 +234,7 @@ multiplex herd pane <session> <pane>                         # that pane in this
 
 Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly herdr's shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-More of the way [Herdr](https://herdr.dev) works is on its way: answering from the notification, and resuming agents and earlier conversations after a restart.
+More of the way [Herdr](https://herdr.dev) works is on its way: resuming agents and earlier conversations after a restart, and sending pictures to an agent.
 
 ## A yes from the phone
 

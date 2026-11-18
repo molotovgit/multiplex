@@ -456,6 +456,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   DesktopStats dco_decode_box_autoadd_desktop_stats(dynamic raw);
 
   @protected
+  HerdAsked dco_decode_box_autoadd_herd_asked(dynamic raw);
+
+  @protected
   HostKeyInfo dco_decode_box_autoadd_host_key_info(dynamic raw);
 
   @protected
@@ -567,6 +570,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdAgent dco_decode_herd_agent(dynamic raw);
 
   @protected
+  HerdAsked dco_decode_herd_asked(dynamic raw);
+
+  @protected
+  HerdChoice dco_decode_herd_choice(dynamic raw);
+
+  @protected
   HerdKind dco_decode_herd_kind(dynamic raw);
 
   @protected
@@ -586,6 +595,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   HerdTab dco_decode_herd_tab(dynamic raw);
+
+  @protected
+  HerdText dco_decode_herd_text(dynamic raw);
 
   @protected
   HerdWorkspace dco_decode_herd_workspace(dynamic raw);
@@ -637,6 +649,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdAgent> dco_decode_list_herd_agent(dynamic raw);
+
+  @protected
+  List<HerdChoice> dco_decode_list_herd_choice(dynamic raw);
 
   @protected
   List<HerdKind> dco_decode_list_herd_kind(dynamic raw);
@@ -703,6 +718,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DeskWindow? dco_decode_opt_box_autoadd_desk_window(dynamic raw);
+
+  @protected
+  HerdAsked? dco_decode_opt_box_autoadd_herd_asked(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
@@ -1185,6 +1203,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdAsked sse_decode_box_autoadd_herd_asked(SseDeserializer deserializer);
+
+  @protected
   HostKeyInfo sse_decode_box_autoadd_host_key_info(
     SseDeserializer deserializer,
   );
@@ -1306,6 +1327,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdAgent sse_decode_herd_agent(SseDeserializer deserializer);
 
   @protected
+  HerdAsked sse_decode_herd_asked(SseDeserializer deserializer);
+
+  @protected
+  HerdChoice sse_decode_herd_choice(SseDeserializer deserializer);
+
+  @protected
   HerdKind sse_decode_herd_kind(SseDeserializer deserializer);
 
   @protected
@@ -1325,6 +1352,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   HerdTab sse_decode_herd_tab(SseDeserializer deserializer);
+
+  @protected
+  HerdText sse_decode_herd_text(SseDeserializer deserializer);
 
   @protected
   HerdWorkspace sse_decode_herd_workspace(SseDeserializer deserializer);
@@ -1378,6 +1408,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdAgent> sse_decode_list_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  List<HerdChoice> sse_decode_list_herd_choice(SseDeserializer deserializer);
 
   @protected
   List<HerdKind> sse_decode_list_herd_kind(SseDeserializer deserializer);
@@ -1456,6 +1489,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   DeskWindow? sse_decode_opt_box_autoadd_desk_window(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdAsked? sse_decode_opt_box_autoadd_herd_asked(
     SseDeserializer deserializer,
   );
 
@@ -2014,6 +2052,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_herd_asked(
+    HerdAsked self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_host_key_info(
     HostKeyInfo self,
     SseSerializer serializer,
@@ -2161,6 +2205,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_herd_agent(HerdAgent self, SseSerializer serializer);
 
   @protected
+  void sse_encode_herd_asked(HerdAsked self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_choice(HerdChoice self, SseSerializer serializer);
+
+  @protected
   void sse_encode_herd_kind(HerdKind self, SseSerializer serializer);
 
   @protected
@@ -2180,6 +2230,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_herd_tab(HerdTab self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_text(HerdText self, SseSerializer serializer);
 
   @protected
   void sse_encode_herd_workspace(HerdWorkspace self, SseSerializer serializer);
@@ -2241,6 +2294,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_herd_agent(
     List<HerdAgent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_choice(
+    List<HerdChoice> self,
     SseSerializer serializer,
   );
 
@@ -2352,6 +2411,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_desk_window(
     DeskWindow? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_herd_asked(
+    HerdAsked? self,
     SseSerializer serializer,
   );
 

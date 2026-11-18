@@ -124,6 +124,8 @@
         </service>
         <!-- Stops the ringing started by "find this phone". -->
         <receiver android:name=".PhoneChannel$StopRing" android:exported="false" />
+        <!-- A button of an agent's notification, or a reply typed into it. -->
+        <receiver android:name=".AgentAnswerReceiver" android:exported="false" />
         <!-- The home-screen widget with favourite hosts. -->
         <receiver
             android:name=".FavouritesWidget"

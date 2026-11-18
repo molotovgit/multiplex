@@ -59,6 +59,26 @@ abstract class SshSession implements RustOpaqueInterface {
   /// `max_bytes`).
   Future<ExecOutput> exec({required String command, required int maxBytes});
 
+  /// Takes one of the choices an agent offers, if it still asks the
+  /// question the choice was shown for (`mark`). Otherwise nothing is
+  /// sent, and the error says why in words for the owner.
+  Future<void> herdAnswerChoice({
+    required String session,
+    required String pane,
+    required String mark,
+    required String choice,
+  });
+
+  /// Gives an agent that finished, or asks in its own words, this text
+  /// and Enter: only if it is not working again and no choice has come
+  /// up on its screen (`mark` is empty when none was shown).
+  Future<void> herdAnswerText({
+    required String session,
+    required String pane,
+    required String mark,
+    required String text,
+  });
+
   /// Closes a pane, and whatever runs in it.
   Future<void> herdClosePane({required String session, required String pane});
 
@@ -109,8 +129,9 @@ abstract class SshSession implements RustOpaqueInterface {
     required String text,
   });
 
-  /// A pane's recent output, as text, at most `lines` lines of it.
-  Future<String> herdRead({
+  /// A pane's recent output, as text, at most `lines` lines of it; and
+  /// what its agent asks, when it waits on a choice.
+  Future<HerdText> herdRead({
     required String session,
     required String pane,
     required int lines,

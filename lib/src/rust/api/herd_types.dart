@@ -8,8 +8,8 @@ import 'agents.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `status`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `status`, `tidy_asked`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
 
 /// One agent with where it is.
 class HerdAgent {
@@ -59,6 +59,54 @@ class HerdAgent {
           status == other.status &&
           title == other.title &&
           folder == other.folder;
+}
+
+/// What an agent asks by choice.
+class HerdAsked {
+  /// The lines above the choices: what is being decided.
+  final String question;
+  final List<HerdChoice> choices;
+
+  /// Goes back with an answer, so that it reaches this question only.
+  final String mark;
+
+  const HerdAsked({
+    required this.question,
+    required this.choices,
+    required this.mark,
+  });
+
+  @override
+  int get hashCode => question.hashCode ^ choices.hashCode ^ mark.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdAsked &&
+          runtimeType == other.runtimeType &&
+          question == other.question &&
+          choices == other.choices &&
+          mark == other.mark;
+}
+
+/// One answer an agent offers on its screen.
+class HerdChoice {
+  /// What names it in an answer: its number, or its place in the list.
+  final String key;
+  final String label;
+
+  const HerdChoice({required this.key, required this.label});
+
+  @override
+  int get hashCode => key.hashCode ^ label.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdChoice &&
+          runtimeType == other.runtimeType &&
+          key == other.key &&
+          label == other.label;
 }
 
 /// A kind of agent the computer can start.
@@ -292,6 +340,26 @@ class HerdTab {
           id == other.id &&
           label == other.label &&
           panes == other.panes;
+}
+
+/// A pane's recent output, and what its agent asks if it waits on a
+/// choice.
+class HerdText {
+  final String text;
+  final HerdAsked? asked;
+
+  const HerdText({required this.text, this.asked});
+
+  @override
+  int get hashCode => text.hashCode ^ asked.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdText &&
+          runtimeType == other.runtimeType &&
+          text == other.text &&
+          asked == other.asked;
 }
 
 class HerdWorkspace {

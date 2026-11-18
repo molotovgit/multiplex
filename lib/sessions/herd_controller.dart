@@ -15,8 +15,16 @@ abstract class HerdLink {
   /// The herd whenever it changes, and how to stop listening.
   Future<(Stream<HerdState>, void Function())> watch();
 
-  /// A pane's recent output.
-  Future<String> read(String session, String pane, int lines);
+  /// A pane's recent output, and what its agent asks by choice.
+  Future<HerdText> read(String session, String pane, int lines);
+
+  /// Takes one of an agent's choices, if it still asks the question the
+  /// choice was shown for ([mark]); fails with the reason otherwise.
+  Future<void> answerChoice(String session, String pane, String mark, String choice);
+
+  /// Text and Enter for an agent that finished or asks in its own words:
+  /// only while it is not working again and no choice has come up.
+  Future<void> answerText(String session, String pane, String mark, String text);
 
   /// Text and Enter for a pane's agent, as one piece.
   Future<void> prompt(String session, String pane, String text);
@@ -64,7 +72,14 @@ class SshHerdLink implements HerdLink {
   }
 
   @override
-  Future<String> read(String session, String pane, int lines) => ssh().herdRead(session: session, pane: pane, lines: lines);
+  Future<HerdText> read(String session, String pane, int lines) => ssh().herdRead(session: session, pane: pane, lines: lines);
+
+  @override
+  Future<void> answerChoice(String session, String pane, String mark, String choice) =>
+      ssh().herdAnswerChoice(session: session, pane: pane, mark: mark, choice: choice);
+
+  @override
+  Future<void> answerText(String session, String pane, String mark, String text) => ssh().herdAnswerText(session: session, pane: pane, mark: mark, text: text);
 
   @override
   Future<void> prompt(String session, String pane, String text) => ssh().herdPrompt(session: session, pane: pane, text: text);
@@ -172,9 +187,9 @@ class HerdController extends ChangeNotifier {
     return null;
   }
 
-  /// A pane's recent output; null when it could not be read (then
-  /// [problem] says why).
-  Future<String?> read(String session, String pane, {int lines = 80}) async {
+  /// A pane's recent output and what its agent asks by choice; null when
+  /// it could not be read (then [problem] says why).
+  Future<HerdText?> read(String session, String pane, {int lines = 80}) async {
     try {
       final text = await _link.read(session, pane, lines);
       _clear();
@@ -187,6 +202,10 @@ class HerdController extends ChangeNotifier {
 
   /// Gives the pane's agent [text] and Enter. False when it could not.
   Future<bool> prompt(String session, String pane, String text) => _ask(() => _link.prompt(session, pane, text));
+
+  /// Takes the choice [key] of the question marked [mark]. False when it
+  /// was not sent: the agent no longer asks that ([problem] says so).
+  Future<bool> answer(String session, String pane, String mark, String key) => _ask(() => _link.answerChoice(session, pane, mark, key));
 
   /// Presses [keys] in the pane. False when it could not.
   Future<bool> press(String session, String pane, List<String> keys) => _ask(() => _link.keys(session, pane, keys));

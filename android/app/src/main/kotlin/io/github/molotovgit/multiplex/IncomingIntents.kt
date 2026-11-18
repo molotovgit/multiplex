@@ -12,7 +12,9 @@ import java.io.File
  * Flutter side collects them ("take"):
  * - a tap on a host in the home-screen widget (connect to it), accepted
  *   only with this install's [ConnectToken];
- * - files shared from another app (upload them to a server).
+ * - files shared from another app (upload them to a server);
+ * - a tap on the notification about a coding agent (open that agent),
+ *   accepted only with this install's [ConnectToken] as well.
  *
  * Shared files arrive as content links that only this activity may read,
  * so each one is copied into the app's cache first (on a background
@@ -27,6 +29,7 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
     /** Reads [intent]; returns true when it was one of ours. */
     fun read(intent: Intent?): Boolean = when (intent?.action) {
         ACTION_CONNECT -> readConnect(intent)
+        AgentNotices.ACTION_OPEN -> readAgent(intent)
         Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> readShare(intent)
         else -> false
     }
@@ -46,6 +49,14 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
         if (data.scheme != "multiplex" || data.host != "connect") return false
         val hostId = data.lastPathSegment ?: return false
         add(mapOf("type" to "connect", "hostId" to hostId))
+        return true
+    }
+
+    /** A tap on an agent's notification: open that agent. Only from our own notification (see ConnectToken). */
+    private fun readAgent(intent: Intent): Boolean {
+        if (!ConnectToken.matches(context, intent.getStringExtra(ConnectToken.EXTRA))) return false
+        val details = intent.getStringExtra(AgentNotices.EXTRA_DETAILS) ?: return false
+        add(mapOf("type" to "agent", "details" to details))
         return true
     }
 

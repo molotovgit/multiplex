@@ -5,6 +5,7 @@ use std::sync::Arc;
 use flutter_rust_bridge::frb;
 use multiplex_proto::share as proto;
 
+use super::herd_types::{tidy_asked, HerdAsked};
 use super::ssh::SshSession;
 use super::watch::RemoteWatch;
 use crate::engine::runtime::AsyncRuntime;
@@ -34,8 +35,13 @@ pub enum ShareEvent {
     /// checked).
     Sms { to: String, text: String },
     /// A coding agent on the computer now waits for an answer
-    /// (`waiting`), or has finished.
-    Agent { name: String, title: String, workspace: String, waiting: bool },
+    /// (`waiting`), or has finished. `session` and `pane` say where it
+    /// is (empty when the computer's word for them was not in order);
+    /// `asked` is its question and choices when it waits on a choice.
+    Agent { name: String, title: String, workspace: String, waiting: bool, session: String, pane: String, asked: Option<HerdAsked> },
+    /// That agent no longer waits and is no longer just done: what was
+    /// shown about it can go.
+    Settled { session: String, pane: String },
     /// Someone at the computer asks the phone's owner to approve
     /// something (`reason`). Answer with [`SshSession::share_approved`].
     Approve { id: String, reason: String, challenge: String },
@@ -193,6 +199,17 @@ pub fn share_is_link(text: String) -> bool {
     proto::clean_url(&text).is_ok()
 }
 
+/// News of an agent as the app takes it: where the agent is and what it
+/// asks are checked, and left out when they are not in order, so that
+/// the owner still hears of it but nothing can be answered blindly.
+fn agent_event(agent: multiplex_proto::agents::Agent) -> ShareEvent {
+    let waiting = agent.status == multiplex_proto::agents::AgentStatus::Blocked;
+    let place = multiplex_proto::agents::clean_session_name(&agent.session).ok().zip(multiplex_proto::herd::clean_pane_id(&agent.id).ok());
+    let asked = place.as_ref().filter(|_| waiting).and_then(|_| tidy_asked(&agent.question, &agent.choices, &agent.mark));
+    let (session, pane) = place.unwrap_or_default();
+    ShareEvent::Agent { name: agent.name, title: agent.title, workspace: agent.workspace, waiting, session, pane, asked }
+}
+
 /// What the computer has for this phone, as it comes.
 #[frb(opaque)]
 pub struct ShareLink {
@@ -219,10 +236,11 @@ impl ShareLink {
                 (Ok(to), Ok(text)) => sink.add(ShareEvent::Sms { to, text }).is_ok(),
                 _ => true,
             },
-            Ok(proto::LinkEvent::Agent(agent)) => {
-                let waiting = agent.status == multiplex_proto::agents::AgentStatus::Blocked;
-                sink.add(ShareEvent::Agent { name: agent.name, title: agent.title, workspace: agent.workspace, waiting }).is_ok()
-            }
+            Ok(proto::LinkEvent::Agent(agent)) => sink.add(agent_event(agent)).is_ok(),
+            Ok(proto::LinkEvent::Settled { session, pane }) => match (multiplex_proto::agents::clean_session_name(&session), multiplex_proto::herd::clean_pane_id(&pane)) {
+                (Ok(session), Ok(pane)) => sink.add(ShareEvent::Settled { session, pane }).is_ok(),
+                _ => true,
+            },
             // The reason is shown to the owner: one tidy line.
             Ok(proto::LinkEvent::Approve { id, reason, challenge }) => match (proto::clean_id(&id), proto::clean_reason(&reason)) {
                 (Ok(id), Ok(reason)) => sink.add(ShareEvent::Approve { id, reason, challenge }).is_ok(),

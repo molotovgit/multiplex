@@ -36,11 +36,25 @@ class _Herd implements HerdLink {
     return (told.stream, () => stopped++);
   }
 
+  /// What the agent asks by choice, as the computer reads it off the
+  /// screen; and why an answer is refused, when it is.
+  HerdAsked? asks;
+  Object? answerRefused;
+
   @override
-  Future<String> read(String session, String pane, int lines) async {
+  Future<HerdText> read(String session, String pane, int lines) async {
     asked.add('read $session $pane');
-    return output;
+    return HerdText(text: output, asked: asks);
   }
+
+  @override
+  Future<void> answerChoice(String session, String pane, String mark, String choice) async {
+    asked.add('answer $session $pane [$mark]: choice $choice');
+    if (answerRefused != null) throw answerRefused!;
+  }
+
+  @override
+  Future<void> answerText(String session, String pane, String mark, String text) async => asked.add('answer $session $pane [$mark]: $text');
 
   @override
   Future<void> prompt(String session, String pane, String text) async => asked.add('prompt $session $pane: $text');
@@ -760,6 +774,72 @@ void main() {
     herd.asked.clear();
     await tester.pump(const Duration(seconds: 6));
     expect(herd.asked, isEmpty, reason: 'a waiting agent writes nothing more');
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets("an agent's choices are buttons in its own words; an answer goes to that question only", (tester) async {
+    const asks = HerdAsked(
+      question: 'Bash command\n\nmake test\n\nDo you want to proceed?',
+      choices: [
+        HerdChoice(key: '1', label: 'Yes'),
+        HerdChoice(key: '2', label: "Yes, and don't ask again for make commands"),
+        HerdChoice(key: '3', label: 'No, and tell Claude what to do differently'),
+      ],
+      mark: '0123456789abcdef',
+    );
+    final herd = _Herd(_state([_agent('w1:p3', AgentStatus.blocked, 'Run the tests')]))
+      ..output = 'Do you want to proceed?\n❯ 1. Yes'
+      ..asks = asks;
+    await open(tester, herd);
+    await tester.tap(find.text('Run the tests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Yes'), findsOneWidget);
+    expect(find.text("Yes, and don't ask again for make commands"), findsOneWidget);
+    expect(find.text('No, and tell Claude what to do differently'), findsOneWidget);
+    expect(find.byTooltip('Press 1'), findsOneWidget, reason: 'the keys are still there, for what is not a choice');
+
+    // One tap: sent with the mark of the question it was shown for. The
+    // buttons go at once (a second tap must not answer what comes next),
+    // and what the agent shows now is read.
+    herd.asked.clear();
+    herd
+      ..asks = null
+      ..output = 'Running make test…';
+    await tester.tap(find.text('No, and tell Claude what to do differently'));
+    await tester.pump();
+    expect(find.text('Yes'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(herd.asked, ['answer default w1:p3 [0123456789abcdef]: choice 3', 'read default w1:p3']);
+    expect(find.text('Running make test…'), findsOneWidget);
+
+    // It asks something else by now (it was answered at the computer):
+    // the computer sends nothing and says so; the new question shows.
+    const next = HerdAsked(
+      question: 'Edit file\n\nsrc/main.rs',
+      choices: [
+        HerdChoice(key: '1', label: 'Yes'),
+        HerdChoice(key: '2', label: 'No'),
+      ],
+      mark: 'fedcba9876543210',
+    );
+    herd.asks = asks;
+    await tester.tap(find.byTooltip('Read again'));
+    await tester.pump();
+    await tester.pump();
+    herd.asked.clear();
+    herd
+      ..answerRefused = Exception('That is no longer what it asks. Nothing was sent.')
+      ..asks = next;
+    await tester.tap(find.text('Yes'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(herd.asked, ['answer default w1:p3 [0123456789abcdef]: choice 1', 'read default w1:p3']);
+    expect(find.text('That is no longer what it asks. Nothing was sent.'), findsOneWidget, reason: 'it stays, though the screen was read again since');
+    expect(find.text('No'), findsOneWidget, reason: 'the choices of what it asks now');
+    expect(find.text("Yes, and don't ask again for make commands"), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 3));
   });

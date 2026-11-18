@@ -13,6 +13,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 use crate::agents::{clean_session_name, AgentStatus};
+use crate::asked::{clean_mark, Reply};
 use crate::share::SHARE_COMMAND;
 use crate::ProtoError;
 
@@ -261,6 +262,10 @@ pub enum HerdAction {
     Start { session: String, pane: String, kind: String },
     ClosePane { session: String, pane: String },
     CloseTab { session: String, tab: String },
+    /// Answer what an agent asked, if it still asks it: `mark` is the
+    /// mark of the question the answer was given to (empty when it was
+    /// not a choice). See [`crate::asked::may_answer`].
+    Answer { session: String, pane: String, mark: String, with: Reply },
 }
 
 fn lines(text: &str) -> Result<u32, ProtoError> {
@@ -316,6 +321,15 @@ impl HerdAction {
             HerdAction::Start { session, pane, kind } => vec!["start".to_owned(), session.clone(), pane.clone(), kind.clone()],
             HerdAction::ClosePane { session, pane } => vec!["close-pane".to_owned(), session.clone(), pane.clone()],
             HerdAction::CloseTab { session, tab } => vec!["close-tab".to_owned(), session.clone(), tab.clone()],
+            HerdAction::Answer { session, pane, mark, with } => {
+                // A dash stands for "it was not a choice": no word is empty.
+                let mut args = vec!["answer".to_owned(), session.clone(), pane.clone(), if mark.is_empty() { "-".to_owned() } else { mark.clone() }];
+                match with {
+                    Reply::Choice(key) => args.extend(["choice".to_owned(), key.clone()]),
+                    Reply::Text(text) => args.extend(["text".to_owned(), packed(text)]),
+                }
+                args
+            }
         }
     }
 
@@ -336,6 +350,16 @@ impl HerdAction {
             ["start", session, pane, kind] => HerdAction::Start { session: clean_session_name(session)?, pane: clean_pane_id(pane)?, kind: clean_kind(kind)? },
             ["close-pane", session, pane] => HerdAction::ClosePane { session: clean_session_name(session)?, pane: clean_pane_id(pane)? },
             ["close-tab", session, tab] => HerdAction::CloseTab { session: clean_session_name(session)?, tab: clean_tab_id(tab)? },
+            ["answer", session, pane, mark, how, what] => HerdAction::Answer {
+                session: clean_session_name(session)?,
+                pane: clean_pane_id(pane)?,
+                mark: clean_mark(if *mark == "-" { "" } else { mark })?,
+                with: match *how {
+                    "choice" if what.len() == 1 && what.as_bytes()[0].is_ascii_digit() => Reply::Choice((*what).to_owned()),
+                    "text" => Reply::Text(unpacked(what)?),
+                    _ => return Err(ProtoError::Invalid("an agent is answered with a choice or with text")),
+                },
+            },
             _ => return Err(ProtoError::Invalid("this is not something the herd can be asked to do")),
         })
     }
@@ -456,6 +480,9 @@ pub fn parse_places(line: &str) -> Result<Vec<Place>, ProtoError> {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
 pub struct PaneText {
     pub text: String,
+    /// What the agent in it asks by choice, when it waits on one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub asked: Option<crate::asked::Asked>,
 }
 
 pub fn parse_text(line: &str) -> Result<PaneText, ProtoError> {
@@ -600,6 +627,17 @@ mod tests {
         assert!(HerdAction::parse(&["prompt", "default", "w1:p1", &URL_SAFE_NO_PAD.encode([0xff, 0xfe])]).is_err());
         // A session or pane the phone was handed that is not one: refused before any command line exists.
         assert!(HerdAction::Keys { session: "a b".into(), pane: "w1:p1".into(), keys: vec!["esc".into()] }.command_line().is_err());
+        // An answer travels with the mark of the question it was given to.
+        let yes = HerdAction::Answer { session: "night".into(), pane: "w1:p4".into(), mark: "0123456789abcdef".into(), with: Reply::Choice("2".into()) };
+        assert!(yes.command_line().unwrap().ends_with(" herd do 'answer' 'night' 'w1:p4' '0123456789abcdef' 'choice' '2'"));
+        let words = HerdAction::Answer { session: "night".into(), pane: "w1:p4".into(), mark: String::new(), with: Reply::Text("it's fine; go on".into()) };
+        let line = words.command_line().unwrap();
+        assert!(line.contains(" herd do 'answer' 'night' 'w1:p4' '-' 'text' '") && !line.contains("fine"), "{line}");
+        let args = words.to_args();
+        assert_eq!(HerdAction::parse(&args.iter().map(String::as_str).collect::<Vec<_>>()).unwrap(), words);
+        for bad in [["answer", "night", "w1:p4", "0123", "choice", "2"], ["answer", "night", "w1:p4", "-", "choice", "12"], ["answer", "night", "w1:p4", "-", "choice", "x"], ["answer", "night", "w1:p4", "-", "shout", "2"], ["answer", "night", "w1:p4", "-", "text", "!!"]] {
+            assert!(HerdAction::parse(&bad).is_err(), "{bad:?}");
+        }
         assert!(HerdAction::Read { session: "default".into(), pane: "w1:p1; reboot".into(), lines: 10 }.command_line().is_err());
     }
 
@@ -679,7 +717,7 @@ mod tests {
 
     #[test]
     fn a_panes_text_is_one_line_of_json() {
-        let text = PaneText { text: "line one\nline two \u{1b}[1mbold\u{1b}[0m".into() };
+        let text = PaneText { text: "line one\nline two \u{1b}[1mbold\u{1b}[0m".into(), asked: None };
         let line = serde_json::to_string(&text).unwrap();
         assert!(!line.contains('\n'));
         assert_eq!(parse_text(&line).unwrap(), text);

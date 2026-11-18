@@ -96,6 +96,10 @@ pub enum LinkEvent {
     Sms { to: String, text: String },
     /// A coding agent on the computer now waits for an answer, or is done.
     Agent(crate::agents::Agent),
+    /// That agent no longer waits and is no longer just done (it was
+    /// answered at the computer, went on, or its pane closed): what the
+    /// phone showed about it can go.
+    Settled { session: String, pane: String },
     /// Someone at the computer asks the phone's owner to approve
     /// something. The phone answers by signing [`approval_message`] with
     /// its own key, which nothing on the computer can do in its place.

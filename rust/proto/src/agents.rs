@@ -35,6 +35,15 @@ pub struct Agent {
     pub folder: String,
     /// The herdr session, for attaching a terminal to it.
     pub session: String,
+    /// When it waits on a choice: what it asks, the choices, and the mark
+    /// an answer carries back (see [`crate::asked`]). Only in news sent
+    /// over the link.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub question: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub choices: Vec<crate::asked::Choice>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub mark: String,
 }
 
 /// Prints the agents as one line of JSON.
@@ -68,9 +77,10 @@ mod tests {
 
     #[test]
     fn agents_read_back_and_an_unknown_status_is_just_unknown() {
-        let agent = Agent { id: "p1".into(), name: "claude".into(), status: AgentStatus::Blocked, title: "Fix the tests".into(), workspace: "api".into(), folder: "api".into(), session: "default".into() };
+        let agent = Agent { id: "p1".into(), name: "claude".into(), status: AgentStatus::Blocked, title: "Fix the tests".into(), workspace: "api".into(), folder: "api".into(), session: "default".into(), ..Agent::default() };
         let text = serde_json::to_string(&vec![agent.clone()]).unwrap();
         assert!(text.contains(r#""status":"blocked""#));
+        assert!(!text.contains("question") && !text.contains("choices") && !text.contains("mark"), "nothing asked: nothing said about it");
         assert_eq!(parse_agents(&text).unwrap(), vec![agent]);
         let odd = r#"[{"id":"p","name":"x","status":"dreaming","title":"","workspace":"","folder":"","session":"default"}]"#;
         assert_eq!(parse_agents(odd).unwrap()[0].status, AgentStatus::Unknown);

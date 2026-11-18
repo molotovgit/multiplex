@@ -29,6 +29,17 @@ impl OwnSession {
         String::from_utf8_lossy(&done.stdout).into_owned()
     }
 
+    /// Whether it did as asked, and everything it said (its refusal too).
+    fn asked(&self, args: &[&str]) -> (bool, String) {
+        let done = Command::new(env!("CARGO_BIN_EXE_multiplex")).env("MULTIPLEX_HERD_SESSION", &self.name).args(args).output().expect("multiplex runs");
+        (done.status.success(), format!("{}{}", String::from_utf8_lossy(&done.stdout), String::from_utf8_lossy(&done.stderr)))
+    }
+
+    /// What the pane shows now.
+    fn screen(&self, pane: &str) -> String {
+        Command::new("herdr").args(["--session", &self.name, "pane", "read", pane, "--source", "visible"]).output().map(|o| String::from_utf8_lossy(&o.stdout).into_owned()).unwrap_or_default()
+    }
+
     fn multiplex(&self, args: &[&str]) -> (bool, String) {
         let done = Command::new(env!("CARGO_BIN_EXE_multiplex")).env("MULTIPLEX_HERD_SESSION", &self.name).args(args).output().expect("multiplex runs");
         (done.status.success(), String::from_utf8_lossy(&done.stdout).into_owned())
@@ -67,13 +78,18 @@ fn status_of(herd: &Herd, pane: &str) -> Option<AgentStatus> {
     herd.sessions.iter().flat_map(|s| &s.workspaces).flat_map(|w| &w.tabs).flat_map(|t| &t.panes).find(|p| p.id == pane)?.agent.as_ref().map(|a| a.status)
 }
 
-#[test]
-fn the_herd_is_told_as_it_changes_and_does_as_asked() {
-    if std::env::var("MPX_HERD_LIVE").as_deref() != Ok("1") {
+fn live() -> bool {
+    let live = std::env::var("MPX_HERD_LIVE").as_deref() == Ok("1");
+    if !live {
         eprintln!("skipped: set MPX_HERD_LIVE=1 to run against a herdr session of the test's own");
-        return;
     }
-    let name = format!("mpx-live-{}", std::process::id());
+    live
+}
+
+/// A herdr session of the test's own, with one workspace in /tmp, and
+/// the lines of `multiplex herd <following>` about it as they come.
+fn own_session(tag: &str, following: &str) -> (OwnSession, String, Receiver<String>) {
+    let name = format!("mpx-{tag}-{}", std::process::id());
     let server = Command::new("herdr").args(["--session", &name, "server"]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().expect("herdr is installed");
     let mut own = OwnSession { name: name.clone(), server, watch: None };
     let started = Instant::now();
@@ -84,7 +100,7 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
     let created: serde_json::Value = serde_json::from_str(&own.herdr(&["workspace", "create", "--cwd", "/tmp", "--label", "live", "--no-focus"])).expect("herdr answers in JSON");
     let pane = created["result"]["root_pane"]["pane_id"].as_str().expect("a pane id").to_owned();
 
-    let mut watch = Command::new(env!("CARGO_BIN_EXE_multiplex")).env("MULTIPLEX_HERD_SESSION", &name).args(["herd", "watch"]).stdout(Stdio::piped()).spawn().expect("multiplex runs");
+    let mut watch = Command::new(env!("CARGO_BIN_EXE_multiplex")).env("MULTIPLEX_HERD_SESSION", &name).args(["herd", following]).stdout(Stdio::piped()).spawn().expect("multiplex runs");
     let out = watch.stdout.take().unwrap();
     own.watch = Some(watch);
     let (tell, lines) = channel::<String>();
@@ -95,6 +111,128 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
             }
         }
     });
+    (own, pane, lines)
+}
+
+/// A stand-in for an agent that asks by choice, as Claude and Codex do:
+/// the pointer moves with the arrows and Enter takes what it is on. A
+/// number key does nothing here, as in some of them.
+const ASKS: &str = r#"#!/bin/bash
+choices=("Yes" "Yes, and don't ask again for make" "No, and tell me what to do differently (esc)")
+at=0
+draw() {
+  printf '\033[2J\033[H'
+  printf ' Bash command\n\n   make test\n   Run the test suite\n\n Do you want to proceed?\n'
+  for i in "${!choices[@]}"; do
+    if [ "$i" = "$at" ]; then printf ' ❯ %d. %s\n' $((i+1)) "${choices[$i]}"; else printf '   %d. %s\n' $((i+1)) "${choices[$i]}"; fi
+  done
+}
+draw
+while IFS= read -rsn1 key; do
+  case "$key" in
+    $'\033')
+      read -rsn2 -t 0.05 rest
+      case "$rest" in
+        '[A'|'OA') [ $at -gt 0 ] && at=$((at-1));;
+        '[B'|'OB') [ $at -lt 2 ] && at=$((at+1));;
+        '') printf '\033[2J\033[Hchosen: esc\n'; exit;;
+      esac
+      draw;;
+    '') printf '\033[2J\033[Hchosen: %d\n' $((at+1)); exit;;
+  esac
+done
+"#;
+
+/// The next thing `news` says, within `limit`.
+fn next_news(lines: &Receiver<String>, limit: Duration, what: &str) -> multiplex_proto::share::LinkEvent {
+    let line = lines.recv_timeout(limit).unwrap_or_else(|_| panic!("news never said: {what}"));
+    multiplex_proto::share::parse_link_event(&line).unwrap_or_else(|_| panic!("not a line of the link: {line}"))
+}
+
+#[test]
+fn an_agent_that_asks_is_told_with_its_choices_and_answered_only_while_it_asks() {
+    use multiplex_proto::share::LinkEvent;
+    if !live() {
+        return;
+    }
+    let (own, pane, news) = own_session("asks", "news");
+    let name = own.name.clone();
+    let report = |state: &str| own.herdr(&["pane", "report-agent", &pane, "--source", "multiplex-test", "--agent", "claude", "--state", state]);
+    let shows = |what: &str| {
+        let asked = Instant::now();
+        while !own.screen(&pane).contains(what) {
+            assert!(asked.elapsed() < Duration::from_secs(5), "the pane never showed {what:?}: {}", own.screen(&pane));
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    };
+    let script = std::env::temp_dir().join(format!("mpx-asks-{}.sh", std::process::id()));
+    std::fs::write(&script, ASKS).unwrap();
+
+    // The agent works, then asks. (What is there when the listening
+    // begins is not news, so it is given a moment to be seen working.)
+    report("working");
+    own.herdr(&["pane", "run", &pane, &format!("bash {}", script.display())]);
+    shows("❯ 1. Yes");
+    std::thread::sleep(Duration::from_millis(700));
+    let asked_at = Instant::now();
+    report("blocked");
+    let LinkEvent::Agent(agent) = next_news(&news, Duration::from_secs(3), "it waits") else { panic!("an agent was expected") };
+    assert!(asked_at.elapsed() < Duration::from_millis(1500), "told after {:?}", asked_at.elapsed());
+    assert_eq!((agent.session.as_str(), agent.id.as_str(), agent.status), (name.as_str(), pane.as_str(), AgentStatus::Blocked));
+    assert_eq!(agent.question, "Bash command\n\nmake test\nRun the test suite\n\nDo you want to proceed?");
+    assert_eq!(agent.choices.iter().map(|c| (c.key.as_str(), c.label.as_str())).collect::<Vec<_>>(), [("1", "Yes"), ("2", "Yes, and don't ask again for make"), ("3", "No, and tell me what to do differently (esc)")]);
+    assert_eq!(agent.mark.len(), 16);
+
+    // An answer to another question, or words where a choice is wanted,
+    // is not sent: the pointer has not moved and nothing was taken.
+    let answer = |mark: &str, how: &str, what: &str| own.asked(&["herd", "do", "answer", &name, &pane, mark, how, what]);
+    let (ok, said) = answer("0123456789abcdef", "choice", "1");
+    assert!(!ok && said.contains("no longer what it asks"), "{said}");
+    let (ok, said) = answer(&agent.mark, "text", &URL_SAFE_NO_PAD.encode("yes please"));
+    assert!(!ok && said.contains("one of its choices"), "{said}");
+    let (ok, said) = answer(&agent.mark, "choice", "4");
+    assert!(!ok && said.contains("not one of its choices"), "{said}");
+    assert!(own.screen(&pane).contains("❯ 1. Yes"));
+
+    // The third choice, for the question it was shown for: taken.
+    let (ok, said) = answer(&agent.mark, "choice", "3");
+    assert!(ok, "{said}");
+    shows("chosen: 3");
+    // Pressed once more (a second tap, a notification left over): the
+    // question is gone, so nothing is sent.
+    let (ok, said) = answer(&agent.mark, "choice", "3");
+    assert!(!ok && said.contains("no longer what it asks"), "{said}");
+
+    // It goes on: the phone is told that it no longer waits.
+    report("working");
+    assert_eq!(next_news(&news, Duration::from_secs(3), "it no longer waits"), LinkEvent::Settled { session: name.clone(), pane: pane.clone() });
+    let (ok, said) = answer("-", "text", &URL_SAFE_NO_PAD.encode("echo too-soon"));
+    assert!(!ok && said.contains("working again"), "{said}");
+
+    // It stops and sits at its prompt: words for it arrive. (herdr
+    // itself decides when a stop counts as "done", so that news is
+    // covered by the test of `news` on its own.)
+    report("idle");
+    let (ok, said) = answer("-", "text", &URL_SAFE_NO_PAD.encode("echo answered-$((40+2))"));
+    assert!(ok, "{said}");
+    shows("answered-42");
+    assert!(!own.screen(&pane).contains("too-soon"));
+    // Its pane closes while it waits: that is told as well.
+    report("blocked");
+    let LinkEvent::Agent(again) = next_news(&news, Duration::from_secs(3), "it waits again") else { panic!("an agent was expected") };
+    assert_eq!((again.status, again.choices.len(), again.mark.as_str()), (AgentStatus::Blocked, 0, ""), "it asks in words now: no choices are on its screen");
+    own.herdr(&["pane", "close", &pane]);
+    assert_eq!(next_news(&news, Duration::from_secs(3), "its pane closed"), LinkEvent::Settled { session: name.clone(), pane: pane.clone() });
+    let _ = std::fs::remove_file(&script);
+}
+
+#[test]
+fn the_herd_is_told_as_it_changes_and_does_as_asked() {
+    if !live() {
+        return;
+    }
+    let (own, pane, lines) = own_session("live", "watch");
+    let name = own.name.clone();
 
     // At once: the session with its one workspace, tab and plain terminal.
     let first = next(&lines, Duration::from_secs(5), "the session", |herd| herd.sessions.len() == 1);

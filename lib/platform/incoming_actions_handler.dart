@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../app/app_scope.dart';
+import '../data/resume_place.dart';
+import '../ui/computers/agents_screen.dart';
 import '../ui/common/widgets.dart';
 import '../ui/hosts/host_connector.dart';
 import '../ui/share/share_upload_screen.dart';
@@ -62,6 +64,17 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
         await ShareUploadScreen.open(context, files, text: text, sendTo: targetHostId);
       case ShareFailedAction():
         Toast.show(context, 'Multiplex could not read what was shared. Try sharing it from another app.');
+      case OpenAgentAction(:final place):
+        final host = AppScope.store(context).host(place.hostId);
+        if (host == null || !host.computer) {
+          Toast.show(context, 'That computer is no longer paired with this phone.');
+          return;
+        }
+        await AgentsScreen.show(
+          context,
+          host,
+          place: ResumePlace(hostId: host.id, session: place.session, pane: place.pane, title: ''),
+        );
     }
   }
 
