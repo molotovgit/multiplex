@@ -283,6 +283,24 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   final Map<String, DateTime> _tried = {};
   final Set<String> _connecting = {};
 
+  /// How often in a row each computer was out of reach, and the next try
+  /// that is already set for it.
+  final Map<String, int> _failed = {};
+  final Map<String, Timer> _again = {};
+
+  /// How long to leave a computer alone before trying it again, after it
+  /// was out of reach [failures] times in a row: soon at first, then less
+  /// and less often, never longer than [longest]. Right after the app
+  /// starts the first try often fails only because Tailscale needs a few
+  /// more seconds (seen on mobile data: the link came a minute late when
+  /// every retry waited the full time). With no failure the full time
+  /// applies: a connection that has just ended is not dialled at once.
+  static Duration waitAfter(int failures, Duration longest) {
+    if (failures <= 0) return longest;
+    final soon = Duration(seconds: 3 * (1 << (failures - 1).clamp(0, 10)));
+    return soon < longest ? soon : longest;
+  }
+
   /// Computers whose connection was closed on purpose: left alone until
   /// the app is next brought to the front.
   final Set<String> _leftAlone = {};
@@ -300,14 +318,22 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
       if (_leftAlone.contains(host.id) || _connecting.contains(host.id)) continue;
       if (_sessions.sessions.any((s) => s.host.id == host.id)) continue;
       final last = _tried[host.id];
-      if (last != null && now.difference(last) < _retryAfter) continue;
+      if (last != null && now.difference(last) < waitAfter(_failed[host.id] ?? 0, _retryAfter)) continue;
       _tried[host.id] = now;
       _connecting.add(host.id);
       final connect = _connect ?? (Host h) => _sessions.connect(h, const SilentPrompter()).then((_) {});
       unawaited(
         connect(host)
+            .then((_) {
+              _failed.remove(host.id);
+            })
             .catchError((Object _) {
-              // Out of reach for now; tried again later.
+              // Out of reach for now: tried again by itself, soon at
+              // first and then less often.
+              final failures = (_failed[host.id] ?? 0) + 1;
+              _failed[host.id] = failures;
+              _again[host.id]?.cancel();
+              _again[host.id] = Timer(waitAfter(failures, _retryAfter) + const Duration(milliseconds: 10), _keepConnected);
             })
             .whenComplete(() => _connecting.remove(host.id)),
       );
@@ -516,6 +542,9 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     _store.removeListener(_keepConnected);
     _firstTry?.cancel();
     _retry?.cancel();
+    for (final timer in _again.values) {
+      timer.cancel();
+    }
     WidgetsBinding.instance.removeObserver(this);
     _phoneNotices?.cancel();
     _phoneChanges?.cancel();

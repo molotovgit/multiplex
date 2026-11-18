@@ -660,23 +660,33 @@ void main() {
   group('staying connected', () {
     test('a paired computer is linked by itself; one out of reach is tried again later, not at once', () async {
       // The first try comes two seconds after start.
-      await Future<void>.delayed(const Duration(milliseconds: 2100));
+      await Future<void>.delayed(const Duration(milliseconds: 2050));
       expect(dialled, ['Desk']);
       expect(computer.linkedAs, isNull, reason: 'it was out of reach');
       // A change in the saved data looks again, but not before the wait is over.
       store.saveHost(const Host(id: 'x', label: 'Web server', address: 'web'));
       await Future<void>.delayed(const Duration(milliseconds: 20));
       expect(dialled, ['Desk']);
+      // Once the wait is over it is tried again by itself: nothing has to
+      // happen on the phone for that.
       reachable = true;
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      store.saveHost(const Host(id: 'y', label: 'Another server', address: 'other'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
       expect(dialled, ['Desk', 'Desk']);
       expect(computer.linkedAs, 'My phone', reason: 'connected and linked with nothing tapped');
       // Connected: nothing more to do, and plain servers are never dialled.
       store.saveHost(const Host(id: 'z', label: 'Third', address: 'third'));
       await Future<void>.delayed(const Duration(milliseconds: 200));
       expect(dialled, ['Desk', 'Desk']);
+    });
+
+    test('a computer out of reach is tried again soon at first, then less and less often', () {
+      const longest = Duration(seconds: 45);
+      expect([for (var failures = 1; failures <= 6; failures++) ComputerLinks.waitAfter(failures, longest).inSeconds], [3, 6, 12, 24, 45, 45]);
+      // Never longer than the longest wait, however short that is, or however often it failed.
+      expect(ComputerLinks.waitAfter(1, const Duration(seconds: 1)), const Duration(seconds: 1));
+      expect(ComputerLinks.waitAfter(500, longest), longest);
+      // One that was reached and then went is not dialled at once.
+      expect(ComputerLinks.waitAfter(0, longest), longest);
     });
 
     test('switched off, or after the owner closed the connection, it is left alone until they come back', () async {

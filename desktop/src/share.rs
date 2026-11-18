@@ -200,7 +200,7 @@ pub fn send(args: &[&str]) -> Result<()> {
     for path in paths {
         for phone in &phones {
             let w = outbox.add(phone, Path::new(path))?;
-            println!("{} ({}) is on its way to {phone}. It arrives as soon as the phone is connected.", w.name, bytes(w.size));
+            println!("{}", sent_line(&w.name, &bytes(w.size), phone, linked(phone)));
         }
     }
     Ok(())
@@ -647,6 +647,16 @@ pub(crate) fn ask_and_wait(phone: &str, event: impl FnOnce(&str) -> LinkEvent) -
     ask_and_wait_for(phone, APPROVE_SECONDS, event)
 }
 
+/// What `multiplex send` says about one file: on its way now to a phone
+/// that is connected, kept for one that is not.
+fn sent_line(name: &str, size: &str, phone: &str, connected: bool) -> String {
+    if connected {
+        format!("{name} ({size}) is on its way to {phone}.")
+    } else {
+        format!("{name} ({size}) is kept for {phone}: it is not connected now, and gets it as soon as it is.")
+    }
+}
+
 /// Removes what is left of requests nobody waits for any more. A request
 /// cleans up after itself, but not when its command is killed while it
 /// waits (a `sudo` given up on with Ctrl+C, say): its marker would stay,
@@ -848,6 +858,13 @@ pub fn link(phone: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sending_says_whether_the_phone_is_there_to_take_it() {
+        assert_eq!(sent_line("notes.txt", "49 bytes", "Sam's phone", true), "notes.txt (49 bytes) is on its way to Sam's phone.");
+        let kept = sent_line("notes.txt", "49 bytes", "Sam's phone", false);
+        assert!(kept.contains("kept for Sam's phone") && kept.contains("not connected now") && kept.contains("as soon as it is"), "{kept}");
+    }
 
     #[test]
     fn requests_nobody_waits_for_are_swept_and_fresh_ones_stay() {
