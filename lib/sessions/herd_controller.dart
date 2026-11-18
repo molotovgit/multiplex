@@ -146,6 +146,18 @@ class HerdController extends ChangeNotifier {
     }
   }
 
+  /// Stops listening without forgetting what is known; [start] listens
+  /// again. For while nobody looks (the app is out of sight).
+  void pause() {
+    if (_disposed) return;
+    _retry?.cancel();
+    final states = _states;
+    _states = null;
+    unawaited(states?.cancel());
+    _stopWatch?.call();
+    _stopWatch = null;
+  }
+
   void _again() {
     if (_disposed) return;
     _retry?.cancel();

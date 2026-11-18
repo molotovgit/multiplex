@@ -5,6 +5,7 @@ import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../../data/resume_place.dart';
 import '../computers/agents_screen.dart';
+import '../../sessions/herd_hub.dart';
 import '../common/widgets.dart';
 import '../update/update_card.dart';
 import 'arranged_host_list.dart';
@@ -57,7 +58,7 @@ class _HostsScreenState extends State<HostsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => _openEditor(), icon: const Icon(Icons.add), label: const Text('New host')),
       body: ListenableBuilder(
-        listenable: Listenable.merge([store, sessions]),
+        listenable: Listenable.merge([store, sessions, ?HerdHub.app]),
         builder: (context, _) {
           final hosts = store.hosts;
           if (hosts.isEmpty && _query.isEmpty) {
@@ -72,6 +73,7 @@ class _HostsScreenState extends State<HostsScreen> {
           final header = [
             const UpdateBanner(),
             _SearchField(controller: _search, onChanged: _onQuery),
+            ..._agents(context),
             ..._continue(context, store.settings.resume, computers),
             if (computers.isNotEmpty) ...[
               const SectionHeader('Computers'),
@@ -99,6 +101,41 @@ class _HostsScreenState extends State<HostsScreen> {
   }
 
   void _onQuery(String value) => setState(() => _query = value.trim());
+
+  /// The agents that want the owner, on whichever connected computer:
+  /// those that wait for an answer first, then those that finished. One
+  /// tap goes from Home to the agent itself.
+  List<Widget> _agents(BuildContext context) {
+    final wanting = HerdHub.app?.wanting ?? const <HubAgent>[];
+    if (wanting.isEmpty) return const [];
+    final colors = AppColorsTheme.of(context);
+    // Home is for what comes first; the rest is one tap further.
+    const most = 5;
+    return [
+      const SectionHeader('Agents'),
+      for (final (:host, :agent) in wanting.take(most))
+        ListTile(
+          key: ValueKey('agent-${host.id}-${agent.session}-${agent.pane}'),
+          leading: Icon(agentLook(colors, agent.status).icon, color: agentLook(colors, agent.status).color),
+          title: Text(agent.title.isEmpty ? agent.name : agent.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text('${agentLook(colors, agent.status).label} · ${agent.name} · ${host.title}', maxLines: 1, overflow: TextOverflow.ellipsis),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => AgentsScreen.show(
+            context,
+            host,
+            place: ResumePlace(hostId: host.id, session: agent.session, pane: agent.pane, title: agent.title, agent: agent.name),
+          ),
+        ),
+      if (wanting.length > most)
+        ListTile(
+          key: const ValueKey('agents-more'),
+          leading: const SizedBox(width: 24),
+          title: Text('${wanting.length - most} more'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => AgentsScreen.show(context, wanting[most].host),
+        ),
+    ];
+  }
 
   /// Where the owner last was with an agent or a terminal, one tap away:
   /// nothing when there is no such place, or its computer is gone.

@@ -10,6 +10,7 @@ import 'platform/home_widget_sync.dart';
 import 'platform/share_targets_sync.dart';
 import 'sessions/app_life.dart';
 import 'sessions/computer_links.dart';
+import 'sessions/herd_hub.dart';
 import 'sessions/phone_speaker.dart';
 import 'sessions/screen_cast.dart';
 import 'sessions/background_keeper.dart';
@@ -40,6 +41,9 @@ Future<void> main() async {
   // Links each connected, paired computer: files it sends arrive, and the
   // clipboards follow each other.
   ComputerLinks.app = ComputerLinks(sessions, store);
+  // While the app is in front: the agents of every connected computer,
+  // so Home can say who needs the owner.
+  HerdHub.app = HerdHub(sessions);
   // Without its screen (swiped away, or started with the phone) the app
   // keeps those links and closes the rest.
   AppLife(

@@ -1,3 +1,10 @@
+import 'dart:async';
+
+import 'package:multiplex/sessions/herd_controller.dart';
+import 'package:multiplex/sessions/herd_hub.dart';
+import 'package:multiplex/src/rust/api/agents.dart';
+import 'package:multiplex/src/rust/api/herd_types.dart';
+import 'package:multiplex/src/rust/api/ssh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multiplex/app/app_scope.dart';
@@ -218,6 +225,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   });
 
+  testWidgets('Home says which agents want the owner, on whichever connected computer', (tester) async {
+    const laptop = Host(id: 'l', label: 'Laptop', address: 'laptop', computer: true);
+    store
+      ..saveHost(_desk)
+      ..saveHost(laptop);
+    HerdAgent agent(String pane, AgentStatus status, String title) =>
+        HerdAgent(session: 'default', workspace: 'api', tab: '1', pane: pane, name: 'Claude', status: status, title: title, folder: 'api');
+    HerdState herd(List<HerdAgent> agents) =>
+        HerdState(available: true, sessions: const [], inbox: agents, waiting: agents.where((a) => a.status == AgentStatus.blocked).length);
+    final herds = {
+      'c': _Herd(herd([agent('w1:p1', AgentStatus.working, 'Refactor'), agent('w1:p2', AgentStatus.done, 'Tests fixed')])),
+      'l': _Herd(herd([agent('w1:p1', AgentStatus.blocked, 'Allow this command?')])),
+    };
+    final connected = _Connected(store);
+    final hub = HerdHub(connected, link: (session) => herds[session.host.id]!);
+    HerdHub.app = hub;
+    addTearDown(() {
+      HerdHub.app = null;
+      hub.dispose();
+      connected.dispose();
+    });
+    await home(tester);
+    expect(find.text('Agents'), findsNothing, reason: 'no computer is connected');
+
+    connected
+      ..open.addAll([LiveSession(id: 's-c', host: _desk, ssh: _Up()), LiveSession(id: 's-l', host: laptop, ssh: _Up())])
+      ..changed();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Agents'), findsOneWidget);
+    // The one that waits first, then the one that finished; the busy one is not Home's business.
+    expect(find.text('Needs you · Claude · Laptop'), findsOneWidget);
+    expect(find.text('Done · Claude · Desk'), findsOneWidget);
+    expect(find.text('Refactor'), findsNothing);
+    expect(tester.getTopLeft(find.text('Allow this command?')).dy, lessThan(tester.getTopLeft(find.text('Tests fixed')).dy));
+    expect(tester.getTopLeft(find.text('Tests fixed')).dy, lessThan(tester.getTopLeft(find.text('Computers')).dy), reason: 'before the computers');
+
+    // It follows the computers as they tell.
+    herds['l']!.tell(herd([]));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Allow this command?'), findsNothing);
+    expect(find.text('Tests fixed'), findsOneWidget);
+    // Many: the first five, and how many more.
+    herds['c']!.tell(herd([for (var i = 1; i <= 8; i++) agent('w1:p$i', AgentStatus.blocked, 'Question $i')]));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text('Question 5'), findsOneWidget);
+    expect(find.text('Question 6'), findsNothing);
+    expect(find.text('3 more'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+  });
+
   testWidgets('removing a computer takes it off Home', (tester) async {
     store.saveHost(_desk);
     await home(tester);
@@ -232,6 +292,49 @@ void main() {
     expect(store.hosts, isEmpty);
     expect(find.text('Pair your computer'), findsOneWidget);
   });
+}
+
+/// A connection that is up and does nothing.
+class _Up implements SshSession {
+  @override
+  bool isConnected() => true;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// Connections made by hand, for what watches them.
+class _Connected extends SessionManager {
+  _Connected(super.store);
+
+  final List<LiveSession> open = [];
+
+  @override
+  List<LiveSession> get sessions => open;
+
+  void changed() => notifyListeners();
+}
+
+/// One computer's herdr, fed by hand.
+class _Herd implements HerdLink {
+  _Herd(this.now);
+
+  HerdState now;
+  final told = StreamController<HerdState>.broadcast();
+
+  void tell(HerdState next) {
+    now = next;
+    told.add(next);
+  }
+
+  @override
+  Future<HerdState> state() async => now;
+
+  @override
+  Future<(Stream<HerdState>, void Function())> watch() async => (told.stream, () {});
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// A phone where Android has not given notification access yet.

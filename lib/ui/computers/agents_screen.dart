@@ -8,6 +8,7 @@ import '../../data/models.dart';
 import '../../data/resume_place.dart';
 import '../../sessions/error_text.dart';
 import '../../sessions/herd_controller.dart';
+import '../../sessions/herd_hub.dart';
 import '../../sessions/session_manager.dart';
 import '../../src/rust/api/agents.dart';
 import '../../src/rust/api/herd.dart';
@@ -40,6 +41,7 @@ class AgentsScreen extends StatefulWidget {
     required this.onOpenHerdr,
     this.openAt,
     this.onVisited,
+    this.herd,
   });
 
   /// The computer's name.
@@ -47,6 +49,11 @@ class AgentsScreen extends StatefulWidget {
 
   /// The computer's herdr. Tests pass a stand-in.
   final HerdLink link;
+
+  /// The computer's herd when it is already being kept (Home keeps one
+  /// per connected computer): used as it is and left running. Without
+  /// one the screen keeps its own over [link] while it is open.
+  final HerdController? herd;
 
   /// Opens a terminal in front of one pane alone, drawn at the phone's
   /// size: an agent's, or a plain terminal's.
@@ -75,6 +82,7 @@ class AgentsScreen extends StatefulWidget {
         builder: (_) => AgentsScreen(
           title: host.title,
           link: SshHerdLink(() => session.ssh),
+          herd: HerdHub.app?.herdOf(host.id),
           onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane), aView: true),
           onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
           openAt: place == null ? null : (session: place.session, pane: place.pane),
@@ -134,7 +142,7 @@ class AgentsScreen extends StatefulWidget {
 }
 
 class _AgentsScreenState extends State<AgentsScreen> {
-  late final HerdController _herd = HerdController(widget.link);
+  late final HerdController _herd = widget.herd ?? HerdController(widget.link);
 
   /// Still to go to: the place asked for, until the herd is known.
   late ({String session, String pane})? _goTo = widget.openAt;
@@ -143,7 +151,12 @@ class _AgentsScreenState extends State<AgentsScreen> {
   void initState() {
     super.initState();
     _herd.addListener(_arrive);
-    unawaited(_herd.start());
+    if (widget.herd == null) {
+      unawaited(_herd.start());
+    } else {
+      // Already known: go where asked without waiting for news.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _arrive());
+    }
   }
 
   /// Once the herd is known, goes where the owner was: its agent, its
@@ -189,7 +202,11 @@ class _AgentsScreenState extends State<AgentsScreen> {
 
   @override
   void dispose() {
-    _herd.dispose();
+    if (widget.herd == null) {
+      _herd.dispose();
+    } else {
+      _herd.removeListener(_arrive);
+    }
     super.dispose();
   }
 
