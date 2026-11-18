@@ -1257,10 +1257,15 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
     // How far up the view is, in lines; 0 is the present.
     let scrolled = Arc::new(AtomicI32::new(0));
     let moved = Arc::new(AtomicBool::new(false));
+    // The program scrolls by itself (it asked for the mouse, as Claude
+    // Code does: its conversation is not in the terminal's history at
+    // all): swipes are then its wheel, at the middle of its screen.
+    let own_wheel = Arc::new(AtomicBool::new(false));
+    let middle = Arc::new(AtomicI32::new(0));
     // What is typed here goes to whichever connection is the current one;
     // swipes move the view instead.
     {
-        let (leaving, typed, scrolled, moved) = (leaving.clone(), typed.clone(), scrolled.clone(), moved.clone());
+        let (leaving, typed, scrolled, moved, own_wheel, middle) = (leaving.clone(), typed.clone(), scrolled.clone(), moved.clone(), own_wheel.clone(), middle.clone());
         std::thread::spawn(move || {
             let mut stdin = std::io::stdin().lock();
             let mut buffer = [0u8; 4096];
@@ -1270,7 +1275,15 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
                     Ok(read) => read,
                 };
                 let (pass, up) = without_swipes(&buffer[..read]);
-                if up != 0 {
+                if up != 0 && own_wheel.load(Ordering::SeqCst) {
+                    if !watch {
+                        let at = middle.load(Ordering::SeqCst);
+                        let report = format!("\x1b[<{};{};{}M", if up > 0 { 64 } else { 65 }, (at >> 16).max(1), (at & 0xffff).max(1));
+                        if let Some(to) = typed.lock().unwrap().as_mut() {
+                            let _ = write_frame(to, b'I', report.repeat(up.unsigned_abs() as usize).as_bytes());
+                        }
+                    }
+                } else if up != 0 {
                     scrolled.store((scrolled.load(Ordering::SeqCst) + up * STEP).max(0), Ordering::SeqCst);
                     moved.store(true, Ordering::SeqCst);
                 }
@@ -1374,6 +1387,8 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
                 }
                 mine = now;
                 let mut parser = screen.lock().unwrap();
+                own_wheel.store(parser.screen().mouse_protocol_mode() != vt100::MouseProtocolMode::None, Ordering::SeqCst);
+                middle.store((i32::from(cols / 2) << 16) | i32::from(rows / 2), Ordering::SeqCst);
                 parser.screen_mut().set_scrollback(usize::MAX);
                 let total = parser.screen().scrollback();
                 parser.screen_mut().set_scrollback(0);
