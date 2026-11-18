@@ -159,6 +159,9 @@ pub fn doctor() -> Vec<Check> {
         },
         check("120 fps", Some(Path::new(&std::env::var("HOME").unwrap_or_default()).join(".local/bin/gliff-server-fast").is_file()), false, "optional: a gliff build without the 60 fps cap at ~/.local/bin/gliff-server-fast"),
     ];
+    if let Some((on, detail)) = crate::sudo::standing_here() {
+        checks.push(check("sudo by phone", Some(on), false, &detail));
+    }
     // Only where there is an Omarchy bar to be in.
     if let Some((ok, detail)) = bar_widget() {
         checks.push(check("Bar widget", ok, false, &detail));

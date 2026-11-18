@@ -254,6 +254,35 @@ pub fn off_script(user: &str, pam_now: &str) -> String {
 }
 
 /// `multiplex setup --sudo [<phone>]` and `--sudo-off`, with `--dry-run`.
+/// How sudo by the phone stands, for `multiplex doctor`: from sudo's PAM
+/// file, the phones named in root's keys file, and whether the command
+/// PAM runs is this version (None: there is no separate copy to compare).
+pub fn standing(pam: &str, phones: &[String], copy_is_this_version: Option<bool>) -> (bool, String) {
+    let on = pam.lines().any(|line| !line.trim_start().starts_with('#') && line.contains("pam_exec.so") && line.trim_end().ends_with("approve --pam"));
+    if !on {
+        return (false, "off: `multiplex setup --sudo` has sudo ask the phone first (a fingerprint there instead of the password)".to_owned());
+    }
+    if phones.is_empty() {
+        return (false, "on, but no phone of yours is named for it: run `multiplex setup --sudo` again".to_owned());
+    }
+    if copy_is_this_version == Some(false) {
+        return (true, format!("on ({}), with an older copy of this command: run `multiplex setup --sudo` again after an update", phones.join(", ")));
+    }
+    (true, format!("on: sudo asks {} first, the password when it does not answer", phones.join(", ")))
+}
+
+/// The same, read from this computer for the user at the keyboard.
+pub fn standing_here() -> Option<(bool, String)> {
+    let pam = std::fs::read_to_string(PAM_FILE).ok()?;
+    let user = std::env::var("USER").ok()?;
+    let phones: Vec<String> = std::fs::read_to_string(KEYS).map(|text| enrolled(&text).into_iter().filter(|e| e.user == user).map(|e| e.phone).collect()).unwrap_or_default();
+    let same = match (std::fs::read(ROOT_COPY), std::env::current_exe().and_then(std::fs::read)) {
+        (Ok(copy), Ok(this)) if pam.contains(ROOT_COPY) => Some(copy == this),
+        _ => None,
+    };
+    Some(standing(&pam, &phones, same))
+}
+
 /// What a dry run ends with: that nothing happened, and the one line that
 /// does it. Said because the plan is a page of shell, and the natural next
 /// step after reading one is to put `sudo` in front, which is the one
@@ -320,6 +349,26 @@ pub fn setup(on: bool, phone: Option<&str>, dry_run: bool) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_doctor_is_told_how_sudo_by_the_phone_stands() {
+        let plain = "#%PAM-1.0\nauth\t\tinclude\t\tsystem-auth\n";
+        let ours = with_line(plain, ROOT_COPY);
+        let phones = vec!["Sam's phone".to_owned()];
+        let (on, said) = standing(plain, &phones, None);
+        assert!(!on && said.starts_with("off") && said.contains("multiplex setup --sudo"), "{said}");
+        let (on, said) = standing(&ours, &phones, Some(true));
+        assert!(on && said.contains("sudo asks Sam's phone first"), "{said}");
+        // The copy PAM runs is from before an update: still on, and said.
+        let (on, said) = standing(&ours, &phones, Some(false));
+        assert!(on && said.contains("older copy") && said.contains("again"), "{said}");
+        // The line is there but nobody is named for this user: not really on.
+        let (on, said) = standing(&ours, &[], Some(true));
+        assert!(!on && said.contains("no phone"), "{said}");
+        // A line that is commented out is off.
+        let commented = ours.replace("auth\t\tsufficient\tpam_exec.so", "#auth\t\tsufficient\tpam_exec.so");
+        assert!(!standing(&commented, &phones, None).0);
+    }
 
     #[test]
     fn a_plan_says_it_was_one_and_how_to_do_it_without_sudo_in_front() {

@@ -246,6 +246,10 @@ What it rests on:
 - The command `sudo` runs for this has to be one that only root can change. When Multiplex is installed in your home folder, the setup puts a root-owned copy in `/usr/local/lib/multiplex/`; run the setup again after updating.
 - A yes on the phone is a yes to *a* sudo on that computer, not to a particular command: `sudo` does not tell the helper what will be run. A request you did not start is one to refuse.
 
+`multiplex doctor` says whether it is on, for which phone, and whether the root-owned copy is older than the command you now have.
+
+Tried for real (Omarchy, a Galaxy phone on mobile data through Tailscale): `sudo true` went through 4 seconds after it was typed, on a fingerprint on the phone and without the password.
+
 ## An SSH key that lives on the phone
 
 The phone's key can be used from the computer without ever being on it: to log in to other servers, and to sign Git commits.

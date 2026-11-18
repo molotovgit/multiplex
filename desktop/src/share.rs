@@ -647,11 +647,26 @@ pub(crate) fn ask_and_wait(phone: &str, event: impl FnOnce(&str) -> LinkEvent) -
     ask_and_wait_for(phone, APPROVE_SECONDS, event)
 }
 
+/// Removes what is left of requests nobody waits for any more. A request
+/// cleans up after itself, but not when its command is killed while it
+/// waits (a `sudo` given up on with Ctrl+C, say): its marker would stay,
+/// and with it the readiness to take an answer.
+fn sweep_requests(dir: &Path, now: std::time::SystemTime, older_than: Duration) {
+    for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let old = entry.metadata().and_then(|about| about.modified()).is_ok_and(|at| now.duration_since(at).is_ok_and(|age| age > older_than));
+        if old {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
+}
+
 /// The same, waiting at most `seconds` for the answer.
 pub(crate) fn ask_and_wait_for(phone: &str, seconds: u64, event: impl FnOnce(&str) -> LinkEvent) -> Result<(String, Option<String>)> {
     let id = random_id()?;
     let dir = runtime_dir().join("approvals");
     std::fs::create_dir_all(&dir)?;
+    // No request waits longer than a few minutes.
+    sweep_requests(&dir, std::time::SystemTime::now(), Duration::from_secs(15 * 60));
     let (pending, answered) = (dir.join(format!("{id}.pending")), dir.join(&id));
     std::fs::write(&pending, b"")?;
     let finish = || {
@@ -833,6 +848,22 @@ pub fn link(phone: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn requests_nobody_waits_for_are_swept_and_fresh_ones_stay() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("aaaa.pending"), b"").unwrap();
+        std::fs::write(dir.path().join("aaaa"), b"an answer nobody read").unwrap();
+        let now = std::time::SystemTime::now();
+        // Just made: a request that waits.
+        sweep_requests(dir.path(), now, Duration::from_secs(15 * 60));
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 2);
+        // The same files twenty minutes on: left behind by a command that was killed.
+        sweep_requests(dir.path(), now + Duration::from_secs(20 * 60), Duration::from_secs(15 * 60));
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+        // A folder that is not there is nothing to sweep.
+        sweep_requests(&dir.path().join("none"), now, Duration::from_secs(1));
+    }
 
     #[test]
     fn the_same_thing_is_news_again_after_something_else() {
