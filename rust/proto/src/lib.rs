@@ -18,6 +18,7 @@ pub mod agents;
 pub mod asked;
 pub mod desk;
 pub mod herd;
+pub mod hid;
 pub mod input;
 pub mod share;
 pub mod sign;
