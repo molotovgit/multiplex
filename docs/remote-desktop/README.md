@@ -1,6 +1,26 @@
-# Remote desktop (gliff)
+# Multiplex: one phone, one Omarchy computer
 
-Multiplex can show and control a Hyprland desktop (for example Omarchy) on the phone. It starts `gliff-server --stdio` over the same SSH connection it already uses, so nothing new has to be exposed.
+Multiplex joins an Android phone and an Omarchy computer. Everything goes over one SSH connection that the app keeps open, so nothing new is exposed; away from home it travels through Tailscale, built into the app.
+
+## The walk-through
+
+1. **Set up the computer once** ([1](#1-on-the-computer-omarchy)): install the package, run `multiplex setup`. That prepares SSH, the remote desktop, and sessions: from then on every terminal window you open keeps running whether or not its window is open.
+2. **Pair the phone** ([2](#2-pair-the-phone)): `multiplex pair` shows a code, the app scans it.
+3. **Home** on the phone is where you start. From top to bottom: the search (it finds a computer, an agent, or anything a computer offers: type "camera" or "files"); **Agents** that wait for you or finished, on any connected computer; **Continue**, the agent or terminal you were last in; then the computers.
+4. **Pick up your work** ([Coding agents](#coding-agents)): an agent that needs an answer notifies the phone with its choices as buttons; its sheet shows what it wrote and takes a prompt at any time; its terminal opens at the phone's size. Close a terminal window on the computer with something running and it is still there on the phone. After a restart of the computer, agent conversations come back.
+5. **A computer's page** groups everything else:
+   - **Work**: Agents, Terminal, Files ([Sharing](#sharing-files-the-clipboard-links)).
+   - **Control**: Desktop (the picture, below), [Panel](#the-panel-the-desktop-without-its-picture), [Touchpad](#the-touchpad-pointer-and-keys-no-picture), Extend screen.
+   - **Lend the phone**: its [screen](#the-phones-screen-in-a-window), [camera](#the-phone-as-a-webcam), [microphone](#the-phone-as-a-microphone), [speaker](#the-phone-as-a-speaker), and [text from paper](#text-on-paper-to-the-computers-clipboard).
+   - **Connection**: Tunnels, Status, [Wake](#waking-the-computer).
+6. **From the computer** the phone is at hand too: the [Multiplex window](#the-multiplex-window) and the bar widget show it, `multiplex send` hands it a file, and it can say [yes with a fingerprint](#a-yes-from-the-phone) to `sudo`.
+7. **A long press on the app's icon** goes straight to Agents, the Desktop or a Terminal on your computer.
+
+What a phone may do on a computer is yours to limit, switch by switch: [What a phone may do](#what-a-phone-may-do).
+
+## The remote desktop
+
+Multiplex can show and control a Hyprland desktop (for example Omarchy) on the phone. It starts `gliff-server --stdio` over the same SSH connection it already uses.
 
 Away from home it connects through **Tailscale, built into Multiplex**: the phone joins your tailnet from inside the app, so no Tailscale VPN app is needed. Tailscale picks the most direct path by itself: peer to peer when the networks allow it (fastest), otherwise a Tailscale relay.
 

@@ -64,6 +64,20 @@ class _IncomingActionsHandlerState extends State<IncomingActionsHandler> {
         await ShareUploadScreen.open(context, files, text: text, sendTo: targetHostId);
       case ShareFailedAction():
         Toast.show(context, 'Multiplex could not read what was shared. Try sharing it from another app.');
+      case GoAction(:final hostId, :final what):
+        final host = AppScope.store(context).host(hostId);
+        if (host == null || !host.computer) {
+          Toast.show(context, 'That computer is no longer paired with this phone.');
+          return;
+        }
+        switch (what) {
+          case 'agents':
+            await AgentsScreen.show(context, host);
+          case 'desktop':
+            await HostConnector.openDesktop(context, host);
+          default:
+            await HostConnector.openTerminal(context, host);
+        }
       case OpenAgentAction(:final place):
         final host = AppScope.store(context).host(place.hostId);
         if (host == null || !host.computer) {

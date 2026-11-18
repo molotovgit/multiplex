@@ -30,6 +30,9 @@ sealed class IncomingAction {
             : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null, targetHostId: target is String && target.isNotEmpty ? target : null);
       case 'shareFailed':
         return const ShareFailedAction();
+      case 'go':
+        final (id, what) = (raw['hostId'], raw['what']);
+        return id is String && id.isNotEmpty && what is String && GoAction.places.contains(what) ? GoAction(id, what) : null;
       case 'agent':
         final place = AgentPlace.decode(raw['details']);
         return place == null ? null : OpenAgentAction(place);
@@ -66,6 +69,18 @@ class OpenAgentAction extends IncomingAction {
   const OpenAgentAction(this.place);
 
   final AgentPlace place;
+}
+
+/// A shortcut on the app's icon: straight to a thing on a computer.
+class GoAction extends IncomingAction {
+  const GoAction(this.hostId, this.what);
+
+  final String hostId;
+
+  /// One of [places].
+  final String what;
+
+  static const places = {'agents', 'desktop', 'terminal'};
 }
 
 /// Something was shared, but none of it could be read.

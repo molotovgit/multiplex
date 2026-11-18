@@ -18,6 +18,11 @@ object ShareTargets {
     private const val CATEGORY = "io.github.molotovgit.multiplex.category.COMPUTER"
     private const val PREFIX = "computer-"
 
+    /** Shortcuts on the app's icon (a long press): straight to a thing on the first computer. */
+    private const val GO_PREFIX = "go-"
+    const val ACTION_GO = "io.github.molotovgit.multiplex.GO"
+    private val GO = listOf("agents" to "Agents", "desktop" to "Desktop", "terminal" to "Terminal")
+
     /** The computer a share was aimed at, from the shortcut id Android passes along. */
     fun hostId(intent: Intent): String? =
         intent.getStringExtra(Intent.EXTRA_SHORTCUT_ID)?.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX)
@@ -54,10 +59,32 @@ object ShareTargets {
                 .setLongLived(true)
                 .build()
         }
+        // What is done most, one long press on the app's icon away, for the
+        // first computer; as many as Android leaves room for. They carry
+        // this install's token, like the widget's taps (see ConnectToken).
+        val room = (limit - shortcuts.size).coerceAtLeast(0)
+        val go = computers.firstOrNull()?.let { (id, label) ->
+            GO.take(room).map { (what, name) ->
+                ShortcutInfoCompat.Builder(context, "$GO_PREFIX$what")
+                    .setShortLabel(name)
+                    .setLongLabel("$name on $label")
+                    .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+                    .setIntent(
+                        Intent(context, MainActivity::class.java)
+                            .setAction(ACTION_GO)
+                            .setData(android.net.Uri.parse("multiplex://go/" + android.net.Uri.encode(id) + "/" + what))
+                            .putExtra(ConnectToken.EXTRA, ConnectToken.get(context)),
+                    )
+                    .build()
+            }
+        }.orEmpty()
         // Only ours are replaced: other shortcuts the app may have stay.
-        val mine = ShortcutManagerCompat.getDynamicShortcuts(context).map { it.id }.filter { it.startsWith(PREFIX) }
-        val gone = mine - shortcuts.map { it.id }.toSet()
-        if (gone.isNotEmpty()) ShortcutManagerCompat.removeLongLivedShortcuts(context, gone)
-        for (shortcut in shortcuts) ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+        val mine = ShortcutManagerCompat.getDynamicShortcuts(context).map { it.id }.filter { it.startsWith(PREFIX) || it.startsWith(GO_PREFIX) }
+        val gone = mine - (shortcuts + go).map { it.id }.toSet()
+        if (gone.isNotEmpty()) {
+            ShortcutManagerCompat.removeLongLivedShortcuts(context, gone.filter { it.startsWith(PREFIX) })
+            ShortcutManagerCompat.removeDynamicShortcuts(context, gone.filter { it.startsWith(GO_PREFIX) })
+        }
+        for (shortcut in shortcuts + go) ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
     }
 }

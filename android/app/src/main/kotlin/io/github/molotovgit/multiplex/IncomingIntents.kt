@@ -30,6 +30,7 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
     fun read(intent: Intent?): Boolean = when (intent?.action) {
         ACTION_CONNECT -> readConnect(intent)
         AgentNotices.ACTION_OPEN -> readAgent(intent)
+        ShareTargets.ACTION_GO -> readGo(intent)
         Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> readShare(intent)
         else -> false
     }
@@ -57,6 +58,15 @@ class IncomingIntents(private val context: Context, private val onChanged: () ->
         if (!ConnectToken.matches(context, intent.getStringExtra(ConnectToken.EXTRA))) return false
         val details = intent.getStringExtra(AgentNotices.EXTRA_DETAILS) ?: return false
         add(mapOf("type" to "agent", "details" to details))
+        return true
+    }
+
+    /** A shortcut on the app's icon: straight to a thing on a computer. Only from our own shortcut. */
+    private fun readGo(intent: Intent): Boolean {
+        if (!ConnectToken.matches(context, intent.getStringExtra(ConnectToken.EXTRA))) return false
+        val parts = intent.data?.takeIf { it.scheme == "multiplex" && it.host == "go" }?.pathSegments ?: return false
+        if (parts.size != 2) return false
+        add(mapOf("type" to "go", "hostId" to parts[0], "what" to parts[1]))
         return true
     }
 

@@ -23,6 +23,11 @@ void main() {
     expect((action! as OpenAgentAction).place.tag, 'c/default/w1:p1');
     expect(IncomingAction.parse({'type': 'agent', 'details': 'nonsense'}), isNull);
     expect(IncomingAction.parse({'type': 'agent'}), isNull);
+    // A shortcut on the app's icon goes to one of three places, and nowhere else.
+    final go = IncomingAction.parse({'type': 'go', 'hostId': 'c', 'what': 'agents'});
+    expect((go! as GoAction).what, 'agents');
+    expect(IncomingAction.parse({'type': 'go', 'hostId': 'c', 'what': 'settings'}), isNull);
+    expect(IncomingAction.parse({'type': 'go', 'hostId': '', 'what': 'desktop'}), isNull);
   });
 
   test('a long choice is cut to fit its button', () {
