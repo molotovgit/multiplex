@@ -1108,14 +1108,35 @@ pub fn attach(socket: &Path, id: &str, leave: bool, watch: bool) -> Result<Optio
 /// as it is, and nothing the program drew for 270 columns is left
 /// half-redrawn for 44.
 pub fn frame(screen: &vt100::Screen, cols: u16, rows: u16) -> Vec<u8> {
-    let (cols, rows) = (cols.max(2), usize::from(rows.max(1)));
+    let wrapped = wrapped(screen, cols);
+    let rows = usize::from(rows.max(1));
+    // The last of them that fit, the cursor's line among them.
+    let end = wrapped.used;
+    let start = end.saturating_sub(rows).min(wrapped.cursor_line);
+    let shown: Vec<&str> = wrapped.lines[start..(start + rows).min(end)].iter().map(String::as_str).collect();
+    draw(screen, &shown, rows, Some((wrapped.cursor_line.saturating_sub(start), wrapped.cursor_col)))
+}
+
+/// A screen's lines cut at a viewer's width.
+pub struct Wrapped {
+    pub lines: Vec<String>,
+    /// How many of them are in use: up to the last with something on it,
+    /// or the cursor's.
+    pub used: usize,
+    /// Where the cursor is among them, and in its line.
+    pub cursor_line: usize,
+    pub cursor_col: u16,
+}
+
+pub fn wrapped(screen: &vt100::Screen, cols: u16) -> Wrapped {
+    let cols = cols.max(2);
     let width = screen.size().1.get();
     let pieces = width.div_ceil(cols);
     let text: Vec<String> = screen.rows(0, width).collect();
     // Each line cut into pieces of the viewer's width, colours and all.
     let cut: Vec<Vec<String>> = (0..pieces).map(|piece| screen.rows_formatted(piece * cols, cols).collect()).collect();
     let (cursor_row, cursor_col) = screen.cursor_position();
-    let mut lines: Vec<&str> = Vec::new();
+    let mut lines: Vec<String> = Vec::new();
     let (mut cursor_line, mut last_used) = (0, 0);
     for (row, line) in text.iter().enumerate() {
         let long = line.trim_end().chars().count() as u16;
@@ -1125,17 +1146,20 @@ pub fn frame(screen: &vt100::Screen, cols: u16, rows: u16) -> Vec<u8> {
             takes = takes.max(cursor_col / cols + 1);
             last_used = last_used.max(cursor_line);
         }
-        for piece in 0..takes.min(pieces) {
+        for piece in cut.iter().take(usize::from(takes.min(pieces))) {
             if long > 0 {
                 last_used = lines.len();
             }
-            lines.push(cut[usize::from(piece)].get(row).map_or("", String::as_str));
+            lines.push(piece.get(row).cloned().unwrap_or_default());
         }
     }
-    // The last of them that fit, the cursor's line among them.
-    let end = (last_used.max(cursor_line) + 1).min(lines.len());
-    let start = end.saturating_sub(rows).min(cursor_line);
-    let shown = &lines[start..(start + rows).min(end)];
+    let used = (last_used.max(cursor_line) + 1).min(lines.len());
+    Wrapped { lines, used, cursor_line, cursor_col: cursor_col % cols }
+}
+
+/// Lines put on a viewer's screen from its top, with the cursor at a
+/// place among them, or hidden (while looking at earlier output).
+pub fn draw(screen: &vt100::Screen, shown: &[&str], rows: usize, cursor: Option<(usize, u16)>) -> Vec<u8> {
     let mut out = String::from("\x1b[?25l");
     // The keys the program wants (arrows in its own mode, pastes marked).
     out.push_str(if screen.application_cursor() { "\x1b[?1h" } else { "\x1b[?1l" });
@@ -1148,12 +1172,75 @@ pub fn frame(screen: &vt100::Screen, cols: u16, rows: u16) -> Vec<u8> {
     if shown.len() < rows {
         out.push_str(&format!("\x1b[{};1H\x1b[J", shown.len() + 1));
     }
-    out.push_str(&format!("\x1b[{};{}H", cursor_line.saturating_sub(start) + 1, cursor_col % cols + 1));
-    if !screen.hide_cursor() {
-        out.push_str("\x1b[?25h");
+    if let Some((line, col)) = cursor {
+        out.push_str(&format!("\x1b[{};{}H", line + 1, col + 1));
+        if !screen.hide_cursor() {
+            out.push_str("\x1b[?25h");
+        }
     }
     out.into_bytes()
 }
+
+/// What is typed in a view, with the swipes taken out: a terminal that
+/// was told the program wants the wheel sends each swipe step as a mouse
+/// report (`ESC [ < 64 ; col ; row M` up, 65 down). Those move the view
+/// through earlier output; clicks are dropped; the rest is for the
+/// program. Returns what to pass on and how many steps up were swiped.
+pub fn without_swipes(typed: &[u8]) -> (Vec<u8>, i32) {
+    let mut pass = Vec::with_capacity(typed.len());
+    let mut up = 0;
+    let mut at = 0;
+    while at < typed.len() {
+        if typed[at..].starts_with(b"\x1b[<") {
+            // Digits and semicolons up to the M or m that ends a report.
+            let body = &typed[at + 3..];
+            if let Some(end) = body.iter().position(|b| !(b.is_ascii_digit() || *b == b';')) {
+                if matches!(body[end], b'M' | b'm') {
+                    match std::str::from_utf8(&body[..end]).ok().and_then(|report| report.split(';').next()?.parse::<u32>().ok()) {
+                        Some(64) => up += 1,
+                        Some(65) => up -= 1,
+                        _ => {}
+                    }
+                    at += 3 + end + 1;
+                    continue;
+                }
+            }
+        }
+        pass.push(typed[at]);
+        at += 1;
+    }
+    (pass, up)
+}
+
+/// Lines that have scrolled off a screen, cut at a viewer's width, for
+/// the viewer's own scroll-back: the newest `gone` of them, oldest first.
+pub fn scrolled_off(parser: &mut vt100::Parser, gone: usize, cols: u16) -> Vec<String> {
+    let cols = cols.max(2);
+    let (height, width) = parser.screen().size();
+    let (height, width) = (usize::from(height.get()), width.get());
+    let mut pieces = Vec::new();
+    let mut left = gone;
+    // A screenful at a time, from the oldest of them.
+    while left > 0 {
+        parser.screen_mut().set_scrollback(left);
+        let screen = parser.screen();
+        let take = left.min(height);
+        let text: Vec<String> = screen.rows(0, width).take(take).collect();
+        let cut: Vec<Vec<String>> = (0..width.div_ceil(cols)).map(|piece| screen.rows_formatted(piece * cols, cols).take(take).collect()).collect();
+        for (row, line) in text.iter().enumerate() {
+            let takes = (line.trim_end().chars().count() as u16).div_ceil(cols).max(1);
+            for piece in cut.iter().take(usize::from(takes)) {
+                pieces.push(piece.get(row).cloned().unwrap_or_default());
+            }
+        }
+        left -= take;
+    }
+    parser.screen_mut().set_scrollback(0);
+    pieces
+}
+
+/// How much earlier output a view keeps to scroll back through.
+const VIEW_SCROLLBACK: usize = 5000;
 
 /// Sits in front of a terminal without giving it this terminal's size:
 /// the terminal stays as its own window has it, and this one is drawn
@@ -1161,13 +1248,19 @@ pub fn frame(screen: &vt100::Screen, cols: u16, rows: u16) -> Vec<u8> {
 /// terminal that is also open on the computer. With `watch`, nothing
 /// typed is sent; Ctrl+\ leaves.
 pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+    /// Lines moved per step of a swipe.
+    const STEP: i32 = 3;
     let _raw = crate::pane::Raw::on();
     let leaving = Arc::new(AtomicBool::new(false));
     let typed: Arc<Mutex<Option<UnixStream>>> = Arc::new(Mutex::new(None));
-    // What is typed here goes to whichever connection is the current one.
+    // How far up the view is, in lines; 0 is the present.
+    let scrolled = Arc::new(AtomicI32::new(0));
+    let moved = Arc::new(AtomicBool::new(false));
+    // What is typed here goes to whichever connection is the current one;
+    // swipes move the view instead.
     {
-        let (leaving, typed) = (leaving.clone(), typed.clone());
+        let (leaving, typed, scrolled, moved) = (leaving.clone(), typed.clone(), scrolled.clone(), moved.clone());
         std::thread::spawn(move || {
             let mut stdin = std::io::stdin().lock();
             let mut buffer = [0u8; 4096];
@@ -1176,16 +1269,28 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
                     Ok(0) | Err(_) => break,
                     Ok(read) => read,
                 };
-                if buffer[..read].contains(&LEAVE) {
+                let (pass, up) = without_swipes(&buffer[..read]);
+                if up != 0 {
+                    scrolled.store((scrolled.load(Ordering::SeqCst) + up * STEP).max(0), Ordering::SeqCst);
+                    moved.store(true, Ordering::SeqCst);
+                }
+                if pass.is_empty() {
+                    continue;
+                }
+                if pass.contains(&LEAVE) {
                     break;
                 }
                 if !watch {
+                    // Typing is about the present: back to it.
+                    if scrolled.swap(0, Ordering::SeqCst) != 0 {
+                        moved.store(true, Ordering::SeqCst);
+                    }
                     // What is typed before the terminal is reached waits
                     // for it a moment, and is not dropped.
                     let asked = Instant::now();
                     loop {
                         if let Some(up) = typed.lock().unwrap().as_mut() {
-                            let _ = write_frame(up, b'I', &buffer[..read]);
+                            let _ = write_frame(up, b'I', &pass);
                             break;
                         }
                         if asked.elapsed() > Duration::from_secs(3) {
@@ -1202,8 +1307,12 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
         });
     }
     let mut out = std::io::stdout().lock();
+    // A screen of this view's own, and the wheel asked for: a terminal
+    // then sends swipes here instead of scrolling a history it does not
+    // have (the picture is drawn in place, nothing scrolls off it).
+    out.write_all(b"\x1b[?1049h\x1b[?1000h\x1b[?1006h")?;
     let restore = |out: &mut std::io::StdoutLock| {
-        let _ = out.write_all(b"\x1b[?1l\x1b[?2004l\x1b[?25h\x1b[0m\x1b[2J\x1b[H");
+        let _ = out.write_all(b"\x1b[?1006l\x1b[?1000l\x1b[?1l\x1b[?2004l\x1b[?25h\x1b[0m\x1b[?1049l");
         let _ = out.flush();
     };
     let size_of = |id: &str| ask(socket, &Request::List).ok().and_then(|(answer, _)| answer.terminals.into_iter().find(|told| told.id == id)).map(|told| (told.cols, told.rows));
@@ -1213,9 +1322,13 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
             restore(&mut out);
             bail!("There is no terminal {id}.");
         };
+        // What scrolled off before this view came, as plain text from the
+        // server; its last lines are the screen itself, which comes below.
+        let before: Vec<String> = ask(socket, &Request::Read { id: id.to_owned(), lines: 2000 }).ok().and_then(|(answer, _)| answer.text).unwrap_or_default().lines().map(str::to_owned).collect();
+        let earlier: Vec<String> = before[..before.len().saturating_sub(usize::from(rows))].to_vec();
         let (_, stream) = ask(socket, &Request::Attach { id: id.to_owned(), cols, rows })?;
         *typed.lock().unwrap() = Some(stream.try_clone()?);
-        let screen = Arc::new(Mutex::new(vt100::Parser::new(nz(rows), nz(cols), 0)));
+        let screen = Arc::new(Mutex::new(vt100::Parser::new(nz(rows), nz(cols), VIEW_SCROLLBACK)));
         let fresh = Arc::new(AtomicBool::new(true));
         let ended: Arc<Mutex<Option<Option<i32>>>> = Arc::new(Mutex::new(None));
         {
@@ -1240,6 +1353,9 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
         }
         let mut mine = (0, 0);
         let mut looked = Instant::now();
+        // What scrolled off while this view looked, cut at its width.
+        let mut above: Vec<String> = Vec::new();
+        let mut gone = 0usize;
         let again = loop {
             if leaving.load(Ordering::SeqCst) {
                 restore(&mut out);
@@ -1251,9 +1367,47 @@ pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> 
                 return Ok(how);
             }
             let now = crate::pane::terminal_size().unwrap_or((80, 24));
-            if fresh.swap(false, Ordering::SeqCst) || now != mine {
+            if fresh.swap(false, Ordering::SeqCst) | moved.swap(false, Ordering::SeqCst) || now != mine {
+                if now.0 != mine.0 {
+                    // Another width: what was cut for the old one is dropped.
+                    above.clear();
+                }
                 mine = now;
-                out.write_all(&frame(screen.lock().unwrap().screen(), now.0, now.1))?;
+                let mut parser = screen.lock().unwrap();
+                parser.screen_mut().set_scrollback(usize::MAX);
+                let total = parser.screen().scrollback();
+                parser.screen_mut().set_scrollback(0);
+                if total > gone && total < VIEW_SCROLLBACK {
+                    above.extend(scrolled_off(&mut parser, total - gone, now.0));
+                }
+                gone = total;
+                let rows_here = usize::from(now.1.max(1));
+                let up = usize::try_from(scrolled.load(Ordering::SeqCst)).unwrap_or(0);
+                if up == 0 {
+                    out.write_all(&frame(parser.screen(), now.0, now.1))?;
+                } else {
+                    // Earlier output: the server's (plain, cut here), what
+                    // scrolled off since, and the screen's own lines.
+                    let width = usize::from(now.0.max(2));
+                    let wrapped = wrapped(parser.screen(), now.0);
+                    let mut all: Vec<String> = Vec::new();
+                    for line in &earlier {
+                        let chars: Vec<char> = line.chars().collect();
+                        if chars.is_empty() {
+                            all.push(String::new());
+                        }
+                        all.extend(chars.chunks(width).map(|piece| piece.iter().collect::<String>()));
+                    }
+                    all.extend(above.iter().cloned());
+                    all.extend(wrapped.lines[..wrapped.used].iter().cloned());
+                    // No further up than there is.
+                    let most = all.len().saturating_sub(rows_here);
+                    let up = up.min(most);
+                    scrolled.store(up as i32, Ordering::SeqCst);
+                    let end = all.len() - up;
+                    let shown: Vec<&str> = all[end.saturating_sub(rows_here)..end].iter().map(String::as_str).collect();
+                    out.write_all(&draw(parser.screen(), &shown, rows_here, None))?;
+                }
                 out.flush()?;
             }
             // Its window was resized on the computer: looked at afresh.
@@ -1917,6 +2071,40 @@ mod tests {
         let told = told_plainly(&state, &[("w1:p1".to_owned(), 2)].into(), "/home/sam");
         assert!(told.starts_with("the api\n  w1:p1    claude needs you, in ~/code/api (2 viewers)\n  w1:p2    a terminal, in /home/samuel (nobody in front of it)\n"), "{told}");
         assert!(told_plainly(&Session::default(), &HashMap::new(), "/home/sam").starts_with("Nothing is kept."));
+    }
+
+    #[test]
+    fn what_scrolls_off_is_kept_cut_at_the_viewers_width() {
+        let mut wide = vt100::Parser::new(nz(3), nz(30), 100);
+        wide.process(b"one\r\ntwo is a line longer than ten\r\nthree\r\nfour\r\nfive");
+        // Two lines have scrolled off a screen of three.
+        wide.screen_mut().set_scrollback(usize::MAX);
+        let gone = wide.screen().scrollback();
+        wide.screen_mut().set_scrollback(0);
+        assert_eq!(gone, 2);
+        let lines = scrolled_off(&mut wide, gone, 10);
+        assert_eq!(wide.screen().scrollback(), 0, "the screen is left as it was");
+        let mut plain = vt100::Parser::new(nz(8), nz(10), 0);
+        for line in &lines {
+            plain.process(format!("{line}\r\n").as_bytes());
+        }
+        assert_eq!(plain.screen().contents().trim_end(), "one\ntwo is a l\nine longer\n than ten");
+        // And the screen's own lines, with how many are in use.
+        let now = wrapped(wide.screen(), 10);
+        assert_eq!(now.used, 3);
+        assert_eq!((now.cursor_line, now.cursor_col), (2, 4));
+    }
+
+    #[test]
+    fn swipes_are_taken_out_of_what_is_typed() {
+        // Two steps up, one down, a click, around ordinary typing.
+        let typed = b"ls\x1b[<64;10;5M\x1b[<64;10;5M -l\x1b[<65;1;1M\x1b[<0;3;4M\x1b[<0;3;4m\r";
+        let (pass, up) = without_swipes(typed);
+        assert_eq!((String::from_utf8(pass).unwrap().as_str(), up), ("ls -l\r", 1));
+        // An arrow key and a lone escape are not swipes.
+        assert_eq!(without_swipes(b"\x1b[A\x1b"), (b"\x1b[A\x1b".to_vec(), 0));
+        // Half a report (cut off by the read) is passed on rather than lost.
+        assert_eq!(without_swipes(b"\x1b[<64;1").0, b"\x1b[<64;1".to_vec());
     }
 
     #[test]
