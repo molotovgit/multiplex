@@ -191,7 +191,7 @@ Multiplex keeps the computer's terminals running itself: a small session server 
 
 `multiplex here` does for one terminal what the first switch does for all.
 
-After a restart of the computer, each terminal in which an agent was in a conversation comes back: a terminal in its folder, and the agent asked to carry on (`claude --resume …`).
+After a restart of the computer, each terminal in which Claude Code or Codex was in a conversation comes back: a terminal in its folder, and the agent asked to carry on (`claude --resume …`, `codex resume …`). Claude Code says which conversation it is in through its hooks; Codex's is found among its own saved sessions, by the folder it was started in. A terminal with nothing running that nobody has looked at for a day is ended.
 
 On the phone, the computer's page has an **Agents** tile. It is an inbox: every agent in every kept terminal, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: the session server tells of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
 
@@ -244,7 +244,7 @@ multiplex herd pane <session> <pane>                         # that pane in this
 
 Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly of their shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-Still to come: sending pictures to an agent, renaming, and continuing the conversations of agents that ran outside a kept terminal.
+The pencil beside a workspace's name in **Everything** renames it. Still to come: sending pictures to an agent, and continuing the conversations of agents that ran outside a kept terminal.
 
 ## A yes from the phone
 

@@ -403,8 +403,45 @@ pub fn resume_command(agent: &str, conversation: &str) -> Option<String> {
     let fine = !conversation.is_empty() && conversation.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
     match agent {
         "claude" if fine => Some(format!("claude --resume {conversation}")),
+        "codex" if fine => Some(format!("codex resume {conversation}")),
         _ => None,
     }
+}
+
+/// The conversation a Codex started in `folder` since `since` is in, by
+/// Codex's own id for it. Codex has no hooks to say so; it keeps each
+/// conversation as a file under `sessions/<year>/<month>/<day>` whose
+/// first line names its id and its folder. The newest that fits is it.
+/// None until Codex has been given its first prompt (it writes nothing
+/// before).
+pub fn codex_conversation(codex_home: &Path, folder: &str, since: std::time::SystemTime) -> Option<String> {
+    let mut files: Vec<(std::time::SystemTime, PathBuf)> = Vec::new();
+    let folders = |dir: &Path| -> Vec<PathBuf> { std::fs::read_dir(dir).into_iter().flatten().flatten().map(|entry| entry.path()).collect() };
+    for year in folders(&codex_home.join("sessions")) {
+        for month in folders(&year) {
+            for day in folders(&month) {
+                // Only days that could hold it.
+                if std::fs::metadata(&day).and_then(|meta| meta.modified()).is_ok_and(|at| at < since) {
+                    continue;
+                }
+                for file in folders(&day) {
+                    let Ok(at) = std::fs::metadata(&file).and_then(|meta| meta.modified()) else { continue };
+                    if at >= since && file.extension().is_some_and(|ext| ext == "jsonl") {
+                        files.push((at, file));
+                    }
+                }
+            }
+        }
+    }
+    files.sort();
+    files.into_iter().rev().find_map(|(_, file)| {
+        use std::io::BufRead;
+        let mut first = String::new();
+        std::io::BufReader::new(File::open(file).ok()?.take(4 << 20)).read_line(&mut first).ok()?;
+        let line: serde_json::Value = serde_json::from_str(&first).ok()?;
+        let told = &line["payload"];
+        (line["type"] == "session_meta" && told["cwd"].as_str() == Some(folder)).then(|| told["id"].as_str().map(str::to_owned)).flatten()
+    })
 }
 
 pub fn remembered_file() -> PathBuf {
@@ -415,6 +452,8 @@ pub fn remembered_file() -> PathBuf {
 struct Kept {
     /// What was last written down as worth having back.
     written: Vec<Remembered>,
+    /// When Codex's own files were last looked through.
+    codex_looked: Option<Instant>,
     terminals: HashMap<String, Terminal>,
     spaces: Vec<Space>,
     next_space: u64,
@@ -455,12 +494,25 @@ impl Kept {
 
     /// Writes down what is worth having back, when that has changed.
     fn remember(&mut self, file: &Path) {
+        // Codex does not say which conversation it is in: looked up now
+        // and then for each Codex that has none yet.
+        if self.codex_looked.is_none_or(|at| at.elapsed() > Duration::from_secs(5)) {
+            self.codex_looked = Some(Instant::now());
+            if let Some(home) = std::env::var_os("CODEX_HOME").map(PathBuf::from).or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".codex"))) {
+                for terminal in self.terminals.values_mut() {
+                    if terminal.conversation.is_empty() && terminal.agent().as_deref() == Some("codex") {
+                        let since = std::time::SystemTime::now() - terminal.agent_since.map_or(Duration::ZERO, |since| since.elapsed()) - Duration::from_secs(2);
+                        terminal.conversation = codex_conversation(&home, &terminal.folder(), since).unwrap_or_default();
+                    }
+                }
+            }
+        }
         let mut now: Vec<(u64, Remembered)> = self
             .terminals
             .values()
             .filter(|terminal| !terminal.conversation.is_empty())
             .filter_map(|terminal| {
-                let (agent, _) = terminal.reported.as_ref()?;
+                let agent = &terminal.agent().or_else(|| terminal.reported.as_ref().map(|(name, _)| name.clone()))?;
                 let label = self.spaces.iter().find(|space| space.number == terminal.space).map(|space| space.label.clone()).unwrap_or_default();
                 Some((terminal.number, Remembered { folder: terminal.folder(), label, agent: agent.clone(), conversation: terminal.conversation.clone() }))
             })
@@ -1556,6 +1608,22 @@ mod tests {
         report("unknown", "");
         ask(&second, &Request::Kill { id: pane.id }).unwrap();
         waited("an ended conversation stayed written", &|all| all.is_empty());
+        // Codex says nothing itself: its conversation is found among its
+        // own files, by the folder it was started in, and only one from
+        // since it started.
+        let codex = dir.path().join("codex");
+        let day = codex.join("sessions/2026/11/18");
+        std::fs::create_dir_all(&day).unwrap();
+        let meta = |id: &str, cwd: &str| format!("{{\"type\":\"session_meta\",\"payload\":{{\"id\":\"{id}\",\"cwd\":\"{cwd}\"}}}}\n{{\"type\":\"other\"}}\n");
+        std::fs::write(day.join("rollout-a.jsonl"), meta("aaaaaaaa-0000-0000-0000-000000000001", "/elsewhere")).unwrap();
+        std::fs::write(day.join("rollout-b.jsonl"), meta("bbbbbbbb-0000-0000-0000-000000000002", &folder)).unwrap();
+        std::fs::write(day.join("notes.txt"), "not a conversation").unwrap();
+        let long_ago = std::time::SystemTime::now() - Duration::from_secs(3600);
+        assert_eq!(codex_conversation(&codex, &folder, long_ago).as_deref(), Some("bbbbbbbb-0000-0000-0000-000000000002"));
+        assert_eq!(codex_conversation(&codex, "/nowhere", long_ago), None);
+        assert_eq!(codex_conversation(&codex, &folder, std::time::SystemTime::now() + Duration::from_secs(60)), None, "one from before this Codex started is another's");
+        assert_eq!(codex_conversation(&dir.path().join("no-codex"), &folder, long_ago), None);
+        assert_eq!(resume_command("codex", "bbbbbbbb-0000-0000-0000-000000000002").as_deref(), Some("codex resume bbbbbbbb-0000-0000-0000-000000000002"));
         // What cannot be carried on, or is not an id, never becomes a command.
         assert_eq!(resume_command("claude", "abc; rm -rf ~"), None);
         assert_eq!(resume_command("claude", ""), None);
