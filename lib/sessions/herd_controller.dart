@@ -149,6 +149,12 @@ class HerdController extends ChangeNotifier {
 
   void _set(HerdState next) {
     if (_disposed) return;
+    // In a debug build each arrival is logged, so the time from a change on
+    // the computer to its arrival here can be read off the phone's log.
+    assert(() {
+      debugPrint('herd: ${next.inbox.length} agents, ${next.waiting} waiting, first ${next.inbox.isEmpty ? '-' : next.inbox.first.status.name}');
+      return true;
+    }());
     state = next;
     problem = null;
     notifyListeners();

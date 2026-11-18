@@ -75,7 +75,7 @@ class AgentsScreen extends StatefulWidget {
         builder: (_) => AgentsScreen(
           title: host.title,
           link: SshHerdLink(() => session.ssh),
-          onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane)),
+          onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane), aView: true),
           onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
           openAt: place == null ? null : (session: place.session, pane: place.pane),
           onVisited: (name, pane, title, agent) => store.updateSettings(
@@ -89,8 +89,11 @@ class AgentsScreen extends StatefulWidget {
   }
 
   /// Opens a terminal on the computer and types [command] there; the
-  /// core gives none for a session or pane that is not one.
-  static Future<void> _run(BuildContext context, LiveSession session, String? command) async {
+  /// core gives none for a session or pane that is not one. [aView] is a
+  /// terminal that only shows a pane: it is closed when it is left, so no
+  /// view of a pane stays running on the computer with nobody looking
+  /// (seen on the phone: each visit left one behind).
+  static Future<void> _run(BuildContext context, LiveSession session, String? command, {bool aView = false}) async {
     if (command == null) {
       Toast.show(context, 'That cannot be opened from here.');
       return;
@@ -101,7 +104,26 @@ class AgentsScreen extends StatefulWidget {
       terminal
         ..type(command)
         ..key(TerminalKey.enter);
-      if (context.mounted) await TerminalScreen.open(context, session, terminal);
+      if (!context.mounted) {
+        if (aView) sessions.closeTerminal(terminal);
+        return;
+      }
+      if (!aView) {
+        await TerminalScreen.open(context, session, terminal);
+        return;
+      }
+      // A view is closed once its screen is gone for good, exit animation
+      // and all: closing it the moment the screen starts to leave broke
+      // that animation (seen on the phone as Flutter's error screen).
+      final route = MaterialPageRoute<void>(
+        builder: (_) => TerminalScreen(session: session, controller: terminal),
+      );
+      unawaited(Navigator.of(context).push(route));
+      try {
+        await route.completed;
+      } finally {
+        sessions.closeTerminal(terminal);
+      }
     } catch (e) {
       if (context.mounted) Toast.show(context, errorSentence(e, fallback: 'Could not open a terminal.'));
     }
@@ -331,10 +353,24 @@ class _Everything extends StatelessWidget {
     final rows = <Widget>[];
     for (final session in state.sessions) {
       if (named) {
+        // A session's name stands above its workspaces' headings, so it is
+        // set apart from them: larger, in the text's own colour.
         rows.add(
-          SectionHeader(
-            session.running ? session.name : '${session.name} · not running',
-            trailing: session.running ? null : TextButton(onPressed: () => onStart(session.name), child: const Text('Start')),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    session.running ? session.name : '${session.name} · not running',
+                    style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, color: session.running ? colors.text : colors.muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!session.running) TextButton(onPressed: () => onStart(session.name), child: const Text('Start')),
+              ],
+            ),
           ),
         );
       }
@@ -432,15 +468,18 @@ class AgentSheet extends StatefulWidget {
 
   /// The keys an agent's questions take, by herdr's names, with what each
   /// is called on its button and in its tooltip.
+  ///
+  /// Enter comes second: on a phone six keys fit before the row scrolls,
+  /// and it is pressed more than any but Escape.
   static const quickKeys = [
     ('esc', 'Esc', 'Press Escape'),
+    ('enter', 'Enter', 'Press Enter'),
     ('1', '1', 'Press 1'),
     ('2', '2', 'Press 2'),
     ('3', '3', 'Press 3'),
     ('up', '↑', 'Press Up'),
     ('down', '↓', 'Press Down'),
     ('tab', 'Tab', 'Press Tab'),
-    ('enter', 'Enter', 'Press Enter'),
   ];
 
   @override
