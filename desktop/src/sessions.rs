@@ -206,6 +206,10 @@ struct Terminal {
     /// When it was started, and whether its program has written yet.
     started: Instant,
     wrote_once: bool,
+    /// Since when an agent has been seen in it.
+    agent_since: Option<Instant>,
+    /// Since when it has sat at its shell with nobody in front of it.
+    forgotten_since: Option<Instant>,
     /// Since when it is being ended (its window closed with nothing
     /// running).
     ending: Option<Instant>,
@@ -230,6 +234,17 @@ impl Terminal {
     /// input (seen with bash). One that is being ended is told again, and
     /// after a few seconds ended without being asked.
     fn still_ending(&mut self) {
+        // What ran in it finished while nobody watched, and nobody came
+        // to look: kept for a day (the phone lists it as done), then it
+        // goes, so that such terminals do not pile up for ever.
+        if self.viewers.is_empty() && self.at_its_shell() {
+            let since = *self.forgotten_since.get_or_insert_with(Instant::now);
+            if self.ending.is_none() && since.elapsed() > FORGOTTEN_AFTER {
+                self.ending = Some(Instant::now());
+            }
+        } else {
+            self.forgotten_since = None;
+        }
         let Some(since) = self.ending else { return };
         if !self.viewers.is_empty() || !self.at_its_shell() {
             // Someone came back to it, or something runs in it after all.
@@ -273,8 +288,14 @@ impl Terminal {
     /// What its agent is doing: as its hooks said, or as its screen shows.
     fn status(&mut self, agent: bool) -> AgentStatus {
         if !agent {
+            // The agent left: what it said of itself left with it.
+            self.agent_since = None;
+            self.reported = None;
+            self.was_working = false;
+            self.unseen = false;
             return AgentStatus::Unknown;
         }
+        let since = *self.agent_since.get_or_insert_with(Instant::now);
         // A question by choice on its screen is waiting, whatever else is
         // known. Otherwise its own word counts; without one, it works
         // while it writes.
@@ -282,7 +303,7 @@ impl Terminal {
             AgentStatus::Blocked
         } else if let Some((_, said)) = &self.reported {
             *said
-        } else if self.wrote.elapsed() < WORKING_FOR && self.wrote.duration_since(self.typed) > ECHO {
+        } else if since.elapsed() > STARTING_FOR && self.wrote.elapsed() < WORKING_FOR && self.wrote.duration_since(self.typed) > ECHO {
             AgentStatus::Working
         } else {
             AgentStatus::Idle
@@ -344,6 +365,13 @@ impl Terminal {
         all[from..].join("\n")
     }
 }
+
+/// An agent drawing its first screen is not at work yet (seen: Claude
+/// Code passed for "done" a moment after it was started).
+const STARTING_FOR: Duration = Duration::from_secs(5);
+
+/// How long a terminal with nothing running and nobody looking is kept.
+const FORGOTTEN_AFTER: Duration = Duration::from_secs(24 * 60 * 60);
 
 /// Output this soon after typing is the terminal showing what was typed.
 const ECHO: Duration = Duration::from_millis(400);
@@ -574,6 +602,8 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
         window,
         started: now,
         wrote_once: false,
+        agent_since: None,
+        forgotten_since: None,
         ending: None,
     };
     kept.terminals.insert(id.clone(), terminal);
