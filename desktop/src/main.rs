@@ -120,6 +120,10 @@ fn main() {
             sessions::hook(agent, event);
             Ok(())
         }
+        ["setup", "--service"] => sessions::setup_service(true, false),
+        ["setup", "--service", "--dry-run"] => sessions::setup_service(true, true),
+        ["setup", "--service-off"] => sessions::setup_service(false, false),
+        ["setup", "--service-off", "--dry-run"] => sessions::setup_service(false, true),
         ["setup", "--agents"] => sessions::setup_agents(true, false),
         ["setup", "--agents", "--dry-run"] => sessions::setup_agents(true, true),
         ["setup", "--agents-off"] => sessions::setup_agents(false, false),

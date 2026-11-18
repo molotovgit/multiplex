@@ -203,6 +203,9 @@ struct Terminal {
     was_working: bool,
     /// It stands in for a plain terminal window.
     window: bool,
+    /// When it was started, and whether its program has written yet.
+    started: Instant,
+    wrote_once: bool,
     /// Since when it is being ended (its window closed with nothing
     /// running).
     ending: Option<Instant>,
@@ -354,8 +357,34 @@ struct Space {
     label: String,
 }
 
+/// A terminal worth having back after the server (or the computer) was
+/// restarted: one with an agent in a conversation that can be continued.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Remembered {
+    pub folder: String,
+    pub label: String,
+    pub agent: String,
+    pub conversation: String,
+}
+
+/// What an agent is started with to carry on a conversation of its own.
+/// None for an agent whose way of doing that is not known.
+pub fn resume_command(agent: &str, conversation: &str) -> Option<String> {
+    let fine = !conversation.is_empty() && conversation.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+    match agent {
+        "claude" if fine => Some(format!("claude --resume {conversation}")),
+        _ => None,
+    }
+}
+
+pub fn remembered_file() -> PathBuf {
+    std::env::var_os("MULTIPLEX_SESSIONS_FILE").map(PathBuf::from).unwrap_or_else(|| crate::share::state_dir().join("sessions.json"))
+}
+
 #[derive(Default)]
 struct Kept {
+    /// What was last written down as worth having back.
+    written: Vec<Remembered>,
     terminals: HashMap<String, Terminal>,
     spaces: Vec<Space>,
     next_space: u64,
@@ -392,6 +421,29 @@ impl Kept {
             workspaces.push(Workspace { id: format!("w{}", space.number), label: space.label.clone(), tabs });
         }
         Session { name: SESSION.to_owned(), running: true, workspaces }
+    }
+
+    /// Writes down what is worth having back, when that has changed.
+    fn remember(&mut self, file: &Path) {
+        let mut now: Vec<(u64, Remembered)> = self
+            .terminals
+            .values()
+            .filter(|terminal| !terminal.conversation.is_empty())
+            .filter_map(|terminal| {
+                let (agent, _) = terminal.reported.as_ref()?;
+                let label = self.spaces.iter().find(|space| space.number == terminal.space).map(|space| space.label.clone()).unwrap_or_default();
+                Some((terminal.number, Remembered { folder: terminal.folder(), label, agent: agent.clone(), conversation: terminal.conversation.clone() }))
+            })
+            .collect();
+        now.sort_by_key(|(number, _)| *number);
+        let now: Vec<Remembered> = now.into_iter().map(|(_, remembered)| remembered).collect();
+        if now != self.written {
+            // Beside it and moved into place: never half a file.
+            let beside = file.with_extension("json.new");
+            if serde_json::to_vec_pretty(&now).ok().and_then(|bytes| std::fs::write(&beside, bytes).ok()).and_then(|()| std::fs::rename(&beside, file).ok()).is_some() {
+                self.written = now;
+            }
+        }
     }
 
     /// Tells the watchers, if what they were last told has changed.
@@ -520,6 +572,8 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
         unseen: false,
         was_working: false,
         window,
+        started: now,
+        wrote_once: false,
         ending: None,
     };
     kept.terminals.insert(id.clone(), terminal);
@@ -546,6 +600,7 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
                 return;
             }
             terminal.wrote = Instant::now();
+            terminal.wrote_once = true;
             terminal.screen.process(&buffer[..read]);
             terminal.viewers.retain_mut(|viewer| write_frame(&mut viewer.stream, b'O', &buffer[..read]).is_ok());
         }
@@ -626,6 +681,8 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
                 unsafe { libc::kill(-(terminal.child.id() as i32), libc::SIGHUP) };
             }
             let _ = answer(&mut stream, Answer::default());
+            // Stopped on purpose: nothing is to come back by itself.
+            let _ = std::fs::remove_file(remembered_file());
             let _ = std::fs::remove_file(socket_path());
             std::process::exit(0);
         }
@@ -667,6 +724,19 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             return answer(&mut stream, Answer { id, ..Answer::default() });
         }
         Request::Text { id, text } => {
+            // A terminal that has only just started is given until its
+            // shell has written its prompt and gone quiet: what is typed
+            // before that is lost (seen: text sent right after making one).
+            loop {
+                let kept = shared.lock().unwrap();
+                let Some(terminal) = kept.terminals.get(&id) else { break };
+                let settled = terminal.wrote_once && terminal.wrote.elapsed() > Duration::from_millis(250);
+                if settled || terminal.started.elapsed() > Duration::from_secs(4) {
+                    break;
+                }
+                drop(kept);
+                std::thread::sleep(Duration::from_millis(40));
+            }
             let mut master = {
                 let mut kept = shared.lock().unwrap();
                 let Some(terminal) = kept.terminals.get_mut(&id) else { return answer(&mut stream, missing(&id)) };
@@ -692,7 +762,10 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             let Some(terminal) = kept.terminals.get_mut(&id) else { return answer(&mut stream, missing(&id)) };
             let Ok(status) = serde_json::from_value::<AgentStatus>(serde_json::Value::String(state)) else { return answer(&mut stream, Answer::error("That is not a state.")) };
             terminal.reported = (status != AgentStatus::Unknown).then_some((agent, status));
-            if !conversation.is_empty() && conversation.len() <= 128 && conversation.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+            if status == AgentStatus::Unknown {
+                // An agent that ended is no longer in a conversation.
+                terminal.conversation.clear();
+            } else if !conversation.is_empty() && conversation.len() <= 128 && conversation.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
                 terminal.conversation = conversation;
             }
             kept.tell();
@@ -748,7 +821,7 @@ pub fn socket_path() -> PathBuf {
 }
 
 /// `multiplex sessions serve`: until it is stopped.
-pub fn serve(socket: &Path) -> Result<()> {
+pub fn serve(socket: &Path, file: &Path) -> Result<()> {
     if UnixStream::connect(socket).is_ok() {
         bail!("The session server is already running.");
     }
@@ -760,15 +833,42 @@ pub fn serve(socket: &Path) -> Result<()> {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(socket, std::fs::Permissions::from_mode(0o600))?;
     let shared: Shared = Arc::new(Mutex::new(Kept::default()));
+    // What was running when the server last went away without being told
+    // to (a restart of the computer, say) comes back: a terminal in its
+    // folder, and its agent asked to carry on its conversation.
+    if let Some(dir) = file.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let before: Vec<Remembered> = std::fs::read(file).ok().and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default();
+    for remembered in before {
+        let Some(command) = resume_command(&remembered.agent, &remembered.conversation) else { continue };
+        let Ok(made) = start(&shared, &remembered.folder, &[], 120, 40, "", &remembered.label, false, &[], false) else { continue };
+        // Remembered from the start, also if the server goes away again
+        // before the agent has said a word.
+        if let Some(terminal) = shared.lock().unwrap().terminals.get_mut(&made.id) {
+            terminal.conversation = remembered.conversation.clone();
+            terminal.reported = Some((remembered.agent.clone(), AgentStatus::Idle));
+        }
+        let (shared, id) = (shared.clone(), made.id);
+        // Once its shell is at its prompt.
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(1500));
+            if let Some(terminal) = shared.lock().unwrap().terminals.get_mut(&id) {
+                let _ = terminal.master.write_all(format!("{command}\r").as_bytes());
+            }
+        });
+    }
     // What changes without anyone asking (a title, a folder, an agent
     // starting to wait) is looked at twice a second while someone watches.
     let ticking = shared.clone();
+    let file = file.to_owned();
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_millis(500));
         let mut kept = ticking.lock().unwrap();
         for terminal in kept.terminals.values_mut() {
             terminal.still_ending();
         }
+        kept.remember(&file);
         kept.tell();
     });
     for (viewer, stream) in listener.incoming().flatten().enumerate() {
@@ -894,7 +994,7 @@ pub fn attach(socket: &Path, id: &str, leave: bool, watch: bool) -> Result<Optio
 pub fn run(args: &[&str]) -> Result<()> {
     let socket = socket_path();
     match args {
-        ["serve"] => serve(&socket)?,
+        ["serve"] => serve(&socket, &remembered_file())?,
         ["list"] => println!("{}", serde_json::to_string(&ask(&socket, &Request::List)?.0.terminals)?),
         ["attach", id] => {
             if let Some(code) = attach(&socket, id, false, false)? {
@@ -1023,6 +1123,69 @@ pub fn setup_agents(on: bool, dry_run: bool) -> Result<()> {
     std::fs::write(&beside, serde_json::to_string_pretty(&after)? + "\n")?;
     std::fs::rename(&beside, &file)?;
     println!("{}: {}.", file.display(), if on { "Claude Code now tells Multiplex when it works, asks and stops (in sessions started from now on)" } else { "Multiplex's hooks are out" });
+    Ok(())
+}
+
+/// The unit that keeps the server running with the desktop session.
+pub const UNIT: &str = "multiplex-sessions.service";
+
+pub fn unit_text(program: &str) -> String {
+    format!(
+        "[Unit]\nDescription=Multiplex session server: terminals that keep running and can be picked up from the phone\nPartOf=graphical-session.target\nAfter=graphical-session.target\n\n[Service]\nExecStart={program} sessions serve\nRestart=on-failure\nRestartSec=2\n\n[Install]\nWantedBy=graphical-session.target\n"
+    )
+}
+
+/// `multiplex setup --service` and `--service-off`: the session server
+/// as a service of the user's own, started with the desktop (so that the
+/// terminals it makes find the desktop, and what it remembers comes back
+/// after a restart of the computer).
+pub fn setup_service(on: bool, dry_run: bool) -> Result<()> {
+    let home = PathBuf::from(std::env::var_os("HOME").ok_or_else(|| anyhow!("There is no home folder to set this up in."))?);
+    let unit = home.join(".config/systemd/user").join(UNIT);
+    let systemctl = |args: &[&str]| Command::new("systemctl").arg("--user").args(args).status().is_ok_and(|status| status.success());
+    if dry_run {
+        println!("Would {} {}.", if on { "write and start" } else { "stop and remove" }, unit.display());
+        return Ok(());
+    }
+    if !on {
+        systemctl(&["disable", "--now", UNIT]);
+        let _ = std::fs::remove_file(&unit);
+        systemctl(&["daemon-reload"]);
+        println!("The session server is no longer a service. (It still starts when first asked.)");
+        return Ok(());
+    }
+    let program = std::env::current_exe()?.to_string_lossy().into_owned();
+    std::fs::create_dir_all(unit.parent().expect("has a folder"))?;
+    std::fs::write(&unit, unit_text(&program))?;
+    systemctl(&["daemon-reload"]);
+    // A server started by hand or on first use holds the socket; with
+    // terminals in it, it is left to finish, and the service takes over
+    // the next time.
+    let socket = socket_path();
+    let running = UnixStream::connect(&socket).is_ok();
+    let busy = running && ask(&socket, &Request::List).is_ok_and(|(answer, _)| !answer.terminals.is_empty());
+    let active = systemctl(&["is-active", "--quiet", UNIT]);
+    if active {
+        systemctl(&["enable", UNIT]);
+        println!("The session server already runs as a service.");
+    } else if busy {
+        systemctl(&["enable", UNIT]);
+        println!("The session server is set up as a service. One started earlier is keeping terminals, so it is left to run; the service takes over at the next login.");
+    } else {
+        if running {
+            // Asked to step aside, keeping what it remembers.
+            let remembered = std::fs::read(remembered_file()).ok();
+            let _ = ask(&socket, &Request::Stop);
+            if let Some(bytes) = remembered {
+                let _ = std::fs::write(remembered_file(), bytes);
+            }
+            std::thread::sleep(Duration::from_millis(300));
+        }
+        if !systemctl(&["enable", "--now", UNIT]) {
+            bail!("systemd did not start the session server; see: systemctl --user status {UNIT}");
+        }
+        println!("The session server runs as a service and starts with the desktop.");
+    }
     Ok(())
 }
 
@@ -1158,7 +1321,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let socket = dir.path().join("sessions.sock");
         let serving = socket.clone();
-        std::thread::spawn(move || serve(&serving));
+        let file = dir.path().join("sessions.json");
+        std::thread::spawn(move || serve(&serving, &file));
         let started = Instant::now();
         while UnixStream::connect(&socket).is_err() {
             assert!(started.elapsed() < Duration::from_secs(5));
@@ -1172,9 +1336,10 @@ mod tests {
         // A viewer types; the program answers; the viewer leaves.
         let (_, mut first) = ask(&socket, &Request::Attach { id: id.clone(), cols: 80, rows: 24 }).unwrap();
         write_frame(&mut first, b'I', b"echo one-$((6*7)); pwd\n").unwrap();
-        let seen = shown(&mut first, "one-42");
-        shown(&mut first, &cwd);
-        assert!(!seen.contains("[exit"));
+        // The folder is printed after the sum: both are in what is seen
+        // by then.
+        let seen = shown(&mut first, &format!("{cwd}\r\n"));
+        assert!(seen.contains("one-42") && !seen.contains("[exit"), "{seen:?}");
         drop(first);
         std::thread::sleep(Duration::from_millis(100));
 
@@ -1231,7 +1396,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let socket = dir.path().join("sessions.sock");
         let serving = socket.clone();
-        std::thread::spawn(move || serve(&serving));
+        let file = dir.path().join("sessions.json");
+        std::thread::spawn(move || serve(&serving, &file));
         while UnixStream::connect(&socket).is_err() {
             std::thread::sleep(Duration::from_millis(10));
         }
@@ -1293,5 +1459,67 @@ mod tests {
         assert_eq!(hook_state("notice", &json!({"message": "Claude is waiting for your input"})), Some("idle"));
         assert_eq!(hook_state("stop", &json!({})), Some("idle"));
         assert_eq!(hook_state("dance", &json!({})), None);
+    }
+
+    #[test]
+    fn an_agents_conversation_is_written_down_and_comes_back_with_a_new_server() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("sessions.json");
+        let folder = dir.path().join("api");
+        std::fs::create_dir_all(&folder).unwrap();
+        let folder = folder.to_string_lossy().into_owned();
+        let up = |name: &str| {
+            let socket = dir.path().join(name);
+            let (serving, file) = (socket.clone(), file.clone());
+            std::thread::spawn(move || serve(&serving, &file));
+            while UnixStream::connect(&socket).is_err() {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            socket
+        };
+        let written = || -> Vec<Remembered> { std::fs::read(&file).ok().and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or_default() };
+        let waited = |what: &str, wanted: &dyn Fn(&[Remembered]) -> bool| {
+            let started = Instant::now();
+            while !wanted(&written()) {
+                assert!(started.elapsed() < Duration::from_secs(5), "{what}: {:?}", written());
+                std::thread::sleep(Duration::from_millis(50));
+            }
+        };
+
+        // An agent says which conversation it is in: written down. A plain
+        // terminal is not.
+        let first = up("one.sock");
+        let id = ask(&first, &Request::New { cwd: folder.clone(), command: vec!["/bin/sh".to_owned()], cols: 80, rows: 24, workspace: String::new(), label: "the api".into(), fresh: false, env: Vec::new(), window: false }).unwrap().0.id;
+        ask(&first, &new(&folder, vec!["/bin/sh".to_owned()])).unwrap();
+        let report = |state: &str, conversation: &str| ask(&first, &Request::Report { id: id.clone(), agent: "claude".into(), state: state.into(), conversation: conversation.into() }).unwrap();
+        report("working", "0a1b2c3d-1111-2222-3333-444455556666");
+        waited("the conversation was not written down", &|all| all == [Remembered { folder: folder.clone(), label: "the api".into(), agent: "claude".into(), conversation: "0a1b2c3d-1111-2222-3333-444455556666".into() }]);
+
+        // A new server (the computer was restarted) with what was written:
+        // a terminal in that folder, under that name, and the agent asked
+        // to carry on that conversation.
+        let second = up("two.sock");
+        let state = ask(&second, &Request::State).unwrap().0.state.unwrap();
+        assert_eq!(state.workspaces.iter().map(|w| w.label.as_str()).collect::<Vec<_>>(), ["the api"]);
+        let pane = state.workspaces[0].tabs[0].panes[0].clone();
+        assert_eq!(pane.folder, folder);
+        let started = Instant::now();
+        loop {
+            let text = ask(&second, &Request::Read { id: pane.id.clone(), lines: 0 }).unwrap().0.text.unwrap();
+            if text.contains("claude --resume 0a1b2c3d-1111-2222-3333-444455556666") {
+                break;
+            }
+            assert!(started.elapsed() < Duration::from_secs(6), "the agent was not asked to carry on: {text:?}");
+            std::thread::sleep(Duration::from_millis(100));
+        }
+
+        // The agent ends: nothing of it is to come back.
+        report("unknown", "");
+        ask(&second, &Request::Kill { id: pane.id }).unwrap();
+        waited("an ended conversation stayed written", &|all| all.is_empty());
+        // What cannot be carried on, or is not an id, never becomes a command.
+        assert_eq!(resume_command("claude", "abc; rm -rf ~"), None);
+        assert_eq!(resume_command("claude", ""), None);
+        assert_eq!(resume_command("some-agent", "abc"), None);
     }
 }

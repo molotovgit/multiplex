@@ -24,7 +24,8 @@ struct Own {
 impl Own {
     fn command(&self, args: &[&str]) -> Command {
         let mut command = Command::new(env!("CARGO_BIN_EXE_multiplex"));
-        command.env("MULTIPLEX_SESSIONS_SOCKET", &self.socket).env("SHELL", "/bin/bash").args(args);
+        // A server, and a memory of what to bring back, of the test's own.
+        command.env("MULTIPLEX_SESSIONS_SOCKET", &self.socket).env("MULTIPLEX_SESSIONS_FILE", self.socket.with_extension("json")).env("SHELL", "/bin/bash").args(args);
         command
     }
 
