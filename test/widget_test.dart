@@ -10,7 +10,7 @@ void main() {
     final sessions = SessionManager(store);
     await tester.pumpWidget(MultiplexApp(store: store, sessions: sessions));
     await tester.pumpAndSettle();
-    for (final place in ['Hosts', 'Sessions', 'Snippets', 'Keychain', 'Settings']) {
+    for (final place in ['Home', 'Sessions', 'Snippets', 'Keychain', 'Settings']) {
       expect(find.text(place), findsWidgets, reason: place);
     }
     sessions.dispose();

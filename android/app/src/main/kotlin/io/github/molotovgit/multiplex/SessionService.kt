@@ -9,7 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 
 /**
  * Keeps Multiplex running while SSH connections are open.
@@ -23,21 +25,65 @@ import android.os.IBinder
 class SessionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private val main = Handler(Looper.getMainLooper())
+
+    /** Flutter has said how many connections are open since this started. */
+    private var heard = false
+
+    override fun onCreate() {
+        super.onCreate()
+        running = this
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val count = intent?.getIntExtra(EXTRA_COUNT, 0) ?: 0
-        val summary = intent?.getStringExtra(EXTRA_SUMMARY) ?: ""
+        // Started with the phone, before the app was opened: bring the app
+        // up without its screen, and give it a while to connect.
+        if (intent?.getBooleanExtra(EXTRA_STARTING, false) == true) {
+            foreground(buildNotification(0, "Connecting to your computers"))
+            AppEngine.ensure(this)
+            main.postDelayed({ if (!heard) show(0, "") }, STARTING_PATIENCE_MS)
+            return START_NOT_STICKY
+        }
+        show(intent?.getIntExtra(EXTRA_COUNT, 0) ?: 0, intent?.getStringExtra(EXTRA_SUMMARY) ?: "")
+        return START_NOT_STICKY
+    }
+
+    /** Shows how many connections are open, or stops when there are none. */
+    fun show(count: Int, summary: String) {
         if (count <= 0) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
-            return START_NOT_STICKY
+            return
         }
-        val notification = buildNotification(count, summary)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        heard = true
+        foreground(buildNotification(count, summary))
+    }
+
+    private fun foreground(notification: Notification) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } catch (e: RuntimeException) {
+            // Android did not allow it at this moment (the app is in the
+            // background and has no leave to start this): nothing is kept
+            // running that the user cannot see.
+            stopSelf()
         }
-        return START_NOT_STICKY
+    }
+
+    /** The app was swiped away: what was only there for the screen closes; links stay. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        AppEngine.taskRemoved()
+        super.onTaskRemoved(rootIntent)
+    }
+
+    override fun onDestroy() {
+        main.removeCallbacksAndMessages(null)
+        if (running === this) running = null
+        super.onDestroy()
     }
 
     private fun buildNotification(count: Int, summary: String): Notification {
@@ -52,7 +98,11 @@ class SessionService : Service() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val title = if (count == 1) "1 connection open" else "$count connections open"
+        val title = when (count) {
+            0 -> "Multiplex"
+            1 -> "1 connection open"
+            else -> "$count connections open"
+        }
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CHANNEL_ID) else Notification.Builder(this)
         return builder
             .setSmallIcon(R.drawable.ic_stat_connected)
@@ -110,14 +160,40 @@ class SessionService : Service() {
         }
 
         /** Starts, updates or (with count 0) stops the service. */
+        private const val EXTRA_STARTING = "starting"
+
+        /** How long a start with the phone may take to produce a connection. */
+        private const val STARTING_PATIENCE_MS = 120_000L
+
+        /** The service, while it runs. */
+        @Volatile private var running: SessionService? = null
+
         fun update(context: Context, count: Int, summary: String) {
+            // Already running: change what it shows, or stop it. No new start
+            // is asked of Android, which refuses those to an app without a screen.
+            running?.let {
+                it.show(count, summary)
+                return
+            }
+            if (count <= 0) return
             val intent = Intent(context, SessionService::class.java)
                 .putExtra(EXTRA_COUNT, count)
                 .putExtra(EXTRA_SUMMARY, summary)
-            if (count > 0 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            start(context, intent)
+        }
+
+        /** Starts the app without its screen, to link paired computers. */
+        fun startForLinks(context: Context) {
+            if (running != null) return
+            start(context, Intent(context, SessionService::class.java).putExtra(EXTRA_STARTING, true))
+        }
+
+        private fun start(context: Context, intent: Intent) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
+            } catch (e: RuntimeException) {
+                // Android did not allow it now (the app is in the background):
+                // the connections carry on for as long as the app is left alone.
             }
         }
     }

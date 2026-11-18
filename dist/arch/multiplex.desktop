@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Multiplex
+Comment=Your phone and this computer as one: pair, send files, find the phone
+Exec=multiplex-app
+Icon=multiplex
+Terminal=false
+Categories=Utility;
+StartupWMClass=multiplex

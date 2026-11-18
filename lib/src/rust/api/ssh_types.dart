@@ -85,6 +85,10 @@ class ConnectOptions {
   /// (like `ssh -A`). Only the target server, never the jump host.
   final bool forwardAgent;
 
+  /// Reach the server over Tailscale (the node built into the app):
+  /// `host` is then a tailnet device name or 100.x address.
+  final bool viaTailscale;
+
   const ConnectOptions({
     required this.host,
     required this.port,
@@ -95,6 +99,7 @@ class ConnectOptions {
     required this.connectTimeoutSecs,
     this.jump,
     required this.forwardAgent,
+    required this.viaTailscale,
   });
 
   @override
@@ -107,7 +112,8 @@ class ConnectOptions {
       keepaliveSecs.hashCode ^
       connectTimeoutSecs.hashCode ^
       jump.hashCode ^
-      forwardAgent.hashCode;
+      forwardAgent.hashCode ^
+      viaTailscale.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -122,7 +128,8 @@ class ConnectOptions {
           keepaliveSecs == other.keepaliveSecs &&
           connectTimeoutSecs == other.connectTimeoutSecs &&
           jump == other.jump &&
-          forwardAgent == other.forwardAgent;
+          forwardAgent == other.forwardAgent &&
+          viaTailscale == other.viaTailscale;
 }
 
 /// What Multiplex may try when logging in. Everything that is set is

@@ -46,7 +46,7 @@ class HostPickerSheet extends StatelessWidget {
               const EmptyState(
                 icon: Icons.dns_outlined,
                 title: 'No saved hosts',
-                message: 'Add a server on the Hosts screen first, then come back here.',
+                message: 'Add a server on Home first, then come back here.',
               )
             else
               Flexible(

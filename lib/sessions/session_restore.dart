@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../src/rust/api/terminal_types.dart';
@@ -57,6 +59,9 @@ class SessionRestore {
         }
       }
       await _restartTunnels();
+      for (final desktop in List.of(session.desktops)) {
+        unawaited(desktop.reattach());
+      }
       return ReconnectResult.connected;
     } on ConnectCancelled {
       failure = 'Logging in again needs you (a password that is not saved, a one-time code, or a new server key). Tap Reconnect.';

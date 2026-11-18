@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The only folder the in-app updater shares: the downloaded APK, handed
-     to the system installer (see UpdateChannel.kt). -->
+<!-- The two folders that are shared, each for one purpose: the downloaded
+     APK, handed to the system installer (see UpdateChannel.kt), and the
+     picture a paired computer put on the clipboard, read by the app it is
+     pasted into (see ClipPictures.kt). -->
 <paths>
     <cache-path name="updates" path="updates/" />
+    <cache-path name="clipboard" path="clipboard/" />
 </paths>

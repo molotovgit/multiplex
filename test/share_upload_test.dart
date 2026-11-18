@@ -12,6 +12,7 @@ import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/platform/incoming_actions.dart';
 import 'package:multiplex/platform/incoming_actions_handler.dart';
+import 'package:multiplex/sessions/phone_outbox.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/src/rust/api/sftp.dart';
 import 'package:multiplex/src/rust/api/sftp_types.dart';
@@ -205,6 +206,162 @@ void main() {
     await store.flush();
     sessions.dispose();
   });
+
+  group('a paired computer', () {
+    final asked = <String>[];
+
+    Future<FakeFiles> pumpWithDesk(WidgetTester tester, List<SharedFile> files, {String? text}) async {
+      tester.view.physicalSize = const Size(420, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      asked.clear();
+      final store = await VaultStore.open(MemoryBackend());
+      store
+        ..saveHost(const Host(id: 'web', label: 'Web', address: 'web.example.org', username: 'ann'))
+        ..saveHost(const Host(id: 'desk', label: 'Desk', address: 'desk', username: 'ann', computer: true, pairedAs: 'My phone'));
+      final sessions = SessionManager(store);
+      addTearDown(sessions.dispose);
+      final remote = FakeFiles();
+      final queue = TransferQueue(newTransfer: FakeTransfer.new);
+      await tester.pumpWidget(
+        AppScope(
+          vault: store,
+          manager: sessions,
+          child: MaterialApp(
+            theme: AppTheme.build(BuiltInThemes.matteBlack),
+            home: ShareUploadScreen(
+              files: files,
+              text: text,
+              connect: (_, host) async => LiveSession(id: 's', host: host, ssh: FakeSsh(remote)),
+              queueFor: (_) => queue,
+              computer: _FakeComputer(asked),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Let the store's delayed save run, so no timer outlives the test.
+      await tester.pump(const Duration(milliseconds: 500));
+      return remote;
+    }
+
+    testWidgets('files go to its Downloads in one tap, and it is told what arrived', (tester) async {
+      final remote = await pumpWithDesk(tester, [shared('photo.jpg'), shared('notes.txt')]);
+      expect(find.text('Send 2 files'), findsOneWidget);
+      expect(find.text('Upload to which server?'), findsNothing, reason: 'the computer is offered first; no picker pops up');
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Send to Desk'));
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pumpAndSettle();
+      expect(remote.uploads, ['/home/ann/Downloads/photo.jpg', '/home/ann/Downloads/notes.txt']);
+      expect(asked, ['inbox', 'received My phone: photo.jpg, notes.txt']);
+      expect(find.text('Sent 2 of 2 to Desk, into its Downloads folder.'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
+    });
+
+    testWidgets('picked by name in the share sheet: files are sent with nothing more to tap', (tester) async {
+      final remote = FakeFiles();
+      final queue = TransferQueue(newTransfer: FakeTransfer.new);
+      tester.view.physicalSize = const Size(420, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      asked.clear();
+      final store = await VaultStore.open(MemoryBackend());
+      store.saveHost(const Host(id: 'desk', label: 'Desk', address: 'desk', username: 'ann', computer: true, pairedAs: 'My phone'));
+      final sessions = SessionManager(store);
+      addTearDown(sessions.dispose);
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          AppScope(
+            vault: store,
+            manager: sessions,
+            child: MaterialApp(
+              theme: AppTheme.build(BuiltInThemes.matteBlack),
+              home: ShareUploadScreen(
+                files: [shared('photo.jpg')],
+                sendTo: 'desk',
+                connect: (_, host) async => LiveSession(id: 's', host: host, ssh: FakeSsh(remote)),
+                queueFor: (_) => queue,
+                computer: _FakeComputer(asked),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(remote.uploads, ['/home/ann/Downloads/photo.jpg']);
+      expect(find.text('Sent 1 of 1 to Desk, into its Downloads folder.'), findsOneWidget);
+    });
+
+    testWidgets('shared text goes onto its clipboard', (tester) async {
+      await pumpWithDesk(tester, [shared('shared-text.txt')], text: 'a note to self');
+      expect(find.text('Share text'), findsOneWidget);
+      expect(find.text('Open on Desk'), findsNothing, reason: 'not a link');
+      await tester.tap(find.text('Copy to Desk'));
+      await tester.pumpAndSettle();
+      expect(asked, ['copy a note to self']);
+    });
+
+    testWidgets('a shared link can open in its browser', (tester) async {
+      await pumpWithDesk(tester, [shared('shared-text.txt')], text: ' https://example.org/page ');
+      await tester.tap(find.text('Open on Desk'));
+      await tester.pumpAndSettle();
+      expect(asked, ['open https://example.org/page']);
+    });
+
+    testWidgets('a computer out of reach: the files can wait and go later', (tester) async {
+      tester.view.physicalSize = const Size(420, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final store = await VaultStore.open(MemoryBackend());
+      store.saveHost(const Host(id: 'desk', label: 'Desk', address: 'desk', username: 'ann', computer: true));
+      final sessions = SessionManager(store);
+      addTearDown(sessions.dispose);
+      final outbox = PhoneOutbox(root: () async => Directory('${temp.path}/outbox'));
+      final files = [shared('photo.jpg')];
+      await tester.pumpWidget(
+        AppScope(
+          vault: store,
+          manager: sessions,
+          child: MaterialApp(
+            theme: AppTheme.build(BuiltInThemes.matteBlack),
+            home: Navigator(
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (_) => ShareUploadScreen(files: files, connect: (_, _) async => null, outbox: outbox, computer: _FakeComputer(asked)),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Send when it is next connected'), findsNothing);
+      await tester.tap(find.text('Send to Desk'));
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Send when it is next connected'));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pump();
+      await tester.runAsync(() async {
+        expect((await outbox.waiting('desk')).map((f) => f.name), ['photo.jpg']);
+      });
+      expect(File(files.single.path).existsSync(), isFalse, reason: 'moved into the outbox, which keeps it');
+    });
+
+    testWidgets('a plain server is still one tap further', (tester) async {
+      await pumpWithDesk(tester, [shared('photo.jpg')]);
+      expect(find.text('Or upload to a server'), findsOneWidget);
+      await tester.tap(find.text('Choose a server'));
+      await tester.pumpAndSettle();
+      expect(find.text('Upload to which server?'), findsOneWidget);
+    });
+  });
 }
 
 class _OneShot implements IncomingChannel {
@@ -222,4 +379,29 @@ class _OneShot implements IncomingChannel {
     action = null;
     return a == null ? const [] : [a];
   }
+}
+
+/// A computer that writes down what it was asked.
+class _FakeComputer extends ComputerShare {
+  const _FakeComputer(this.asked);
+
+  final List<String> asked;
+
+  @override
+  Future<String> inbox(LiveSession session) async {
+    asked.add('inbox');
+    return '/home/ann/Downloads';
+  }
+
+  @override
+  Future<void> received(LiveSession session, String phone, List<String> names) async => asked.add('received $phone: ${names.join(', ')}');
+
+  @override
+  Future<void> copy(LiveSession session, String text) async => asked.add('copy $text');
+
+  @override
+  Future<void> open(LiveSession session, String url) async => asked.add('open $url');
+
+  @override
+  bool isLink(String text) => text.trim().startsWith('https://');
 }

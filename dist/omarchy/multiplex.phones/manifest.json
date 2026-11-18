@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "multiplex.phones",
+  "name": "Multiplex",
+  "version": "1.0.0",
+  "author": "Multiplex",
+  "description": "The phones paired with this computer through Multiplex: which are connected, their battery, and ringing one, sending it files, pairing another.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Multiplex",
+    "description": "A phone in the bar while one is connected. Click for the paired phones; right click opens the Multiplex window.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showBattery": false,
+      "refreshIntervalSec": 10
+    },
+    "schema": [
+      {
+        "key": "showBattery",
+        "type": "boolean",
+        "label": "Show the phone's battery beside the icon",
+        "defaultValue": false
+      },
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 3,
+        "max": 600,
+        "step": 1,
+        "defaultValue": 10
+      }
+    ]
+  }
+}

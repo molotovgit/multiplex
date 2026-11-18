@@ -87,6 +87,8 @@ class VaultStore extends ChangeNotifier {
     _doc.forwards.removeWhere((f) => f.hostId == id);
     _doc.syncPairs.removeWhere((p) => p.hostId == id);
     _doc.commandHistory.clear(id);
+    // Nowhere to go back to on a computer that is gone.
+    if (_doc.settings.resume['hostId'] == id) _doc.settings = _doc.settings.copyWith(resume: const {});
     _replaceWhere(_doc.hosts, (h) => h.jumpHostId == id, (h) => h.copyWith(jumpHostId: () => null));
     _replaceWhere(_doc.otpAccounts, (a) => a.hostId == id, (a) => a.copyWith(hostId: () => null));
     _changed();

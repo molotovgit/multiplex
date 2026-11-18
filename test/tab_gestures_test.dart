@@ -112,7 +112,7 @@ void main() {
       final icon = tester.getRect(find.byIcon(Icons.dns).first);
       expect((mark.center - icon.center).distance, lessThan(1.5));
       expect(mark.height, 32);
-      final label = find.descendant(of: find.byType(NavigationBar), matching: find.text('Hosts'));
+      final label = find.descendant(of: find.byType(NavigationBar), matching: find.text('Home'));
       if (label.evaluate().isNotEmpty) expect(tester.getRect(label).top, greaterThanOrEqualTo(mark.bottom - 0.5));
       await _finish(tester, sessions);
     });

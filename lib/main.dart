@@ -7,11 +7,18 @@ import 'app/multiplex_app.dart';
 import 'data/vault_backend.dart';
 import 'data/vault_store.dart';
 import 'platform/home_widget_sync.dart';
+import 'platform/share_targets_sync.dart';
+import 'sessions/app_life.dart';
+import 'sessions/computer_links.dart';
+import 'sessions/herd_hub.dart';
+import 'sessions/phone_speaker.dart';
+import 'sessions/screen_cast.dart';
 import 'sessions/background_keeper.dart';
 import 'sessions/network_watcher.dart';
 import 'sessions/session_manager.dart';
 import 'src/rust/frb_generated.dart';
 import 'ui/settings/app_licenses.dart';
+import 'sessions/tailscale_node.dart';
 import 'update/update_controller.dart';
 import 'update/update_platform.dart';
 
@@ -27,10 +34,36 @@ Future<void> main() async {
   BackgroundKeeper(sessions);
   // Keeps the home-screen widget's favourite hosts current.
   HomeWidgetSync(store);
+  // Paired computers by name in Android's share sheet.
+  ShareTargetsSync(store);
   // Reconnects at once when the phone's network comes back.
   NetworkWatcher(sessions);
+  // Links each connected, paired computer: files it sends arrive, and the
+  // clipboards follow each other.
+  ComputerLinks.app = ComputerLinks(sessions, store);
+  // While the app is in front: the agents of every connected computer,
+  // so Home can say who needs the owner.
+  HerdHub.app = HerdHub(sessions);
+  // Without its screen (swiped away, or started with the phone) the app
+  // keeps those links and closes the rest.
+  AppLife(
+    sessions,
+    store,
+    closeScreens: () {
+      MultiplexApp.navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      for (final cast in [PhoneCast.screen, PhoneCast.camera, PhoneCast.microphone]) {
+        unawaited(cast.stop());
+      }
+      unawaited(PhoneSpeaker.app.stop());
+    },
+  );
   // Looks for a new version on GitHub (Android, at most once a day).
   final updates = UpdateController(store: store, platform: const AndroidUpdatePlatform());
   runApp(MultiplexApp(store: store, sessions: sessions, updates: updates));
+  // Tailscale starts in the background when a host uses it, so the first
+  // connection does not wait for it.
+  if (store.hosts.any((h) => h.viaTailscale || (h.tailscaleName ?? '').isNotEmpty) && TailscaleNode.instance.available) {
+    unawaited(TailscaleNode.instance.ensureStarted().catchError((_) {}));
+  }
   unawaited(updates.start());
 }

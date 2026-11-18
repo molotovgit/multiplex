@@ -4,18 +4,33 @@
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
 import '../frb_generated.dart';
+import 'agents.dart';
+import 'desk.dart';
+import 'desk_types.dart';
+import 'desktop.dart';
+import 'desktop_types.dart';
+import 'herd.dart';
+import 'herd_types.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+import 'screen.dart';
 import 'sftp.dart';
+import 'share.dart';
+import 'speaker.dart';
 import 'ssh_types.dart';
 import 'terminal.dart';
 import 'terminal_types.dart';
+import 'touchpad.dart';
 import 'tunnel.dart';
 import 'tunnel_types.dart';
+import 'watch.dart';
 
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<SshSession>>
 abstract class SshSession implements RustOpaqueInterface {
+  /// The agents running on the computer now. Empty without herdr.
+  Future<List<Agent>> agents();
+
   /// True when the server answers within `timeout_secs`.
   Future<bool> checkAlive({required int timeoutSecs});
 
@@ -24,6 +39,19 @@ abstract class SshSession implements RustOpaqueInterface {
   static Future<SshSession> connect({required ConnectOptions options}) =>
       RustLib.instance.api.crateApiSshSshSessionConnect(options: options);
 
+  /// Every key binding with a description, in Omarchy's order.
+  Future<List<DeskBinding>> deskBindings();
+
+  /// Asks the desktop to do something. The answer is the state after it.
+  Future<DeskState> deskDo({required DeskAction action});
+
+  /// The desktop's state now.
+  Future<DeskState> deskState();
+
+  /// The state now, and again whenever it changes, until
+  /// [`DeskWatch::stop`].
+  Future<DeskWatch> deskWatch();
+
   /// Closes the connection (and everything running on it).
   Future<void> disconnect();
 
@@ -31,16 +59,181 @@ abstract class SshSession implements RustOpaqueInterface {
   /// `max_bytes`).
   Future<ExecOutput> exec({required String command, required int maxBytes});
 
+  /// Takes one of the choices an agent offers, if it still asks the
+  /// question the choice was shown for (`mark`). Otherwise nothing is
+  /// sent, and the error says why in words for the owner.
+  Future<void> herdAnswerChoice({
+    required String session,
+    required String pane,
+    required String mark,
+    required String choice,
+  });
+
+  /// Gives an agent that finished, or asks in its own words, this text
+  /// and Enter: only if it is not working again and no choice has come
+  /// up on its screen (`mark` is empty when none was shown).
+  Future<void> herdAnswerText({
+    required String session,
+    required String pane,
+    required String mark,
+    required String text,
+  });
+
+  /// Closes a pane, and whatever runs in it.
+  Future<void> herdClosePane({required String session, required String pane});
+
+  /// Closes a tab with all its panes.
+  Future<void> herdCloseTab({required String session, required String tab});
+
+  /// A new workspace in a folder, with an agent of this kind asked to
+  /// carry on its latest conversation there.
+  Future<HerdMade> herdContinue({
+    required String session,
+    required String folder,
+    required String kind,
+  });
+
+  /// The folders inside a folder of the computer, by name.
+  Future<List<HerdPlace>> herdFolders({required String inside});
+
+  /// Presses keys in a pane, by herdr's names for them: "esc", "enter",
+  /// "ctrl+c", "up", "2".
+  Future<void> herdKeys({
+    required String session,
+    required String pane,
+    required List<String> keys,
+  });
+
+  /// The kinds of agent that can be started on the computer, those that
+  /// are installed first; the others install themselves when first
+  /// started.
+  Future<List<HerdKind>> herdKinds();
+
+  /// A new tab in a workspace, with a terminal in it. With an empty
+  /// label herdr names it.
+  Future<HerdMade> herdNewTab({
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
+  /// A new workspace in a folder of the computer, with a tab and a
+  /// terminal in it.
+  Future<HerdMade> herdNewWorkspace({
+    required String session,
+    required String folder,
+    required String label,
+  });
+
+  /// The agents that run outside any terminal the computer keeps.
+  Future<List<HerdOutside>> herdOutside();
+
+  /// Folders worth offering for a new workspace: those the user goes
+  /// to, those herdr's panes are in, and projects in the home folder.
+  Future<List<HerdPlace>> herdPlaces();
+
+  /// Gives a pane's agent this text and Enter, as one piece. In a plain
+  /// terminal it is typed, then Enter.
+  Future<void> herdPrompt({
+    required String session,
+    required String pane,
+    required String text,
+  });
+
+  /// A pane's recent output, as text, at most `lines` lines of it; and
+  /// what its agent asks, when it waits on a choice.
+  Future<HerdText> herdRead({
+    required String session,
+    required String pane,
+    required int lines,
+  });
+
+  /// Gives a workspace another name.
+  Future<void> herdRename({
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
+  /// Starts an agent of this kind in a pane that sits at its prompt.
+  /// Returns once the agent is ready there, or says why it is not.
+  Future<void> herdStartAgent({
+    required String session,
+    required String pane,
+    required String kind,
+  });
+
+  /// The herd now.
+  Future<HerdState> herdState();
+
+  /// The herd now, and again whenever something in it changes, until
+  /// [`HerdWatch::stop`]. The computer is told by herdr itself, so a
+  /// change is here as fast as the connection carries it.
+  Future<HerdWatch> herdWatch();
+
   SessionInfo info();
 
   bool isConnected();
 
+  /// Makes the phone's camera a webcam of the computer. It is there
+  /// (once the first picture has arrived) for as long as the stream is
+  /// open. `turn`: degrees the picture is turned clockwise to stand
+  /// upright.
+  Future<ScreenStream> openCamera({required String phone, required int turn});
+
+  /// Starts a remote desktop (gliff) on this connection. The video is
+  /// drawn into `options.texture_id`; listen to [`RemoteDesktop::events`]
+  /// for everything else.
+  Future<RemoteDesktop> openDesktop({required DesktopOptions options});
+
   /// Opens a file browser on this connection.
   Future<RemoteFiles> openFiles();
+
+  /// Makes the phone's microphone a microphone of the computer, for as
+  /// long as the stream is open.
+  Future<SoundStream> openMic({required String phone});
+
+  /// Opens the window on the computer. It is there when this returns.
+  /// `phone` (the name this phone paired under, or empty) goes in its
+  /// title.
+  Future<ScreenStream> openScreen({required String phone});
 
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.
   Future<RemoteShell> openShell({required ShellOptions options});
+
+  /// Gives the computer one more sound output, named after the phone
+  /// (`phone`, or empty), whose sound comes here. With `everything` it
+  /// becomes the computer's default output while this is open, so all
+  /// of its sound is heard on the phone.
+  Future<SpeakerStream> openSpeaker({
+    required String phone,
+    required bool everything,
+  });
+
+  /// Starts a touchpad and keyboard on the computer. It is ready when
+  /// this returns.
+  Future<RemoteTouchpad> openTouchpad();
+
+  /// A call on the phone began or ended: the computer pauses what is
+  /// playing, and carries on with it afterwards.
+  Future<void> phoneCall({required String phone, required bool active});
+
+  /// Shows one of the phone's notifications on the computer's screen.
+  Future<void> phoneNotice({
+    required String phone,
+    required String app,
+    required String title,
+    required String text,
+  });
+
+  /// Tells the computer the phone's battery level (0 to 100) and whether
+  /// it is charging. `phone` is the name it paired under.
+  Future<void> phoneStatus({
+    required String phone,
+    required int battery,
+    required bool charging,
+  });
 
   /// Joins a shell whose connection dropped to this (new) connection.
   /// Its screen and history stay; the new shell carries on below them.
@@ -49,6 +242,54 @@ abstract class SshSession implements RustOpaqueInterface {
     required ShellOptions options,
   });
 
+  /// Answers an approval the computer asked for: `answer` is what
+  /// [`approval_sign`] made, or "no".
+  Future<void> shareApproved({required String id, required String answer});
+
+  /// Puts text on the computer's clipboard.
+  Future<void> shareCopy({required String text});
+
+  /// Puts a picture (`kind`: `png`, `jpeg`, `webp` or `gif`) on the
+  /// computer's clipboard.
+  Future<void> shareCopyPicture({
+    required String kind,
+    required List<int> picture,
+  });
+
+  /// The phone has a waiting file now: the computer forgets it.
+  Future<void> shareDone({required String id});
+
+  /// The folder on the computer that files from the phone go to.
+  Future<String> shareInbox();
+
+  /// Hears what the computer has for this phone: files waiting (also
+  /// ones sent while the phone was away) and clipboard changes. `phone`
+  /// is the name this phone paired under; empty when it is the only one.
+  Future<ShareLink> shareLink({required String phone});
+
+  /// Opens a web link in the computer's browser.
+  Future<void> shareOpen({required String url});
+
+  /// The text on the computer's clipboard, if it holds text.
+  Future<String?> sharePaste();
+
+  /// The picture on the computer's clipboard, if it holds one.
+  Future<ClipPictureData?> sharePastePicture();
+
+  /// Has the computer read the text in a picture (a JPEG or PNG) and
+  /// put it on its clipboard.
+  Future<TextFound> shareReadText({required List<int> picture});
+
+  /// Tells the computer which files arrived, so it can say so on screen.
+  Future<void> shareReceived({
+    required String phone,
+    required List<String> names,
+  });
+
   /// Starts a port forward on this connection.
   Future<ActiveTunnel> startTunnel({required TunnelSpec spec});
+
+  /// Starts a long-running command whose output lines stream back (a
+  /// watcher on the server). Stop it with [`RemoteWatch::stop`].
+  Future<RemoteWatch> watch({required String command});
 }

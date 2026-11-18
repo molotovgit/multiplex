@@ -5,6 +5,7 @@ import '../data/vault_store.dart';
 import '../src/rust/api/ssh.dart';
 import '../src/rust/api/ssh_types.dart';
 import 'owner_check.dart';
+import 'tailscale_node.dart';
 
 /// A secret the user typed, and whether to keep it in the vault.
 class SecretAnswer {
@@ -56,12 +57,19 @@ class ConnectFailure implements Exception {
 /// Turns a saved [Host] into a logged-in [SshSession], asking the user
 /// whatever is needed on the way (trust this server? password?).
 class ConnectFlow {
-  ConnectFlow(this._store, this._prompter, {DeviceUnlock unlock = const DeviceUnlock(), SshConnector? connector, this.ownerConfirmed = false})
+  ConnectFlow(this._store, this._prompter, {DeviceUnlock unlock = const DeviceUnlock(), SshConnector? connector, this.ownerConfirmed = false, this.tailscaleReady, this.tailscaleUsable})
       : _ownerCheck = OwnerCheck(unlock),
         _connector = connector ?? ((options) => SshSession.connect(options: options));
 
   final VaultStore _store;
   final ConnectPrompter _prompter;
+
+  /// Brings Tailscale up for a Tailscale host; tests pass a stand-in.
+  final Future<void> Function()? tailscaleReady;
+
+  /// Whether Tailscale can be used right now, for a paired computer's
+  /// route choice; tests pass a stand-in.
+  final Future<bool> Function()? tailscaleUsable;
   final OwnerCheck _ownerCheck;
   final SshConnector _connector;
 
@@ -74,8 +82,28 @@ class ConnectFlow {
   static const _maxAttempts = 8;
   static const _timeoutSecs = 20;
 
+  /// Connects to [host]. A paired computer has two routes: Tailscale when
+  /// the phone's Tailscale is signed in (it works from anywhere and goes
+  /// direct on the home network), and its home-network address otherwise,
+  /// or when the Tailscale route does not answer.
   Future<SshSession> connect(Host host) async {
-    final jump = _store.host(host.jumpHostId);
+    final tailnet = host.tailscaleName;
+    if (tailnet == null || tailnet.isEmpty || host.viaTailscale) return _connectOnce(host);
+    if (await (tailscaleUsable ?? TailscaleNode.instance.usableSoon)()) {
+      try {
+        return await _connectOnce(host.copyWith(address: tailnet, viaTailscale: true));
+      } on ConnectFailure {
+        // The computer is not on the tailnet right now: try it at home.
+      }
+    }
+    return _connectOnce(host);
+  }
+
+  Future<SshSession> _connectOnce(Host host) async {
+    // A Tailscale host goes through the app's own Tailscale node, which
+    // must be up and signed in; no jump host is used on that route.
+    if (host.viaTailscale) await (tailscaleReady ?? TailscaleNode.instance.ensureRunning)();
+    final jump = host.viaTailscale ? null : _store.host(host.jumpHostId);
     if (!ownerConfirmed && OwnerCheck.needed(host, jump)) await _ownerCheck.require(host);
     final secrets = _Secrets(
       password: host.password,
@@ -175,6 +203,7 @@ class ConnectFlow {
         connectTimeoutSecs: _timeoutSecs,
         // Only a key can be forwarded; a password login has none.
         forwardAgent: host.forwardAgent && host.usesKey,
+        viaTailscale: host.viaTailscale,
         jump: jump == null
             ? null
             : JumpHost(

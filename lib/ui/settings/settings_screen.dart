@@ -10,6 +10,8 @@ import '../common/widgets.dart';
 import 'about_screen.dart';
 import 'app_lock_setup.dart';
 import 'backup_screen.dart';
+import 'tailscale_screen.dart';
+import '../../sessions/tailscale_node.dart';
 import '../keyboard/keyboard_settings_screen.dart';
 import 'key_bar_editor_screen.dart';
 import 'key_bar_layout.dart';
@@ -60,6 +62,7 @@ class SettingsScreen extends StatelessWidget {
               _TerminalSection(settings: store.settings),
               _KeyboardSection(layout: KeyBarLayout(store.settings.keyBar)),
               _SecuritySection(unlock: unlock, on: store.settings.appLock, hideScreens: store.settings.hideScreens),
+              const _TailscaleSection(),
               const _BackupSection(),
               const _ConnectionsSection(),
               const _AboutSection(),
@@ -227,6 +230,32 @@ class _SecuritySection extends StatelessWidget {
         onChanged: (v) {
           final store = AppScope.store(context);
           store.updateSettings(store.settings.copyWith(hideScreens: v));
+        },
+      ),
+    ],
+  );
+}
+
+class _TailscaleSection extends StatelessWidget {
+  const _TailscaleSection();
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SectionHeader('Tailscale'),
+      ListenableBuilder(
+        listenable: TailscaleNode.instance,
+        builder: (context, _) {
+          final node = TailscaleNode.instance;
+          final state = node.running ? 'Connected' : (node.needsLogin ? 'Not signed in' : 'Reach your devices from anywhere, no VPN app needed');
+          return ListTile(
+            leading: const Icon(Icons.hub_outlined),
+            title: const Text('Tailscale'),
+            subtitle: Text(state),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => SettingsNavigation.open(context, const TailscaleScreen()),
+          );
         },
       ),
     ],

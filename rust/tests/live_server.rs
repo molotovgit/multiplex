@@ -46,6 +46,7 @@ fn live_options() -> Option<ConnectOptions> {
         connect_timeout_secs: 15,
         jump: None,
         forward_agent: false,
+        via_tailscale: false,
     })
 }
 

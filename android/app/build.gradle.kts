@@ -55,7 +55,15 @@ android {
     }
 
     buildTypes {
+        // Debug builds install next to the released app ("Multiplex dev"),
+        // so testing never replaces it or touches its saved hosts and keys.
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            manifestPlaceholders["appLabel"] = "Multiplex dev"
+        }
         release {
+            manifestPlaceholders["appLabel"] = "Multiplex"
             signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
     }
@@ -69,4 +77,12 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Pairing: Google's code scanner reads the QR code without the app
+    // needing the camera permission.
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // Google's page scanner, for photographing text that a computer then reads.
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 }

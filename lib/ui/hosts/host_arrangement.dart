@@ -42,7 +42,9 @@ class HostArrangement {
   /// Groups in the order they were made, each followed by its hosts in the
   /// user's order, then the hosts without a group.
   factory HostArrangement.of(VaultStore store) {
-    final hosts = store.hosts;
+    // Paired computers have their own cards above the list.
+    final hosts = store.hosts.where((h) => !h.computer).toList();
+    final hasComputers = hosts.length != store.hosts.length;
     final groups = store.groups;
     final entries = <HostListEntry>[];
     for (final group in groups) {
@@ -53,7 +55,7 @@ class HostArrangement {
     // With groups around, the "Other hosts" heading stays visible even when
     // empty, so a host can be dragged out of its group.
     if (ungrouped.isNotEmpty || groups.isNotEmpty) {
-      entries.add(GroupEntry(null, groups.isEmpty ? 'All hosts' : 'Other hosts'));
+      entries.add(GroupEntry(null, groups.isEmpty ? (hasComputers ? 'Servers' : 'All hosts') : 'Other hosts'));
       entries.addAll(ungrouped.map(HostEntry.new));
     }
     return HostArrangement(entries);

@@ -125,7 +125,7 @@ void main() {
     // A long press elsewhere on the bar does not open it again or change place.
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
-    await tester.longPress(find.descendant(of: find.byType(NavigationBar), matching: find.text('Hosts')));
+    await tester.longPress(find.descendant(of: find.byType(NavigationBar), matching: find.text('Home')));
     await tester.pumpAndSettle();
     expect(find.text('Switch theme'), findsNothing);
     await app.finish(tester);

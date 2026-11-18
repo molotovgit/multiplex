@@ -1,0 +1,10 @@
+[Unit]
+Description=Multiplex SSH agent (the key lives on the paired phone)
+Documentation=https://github.com/molotovgit/multiplex/blob/main/docs/remote-desktop/README.md
+
+[Service]
+ExecStart=/usr/bin/multiplex agent
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

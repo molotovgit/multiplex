@@ -3,21 +3,37 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/agents.dart';
 import 'api/app.dart';
+import 'api/desk.dart';
+import 'api/desk_types.dart';
+import 'api/desktop.dart';
+import 'api/desktop_types.dart';
+import 'api/herd.dart';
+import 'api/herd_types.dart';
 import 'api/keys.dart';
+import 'api/pairing.dart';
+import 'api/screen.dart';
 import 'api/sftp.dart';
 import 'api/sftp_types.dart';
+import 'api/share.dart';
+import 'api/speaker.dart';
 import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/tailscale.dart';
+import 'api/tailscale_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
 import 'api/theme_types.dart';
+import 'api/touchpad.dart';
 import 'api/transfer.dart';
 import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
+import 'api/wake.dart';
+import 'api/watch.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -40,6 +56,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnelPtr;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_DeskWatchPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatchPtr;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_FileSidePtr => wire
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSidePtr;
 
@@ -48,12 +68,44 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransferPtr;
 
   CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_HerdWatchPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatchPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteDesktopPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktopPtr;
+
+  CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_RemoteFilesPtr => wire
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFilesPtr;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_RemoteShellPtr => wire
       ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteTouchpadPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteWatchPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_ScreenStreamPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStreamPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_ShareLinkPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLinkPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_SoundStreamPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStreamPtr;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_SpeakerStreamPtr => wire
+      ._rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStreamPtr;
 
   CrossPlatformFinalizerArg
   get rust_arc_decrement_strong_count_SshSessionPtr => wire
@@ -65,6 +117,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  DeskWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     dynamic raw,
   );
 
@@ -81,6 +139,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteDesktop
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  );
+
+  @protected
   RemoteFiles
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     dynamic raw,
@@ -89,6 +159,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   RemoteShell
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteTouchpad
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  );
+
+  @protected
+  ScreenStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  );
+
+  @protected
+  ShareLink
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  );
+
+  @protected
+  SoundStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  );
+
+  @protected
+  SpeakerStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
     dynamic raw,
   );
 
@@ -105,6 +211,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    dynamic raw,
+  );
+
+  @protected
   FileSide
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     dynamic raw,
@@ -113,6 +225,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    dynamic raw,
+  );
+
+  @protected
+  HerdWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteDesktop
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     dynamic raw,
   );
 
@@ -129,6 +253,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  );
+
+  @protected
+  ScreenStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  );
+
+  @protected
+  ShareLink
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  );
+
+  @protected
+  SoundStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  );
+
+  @protected
+  SpeakerStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    dynamic raw,
+  );
+
+  @protected
   SshSession
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     dynamic raw,
@@ -137,6 +297,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    dynamic raw,
+  );
+
+  @protected
+  DeskWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     dynamic raw,
   );
 
@@ -153,6 +319,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteDesktop
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  );
+
+  @protected
   RemoteFiles
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     dynamic raw,
@@ -165,10 +343,68 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  );
+
+  @protected
+  RemoteWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  );
+
+  @protected
+  ScreenStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  );
+
+  @protected
+  ShareLink
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  );
+
+  @protected
+  SoundStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  );
+
+  @protected
+  SpeakerStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    dynamic raw,
+  );
+
+  @protected
   SshSession
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     dynamic raw,
   );
+
+  @protected
+  RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw);
+
+  @protected
+  RustStreamSink<DeskState> dco_decode_StreamSink_desk_state_Sse(dynamic raw);
+
+  @protected
+  RustStreamSink<DesktopEvent> dco_decode_StreamSink_desktop_event_Sse(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<HerdState> dco_decode_StreamSink_herd_state_Sse(dynamic raw);
+
+  @protected
+  RustStreamSink<Uint8List> dco_decode_StreamSink_list_prim_u_8_strict_Sse(
+    dynamic raw,
+  );
+
+  @protected
+  RustStreamSink<ShareEvent> dco_decode_StreamSink_share_event_Sse(dynamic raw);
 
   @protected
   RustStreamSink<ShellEvent> dco_decode_StreamSink_shell_event_Sse(dynamic raw);
@@ -182,10 +418,43 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  Agent dco_decode_agent(dynamic raw);
+
+  @protected
+  AgentStatus dco_decode_agent_status(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  bool dco_decode_box_autoadd_bool(dynamic raw);
+
+  @protected
+  ClipPictureData dco_decode_box_autoadd_clip_picture_data(dynamic raw);
+
+  @protected
   ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw);
+
+  @protected
+  DeskAction dco_decode_box_autoadd_desk_action(dynamic raw);
+
+  @protected
+  DeskMedia dco_decode_box_autoadd_desk_media(dynamic raw);
+
+  @protected
+  DeskVolume dco_decode_box_autoadd_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow dco_decode_box_autoadd_desk_window(dynamic raw);
+
+  @protected
+  DesktopOptions dco_decode_box_autoadd_desktop_options(dynamic raw);
+
+  @protected
+  DesktopStats dco_decode_box_autoadd_desktop_stats(dynamic raw);
+
+  @protected
+  HerdAsked dco_decode_box_autoadd_herd_asked(dynamic raw);
 
   @protected
   HostKeyInfo dco_decode_box_autoadd_host_key_info(dynamic raw);
@@ -206,6 +475,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ShellOptions dco_decode_box_autoadd_shell_options(dynamic raw);
 
   @protected
+  TailscaleDevice dco_decode_box_autoadd_tailscale_device(dynamic raw);
+
+  @protected
   TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw);
 
   @protected
@@ -213,6 +485,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  ClipPictureData dco_decode_clip_picture_data(dynamic raw);
 
   @protected
   ConflictPolicy dco_decode_conflict_policy(dynamic raw);
@@ -233,6 +508,51 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CursorShape dco_decode_cursor_shape(dynamic raw);
 
   @protected
+  DeskAction dco_decode_desk_action(dynamic raw);
+
+  @protected
+  DeskBinding dco_decode_desk_binding(dynamic raw);
+
+  @protected
+  DeskDirection dco_decode_desk_direction(dynamic raw);
+
+  @protected
+  DeskMedia dco_decode_desk_media(dynamic raw);
+
+  @protected
+  DeskMonitor dco_decode_desk_monitor(dynamic raw);
+
+  @protected
+  DeskSlot dco_decode_desk_slot(dynamic raw);
+
+  @protected
+  DeskState dco_decode_desk_state(dynamic raw);
+
+  @protected
+  DeskVolume dco_decode_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow dco_decode_desk_window(dynamic raw);
+
+  @protected
+  DesktopButton dco_decode_desktop_button(dynamic raw);
+
+  @protected
+  DesktopEvent dco_decode_desktop_event(dynamic raw);
+
+  @protected
+  DesktopMode dco_decode_desktop_mode(dynamic raw);
+
+  @protected
+  DesktopOptions dco_decode_desktop_options(dynamic raw);
+
+  @protected
+  DesktopOutput dco_decode_desktop_output(dynamic raw);
+
+  @protected
+  DesktopStats dco_decode_desktop_stats(dynamic raw);
+
+  @protected
   EntryKind dco_decode_entry_kind(dynamic raw);
 
   @protected
@@ -240,6 +560,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ExecOutput dco_decode_exec_output(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
+
+  @protected
+  HerdAgent dco_decode_herd_agent(dynamic raw);
+
+  @protected
+  HerdAsked dco_decode_herd_asked(dynamic raw);
+
+  @protected
+  HerdChoice dco_decode_herd_choice(dynamic raw);
+
+  @protected
+  HerdKind dco_decode_herd_kind(dynamic raw);
+
+  @protected
+  HerdMade dco_decode_herd_made(dynamic raw);
+
+  @protected
+  HerdOutside dco_decode_herd_outside(dynamic raw);
+
+  @protected
+  HerdPane dco_decode_herd_pane(dynamic raw);
+
+  @protected
+  HerdPlace dco_decode_herd_place(dynamic raw);
+
+  @protected
+  HerdSession dco_decode_herd_session(dynamic raw);
+
+  @protected
+  HerdState dco_decode_herd_state(dynamic raw);
+
+  @protected
+  HerdTab dco_decode_herd_tab(dynamic raw);
+
+  @protected
+  HerdText dco_decode_herd_text(dynamic raw);
+
+  @protected
+  HerdWorkspace dco_decode_herd_workspace(dynamic raw);
 
   @protected
   HostKeyInfo dco_decode_host_key_info(dynamic raw);
@@ -269,7 +631,52 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
+  List<Agent> dco_decode_list_agent(dynamic raw);
+
+  @protected
+  List<DeskBinding> dco_decode_list_desk_binding(dynamic raw);
+
+  @protected
+  List<DeskMonitor> dco_decode_list_desk_monitor(dynamic raw);
+
+  @protected
+  List<DeskSlot> dco_decode_list_desk_slot(dynamic raw);
+
+  @protected
+  List<DesktopOutput> dco_decode_list_desktop_output(dynamic raw);
+
+  @protected
   List<EnvVar> dco_decode_list_env_var(dynamic raw);
+
+  @protected
+  List<HerdAgent> dco_decode_list_herd_agent(dynamic raw);
+
+  @protected
+  List<HerdChoice> dco_decode_list_herd_choice(dynamic raw);
+
+  @protected
+  List<HerdKind> dco_decode_list_herd_kind(dynamic raw);
+
+  @protected
+  List<HerdOutside> dco_decode_list_herd_outside(dynamic raw);
+
+  @protected
+  List<HerdPane> dco_decode_list_herd_pane(dynamic raw);
+
+  @protected
+  List<HerdPlace> dco_decode_list_herd_place(dynamic raw);
+
+  @protected
+  List<HerdSession> dco_decode_list_herd_session(dynamic raw);
+
+  @protected
+  List<HerdTab> dco_decode_list_herd_tab(dynamic raw);
+
+  @protected
+  List<HerdWorkspace> dco_decode_list_herd_workspace(dynamic raw);
+
+  @protected
+  List<int> dco_decode_list_prim_u_32_loose(dynamic raw);
 
   @protected
   Uint32List dco_decode_list_prim_u_32_strict(dynamic raw);
@@ -290,6 +697,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SyncAction> dco_decode_list_sync_action(dynamic raw);
 
   @protected
+  List<TailscaleDevice> dco_decode_list_tailscale_device(dynamic raw);
+
+  @protected
   List<TerminalLine> dco_decode_list_terminal_line(dynamic raw);
 
   @protected
@@ -297,6 +707,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  bool? dco_decode_opt_box_autoadd_bool(dynamic raw);
+
+  @protected
+  ClipPictureData? dco_decode_opt_box_autoadd_clip_picture_data(dynamic raw);
+
+  @protected
+  DeskMedia? dco_decode_opt_box_autoadd_desk_media(dynamic raw);
+
+  @protected
+  DeskVolume? dco_decode_opt_box_autoadd_desk_volume(dynamic raw);
+
+  @protected
+  DeskWindow? dco_decode_opt_box_autoadd_desk_window(dynamic raw);
+
+  @protected
+  HerdAsked? dco_decode_opt_box_autoadd_herd_asked(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_i_32(dynamic raw);
@@ -308,16 +736,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   JumpHost? dco_decode_opt_box_autoadd_jump_host(dynamic raw);
 
   @protected
+  TailscaleDevice? dco_decode_opt_box_autoadd_tailscale_device(dynamic raw);
+
+  @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
 
   @protected
+  PairingInfo dco_decode_pairing_info(dynamic raw);
+
+  @protected
+  PairingOutcome dco_decode_pairing_outcome(dynamic raw);
+
+  @protected
   RemoteEntry dco_decode_remote_entry(dynamic raw);
+
+  @protected
+  ScreenStatus dco_decode_screen_status(dynamic raw);
+
+  @protected
+  ScreenWrite dco_decode_screen_write(dynamic raw);
 
   @protected
   SearchMatch dco_decode_search_match(dynamic raw);
 
   @protected
   SessionInfo dco_decode_session_info(dynamic raw);
+
+  @protected
+  ShareEvent dco_decode_share_event(dynamic raw);
 
   @protected
   ShellEvent dco_decode_shell_event(dynamic raw);
@@ -341,6 +787,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SyncReport dco_decode_sync_report(dynamic raw);
 
   @protected
+  TailscaleDevice dco_decode_tailscale_device(dynamic raw);
+
+  @protected
+  TailscaleStatus dco_decode_tailscale_status(dynamic raw);
+
+  @protected
   TerminalCursor dco_decode_terminal_cursor(dynamic raw);
 
   @protected
@@ -356,7 +808,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TerminalPalette dco_decode_terminal_palette(dynamic raw);
 
   @protected
+  TextFound dco_decode_text_found(dynamic raw);
+
+  @protected
   TextRun dco_decode_text_run(dynamic raw);
+
+  @protected
+  TouchpadButton dco_decode_touchpad_button(dynamic raw);
 
   @protected
   TransferProgress dco_decode_transfer_progress(dynamic raw);
@@ -398,6 +856,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FileSide
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -406,6 +870,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteDesktop
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     SseDeserializer deserializer,
   );
 
@@ -422,6 +898,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ScreenStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ShareLink
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SoundStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SpeakerStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SshSession
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SseDeserializer deserializer,
@@ -430,6 +942,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   ActiveTunnel
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
     SseDeserializer deserializer,
   );
 
@@ -446,6 +964,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  HerdWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteDesktop
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   RemoteFiles
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     SseDeserializer deserializer,
@@ -454,6 +984,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   RemoteShell
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteTouchpad
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ScreenStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ShareLink
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SoundStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SpeakerStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
     SseDeserializer deserializer,
   );
 
@@ -470,6 +1036,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  DeskWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   FileSide
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -478,6 +1050,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   FileTransfer
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteDesktop
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
     SseDeserializer deserializer,
   );
 
@@ -494,8 +1078,74 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  RemoteTouchpad
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RemoteWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ScreenStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  ShareLink
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SoundStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  SpeakerStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SshSession
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<String> sse_decode_StreamSink_String_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<DeskState> sse_decode_StreamSink_desk_state_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<DesktopEvent> sse_decode_StreamSink_desktop_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<HerdState> sse_decode_StreamSink_herd_state_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<Uint8List> sse_decode_StreamSink_list_prim_u_8_strict_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<ShareEvent> sse_decode_StreamSink_share_event_Sse(
     SseDeserializer deserializer,
   );
 
@@ -513,12 +1163,51 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  Agent sse_decode_agent(SseDeserializer deserializer);
+
+  @protected
+  AgentStatus sse_decode_agent_status(SseDeserializer deserializer);
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  bool sse_decode_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  ClipPictureData sse_decode_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  );
 
   @protected
   ConnectOptions sse_decode_box_autoadd_connect_options(
     SseDeserializer deserializer,
   );
+
+  @protected
+  DeskAction sse_decode_box_autoadd_desk_action(SseDeserializer deserializer);
+
+  @protected
+  DeskMedia sse_decode_box_autoadd_desk_media(SseDeserializer deserializer);
+
+  @protected
+  DeskVolume sse_decode_box_autoadd_desk_volume(SseDeserializer deserializer);
+
+  @protected
+  DeskWindow sse_decode_box_autoadd_desk_window(SseDeserializer deserializer);
+
+  @protected
+  DesktopOptions sse_decode_box_autoadd_desktop_options(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DesktopStats sse_decode_box_autoadd_desktop_stats(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdAsked sse_decode_box_autoadd_herd_asked(SseDeserializer deserializer);
 
   @protected
   HostKeyInfo sse_decode_box_autoadd_host_key_info(
@@ -545,6 +1234,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  TailscaleDevice sse_decode_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TerminalPalette sse_decode_box_autoadd_terminal_palette(
     SseDeserializer deserializer,
   );
@@ -554,6 +1248,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  ClipPictureData sse_decode_clip_picture_data(SseDeserializer deserializer);
 
   @protected
   ConflictPolicy sse_decode_conflict_policy(SseDeserializer deserializer);
@@ -574,6 +1271,51 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CursorShape sse_decode_cursor_shape(SseDeserializer deserializer);
 
   @protected
+  DeskAction sse_decode_desk_action(SseDeserializer deserializer);
+
+  @protected
+  DeskBinding sse_decode_desk_binding(SseDeserializer deserializer);
+
+  @protected
+  DeskDirection sse_decode_desk_direction(SseDeserializer deserializer);
+
+  @protected
+  DeskMedia sse_decode_desk_media(SseDeserializer deserializer);
+
+  @protected
+  DeskMonitor sse_decode_desk_monitor(SseDeserializer deserializer);
+
+  @protected
+  DeskSlot sse_decode_desk_slot(SseDeserializer deserializer);
+
+  @protected
+  DeskState sse_decode_desk_state(SseDeserializer deserializer);
+
+  @protected
+  DeskVolume sse_decode_desk_volume(SseDeserializer deserializer);
+
+  @protected
+  DeskWindow sse_decode_desk_window(SseDeserializer deserializer);
+
+  @protected
+  DesktopButton sse_decode_desktop_button(SseDeserializer deserializer);
+
+  @protected
+  DesktopEvent sse_decode_desktop_event(SseDeserializer deserializer);
+
+  @protected
+  DesktopMode sse_decode_desktop_mode(SseDeserializer deserializer);
+
+  @protected
+  DesktopOptions sse_decode_desktop_options(SseDeserializer deserializer);
+
+  @protected
+  DesktopOutput sse_decode_desktop_output(SseDeserializer deserializer);
+
+  @protected
+  DesktopStats sse_decode_desktop_stats(SseDeserializer deserializer);
+
+  @protected
   EntryKind sse_decode_entry_kind(SseDeserializer deserializer);
 
   @protected
@@ -581,6 +1323,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   ExecOutput sse_decode_exec_output(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  HerdAgent sse_decode_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  HerdAsked sse_decode_herd_asked(SseDeserializer deserializer);
+
+  @protected
+  HerdChoice sse_decode_herd_choice(SseDeserializer deserializer);
+
+  @protected
+  HerdKind sse_decode_herd_kind(SseDeserializer deserializer);
+
+  @protected
+  HerdMade sse_decode_herd_made(SseDeserializer deserializer);
+
+  @protected
+  HerdOutside sse_decode_herd_outside(SseDeserializer deserializer);
+
+  @protected
+  HerdPane sse_decode_herd_pane(SseDeserializer deserializer);
+
+  @protected
+  HerdPlace sse_decode_herd_place(SseDeserializer deserializer);
+
+  @protected
+  HerdSession sse_decode_herd_session(SseDeserializer deserializer);
+
+  @protected
+  HerdState sse_decode_herd_state(SseDeserializer deserializer);
+
+  @protected
+  HerdTab sse_decode_herd_tab(SseDeserializer deserializer);
+
+  @protected
+  HerdText sse_decode_herd_text(SseDeserializer deserializer);
+
+  @protected
+  HerdWorkspace sse_decode_herd_workspace(SseDeserializer deserializer);
 
   @protected
   HostKeyInfo sse_decode_host_key_info(SseDeserializer deserializer);
@@ -610,7 +1394,56 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
+  List<Agent> sse_decode_list_agent(SseDeserializer deserializer);
+
+  @protected
+  List<DeskBinding> sse_decode_list_desk_binding(SseDeserializer deserializer);
+
+  @protected
+  List<DeskMonitor> sse_decode_list_desk_monitor(SseDeserializer deserializer);
+
+  @protected
+  List<DeskSlot> sse_decode_list_desk_slot(SseDeserializer deserializer);
+
+  @protected
+  List<DesktopOutput> sse_decode_list_desktop_output(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer);
+
+  @protected
+  List<HerdAgent> sse_decode_list_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  List<HerdChoice> sse_decode_list_herd_choice(SseDeserializer deserializer);
+
+  @protected
+  List<HerdKind> sse_decode_list_herd_kind(SseDeserializer deserializer);
+
+  @protected
+  List<HerdOutside> sse_decode_list_herd_outside(SseDeserializer deserializer);
+
+  @protected
+  List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer);
+
+  @protected
+  List<HerdPlace> sse_decode_list_herd_place(SseDeserializer deserializer);
+
+  @protected
+  List<HerdSession> sse_decode_list_herd_session(SseDeserializer deserializer);
+
+  @protected
+  List<HerdTab> sse_decode_list_herd_tab(SseDeserializer deserializer);
+
+  @protected
+  List<HerdWorkspace> sse_decode_list_herd_workspace(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer);
 
   @protected
   Uint32List sse_decode_list_prim_u_32_strict(SseDeserializer deserializer);
@@ -631,6 +1464,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SyncAction> sse_decode_list_sync_action(SseDeserializer deserializer);
 
   @protected
+  List<TailscaleDevice> sse_decode_list_tailscale_device(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<TerminalLine> sse_decode_list_terminal_line(
     SseDeserializer deserializer,
   );
@@ -642,6 +1480,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String? sse_decode_opt_String(SseDeserializer deserializer);
 
   @protected
+  bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer);
+
+  @protected
+  ClipPictureData? sse_decode_opt_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskMedia? sse_decode_opt_box_autoadd_desk_media(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskVolume? sse_decode_opt_box_autoadd_desk_volume(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  DeskWindow? sse_decode_opt_box_autoadd_desk_window(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  HerdAsked? sse_decode_opt_box_autoadd_herd_asked(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int? sse_decode_opt_box_autoadd_i_32(SseDeserializer deserializer);
 
   @protected
@@ -651,16 +1517,36 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   JumpHost? sse_decode_opt_box_autoadd_jump_host(SseDeserializer deserializer);
 
   @protected
+  TailscaleDevice? sse_decode_opt_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
+  PairingInfo sse_decode_pairing_info(SseDeserializer deserializer);
+
+  @protected
+  PairingOutcome sse_decode_pairing_outcome(SseDeserializer deserializer);
+
+  @protected
   RemoteEntry sse_decode_remote_entry(SseDeserializer deserializer);
+
+  @protected
+  ScreenStatus sse_decode_screen_status(SseDeserializer deserializer);
+
+  @protected
+  ScreenWrite sse_decode_screen_write(SseDeserializer deserializer);
 
   @protected
   SearchMatch sse_decode_search_match(SseDeserializer deserializer);
 
   @protected
   SessionInfo sse_decode_session_info(SseDeserializer deserializer);
+
+  @protected
+  ShareEvent sse_decode_share_event(SseDeserializer deserializer);
 
   @protected
   ShellEvent sse_decode_shell_event(SseDeserializer deserializer);
@@ -684,6 +1570,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SyncReport sse_decode_sync_report(SseDeserializer deserializer);
 
   @protected
+  TailscaleDevice sse_decode_tailscale_device(SseDeserializer deserializer);
+
+  @protected
+  TailscaleStatus sse_decode_tailscale_status(SseDeserializer deserializer);
+
+  @protected
   TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer);
 
   @protected
@@ -699,7 +1591,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TerminalPalette sse_decode_terminal_palette(SseDeserializer deserializer);
 
   @protected
+  TextFound sse_decode_text_found(SseDeserializer deserializer);
+
+  @protected
   TextRun sse_decode_text_run(SseDeserializer deserializer);
+
+  @protected
+  TouchpadButton sse_decode_touchpad_button(SseDeserializer deserializer);
 
   @protected
   TransferProgress sse_decode_transfer_progress(SseDeserializer deserializer);
@@ -746,6 +1644,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -755,6 +1660,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
     FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
     SseSerializer serializer,
   );
 
@@ -774,6 +1693,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SshSession self,
     SseSerializer serializer,
@@ -783,6 +1744,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel(
     ActiveTunnel self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
     SseSerializer serializer,
   );
 
@@ -802,6 +1770,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     RemoteFiles self,
     SseSerializer serializer,
@@ -811,6 +1793,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell(
     RemoteShell self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
     SseSerializer serializer,
   );
 
@@ -830,6 +1854,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -839,6 +1870,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer(
     FileTransfer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
     SseSerializer serializer,
   );
 
@@ -858,8 +1903,86 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SshSession self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_String_Sse(
+    RustStreamSink<String> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_desk_state_Sse(
+    RustStreamSink<DeskState> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_desktop_event_Sse(
+    RustStreamSink<DesktopEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_herd_state_Sse(
+    RustStreamSink<HerdState> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_list_prim_u_8_strict_Sse(
+    RustStreamSink<Uint8List> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_share_event_Sse(
+    RustStreamSink<ShareEvent> self,
     SseSerializer serializer,
   );
 
@@ -879,11 +2002,68 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_agent(Agent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_agent_status(AgentStatus self, SseSerializer serializer);
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_connect_options(
     ConnectOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_action(
+    DeskAction self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_media(
+    DeskMedia self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_volume(
+    DeskVolume self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desk_window(
+    DeskWindow self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_desktop_stats(
+    DesktopStats self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_box_autoadd_herd_asked(
+    HerdAsked self,
     SseSerializer serializer,
   );
 
@@ -921,6 +2101,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_terminal_palette(
     TerminalPalette self,
     SseSerializer serializer,
@@ -934,6 +2120,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_conflict_policy(
@@ -960,6 +2152,54 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_cursor_shape(CursorShape self, SseSerializer serializer);
 
   @protected
+  void sse_encode_desk_action(DeskAction self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_binding(DeskBinding self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_direction(DeskDirection self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_media(DeskMedia self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_monitor(DeskMonitor self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_slot(DeskSlot self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_state(DeskState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_volume(DeskVolume self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desk_window(DeskWindow self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_button(DesktopButton self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_event(DesktopEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_mode(DesktopMode self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_desktop_output(DesktopOutput self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_desktop_stats(DesktopStats self, SseSerializer serializer);
+
+  @protected
   void sse_encode_entry_kind(EntryKind self, SseSerializer serializer);
 
   @protected
@@ -967,6 +2207,48 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_exec_output(ExecOutput self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_agent(HerdAgent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_asked(HerdAsked self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_choice(HerdChoice self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_kind(HerdKind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_made(HerdMade self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_outside(HerdOutside self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_pane(HerdPane self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_place(HerdPlace self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_session(HerdSession self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_state(HerdState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_tab(HerdTab self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_text(HerdText self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_workspace(HerdWorkspace self, SseSerializer serializer);
 
   @protected
   void sse_encode_host_key_info(HostKeyInfo self, SseSerializer serializer);
@@ -996,7 +2278,82 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
+  void sse_encode_list_agent(List<Agent> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_desk_binding(
+    List<DeskBinding> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_desk_monitor(
+    List<DeskMonitor> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_desk_slot(List<DeskSlot> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_desktop_output(
+    List<DesktopOutput> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_agent(
+    List<HerdAgent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_choice(
+    List<HerdChoice> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_kind(List<HerdKind> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_outside(
+    List<HerdOutside> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_pane(List<HerdPane> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_place(
+    List<HerdPlace> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_session(
+    List<HerdSession> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_herd_tab(List<HerdTab> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_workspace(
+    List<HerdWorkspace> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_prim_u_32_loose(
+    List<int> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_prim_u_32_strict(
@@ -1032,6 +2389,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_tailscale_device(
+    List<TailscaleDevice> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_terminal_line(
     List<TerminalLine> self,
     SseSerializer serializer,
@@ -1042,6 +2405,39 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_clip_picture_data(
+    ClipPictureData? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_media(
+    DeskMedia? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_volume(
+    DeskVolume? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_window(
+    DeskWindow? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_box_autoadd_herd_asked(
+    HerdAsked? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_i_32(int? self, SseSerializer serializer);
@@ -1059,16 +2455,40 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_opt_box_autoadd_tailscale_device(
+    TailscaleDevice? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_pairing_info(PairingInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_pairing_outcome(
+    PairingOutcome self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_remote_entry(RemoteEntry self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_screen_status(ScreenStatus self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_screen_write(ScreenWrite self, SseSerializer serializer);
 
   @protected
   void sse_encode_search_match(SearchMatch self, SseSerializer serializer);
 
   @protected
   void sse_encode_session_info(SessionInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_share_event(ShareEvent self, SseSerializer serializer);
 
   @protected
   void sse_encode_shell_event(ShellEvent self, SseSerializer serializer);
@@ -1095,6 +2515,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_sync_report(SyncReport self, SseSerializer serializer);
 
   @protected
+  void sse_encode_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tailscale_status(
+    TailscaleStatus self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_terminal_cursor(
     TerminalCursor self,
     SseSerializer serializer,
@@ -1116,7 +2548,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_text_found(TextFound self, SseSerializer serializer);
+
+  @protected
   void sse_encode_text_run(TextRun self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_touchpad_button(
+    TouchpadButton self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_transfer_progress(
@@ -1201,6 +2642,40 @@ class RustLibWire implements BaseWire {
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -1269,6 +2744,74 @@ class RustLibWire implements BaseWire {
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktopPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktopPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktopPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktopPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
   rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     ffi.Pointer<ffi.Void> ptr,
   ) {
@@ -1334,6 +2877,210 @@ class RustLibWire implements BaseWire {
       );
   late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell =
       _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShellPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpadPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatchPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStreamPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStreamPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLinkPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLinkPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLinkPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLinkPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStreamPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStreamPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream',
+      );
+  late final _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream =
+      _rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStreamPtr
+          .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    ffi.Pointer<ffi.Void> ptr,
+  ) {
+    return _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+      ptr,
+    );
+  }
+
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStreamPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+        'frbgen_multiplex_rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream',
+      );
+  late final _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream =
+      _rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStreamPtr
           .asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 
   void

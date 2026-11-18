@@ -86,6 +86,29 @@ impl Connection {
         Ok(out)
     }
 
+    /// Like [`exec`](Self::exec), with `input` written to the command's
+    /// standard input first.
+    pub async fn exec_with_input(&self, command: &str, input: &[u8], max_bytes: usize) -> anyhow::Result<ExecOutput> {
+        let mut channel = self.handle.channel_open_session().await?;
+        channel.exec(true, command).await?;
+        channel.data(input).await?;
+        channel.eof().await?;
+        let mut out = ExecOutput { stdout: String::new(), stderr: String::new(), exit_code: None, truncated: false };
+        let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+        while let Some(msg) = channel.wait().await {
+            match msg {
+                ChannelMsg::Data { data } => Self::append(&mut stdout, &data, max_bytes, &mut out.truncated),
+                ChannelMsg::ExtendedData { data, .. } => Self::append(&mut stderr, &data, max_bytes, &mut out.truncated),
+                ChannelMsg::ExitStatus { exit_status } => out.exit_code = Some(exit_status),
+                ChannelMsg::Close => break,
+                _ => {}
+            }
+        }
+        out.stdout = String::from_utf8_lossy(&stdout).into_owned();
+        out.stderr = String::from_utf8_lossy(&stderr).into_owned();
+        Ok(out)
+    }
+
     fn append(buf: &mut Vec<u8>, data: &[u8], max: usize, truncated: &mut bool) {
         let room = max.saturating_sub(buf.len());
         if data.len() > room {
@@ -141,6 +164,9 @@ impl Connector {
         };
 
         let (opened, jump, via) = match &options.jump {
+            None if options.via_tailscale => {
+                (Self::open_tailscale(config, &target, forwards.clone(), options.connect_timeout_secs).await?, None, Some("Tailscale".to_owned()))
+            }
             None => (Self::open_direct(config, &target, forwards.clone()).await?, None, None),
             Some(j) => {
                 let jump_hop = Hop {
@@ -192,6 +218,25 @@ impl Connector {
         let banner = Arc::new(Mutex::new(None));
         let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
         let handle = client::connect(config, (hop.host, hop.port), handler)
+            .await
+            .map_err(|err| Self::classify(err, hop, &guard))?;
+        Self::finish(handle, hop, guard, banner).await
+    }
+
+    /// SSH connection carried over the app's own Tailscale node.
+    async fn open_tailscale(
+        config: Arc<client::Config>,
+        hop: &Hop<'_>,
+        forwards: Arc<RemoteForwardRouter>,
+        timeout_secs: u32,
+    ) -> Result<OpenHop, ConnectError> {
+        let stream = crate::engine::tailscale::connect(hop.host, hop.port, timeout_secs.max(1) * 1000)
+            .await
+            .map_err(|err| ConnectError::Network { host: hop.host.to_owned(), port: hop.port, message: err.to_string() })?;
+        let guard = Arc::new(HostKeyGuard::new(hop.trusted));
+        let banner = Arc::new(Mutex::new(None));
+        let handler = ClientHandler::new(guard.clone(), forwards, banner.clone()).with_agent(hop.agent.clone());
+        let handle = client::connect_stream(config, stream, handler)
             .await
             .map_err(|err| Self::classify(err, hop, &guard))?;
         Self::finish(handle, hop, guard, banner).await
@@ -262,6 +307,10 @@ impl Connector {
             keepalive_interval: (keepalive_secs > 0).then(|| Duration::from_secs(u64::from(keepalive_secs))),
             keepalive_max: 3,
             nodelay: true,
+            // Room for a few keyframes in flight: the remote desktop's
+            // video must never wait for the window to reopen, even
+            // through a far-away jump host.
+            window_size: 16 * 1024 * 1024,
             ..Default::default()
         }
     }

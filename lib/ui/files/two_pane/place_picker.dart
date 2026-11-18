@@ -84,7 +84,7 @@ class PlacePicker extends StatelessWidget {
             if (hosts.isEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Text('No saved servers yet. Add one on the Hosts screen.', style: TextStyle(color: colors.muted)),
+                child: Text('No saved servers yet. Add one on Home.', style: TextStyle(color: colors.muted)),
               ),
             for (final host in hosts)
               ListTile(

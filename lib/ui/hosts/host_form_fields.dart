@@ -269,6 +269,8 @@ class AdvancedFields extends StatelessWidget {
     required this.jumpHosts,
     required this.jumpId,
     required this.onJump,
+    required this.viaTailscale,
+    required this.onTailscale,
     required this.startup,
     required this.tmux,
     required this.onTmux,
@@ -280,6 +282,10 @@ class AdvancedFields extends StatelessWidget {
   final List<Host> jumpHosts;
   final String? jumpId;
   final ValueChanged<String?> onJump;
+
+  /// Reach the host over Tailscale (built into the app).
+  final bool viaTailscale;
+  final ValueChanged<bool> onTailscale;
   final TextEditingController startup;
   final bool tmux;
   final ValueChanged<bool> onTmux;
@@ -294,15 +300,24 @@ class AdvancedFields extends StatelessWidget {
     final selected = jumpHosts.any((h) => h.id == jumpId) ? jumpId : null;
     return Column(
       children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.hub_outlined),
+          title: const Text('Connect through Tailscale'),
+          subtitle: const Text('Works from anywhere, no VPN app needed. Use the device name as the address (for example omarchy). Sign in under Settings, Tailscale.'),
+          value: viaTailscale,
+          onChanged: onTailscale,
+        ),
+        const SizedBox(height: 4),
         DropdownButtonFormField<String?>(
-          initialValue: selected,
+          initialValue: viaTailscale ? null : selected,
           isExpanded: true,
           decoration: const InputDecoration(labelText: 'Jump host', helperText: 'Connect through another saved host first, like ssh -J'),
           items: [
             const DropdownMenuItem<String?>(value: null, child: Text('None: connect directly')),
             for (final h in jumpHosts) DropdownMenuItem<String?>(value: h.id, child: Text(h.title)),
           ],
-          onChanged: onJump,
+          onChanged: viaTailscale ? null : onJump,
         ),
         const SizedBox(height: 4),
         SwitchListTile(

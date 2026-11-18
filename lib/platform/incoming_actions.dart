@@ -1,7 +1,10 @@
 import 'package:flutter/services.dart';
 
+import 'agent_notices.dart';
+
 /// Something Android asked the app to do from outside: a tap on a host in
-/// the home-screen widget, or files shared from another app.
+/// the home-screen widget, files shared from another app, or a tap on the
+/// notification about a coding agent.
 sealed class IncomingAction {
   const IncomingAction();
 
@@ -20,7 +23,19 @@ sealed class IncomingAction {
           for (final f in files)
             if (f is Map && f['name'] is String && f['path'] is String) SharedFile(name: f['name'] as String, path: f['path'] as String),
         ];
-        return parsed.isEmpty ? null : ShareAction(parsed);
+        final text = raw['text'];
+        final target = raw['target'];
+        return parsed.isEmpty
+            ? null
+            : ShareAction(parsed, text: text is String && text.isNotEmpty ? text : null, targetHostId: target is String && target.isNotEmpty ? target : null);
+      case 'shareFailed':
+        return const ShareFailedAction();
+      case 'go':
+        final (id, what) = (raw['hostId'], raw['what']);
+        return id is String && id.isNotEmpty && what is String && GoAction.places.contains(what) ? GoAction(id, what) : null;
+      case 'agent':
+        final place = AgentPlace.decode(raw['details']);
+        return place == null ? null : OpenAgentAction(place);
     }
     return null;
   }
@@ -36,9 +51,41 @@ class ConnectAction extends IncomingAction {
 /// Upload these files to a server. The native side has already copied
 /// each one into the app's cache, at [SharedFile.path].
 class ShareAction extends IncomingAction {
-  const ShareAction(this.files);
+  const ShareAction(this.files, {this.text, this.targetHostId});
+
+  /// The paired computer picked by name in Android's share sheet, if one
+  /// was: the share goes straight to it.
+  final String? targetHostId;
 
   final List<SharedFile> files;
+
+  /// Set when text (a link, a note) was shared rather than files; [files]
+  /// then holds it as one text file, for servers.
+  final String? text;
+}
+
+/// A tap on the notification about a coding agent: open that agent.
+class OpenAgentAction extends IncomingAction {
+  const OpenAgentAction(this.place);
+
+  final AgentPlace place;
+}
+
+/// A shortcut on the app's icon: straight to a thing on a computer.
+class GoAction extends IncomingAction {
+  const GoAction(this.hostId, this.what);
+
+  final String hostId;
+
+  /// One of [places].
+  final String what;
+
+  static const places = {'agents', 'desktop', 'terminal'};
+}
+
+/// Something was shared, but none of it could be read.
+class ShareFailedAction extends IncomingAction {
+  const ShareFailedAction();
 }
 
 class SharedFile {

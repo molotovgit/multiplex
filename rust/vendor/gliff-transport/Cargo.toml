@@ -1,0 +1,17 @@
+# Vendored from https://github.com/omacom/gliff (v0.4.3, MIT, see LICENSE).
+# Unchanged sources except that the ssh process spawner (src/ssh.rs) is
+# left out: Multiplex carries the stream over its own SSH connection.
+[package]
+name = "gliff-transport"
+version = "0.4.3"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+gliff-proto = { path = "../gliff-proto" }
+tokio = { version = "1", features = ["io-util", "sync", "time", "rt", "macros", "fs"] }
+bytes = "1"
+minicbor = { version = "2", features = ["derive", "alloc"] }
+thiserror = "2"
+tracing = "0.1"

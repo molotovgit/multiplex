@@ -1,0 +1,35 @@
+[package]
+name = "multiplex"
+version = "0.1.0"
+edition = "2021"
+description = "The Omarchy side of Multiplex: pair a phone by QR code, list and remove paired phones, set the computer up."
+publish = false
+
+[[bin]]
+name = "multiplex"
+path = "src/main.rs"
+
+[dependencies]
+libc = "0.2"
+multiplex-proto = { path = "../rust/proto" }
+anyhow = "1"
+base64 = "0.22"
+ctrlc = { version = "3", features = ["termination"] }
+# The one-time pairing key: public half from a random seed.
+ed25519-dalek = "2"
+qrcode = { version = "0.14", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The virtual touchpad and keyboard (`multiplex input`): a plain Wayland
+# client, pure Rust, no C library.
+wayland-client = "0.31"
+wayland-protocols-wlr = { version = "0.3", features = ["client"] }
+wayland-protocols-misc = { version = "0.3", features = ["client"] }
+vt100 = "0.18.1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = "symbols"

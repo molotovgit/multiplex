@@ -5,6 +5,7 @@ import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../sessions/session_manager.dart';
 import '../common/widgets.dart';
+import '../desktop/desktop_screen.dart';
 import '../files/files_screen.dart';
 import '../terminal/terminal_screen.dart';
 import '../tunnels/tunnels_screen.dart';
@@ -53,7 +54,7 @@ class SessionsScreen extends StatelessWidget {
               icon: Icons.terminal,
               title: 'Nothing open',
               message:
-                  'Connect to a host from the Hosts list. Its terminals, file browser and tunnels show up here '
+                  'Connect to a computer or server from Home. Its terminals, file browser and tunnels show up here '
                   'and keep running while you switch screens.',
             );
           }
@@ -176,6 +177,11 @@ class _SessionCard extends StatelessWidget {
                   onPressed: () => TerminalScreen.openNew(context, session),
                   icon: const Icon(Icons.add),
                   label: const Text('Terminal'),
+                ),
+                TextButton.icon(
+                  onPressed: () => DesktopScreen.open(context, session),
+                  icon: const Icon(Icons.desktop_windows_outlined),
+                  label: const Text('Desktop'),
                 ),
                 TextButton.icon(
                   onPressed: () => _open(context, FilesScreen(session: session)),

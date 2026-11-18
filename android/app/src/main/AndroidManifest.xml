@@ -3,12 +3,34 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- To reconnect as soon as the network comes back. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Remote desktop: keeps Wi-Fi out of power saving (low-latency lock) while it is open. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <!-- Fingerprint, face or PIN for the optional app lock. -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- Link paired computers again after the phone has started, without
+         the app having to be opened first (see StartReceiver). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Keep connections alive in the background (see SessionService). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+    <!-- Showing this phone's screen in a window on a paired computer.
+         Android asks the user each time before anything is captured. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
+    <!-- This phone's camera as a webcam for a paired computer. Asked for
+         when that is first started. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <!-- This phone's microphone as a microphone for a paired computer.
+         Asked for when that is first started. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- A paired computer can send a text message through the phone
+         (`multiplex sms`), once the user switches that on for it. -->
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-feature android:name="android.hardware.telephony" android:required="false"/>
     <!-- Two-pane copy and folder sync with the phone's shared storage. Only
          used after the user taps "Allow access" (see StorageChannel). -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
@@ -18,12 +40,14 @@
          downloaded from GitHub Releases (see UpdateChannel). -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
-        android:label="Multiplex"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules">
+        <!-- Pairing: have Play services fetch its QR scanner screen at install time, not on first use. -->
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui"/>
         <!-- No cloud backup or device transfer of app data: the vault's key
              lives in the Android Keystore and cannot travel with it, so a
              copied vault could never be opened. Use the in-app encrypted
@@ -49,6 +73,8 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Paired computers as direct targets in the share sheet. -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/share_targets" />
             <!-- "Share" from other apps: upload the files to a server. -->
             <intent-filter android:label="Upload to a server">
                 <action android:name="android.intent.action.SEND"/>
@@ -65,6 +91,41 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps the user's open SSH terminal sessions and port forwards connected while the app is in the background." />
         </service>
+        <receiver
+            android:name=".StartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <service
+            android:name=".ScreenCastService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+        <service
+            android:name=".CameraCastService"
+            android:exported="false"
+            android:foregroundServiceType="camera" />
+        <service
+            android:name=".MicCastService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+        <!-- Phone notifications for a paired computer. Android runs this only
+             after the user allows it under Settings > Notification access. -->
+        <service
+            android:name=".PhoneNotifications"
+            android:exported="true"
+            android:label="Multiplex: notifications for your computer"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <!-- Stops the ringing started by "find this phone". -->
+        <receiver android:name=".PhoneChannel$StopRing" android:exported="false" />
+        <!-- A button of an agent's notification, or a reply typed into it. -->
+        <receiver android:name=".AgentAnswerReceiver" android:exported="false" />
         <!-- The home-screen widget with favourite hosts. -->
         <receiver
             android:name=".FavouritesWidget"
@@ -78,7 +139,8 @@
                 android:resource="@xml/favourites_widget_info" />
         </receiver>
         <!-- Hands a downloaded update (cache/updates only) to the system
-             installer. -->
+             installer, and a clipboard picture from a paired computer
+             (cache/clipboard only) to the app it is pasted into. -->
         <provider
             android:name=".UpdateFileProvider"
             android:authorities="${applicationId}.updates"

@@ -106,7 +106,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(ScreenPrivacy.instance.secure, isTrue);
 
-    await tester.tap(find.text('Hosts').last);
+    await tester.tap(find.text('Home').last);
     await tester.pumpAndSettle();
     expect(ScreenPrivacy.instance.secure, isFalse);
     expect(_sent, [true, false]);

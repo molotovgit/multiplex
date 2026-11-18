@@ -74,6 +74,7 @@ impl TestServer {
             connect_timeout_secs: 10,
             jump: None,
             forward_agent: false,
+        via_tailscale: false,
         }
     }
 }

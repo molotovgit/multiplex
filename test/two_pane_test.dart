@@ -182,7 +182,7 @@ void main() {
     await tester.tap(find.text('Choose place'));
     await tester.pumpAndSettle();
     expect(find.text('This phone'), findsOneWidget);
-    expect(find.text('No saved servers yet. Add one on the Hosts screen.'), findsOneWidget);
+    expect(find.text('No saved servers yet. Add one on Home.'), findsOneWidget);
     await tester.tap(find.text('App files').last);
     await tester.pumpAndSettle();
     expect(find.text('Multiplex downloads'), findsNWidgets(2));

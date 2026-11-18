@@ -12,6 +12,7 @@ import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/platform/home_widget_sync.dart';
 import 'package:multiplex/platform/incoming_actions.dart';
 import 'package:multiplex/platform/incoming_actions_handler.dart';
+import 'package:multiplex/platform/share_targets_sync.dart';
 import 'package:multiplex/sessions/session_manager.dart';
 import 'package:multiplex/ui/hosts/host_editor_screen.dart';
 import 'package:multiplex/ui/hosts/host_tile.dart';
@@ -95,6 +96,18 @@ void main() {
       expect(IncomingAction.parse({'type': 'connect', 'hostId': 'h1'}), isA<ConnectAction>().having((a) => a.hostId, 'hostId', 'h1'));
       expect(IncomingAction.parse({'type': 'connect', 'hostId': ''}), isNull);
       expect(IncomingAction.parse({'type': 'launch-missiles'}), isNull);
+      expect(IncomingAction.parse({'type': 'shareFailed'}), isA<ShareFailedAction>(), reason: 'a share that could not be read is said, not dropped');
+      final aimed = IncomingAction.parse({
+        'type': 'share',
+        'target': 'desk',
+        'files': [
+          {'name': 'a.txt', 'path': '/cache/a.txt'},
+        ],
+      });
+      expect(aimed, isA<ShareAction>().having((a) => a.targetHostId, 'targetHostId', 'desk'));
+      expect(ShareTargetsSync.payload(const [Host(id: 'c', label: 'Desk', address: 'x', computer: true), Host(id: 's', label: 'Web', address: 'y')]), [
+        {'id': 'c', 'label': 'Desk'},
+      ]);
       expect(IncomingAction.parse('connect'), isNull);
       final share = IncomingAction.parse({
         'type': 'share',

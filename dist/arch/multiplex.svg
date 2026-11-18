@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- A screen and a phone, joined: the phone sits in front of the screen. -->
+  <rect width="64" height="64" rx="14" fill="#FFD60A"/>
+  <rect x="9" y="15" width="38" height="26" rx="3" fill="none" stroke="#111114" stroke-width="4"/>
+  <path d="M20 49h16" stroke="#111114" stroke-width="4" stroke-linecap="round"/>
+  <rect x="35" y="24" width="20" height="31" rx="4" fill="#111114"/>
+  <rect x="39" y="29" width="12" height="18" rx="1" fill="#FFD60A"/>
+</svg>

@@ -1,0 +1,12 @@
+[package]
+name = "multiplex-app-tests"
+version = "0.1.0"
+edition = "2021"
+description = "Drives the built Multiplex window offscreen against a stand-in command. Its own package, because a test beside the window would be linked against Qt objects it does not contain."
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dev-dependencies]
+tempfile = "3"

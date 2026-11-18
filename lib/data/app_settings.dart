@@ -51,6 +51,7 @@ class AppSettings {
     this.keepScreenOn = true,
     this.notifyWhenDone = true,
     this.keyboard = const {},
+    this.desktop = const {},
     this.motion = MotionSpeed.normal,
     this.backdropPicks = const {},
     this.hideScreens = true,
@@ -58,6 +59,7 @@ class AppSettings {
     this.autoCheckUpdates = true,
     this.lastUpdateCheckMs = 0,
     this.skippedUpdateVersion = '',
+    this.resume = const {},
   });
 
   /// One theme styles the whole app: screens and terminal.
@@ -97,6 +99,10 @@ class AppSettings {
   /// this file.
   final Map<String, dynamic> keyboard;
 
+  /// Settings of the remote desktop (screen mode, touch mode, quality).
+  /// Plain JSON owned by the desktop's own settings class, like [keyboard].
+  final Map<String, dynamic> desktop;
+
   /// Speed of theme changes and sheets.
   final MotionSpeed motion;
 
@@ -122,6 +128,10 @@ class AppSettings {
 
   /// A version the user chose to skip: no banner is shown for it.
   final String skippedUpdateVersion;
+
+  /// Where the owner last was with an agent or a terminal (a
+  /// `ResumePlace` as JSON); empty when nowhere yet.
+  final Map<String, dynamic> resume;
 
   static const minFontSize = 8.0;
   static const maxFontSize = 28.0;
@@ -149,6 +159,7 @@ class AppSettings {
     bool? keepScreenOn,
     bool? notifyWhenDone,
     Map<String, dynamic>? keyboard,
+    Map<String, dynamic>? desktop,
     MotionSpeed? motion,
     Map<String, int>? backdropPicks,
     bool? hideScreens,
@@ -156,6 +167,7 @@ class AppSettings {
     bool? autoCheckUpdates,
     int? lastUpdateCheckMs,
     String? skippedUpdateVersion,
+    Map<String, dynamic>? resume,
   }) =>
       AppSettings(
         themeId: themeId ?? this.themeId,
@@ -173,6 +185,7 @@ class AppSettings {
         keepScreenOn: keepScreenOn ?? this.keepScreenOn,
         notifyWhenDone: notifyWhenDone ?? this.notifyWhenDone,
         keyboard: keyboard ?? this.keyboard,
+        desktop: desktop ?? this.desktop,
         motion: motion ?? this.motion,
         backdropPicks: backdropPicks ?? this.backdropPicks,
         hideScreens: hideScreens ?? this.hideScreens,
@@ -180,6 +193,7 @@ class AppSettings {
         autoCheckUpdates: autoCheckUpdates ?? this.autoCheckUpdates,
         lastUpdateCheckMs: lastUpdateCheckMs ?? this.lastUpdateCheckMs,
         skippedUpdateVersion: skippedUpdateVersion ?? this.skippedUpdateVersion,
+        resume: resume ?? this.resume,
       );
 
   Map<String, dynamic> toJson() => {
@@ -198,6 +212,7 @@ class AppSettings {
         'keepScreenOn': keepScreenOn,
         'notifyWhenDone': notifyWhenDone,
         'keyboard': keyboard,
+        'desktop': desktop,
         'motion': motion.name,
         'backdropPicks': backdropPicks,
         'hideScreens': hideScreens,
@@ -205,6 +220,7 @@ class AppSettings {
         'autoCheckUpdates': autoCheckUpdates,
         'lastUpdateCheckMs': lastUpdateCheckMs,
         'skippedUpdateVersion': skippedUpdateVersion,
+        'resume': resume,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
@@ -225,6 +241,7 @@ class AppSettings {
       keepScreenOn: Json.boolean(j, 'keepScreenOn', true),
       notifyWhenDone: Json.boolean(j, 'notifyWhenDone', true),
       keyboard: j['keyboard'] is Map ? (j['keyboard'] as Map).cast<String, dynamic>() : const {},
+      desktop: j['desktop'] is Map ? (j['desktop'] as Map).cast<String, dynamic>() : const {},
       motion: MotionSpeed.values.asNameMap()[j['motion']] ?? MotionSpeed.normal,
       backdropPicks: {
         if (j['backdropPicks'] is Map)
@@ -236,6 +253,7 @@ class AppSettings {
       autoCheckUpdates: Json.boolean(j, 'autoCheckUpdates', true),
       lastUpdateCheckMs: Json.integer(j, 'lastUpdateCheckMs', 0),
       skippedUpdateVersion: Json.str(j, 'skippedUpdateVersion'),
+      resume: j['resume'] is Map ? (j['resume'] as Map).cast<String, dynamic>() : const {},
     );
   }
 }

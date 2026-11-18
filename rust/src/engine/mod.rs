@@ -3,16 +3,29 @@
 //! The `api` module is a thin layer on top that Flutter calls. Keeping the
 //! engine free of Flutter types means it can be tested with plain Rust.
 
+pub mod desk;
+pub mod threads;
+pub mod desktop;
+pub mod herd;
 pub mod events;
 pub mod file_store;
 pub mod folder_sync;
 pub mod keys;
+pub mod pairing;
 pub mod runtime;
 pub mod sftp;
 pub mod shell;
+pub mod tailscale;
 pub mod ssh;
 pub mod terminal;
 pub mod theme_import;
 pub mod tree_copy;
 pub mod tunnel;
 pub mod vault;
+pub mod wol;
+pub mod touchpad;
+pub mod share;
+pub mod pipe;
+pub mod screen;
+pub mod tap;
+pub mod adts;

@@ -1,0 +1,61 @@
+# The Omarchy side of Multiplex, built from the checkout this file is in:
+#   cd dist/arch && makepkg -si
+pkgname=multiplex-omarchy
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="The Omarchy side of Multiplex: pair a phone by QR code and control the computer from it, with a window to manage it"
+arch=('x86_64' 'aarch64')
+url="https://github.com/molotovgit/multiplex"
+license=('custom')
+# qt6-*: the Multiplex window (multiplex-app). The command itself needs none of them.
+depends=('openssh' 'gliff' 'iproute2' 'libxkbcommon' 'qt6-base' 'qt6-declarative' 'qt6-wayland')
+makedepends=('cargo' 'gcc')
+optdepends=(
+  'tailscale: reach the computer from anywhere'
+  'ufw: firewall rules written by multiplex setup'
+  'fcitx5: the phone keyboard opens when a text field has the focus'
+  'libnotify: notices when a phone pairs and when files arrive or are delivered'
+  'wl-clipboard: the clipboard shared with the phone, and typing outside the US keyboard from its touchpad'
+  'xdg-user-dirs: files from the phone go to the Downloads folder it names'
+  'xdg-desktop-portal: the file chooser of "Send files" in the Multiplex window'
+  'networkmanager: multiplex setup turns Wake-on-LAN on'
+  "mpv: the phone's screen in a window"
+  "ffmpeg: the phone as a webcam, a microphone and a speaker"
+  "libpulse: the phone as a microphone and a speaker (pactl)"
+  "tesseract: reading the text in pictures from the phone (with tesseract-data-eng or another language)"
+  "gst-plugin-pipewire: the phone's camera as a PipeWire camera (with gstreamer and gst-plugins-base)"
+  "v4l2loopback-dkms: the phone's camera for every program that uses a webcam"
+)
+options=('!debug')
+
+_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+build() {
+  cd "$_repo/desktop"
+  cargo build --release --locked
+  # The window: QML with its logic in Rust (needs Qt 6 and a C++ compiler to build).
+  cd "$_repo/desktop/app"
+  cargo build --release --locked
+}
+
+check() {
+  cd "$_repo/desktop"
+  cargo test --release --locked
+  # The window is driven without a screen against a stand-in command.
+  cd "$_repo/desktop/app-tests"
+  MULTIPLEX_APP_BIN="$_repo/desktop/app/target/release/multiplex-app" cargo test --locked
+  # The bar widget's logic, where node is at hand; it is not needed to build.
+  if command -v node >/dev/null; then
+    node --test "$_repo/dist/omarchy/multiplex.phones/tests/"
+  fi
+}
+
+package() {
+  install -Dm755 "$_repo/desktop/target/release/multiplex" "$pkgdir/usr/bin/multiplex"
+  # The window, its launcher entry and its icon (`multiplex open` starts it too).
+  install -Dm755 "$_repo/desktop/app/target/release/multiplex-app" "$pkgdir/usr/bin/multiplex-app"
+  install -Dm644 "$_repo/dist/arch/multiplex.desktop" "$pkgdir/usr/share/applications/multiplex.desktop"
+  install -Dm644 "$_repo/dist/arch/multiplex.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/multiplex.svg"
+  # Not enabled by itself: `systemctl --user enable --now multiplex-agent`.
+  install -Dm644 "$_repo/dist/arch/multiplex-agent.service" "$pkgdir/usr/lib/systemd/user/multiplex-agent.service"
+}

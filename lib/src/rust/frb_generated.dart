@@ -3,21 +3,37 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/agents.dart';
 import 'api/app.dart';
+import 'api/desk.dart';
+import 'api/desk_types.dart';
+import 'api/desktop.dart';
+import 'api/desktop_types.dart';
+import 'api/herd.dart';
+import 'api/herd_types.dart';
 import 'api/keys.dart';
+import 'api/pairing.dart';
+import 'api/screen.dart';
 import 'api/sftp.dart';
 import 'api/sftp_types.dart';
+import 'api/share.dart';
+import 'api/speaker.dart';
 import 'api/ssh.dart';
 import 'api/ssh_types.dart';
+import 'api/tailscale.dart';
+import 'api/tailscale_types.dart';
 import 'api/terminal.dart';
 import 'api/terminal_types.dart';
 import 'api/theme.dart';
 import 'api/theme_types.dart';
+import 'api/touchpad.dart';
 import 'api/transfer.dart';
 import 'api/transfer_types.dart';
 import 'api/tunnel.dart';
 import 'api/tunnel_types.dart';
 import 'api/vault.dart';
+import 'api/wake.dart';
+import 'api/watch.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -83,7 +99,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 477336443;
+  int get rustContentHash => -1461529498;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -104,6 +120,10 @@ abstract class RustLibApi extends BaseApi {
   TunnelStats crateApiTunnelActiveTunnelStats({required ActiveTunnel that});
 
   Future<void> crateApiTunnelActiveTunnelStop({required ActiveTunnel that});
+
+  Stream<DeskState> crateApiDeskDeskWatchStates({required DeskWatch that});
+
+  void crateApiDeskDeskWatchStop({required DeskWatch that});
 
   Future<bool> crateApiTransferFileSideExists({
     required FileSide that,
@@ -145,6 +165,70 @@ abstract class RustLibApi extends BaseApi {
 
   Stream<TransferProgress> crateApiSftpFileTransferWatch({
     required FileTransfer that,
+  });
+
+  Stream<HerdState> crateApiHerdHerdWatchStates({required HerdWatch that});
+
+  void crateApiHerdHerdWatchStop({required HerdWatch that});
+
+  void crateApiDesktopRemoteDesktopButton({
+    required RemoteDesktop that,
+    required DesktopButton button,
+    required bool pressed,
+  });
+
+  void crateApiDesktopRemoteDesktopChord({
+    required RemoteDesktop that,
+    required List<int> modifiers,
+    required int code,
+  });
+
+  void crateApiDesktopRemoteDesktopClick({
+    required RemoteDesktop that,
+    required DesktopButton button,
+  });
+
+  void crateApiDesktopRemoteDesktopClose({required RemoteDesktop that});
+
+  Stream<DesktopEvent> crateApiDesktopRemoteDesktopEvents({
+    required RemoteDesktop that,
+  });
+
+  bool crateApiDesktopRemoteDesktopIsClosed({required RemoteDesktop that});
+
+  void crateApiDesktopRemoteDesktopKey({
+    required RemoteDesktop that,
+    required int code,
+    required bool pressed,
+  });
+
+  void crateApiDesktopRemoteDesktopPointerMove({
+    required RemoteDesktop that,
+    required double x,
+    required double y,
+  });
+
+  void crateApiDesktopRemoteDesktopRefresh({required RemoteDesktop that});
+
+  void crateApiDesktopRemoteDesktopResize({
+    required RemoteDesktop that,
+    required int width,
+    required int height,
+    required double scale,
+  });
+
+  void crateApiDesktopRemoteDesktopScroll({
+    required RemoteDesktop that,
+    required double dx,
+    required double dy,
+    required bool wheel,
+  });
+
+  void crateApiDesktopRemoteDesktopScrollStop({required RemoteDesktop that});
+
+  void crateApiDesktopRemoteDesktopSetClipboard({
+    required RemoteDesktop that,
+    required String text,
   });
 
   Future<String> crateApiSftpRemoteFilesCanonicalize({
@@ -316,6 +400,85 @@ abstract class RustLibApi extends BaseApi {
 
   String crateApiTerminalRemoteShellVisibleText({required RemoteShell that});
 
+  void crateApiTouchpadRemoteTouchpadButton({
+    required RemoteTouchpad that,
+    required TouchpadButton button,
+    required bool down,
+  });
+
+  void crateApiTouchpadRemoteTouchpadClose({required RemoteTouchpad that});
+
+  Stream<String> crateApiTouchpadRemoteTouchpadEnded({
+    required RemoteTouchpad that,
+  });
+
+  void crateApiTouchpadRemoteTouchpadKey({
+    required RemoteTouchpad that,
+    required int code,
+    required bool down,
+  });
+
+  void crateApiTouchpadRemoteTouchpadMoveBy({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  });
+
+  void crateApiTouchpadRemoteTouchpadPaste({
+    required RemoteTouchpad that,
+    required String text,
+  });
+
+  void crateApiTouchpadRemoteTouchpadReleaseAll({required RemoteTouchpad that});
+
+  void crateApiTouchpadRemoteTouchpadScroll({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  });
+
+  Stream<String> crateApiWatchRemoteWatchLines({required RemoteWatch that});
+
+  void crateApiWatchRemoteWatchStop({required RemoteWatch that});
+
+  void crateApiScreenScreenStreamClose({required ScreenStream that});
+
+  Stream<String> crateApiScreenScreenStreamEnded({required ScreenStream that});
+
+  ScreenStatus crateApiScreenScreenStreamStatus({required ScreenStream that});
+
+  ScreenWrite crateApiScreenScreenStreamWrite({
+    required ScreenStream that,
+    required List<int> bytes,
+  });
+
+  Stream<ShareEvent> crateApiShareShareLinkEvents({required ShareLink that});
+
+  void crateApiShareShareLinkStop({required ShareLink that});
+
+  void crateApiScreenSoundStreamClose({required SoundStream that});
+
+  Stream<String> crateApiScreenSoundStreamEnded({required SoundStream that});
+
+  ScreenStatus crateApiScreenSoundStreamStatus({required SoundStream that});
+
+  ScreenWrite crateApiScreenSoundStreamWrite({
+    required SoundStream that,
+    required List<int> bytes,
+  });
+
+  void crateApiSpeakerSpeakerStreamClose({required SpeakerStream that});
+
+  Stream<String> crateApiSpeakerSpeakerStreamEnded({
+    required SpeakerStream that,
+  });
+
+  Stream<Uint8List> crateApiSpeakerSpeakerStreamSound({
+    required SpeakerStream that,
+  });
+
+  Future<List<Agent>> crateApiSshSshSessionAgents({required SshSession that});
+
   Future<bool> crateApiSshSshSessionCheckAlive({
     required SshSession that,
     required int timeoutSecs,
@@ -325,6 +488,19 @@ abstract class RustLibApi extends BaseApi {
     required ConnectOptions options,
   });
 
+  Future<List<DeskBinding>> crateApiSshSshSessionDeskBindings({
+    required SshSession that,
+  });
+
+  Future<DeskState> crateApiSshSshSessionDeskDo({
+    required SshSession that,
+    required DeskAction action,
+  });
+
+  Future<DeskState> crateApiSshSshSessionDeskState({required SshSession that});
+
+  Future<DeskWatch> crateApiSshSshSessionDeskWatch({required SshSession that});
+
   Future<void> crateApiSshSshSessionDisconnect({required SshSession that});
 
   Future<ExecOutput> crateApiSshSshSessionExec({
@@ -333,17 +509,174 @@ abstract class RustLibApi extends BaseApi {
     required int maxBytes,
   });
 
+  Future<void> crateApiSshSshSessionHerdAnswerChoice({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String mark,
+    required String choice,
+  });
+
+  Future<void> crateApiSshSshSessionHerdAnswerText({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String mark,
+    required String text,
+  });
+
+  Future<void> crateApiSshSshSessionHerdClosePane({
+    required SshSession that,
+    required String session,
+    required String pane,
+  });
+
+  Future<void> crateApiSshSshSessionHerdCloseTab({
+    required SshSession that,
+    required String session,
+    required String tab,
+  });
+
+  Future<HerdMade> crateApiSshSshSessionHerdContinue({
+    required SshSession that,
+    required String session,
+    required String folder,
+    required String kind,
+  });
+
+  Future<List<HerdPlace>> crateApiSshSshSessionHerdFolders({
+    required SshSession that,
+    required String inside,
+  });
+
+  Future<void> crateApiSshSshSessionHerdKeys({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required List<String> keys,
+  });
+
+  Future<List<HerdKind>> crateApiSshSshSessionHerdKinds({
+    required SshSession that,
+  });
+
+  Future<HerdMade> crateApiSshSshSessionHerdNewTab({
+    required SshSession that,
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
+  Future<HerdMade> crateApiSshSshSessionHerdNewWorkspace({
+    required SshSession that,
+    required String session,
+    required String folder,
+    required String label,
+  });
+
+  Future<List<HerdOutside>> crateApiSshSshSessionHerdOutside({
+    required SshSession that,
+  });
+
+  Future<List<HerdPlace>> crateApiSshSshSessionHerdPlaces({
+    required SshSession that,
+  });
+
+  Future<void> crateApiSshSshSessionHerdPrompt({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String text,
+  });
+
+  Future<HerdText> crateApiSshSshSessionHerdRead({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required int lines,
+  });
+
+  Future<void> crateApiSshSshSessionHerdRename({
+    required SshSession that,
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
+  Future<void> crateApiSshSshSessionHerdStartAgent({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String kind,
+  });
+
+  Future<HerdState> crateApiSshSshSessionHerdState({required SshSession that});
+
+  Future<HerdWatch> crateApiSshSshSessionHerdWatch({required SshSession that});
+
   SessionInfo crateApiSshSshSessionInfo({required SshSession that});
 
   bool crateApiSshSshSessionIsConnected({required SshSession that});
+
+  Future<ScreenStream> crateApiSshSshSessionOpenCamera({
+    required SshSession that,
+    required String phone,
+    required int turn,
+  });
+
+  Future<RemoteDesktop> crateApiSshSshSessionOpenDesktop({
+    required SshSession that,
+    required DesktopOptions options,
+  });
 
   Future<RemoteFiles> crateApiSshSshSessionOpenFiles({
     required SshSession that,
   });
 
+  Future<SoundStream> crateApiSshSshSessionOpenMic({
+    required SshSession that,
+    required String phone,
+  });
+
+  Future<ScreenStream> crateApiSshSshSessionOpenScreen({
+    required SshSession that,
+    required String phone,
+  });
+
   Future<RemoteShell> crateApiSshSshSessionOpenShell({
     required SshSession that,
     required ShellOptions options,
+  });
+
+  Future<SpeakerStream> crateApiSshSshSessionOpenSpeaker({
+    required SshSession that,
+    required String phone,
+    required bool everything,
+  });
+
+  Future<RemoteTouchpad> crateApiSshSshSessionOpenTouchpad({
+    required SshSession that,
+  });
+
+  Future<void> crateApiSshSshSessionPhoneCall({
+    required SshSession that,
+    required String phone,
+    required bool active,
+  });
+
+  Future<void> crateApiSshSshSessionPhoneNotice({
+    required SshSession that,
+    required String phone,
+    required String app,
+    required String title,
+    required String text,
+  });
+
+  Future<void> crateApiSshSshSessionPhoneStatus({
+    required SshSession that,
+    required String phone,
+    required int battery,
+    required bool charging,
   });
 
   Future<void> crateApiSshSshSessionReattachShell({
@@ -352,9 +685,74 @@ abstract class RustLibApi extends BaseApi {
     required ShellOptions options,
   });
 
+  Future<void> crateApiSshSshSessionShareApproved({
+    required SshSession that,
+    required String id,
+    required String answer,
+  });
+
+  Future<void> crateApiSshSshSessionShareCopy({
+    required SshSession that,
+    required String text,
+  });
+
+  Future<void> crateApiSshSshSessionShareCopyPicture({
+    required SshSession that,
+    required String kind,
+    required List<int> picture,
+  });
+
+  Future<void> crateApiSshSshSessionShareDone({
+    required SshSession that,
+    required String id,
+  });
+
+  Future<String> crateApiSshSshSessionShareInbox({required SshSession that});
+
+  Future<ShareLink> crateApiSshSshSessionShareLink({
+    required SshSession that,
+    required String phone,
+  });
+
+  Future<void> crateApiSshSshSessionShareOpen({
+    required SshSession that,
+    required String url,
+  });
+
+  Future<String?> crateApiSshSshSessionSharePaste({required SshSession that});
+
+  Future<ClipPictureData?> crateApiSshSshSessionSharePastePicture({
+    required SshSession that,
+  });
+
+  Future<TextFound> crateApiSshSshSessionShareReadText({
+    required SshSession that,
+    required List<int> picture,
+  });
+
+  Future<void> crateApiSshSshSessionShareReceived({
+    required SshSession that,
+    required String phone,
+    required List<String> names,
+  });
+
   Future<ActiveTunnel> crateApiSshSshSessionStartTunnel({
     required SshSession that,
     required TunnelSpec spec,
+  });
+
+  Future<RemoteWatch> crateApiSshSshSessionWatch({
+    required SshSession that,
+    required String command,
+  });
+
+  String? crateApiAgentsAgentAttachCommand({required String session});
+
+  String crateApiShareApprovalSign({
+    required String privateKey,
+    required String id,
+    required String reason,
+    required String challenge,
   });
 
   Future<String> crateApiVaultBackupOpen({
@@ -380,11 +778,42 @@ abstract class RustLibApi extends BaseApi {
 
   Future<Credentials> crateApiSshTypesCredentialsDefault();
 
+  Future<DeskBinding> crateApiDeskTypesDeskBindingDefault();
+
+  Future<DeskMedia> crateApiDeskTypesDeskMediaDefault();
+
+  Future<DeskMonitor> crateApiDeskTypesDeskMonitorDefault();
+
+  Future<DeskSlot> crateApiDeskTypesDeskSlotDefault();
+
+  Future<DeskState> crateApiDeskTypesDeskStateDefault();
+
+  Future<DeskVolume> crateApiDeskTypesDeskVolumeDefault();
+
+  Future<DeskWindow> crateApiDeskTypesDeskWindowDefault();
+
+  Future<DesktopStats> crateApiDesktopTypesDesktopStatsDefault();
+
   Future<KeyPairInfo> crateApiKeysGenerateKey({
     required KeyKind kind,
     required String comment,
     String? passphrase,
   });
+
+  Future<HerdMade> crateApiHerdTypesHerdMadeDefault();
+
+  String? crateApiHerdHerdPaneCommand({
+    required String session,
+    required String pane,
+  });
+
+  Future<HerdSession> crateApiHerdTypesHerdSessionDefault();
+
+  Future<HerdState> crateApiHerdTypesHerdStateDefault();
+
+  Future<HerdTab> crateApiHerdTypesHerdTabDefault();
+
+  Future<HerdWorkspace> crateApiHerdTypesHerdWorkspaceDefault();
 
   Future<void> crateApiAppInitApp();
 
@@ -395,6 +824,17 @@ abstract class RustLibApi extends BaseApi {
 
   Future<KeyModifiers> crateApiTerminalTypesKeyModifiersDefault();
 
+  bool crateApiPairingPairingIsCode({required String text});
+
+  PairingInfo crateApiPairingPairingRead({required String code});
+
+  Future<PairingOutcome> crateApiPairingPairingRegister({
+    required String code,
+    required String phoneKey,
+    required String phoneName,
+    required bool tailscaleReady,
+  });
+
   ImportedTheme crateApiThemeParseThemeFile({required String text});
 
   bool crateApiKeysPrivateKeyIsEncrypted({required String pem});
@@ -404,6 +844,22 @@ abstract class RustLibApi extends BaseApi {
   String crateApiSftpRemoteJoin({required String dir, required String name});
 
   String crateApiSftpRemoteParent({required String path});
+
+  int crateApiScreenScreenStartBitrate();
+
+  bool crateApiShareShareIsLink({required String text});
+
+  String crateApiShareSharePictureMark({required List<int> picture});
+
+  String? crateApiShareSigningDescribe({
+    required String privateKey,
+    required String data,
+  });
+
+  String crateApiShareSigningSign({
+    required String privateKey,
+    required String data,
+  });
 
   Future<SyncReport> crateApiTransferSyncApply({
     required FileSide left,
@@ -424,6 +880,28 @@ abstract class RustLibApi extends BaseApi {
     required FileTransfer transfer,
   });
 
+  bool crateApiTailscaleTailscaleAvailable();
+
+  Future<TailscaleDevice> crateApiTailscaleTypesTailscaleDeviceDefault();
+
+  Future<void> crateApiTailscaleTailscaleLogin();
+
+  Future<void> crateApiTailscaleTailscaleLogout();
+
+  Future<double> crateApiTailscaleTailscalePing({
+    required String ip,
+    required String kind,
+  });
+
+  Future<void> crateApiTailscaleTailscaleStart({
+    required String dir,
+    required String hostname,
+  });
+
+  Future<TailscaleStatus> crateApiTailscaleTailscaleStatus();
+
+  Future<TailscaleStatus> crateApiTailscaleTypesTailscaleStatusDefault();
+
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault();
 
   Future<TunnelStats> crateApiTunnelTypesTunnelStatsDefault();
@@ -441,6 +919,11 @@ abstract class RustLibApi extends BaseApi {
     required String contents,
   });
 
+  Future<void> crateApiWakeWakeOnLan({
+    required String mac,
+    String? homeAddress,
+  });
+
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_ActiveTunnel;
 
@@ -448,6 +931,14 @@ abstract class RustLibApi extends BaseApi {
   get rust_arc_decrement_strong_count_ActiveTunnel;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ActiveTunnelPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_DeskWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_DeskWatch;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_DeskWatchPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_FileSide;
@@ -466,6 +957,23 @@ abstract class RustLibApi extends BaseApi {
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_FileTransferPtr;
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_HerdWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_HerdWatch;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_HerdWatchPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteDesktop;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteDesktop;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteDesktopPtr;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_RemoteFiles;
 
   RustArcDecrementStrongCountFnType
@@ -480,6 +988,56 @@ abstract class RustLibApi extends BaseApi {
   get rust_arc_decrement_strong_count_RemoteShell;
 
   CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_RemoteShellPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteTouchpad;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteTouchpad;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_RemoteTouchpadPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteWatch;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_RemoteWatchPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ScreenStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ScreenStream;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ScreenStreamPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ShareLink;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ShareLink;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_ShareLinkPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SoundStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SoundStream;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_SoundStreamPtr;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SpeakerStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SpeakerStream;
+
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_SpeakerStreamPtr;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_SshSession;
@@ -640,6 +1198,71 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "ActiveTunnel_stop", argNames: ["that"]);
 
   @override
+  Stream<DeskState> crateApiDeskDeskWatchStates({required DeskWatch that}) {
+    final sink = RustStreamSink<DeskState>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_desk_state_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 6,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiDeskDeskWatchStatesConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiDeskDeskWatchStatesConstMeta =>
+      const TaskConstMeta(
+        debugName: "DeskWatch_states",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiDeskDeskWatchStop({required DeskWatch that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskDeskWatchStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskDeskWatchStopConstMeta =>
+      const TaskConstMeta(debugName: "DeskWatch_stop", argNames: ["that"]);
+
+  @override
   Future<bool> crateApiTransferFileSideExists({
     required FileSide that,
     required String path,
@@ -656,7 +1279,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 8,
             port: port_,
           );
         },
@@ -687,7 +1310,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -719,7 +1342,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(dir, serializer);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -755,7 +1378,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 11,
             port: port_,
           );
         },
@@ -793,7 +1416,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 12,
             port: port_,
           );
         },
@@ -828,7 +1451,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(path, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -853,7 +1476,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -880,7 +1503,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             files,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -907,7 +1530,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -929,7 +1552,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 17)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -956,7 +1579,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 18)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -993,7 +1616,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 17,
+              funcId: 19,
               port: port_,
             );
           },
@@ -1017,6 +1640,505 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Stream<HerdState> crateApiHerdHerdWatchStates({required HerdWatch that}) {
+    final sink = RustStreamSink<HerdState>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_herd_state_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 20,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiHerdHerdWatchStatesConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiHerdHerdWatchStatesConstMeta =>
+      const TaskConstMeta(
+        debugName: "HerdWatch_states",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiHerdHerdWatchStop({required HerdWatch that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 21)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdHerdWatchStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdHerdWatchStopConstMeta =>
+      const TaskConstMeta(debugName: "HerdWatch_stop", argNames: ["that"]);
+
+  @override
+  void crateApiDesktopRemoteDesktopButton({
+    required RemoteDesktop that,
+    required DesktopButton button,
+    required bool pressed,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_desktop_button(button, serializer);
+          sse_encode_bool(pressed, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 22)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopButtonConstMeta,
+        argValues: [that, button, pressed],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopButtonConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_button",
+        argNames: ["that", "button", "pressed"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopChord({
+    required RemoteDesktop that,
+    required List<int> modifiers,
+    required int code,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_list_prim_u_32_loose(modifiers, serializer);
+          sse_encode_u_32(code, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 23)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopChordConstMeta,
+        argValues: [that, modifiers, code],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopChordConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_chord",
+        argNames: ["that", "modifiers", "code"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopClick({
+    required RemoteDesktop that,
+    required DesktopButton button,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_desktop_button(button, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 24)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopClickConstMeta,
+        argValues: [that, button],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopClickConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_click",
+        argNames: ["that", "button"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopClose({required RemoteDesktop that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 25)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopCloseConstMeta =>
+      const TaskConstMeta(debugName: "RemoteDesktop_close", argNames: ["that"]);
+
+  @override
+  Stream<DesktopEvent> crateApiDesktopRemoteDesktopEvents({
+    required RemoteDesktop that,
+  }) {
+    final sink = RustStreamSink<DesktopEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_desktop_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 26,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiDesktopRemoteDesktopEventsConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_events",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  bool crateApiDesktopRemoteDesktopIsClosed({required RemoteDesktop that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 27)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopIsClosedConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopIsClosedConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_is_closed",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopKey({
+    required RemoteDesktop that,
+    required int code,
+    required bool pressed,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_u_32(code, serializer);
+          sse_encode_bool(pressed, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 28)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopKeyConstMeta,
+        argValues: [that, code, pressed],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopKeyConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_key",
+        argNames: ["that", "code", "pressed"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopPointerMove({
+    required RemoteDesktop that,
+    required double x,
+    required double y,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(x, serializer);
+          sse_encode_f_64(y, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 29)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopPointerMoveConstMeta,
+        argValues: [that, x, y],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopPointerMoveConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_pointer_move",
+        argNames: ["that", "x", "y"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopRefresh({required RemoteDesktop that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopRefreshConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopRefreshConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_refresh",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopResize({
+    required RemoteDesktop that,
+    required int width,
+    required int height,
+    required double scale,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_u_32(width, serializer);
+          sse_encode_u_32(height, serializer);
+          sse_encode_f_64(scale, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopResizeConstMeta,
+        argValues: [that, width, height, scale],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopResizeConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_resize",
+        argNames: ["that", "width", "height", "scale"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopScroll({
+    required RemoteDesktop that,
+    required double dx,
+    required double dy,
+    required bool wheel,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(dx, serializer);
+          sse_encode_f_64(dy, serializer);
+          sse_encode_bool(wheel, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopScrollConstMeta,
+        argValues: [that, dx, dy, wheel],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopScrollConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_scroll",
+        argNames: ["that", "dx", "dy", "wheel"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopScrollStop({required RemoteDesktop that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 33)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopScrollStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopScrollStopConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_scroll_stop",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiDesktopRemoteDesktopSetClipboard({
+    required RemoteDesktop that,
+    required String text,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopRemoteDesktopSetClipboardConstMeta,
+        argValues: [that, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopRemoteDesktopSetClipboardConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteDesktop_set_clipboard",
+        argNames: ["that", "text"],
+      );
+
+  @override
   Future<String> crateApiSftpRemoteFilesCanonicalize({
     required RemoteFiles that,
     required String path,
@@ -1033,7 +2155,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 35,
             port: port_,
           );
         },
@@ -1078,7 +2200,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 36,
             port: port_,
           );
         },
@@ -1112,7 +2234,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 37,
             port: port_,
           );
         },
@@ -1147,7 +2269,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 38,
             port: port_,
           );
         },
@@ -1185,7 +2307,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 22,
+            funcId: 39,
             port: port_,
           );
         },
@@ -1225,7 +2347,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 40,
             port: port_,
           );
         },
@@ -1263,7 +2385,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 24,
+            funcId: 41,
             port: port_,
           );
         },
@@ -1303,7 +2425,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 25,
+            funcId: 42,
             port: port_,
           );
         },
@@ -1343,7 +2465,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 26,
+            funcId: 43,
             port: port_,
           );
         },
@@ -1381,7 +2503,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 27,
+            funcId: 44,
             port: port_,
           );
         },
@@ -1426,7 +2548,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 28,
+            funcId: 45,
             port: port_,
           );
         },
@@ -1466,7 +2588,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 29,
+            funcId: 46,
             port: port_,
           );
         },
@@ -1497,7 +2619,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 30)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 47)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1532,7 +2654,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_16(row, serializer);
           sse_encode_u_16(col, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 31)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 48)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1561,7 +2683,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 32)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 49)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1595,7 +2717,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 33,
+              funcId: 50,
               port: port_,
             );
           },
@@ -1632,7 +2754,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 34)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 51)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1667,7 +2789,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(query, serializer);
           sse_encode_bool(caseSensitive, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 35)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 52)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_search_match,
@@ -1696,7 +2818,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 36)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_terminal_frame,
@@ -1722,7 +2844,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 37)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 54)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1751,7 +2873,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 38)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 55)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1784,7 +2906,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 39)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 56)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1816,7 +2938,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_16(cols, serializer);
           sse_encode_u_16(rows, serializer);
           sse_encode_box_autoadd_terminal_palette(palette, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 40)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 57)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -1846,7 +2968,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 41)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 58)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1881,7 +3003,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_u_16(cols, serializer);
           sse_encode_u_16(rows, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 42)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 59)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1914,7 +3036,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_u_32(line, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 43)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 60)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -1951,7 +3073,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_i_32(lines, serializer);
           sse_encode_u_16(row, serializer);
           sse_encode_u_16(col, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 44)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 61)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -1980,7 +3102,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 45)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 62)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2015,7 +3137,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_terminal_key(key, serializer);
           sse_encode_box_autoadd_key_modifiers(mods, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 46)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 63)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2050,7 +3172,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(text, serializer);
           sse_encode_box_autoadd_key_modifiers(mods, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 47)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 64)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2083,7 +3205,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_box_autoadd_terminal_palette(palette, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 48)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 65)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2116,7 +3238,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             serializer,
           );
           sse_encode_bool(paused, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 49)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 66)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2151,7 +3273,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_String(path, serializer);
           sse_encode_String(title, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 50)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 67)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
@@ -2180,7 +3302,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 51)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 68)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -2219,7 +3341,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_u_16(startCol, serializer);
           sse_encode_u_16(endRow, serializer);
           sse_encode_u_16(endCol, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 52)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 69)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2248,7 +3370,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 53)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 70)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2268,6 +3390,797 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  void crateApiTouchpadRemoteTouchpadButton({
+    required RemoteTouchpad that,
+    required TouchpadButton button,
+    required bool down,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_touchpad_button(button, serializer);
+          sse_encode_bool(down, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 71)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadButtonConstMeta,
+        argValues: [that, button, down],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadButtonConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_button",
+        argNames: ["that", "button", "down"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadClose({required RemoteTouchpad that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 72)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadCloseConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_close",
+        argNames: ["that"],
+      );
+
+  @override
+  Stream<String> crateApiTouchpadRemoteTouchpadEnded({
+    required RemoteTouchpad that,
+  }) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 73,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiTouchpadRemoteTouchpadEndedConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadEndedConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_ended",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadKey({
+    required RemoteTouchpad that,
+    required int code,
+    required bool down,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_u_32(code, serializer);
+          sse_encode_bool(down, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 74)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadKeyConstMeta,
+        argValues: [that, code, down],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadKeyConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_key",
+        argNames: ["that", "code", "down"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadMoveBy({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(dx, serializer);
+          sse_encode_f_64(dy, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 75)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadMoveByConstMeta,
+        argValues: [that, dx, dy],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadMoveByConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_move_by",
+        argNames: ["that", "dx", "dy"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadPaste({
+    required RemoteTouchpad that,
+    required String text,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 76)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadPasteConstMeta,
+        argValues: [that, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadPasteConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_paste",
+        argNames: ["that", "text"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadReleaseAll({
+    required RemoteTouchpad that,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 77)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadReleaseAllConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadReleaseAllConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_release_all",
+        argNames: ["that"],
+      );
+
+  @override
+  void crateApiTouchpadRemoteTouchpadScroll({
+    required RemoteTouchpad that,
+    required double dx,
+    required double dy,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+            that,
+            serializer,
+          );
+          sse_encode_f_64(dx, serializer);
+          sse_encode_f_64(dy, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 78)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTouchpadRemoteTouchpadScrollConstMeta,
+        argValues: [that, dx, dy],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTouchpadRemoteTouchpadScrollConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteTouchpad_scroll",
+        argNames: ["that", "dx", "dy"],
+      );
+
+  @override
+  Stream<String> crateApiWatchRemoteWatchLines({required RemoteWatch that}) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 79,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiWatchRemoteWatchLinesConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiWatchRemoteWatchLinesConstMeta =>
+      const TaskConstMeta(
+        debugName: "RemoteWatch_lines",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiWatchRemoteWatchStop({required RemoteWatch that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 80)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiWatchRemoteWatchStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWatchRemoteWatchStopConstMeta =>
+      const TaskConstMeta(debugName: "RemoteWatch_stop", argNames: ["that"]);
+
+  @override
+  void crateApiScreenScreenStreamClose({required ScreenStream that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 81)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenScreenStreamCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenScreenStreamCloseConstMeta =>
+      const TaskConstMeta(debugName: "ScreenStream_close", argNames: ["that"]);
+
+  @override
+  Stream<String> crateApiScreenScreenStreamEnded({required ScreenStream that}) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 82,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiScreenScreenStreamEndedConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiScreenScreenStreamEndedConstMeta =>
+      const TaskConstMeta(
+        debugName: "ScreenStream_ended",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  ScreenStatus crateApiScreenScreenStreamStatus({required ScreenStream that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 83)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_screen_status,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenScreenStreamStatusConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenScreenStreamStatusConstMeta =>
+      const TaskConstMeta(debugName: "ScreenStream_status", argNames: ["that"]);
+
+  @override
+  ScreenWrite crateApiScreenScreenStreamWrite({
+    required ScreenStream that,
+    required List<int> bytes,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+            that,
+            serializer,
+          );
+          sse_encode_list_prim_u_8_loose(bytes, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 84)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_screen_write,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenScreenStreamWriteConstMeta,
+        argValues: [that, bytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenScreenStreamWriteConstMeta =>
+      const TaskConstMeta(
+        debugName: "ScreenStream_write",
+        argNames: ["that", "bytes"],
+      );
+
+  @override
+  Stream<ShareEvent> crateApiShareShareLinkEvents({required ShareLink that}) {
+    final sink = RustStreamSink<ShareEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_share_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 85,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiShareShareLinkEventsConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiShareShareLinkEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "ShareLink_events",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  void crateApiShareShareLinkStop({required ShareLink that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 86)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiShareShareLinkStopConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareShareLinkStopConstMeta =>
+      const TaskConstMeta(debugName: "ShareLink_stop", argNames: ["that"]);
+
+  @override
+  void crateApiScreenSoundStreamClose({required SoundStream that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 87)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenSoundStreamCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenSoundStreamCloseConstMeta =>
+      const TaskConstMeta(debugName: "SoundStream_close", argNames: ["that"]);
+
+  @override
+  Stream<String> crateApiScreenSoundStreamEnded({required SoundStream that}) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 88,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiScreenSoundStreamEndedConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiScreenSoundStreamEndedConstMeta =>
+      const TaskConstMeta(
+        debugName: "SoundStream_ended",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  ScreenStatus crateApiScreenSoundStreamStatus({required SoundStream that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 89)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_screen_status,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenSoundStreamStatusConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenSoundStreamStatusConstMeta =>
+      const TaskConstMeta(debugName: "SoundStream_status", argNames: ["that"]);
+
+  @override
+  ScreenWrite crateApiScreenSoundStreamWrite({
+    required SoundStream that,
+    required List<int> bytes,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+            that,
+            serializer,
+          );
+          sse_encode_list_prim_u_8_loose(bytes, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 90)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_screen_write,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenSoundStreamWriteConstMeta,
+        argValues: [that, bytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenSoundStreamWriteConstMeta =>
+      const TaskConstMeta(
+        debugName: "SoundStream_write",
+        argNames: ["that", "bytes"],
+      );
+
+  @override
+  void crateApiSpeakerSpeakerStreamClose({required SpeakerStream that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 91)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSpeakerSpeakerStreamCloseConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSpeakerSpeakerStreamCloseConstMeta =>
+      const TaskConstMeta(debugName: "SpeakerStream_close", argNames: ["that"]);
+
+  @override
+  Stream<String> crateApiSpeakerSpeakerStreamEnded({
+    required SpeakerStream that,
+  }) {
+    final sink = RustStreamSink<String>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_String_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 92,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiSpeakerSpeakerStreamEndedConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiSpeakerSpeakerStreamEndedConstMeta =>
+      const TaskConstMeta(
+        debugName: "SpeakerStream_ended",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  Stream<Uint8List> crateApiSpeakerSpeakerStreamSound({
+    required SpeakerStream that,
+  }) {
+    final sink = RustStreamSink<Uint8List>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+              that,
+              serializer,
+            );
+            sse_encode_StreamSink_list_prim_u_8_strict_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 93,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: null,
+          ),
+          constMeta: kCrateApiSpeakerSpeakerStreamSoundConstMeta,
+          argValues: [that, sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiSpeakerSpeakerStreamSoundConstMeta =>
+      const TaskConstMeta(
+        debugName: "SpeakerStream_sound",
+        argNames: ["that", "sink"],
+      );
+
+  @override
+  Future<List<Agent>> crateApiSshSshSessionAgents({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 94,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_agent,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionAgentsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionAgentsConstMeta =>
+      const TaskConstMeta(debugName: "SshSession_agents", argNames: ["that"]);
+
+  @override
   Future<bool> crateApiSshSshSessionCheckAlive({
     required SshSession that,
     required int timeoutSecs,
@@ -2284,7 +4197,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 54,
+            funcId: 95,
             port: port_,
           );
         },
@@ -2317,7 +4230,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 55,
+            funcId: 96,
             port: port_,
           );
         },
@@ -2340,6 +4253,149 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<List<DeskBinding>> crateApiSshSshSessionDeskBindings({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 97,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_desk_binding,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionDeskBindingsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionDeskBindingsConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_desk_bindings",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<DeskState> crateApiSshSshSessionDeskDo({
+    required SshSession that,
+    required DeskAction action,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_desk_action(action, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 98,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_state,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionDeskDoConstMeta,
+        argValues: [that, action],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionDeskDoConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_desk_do",
+        argNames: ["that", "action"],
+      );
+
+  @override
+  Future<DeskState> crateApiSshSshSessionDeskState({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 99,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_state,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionDeskStateConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionDeskStateConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_desk_state",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<DeskWatch> crateApiSshSshSessionDeskWatch({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 100,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionDeskWatchConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionDeskWatchConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_desk_watch",
+        argNames: ["that"],
+      );
+
+  @override
   Future<void> crateApiSshSshSessionDisconnect({required SshSession that}) {
     return handler.executeNormal(
       NormalTask(
@@ -2352,7 +4408,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 56,
+            funcId: 101,
             port: port_,
           );
         },
@@ -2392,7 +4448,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 57,
+            funcId: 102,
             port: port_,
           );
         },
@@ -2413,6 +4469,725 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<void> crateApiSshSshSessionHerdAnswerChoice({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String mark,
+    required String choice,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_String(mark, serializer);
+          sse_encode_String(choice, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 103,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdAnswerChoiceConstMeta,
+        argValues: [that, session, pane, mark, choice],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdAnswerChoiceConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_answer_choice",
+        argNames: ["that", "session", "pane", "mark", "choice"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdAnswerText({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String mark,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_String(mark, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 104,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdAnswerTextConstMeta,
+        argValues: [that, session, pane, mark, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdAnswerTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_answer_text",
+        argNames: ["that", "session", "pane", "mark", "text"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdClosePane({
+    required SshSession that,
+    required String session,
+    required String pane,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 105,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdClosePaneConstMeta,
+        argValues: [that, session, pane],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdClosePaneConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_close_pane",
+        argNames: ["that", "session", "pane"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdCloseTab({
+    required SshSession that,
+    required String session,
+    required String tab,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(tab, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 106,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdCloseTabConstMeta,
+        argValues: [that, session, tab],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdCloseTabConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_close_tab",
+        argNames: ["that", "session", "tab"],
+      );
+
+  @override
+  Future<HerdMade> crateApiSshSshSessionHerdContinue({
+    required SshSession that,
+    required String session,
+    required String folder,
+    required String kind,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(folder, serializer);
+          sse_encode_String(kind, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 107,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_made,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdContinueConstMeta,
+        argValues: [that, session, folder, kind],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdContinueConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_continue",
+        argNames: ["that", "session", "folder", "kind"],
+      );
+
+  @override
+  Future<List<HerdPlace>> crateApiSshSshSessionHerdFolders({
+    required SshSession that,
+    required String inside,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(inside, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 108,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_herd_place,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdFoldersConstMeta,
+        argValues: [that, inside],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdFoldersConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_folders",
+        argNames: ["that", "inside"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdKeys({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required List<String> keys,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_list_String(keys, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 109,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdKeysConstMeta,
+        argValues: [that, session, pane, keys],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdKeysConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_keys",
+        argNames: ["that", "session", "pane", "keys"],
+      );
+
+  @override
+  Future<List<HerdKind>> crateApiSshSshSessionHerdKinds({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 110,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_herd_kind,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdKindsConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdKindsConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_kinds",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<HerdMade> crateApiSshSshSessionHerdNewTab({
+    required SshSession that,
+    required String session,
+    required String workspace,
+    required String label,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(workspace, serializer);
+          sse_encode_String(label, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 111,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_made,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdNewTabConstMeta,
+        argValues: [that, session, workspace, label],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdNewTabConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_new_tab",
+        argNames: ["that", "session", "workspace", "label"],
+      );
+
+  @override
+  Future<HerdMade> crateApiSshSshSessionHerdNewWorkspace({
+    required SshSession that,
+    required String session,
+    required String folder,
+    required String label,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(folder, serializer);
+          sse_encode_String(label, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 112,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_made,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdNewWorkspaceConstMeta,
+        argValues: [that, session, folder, label],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdNewWorkspaceConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_new_workspace",
+        argNames: ["that", "session", "folder", "label"],
+      );
+
+  @override
+  Future<List<HerdOutside>> crateApiSshSshSessionHerdOutside({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 113,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_herd_outside,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdOutsideConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdOutsideConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_outside",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<List<HerdPlace>> crateApiSshSshSessionHerdPlaces({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 114,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_herd_place,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdPlacesConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdPlacesConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_places",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdPrompt({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 115,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdPromptConstMeta,
+        argValues: [that, session, pane, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdPromptConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_prompt",
+        argNames: ["that", "session", "pane", "text"],
+      );
+
+  @override
+  Future<HerdText> crateApiSshSshSessionHerdRead({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required int lines,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_u_32(lines, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 116,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_text,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdReadConstMeta,
+        argValues: [that, session, pane, lines],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdReadConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_read",
+        argNames: ["that", "session", "pane", "lines"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdRename({
+    required SshSession that,
+    required String session,
+    required String workspace,
+    required String label,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(workspace, serializer);
+          sse_encode_String(label, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 117,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdRenameConstMeta,
+        argValues: [that, session, workspace, label],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdRenameConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_rename",
+        argNames: ["that", "session", "workspace", "label"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionHerdStartAgent({
+    required SshSession that,
+    required String session,
+    required String pane,
+    required String kind,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          sse_encode_String(kind, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 118,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdStartAgentConstMeta,
+        argValues: [that, session, pane, kind],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdStartAgentConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_start_agent",
+        argNames: ["that", "session", "pane", "kind"],
+      );
+
+  @override
+  Future<HerdState> crateApiSshSshSessionHerdState({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 119,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_state,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdStateConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdStateConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_state",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<HerdWatch> crateApiSshSshSessionHerdWatch({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 120,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionHerdWatchConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionHerdWatchConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_herd_watch",
+        argNames: ["that"],
+      );
+
+  @override
   SessionInfo crateApiSshSshSessionInfo({required SshSession that}) {
     return handler.executeSync(
       SyncTask(
@@ -2422,7 +5197,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 58)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 121,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_session_info,
@@ -2448,7 +5227,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 59)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 122,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -2468,6 +5251,86 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<ScreenStream> crateApiSshSshSessionOpenCamera({
+    required SshSession that,
+    required String phone,
+    required int turn,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_u_32(turn, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 123,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenCameraConstMeta,
+        argValues: [that, phone, turn],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenCameraConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_camera",
+        argNames: ["that", "phone", "turn"],
+      );
+
+  @override
+  Future<RemoteDesktop> crateApiSshSshSessionOpenDesktop({
+    required SshSession that,
+    required DesktopOptions options,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_box_autoadd_desktop_options(options, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 124,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenDesktopConstMeta,
+        argValues: [that, options],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenDesktopConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_desktop",
+        argNames: ["that", "options"],
+      );
+
+  @override
   Future<RemoteFiles> crateApiSshSshSessionOpenFiles({
     required SshSession that,
   }) {
@@ -2482,7 +5345,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 60,
+            funcId: 125,
             port: port_,
           );
         },
@@ -2505,6 +5368,84 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<SoundStream> crateApiSshSshSessionOpenMic({
+    required SshSession that,
+    required String phone,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 126,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenMicConstMeta,
+        argValues: [that, phone],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenMicConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_mic",
+        argNames: ["that", "phone"],
+      );
+
+  @override
+  Future<ScreenStream> crateApiSshSshSessionOpenScreen({
+    required SshSession that,
+    required String phone,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 127,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenScreenConstMeta,
+        argValues: [that, phone],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenScreenConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_screen",
+        argNames: ["that", "phone"],
+      );
+
+  @override
   Future<RemoteShell> crateApiSshSshSessionOpenShell({
     required SshSession that,
     required ShellOptions options,
@@ -2521,7 +5462,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 61,
+            funcId: 128,
             port: port_,
           );
         },
@@ -2541,6 +5482,210 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(
         debugName: "SshSession_open_shell",
         argNames: ["that", "options"],
+      );
+
+  @override
+  Future<SpeakerStream> crateApiSshSshSessionOpenSpeaker({
+    required SshSession that,
+    required String phone,
+    required bool everything,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_bool(everything, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 129,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenSpeakerConstMeta,
+        argValues: [that, phone, everything],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenSpeakerConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_speaker",
+        argNames: ["that", "phone", "everything"],
+      );
+
+  @override
+  Future<RemoteTouchpad> crateApiSshSshSessionOpenTouchpad({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 130,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionOpenTouchpadConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionOpenTouchpadConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_open_touchpad",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionPhoneCall({
+    required SshSession that,
+    required String phone,
+    required bool active,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_bool(active, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 131,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionPhoneCallConstMeta,
+        argValues: [that, phone, active],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionPhoneCallConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_phone_call",
+        argNames: ["that", "phone", "active"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionPhoneNotice({
+    required SshSession that,
+    required String phone,
+    required String app,
+    required String title,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_String(app, serializer);
+          sse_encode_String(title, serializer);
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 132,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionPhoneNoticeConstMeta,
+        argValues: [that, phone, app, title, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionPhoneNoticeConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_phone_notice",
+        argNames: ["that", "phone", "app", "title", "text"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionPhoneStatus({
+    required SshSession that,
+    required String phone,
+    required int battery,
+    required bool charging,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_u_8(battery, serializer);
+          sse_encode_bool(charging, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 133,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionPhoneStatusConstMeta,
+        argValues: [that, phone, battery, charging],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionPhoneStatusConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_phone_status",
+        argNames: ["that", "phone", "battery", "charging"],
       );
 
   @override
@@ -2565,7 +5710,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 62,
+            funcId: 134,
             port: port_,
           );
         },
@@ -2587,6 +5732,421 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiSshSshSessionShareApproved({
+    required SshSession that,
+    required String id,
+    required String answer,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(id, serializer);
+          sse_encode_String(answer, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 135,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareApprovedConstMeta,
+        argValues: [that, id, answer],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareApprovedConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_approved",
+        argNames: ["that", "id", "answer"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionShareCopy({
+    required SshSession that,
+    required String text,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(text, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 136,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareCopyConstMeta,
+        argValues: [that, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareCopyConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_copy",
+        argNames: ["that", "text"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionShareCopyPicture({
+    required SshSession that,
+    required String kind,
+    required List<int> picture,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(kind, serializer);
+          sse_encode_list_prim_u_8_loose(picture, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 137,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareCopyPictureConstMeta,
+        argValues: [that, kind, picture],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareCopyPictureConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_copy_picture",
+        argNames: ["that", "kind", "picture"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionShareDone({
+    required SshSession that,
+    required String id,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(id, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 138,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareDoneConstMeta,
+        argValues: [that, id],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareDoneConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_done",
+        argNames: ["that", "id"],
+      );
+
+  @override
+  Future<String> crateApiSshSshSessionShareInbox({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 139,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareInboxConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareInboxConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_inbox",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<ShareLink> crateApiSshSshSessionShareLink({
+    required SshSession that,
+    required String phone,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 140,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareLinkConstMeta,
+        argValues: [that, phone],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareLinkConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_link",
+        argNames: ["that", "phone"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionShareOpen({
+    required SshSession that,
+    required String url,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(url, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 141,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareOpenConstMeta,
+        argValues: [that, url],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareOpenConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_open",
+        argNames: ["that", "url"],
+      );
+
+  @override
+  Future<String?> crateApiSshSshSessionSharePaste({required SshSession that}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 142,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionSharePasteConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionSharePasteConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_paste",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<ClipPictureData?> crateApiSshSshSessionSharePastePicture({
+    required SshSession that,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 143,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_clip_picture_data,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionSharePastePictureConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionSharePastePictureConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_paste_picture",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<TextFound> crateApiSshSshSessionShareReadText({
+    required SshSession that,
+    required List<int> picture,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_list_prim_u_8_loose(picture, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 144,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_text_found,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareReadTextConstMeta,
+        argValues: [that, picture],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareReadTextConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_read_text",
+        argNames: ["that", "picture"],
+      );
+
+  @override
+  Future<void> crateApiSshSshSessionShareReceived({
+    required SshSession that,
+    required String phone,
+    required List<String> names,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(phone, serializer);
+          sse_encode_list_String(names, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 145,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionShareReceivedConstMeta,
+        argValues: [that, phone, names],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionShareReceivedConstMeta =>
+      const TaskConstMeta(
+        debugName: "SshSession_share_received",
+        argNames: ["that", "phone", "names"],
+      );
+
+  @override
   Future<ActiveTunnel> crateApiSshSshSessionStartTunnel({
     required SshSession that,
     required TunnelSpec spec,
@@ -2603,7 +6163,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 63,
+            funcId: 146,
             port: port_,
           );
         },
@@ -2626,6 +6186,111 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<RemoteWatch> crateApiSshSshSessionWatch({
+    required SshSession that,
+    required String command,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
+            that,
+            serializer,
+          );
+          sse_encode_String(command, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 147,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiSshSshSessionWatchConstMeta,
+        argValues: [that, command],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSshSshSessionWatchConstMeta => const TaskConstMeta(
+    debugName: "SshSession_watch",
+    argNames: ["that", "command"],
+  );
+
+  @override
+  String? crateApiAgentsAgentAttachCommand({required String session}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(session, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 148,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiAgentsAgentAttachCommandConstMeta,
+        argValues: [session],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiAgentsAgentAttachCommandConstMeta =>
+      const TaskConstMeta(
+        debugName: "agent_attach_command",
+        argNames: ["session"],
+      );
+
+  @override
+  String crateApiShareApprovalSign({
+    required String privateKey,
+    required String id,
+    required String reason,
+    required String challenge,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(privateKey, serializer);
+          sse_encode_String(id, serializer);
+          sse_encode_String(reason, serializer);
+          sse_encode_String(challenge, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 149,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiShareApprovalSignConstMeta,
+        argValues: [privateKey, id, reason, challenge],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareApprovalSignConstMeta => const TaskConstMeta(
+    debugName: "approval_sign",
+    argNames: ["privateKey", "id", "reason", "challenge"],
+  );
+
+  @override
   Future<String> crateApiVaultBackupOpen({
     required String password,
     required List<int> data,
@@ -2639,7 +6304,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 64,
+            funcId: 150,
             port: port_,
           );
         },
@@ -2673,7 +6338,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 65,
+            funcId: 151,
             port: port_,
           );
         },
@@ -2724,7 +6389,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 66,
+            funcId: 152,
             port: port_,
           );
         },
@@ -2750,7 +6415,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 67)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 153,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -2775,7 +6444,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 68,
+            funcId: 154,
             port: port_,
           );
         },
@@ -2794,6 +6463,222 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "credentials_default", argNames: []);
 
   @override
+  Future<DeskBinding> crateApiDeskTypesDeskBindingDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 155,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_binding,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskBindingDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskBindingDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_binding_default", argNames: []);
+
+  @override
+  Future<DeskMedia> crateApiDeskTypesDeskMediaDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 156,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_media,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskMediaDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskMediaDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_media_default", argNames: []);
+
+  @override
+  Future<DeskMonitor> crateApiDeskTypesDeskMonitorDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 157,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_monitor,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskMonitorDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskMonitorDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_monitor_default", argNames: []);
+
+  @override
+  Future<DeskSlot> crateApiDeskTypesDeskSlotDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 158,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_slot,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskSlotDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskSlotDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_slot_default", argNames: []);
+
+  @override
+  Future<DeskState> crateApiDeskTypesDeskStateDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 159,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_state,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskStateDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskStateDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_state_default", argNames: []);
+
+  @override
+  Future<DeskVolume> crateApiDeskTypesDeskVolumeDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 160,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_volume,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskVolumeDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskVolumeDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_volume_default", argNames: []);
+
+  @override
+  Future<DeskWindow> crateApiDeskTypesDeskWindowDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 161,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_window,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDeskTypesDeskWindowDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDeskTypesDeskWindowDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desk_window_default", argNames: []);
+
+  @override
+  Future<DesktopStats> crateApiDesktopTypesDesktopStatsDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 162,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desktop_stats,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiDesktopTypesDesktopStatsDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDesktopTypesDesktopStatsDefaultConstMeta =>
+      const TaskConstMeta(debugName: "desktop_stats_default", argNames: []);
+
+  @override
   Future<KeyPairInfo> crateApiKeysGenerateKey({
     required KeyKind kind,
     required String comment,
@@ -2809,7 +6694,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 69,
+            funcId: 163,
             port: port_,
           );
         },
@@ -2830,6 +6715,175 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<HerdMade> crateApiHerdTypesHerdMadeDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 164,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_made,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdTypesHerdMadeDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdTypesHerdMadeDefaultConstMeta =>
+      const TaskConstMeta(debugName: "herd_made_default", argNames: []);
+
+  @override
+  String? crateApiHerdHerdPaneCommand({
+    required String session,
+    required String pane,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(session, serializer);
+          sse_encode_String(pane, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 165,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdHerdPaneCommandConstMeta,
+        argValues: [session, pane],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdHerdPaneCommandConstMeta =>
+      const TaskConstMeta(
+        debugName: "herd_pane_command",
+        argNames: ["session", "pane"],
+      );
+
+  @override
+  Future<HerdSession> crateApiHerdTypesHerdSessionDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 166,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_session,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdTypesHerdSessionDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdTypesHerdSessionDefaultConstMeta =>
+      const TaskConstMeta(debugName: "herd_session_default", argNames: []);
+
+  @override
+  Future<HerdState> crateApiHerdTypesHerdStateDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 167,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_state,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdTypesHerdStateDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdTypesHerdStateDefaultConstMeta =>
+      const TaskConstMeta(debugName: "herd_state_default", argNames: []);
+
+  @override
+  Future<HerdTab> crateApiHerdTypesHerdTabDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 168,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_tab,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdTypesHerdTabDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdTypesHerdTabDefaultConstMeta =>
+      const TaskConstMeta(debugName: "herd_tab_default", argNames: []);
+
+  @override
+  Future<HerdWorkspace> crateApiHerdTypesHerdWorkspaceDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 169,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_workspace,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiHerdTypesHerdWorkspaceDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiHerdTypesHerdWorkspaceDefaultConstMeta =>
+      const TaskConstMeta(debugName: "herd_workspace_default", argNames: []);
+
+  @override
   Future<void> crateApiAppInitApp() {
     return handler.executeNormal(
       NormalTask(
@@ -2838,7 +6892,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 70,
+            funcId: 170,
             port: port_,
           );
         },
@@ -2870,7 +6924,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 71,
+            funcId: 171,
             port: port_,
           );
         },
@@ -2900,7 +6954,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 72,
+            funcId: 172,
             port: port_,
           );
         },
@@ -2919,13 +6973,110 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "key_modifiers_default", argNames: []);
 
   @override
+  bool crateApiPairingPairingIsCode({required String text}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 173,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiPairingPairingIsCodeConstMeta,
+        argValues: [text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPairingPairingIsCodeConstMeta =>
+      const TaskConstMeta(debugName: "pairing_is_code", argNames: ["text"]);
+
+  @override
+  PairingInfo crateApiPairingPairingRead({required String code}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(code, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 174,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pairing_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiPairingPairingReadConstMeta,
+        argValues: [code],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPairingPairingReadConstMeta =>
+      const TaskConstMeta(debugName: "pairing_read", argNames: ["code"]);
+
+  @override
+  Future<PairingOutcome> crateApiPairingPairingRegister({
+    required String code,
+    required String phoneKey,
+    required String phoneName,
+    required bool tailscaleReady,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(code, serializer);
+          sse_encode_String(phoneKey, serializer);
+          sse_encode_String(phoneName, serializer);
+          sse_encode_bool(tailscaleReady, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 175,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_pairing_outcome,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiPairingPairingRegisterConstMeta,
+        argValues: [code, phoneKey, phoneName, tailscaleReady],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiPairingPairingRegisterConstMeta =>
+      const TaskConstMeta(
+        debugName: "pairing_register",
+        argNames: ["code", "phoneKey", "phoneName", "tailscaleReady"],
+      );
+
+  @override
   ImportedTheme crateApiThemeParseThemeFile({required String text}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(text, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 73)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 176,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_imported_theme,
@@ -2948,7 +7099,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(pem, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 74)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 177,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_bool,
@@ -2974,7 +7129,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(publicOpenssh, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 75)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 178,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3001,7 +7160,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dir, serializer);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 76)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 179,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3024,7 +7187,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(path, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 77)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 180,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -3039,6 +7206,156 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiSftpRemoteParentConstMeta =>
       const TaskConstMeta(debugName: "remote_parent", argNames: ["path"]);
+
+  @override
+  int crateApiScreenScreenStartBitrate() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 181,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_32,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiScreenScreenStartBitrateConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScreenScreenStartBitrateConstMeta =>
+      const TaskConstMeta(debugName: "screen_start_bitrate", argNames: []);
+
+  @override
+  bool crateApiShareShareIsLink({required String text}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 182,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiShareShareIsLinkConstMeta,
+        argValues: [text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareShareIsLinkConstMeta =>
+      const TaskConstMeta(debugName: "share_is_link", argNames: ["text"]);
+
+  @override
+  String crateApiShareSharePictureMark({required List<int> picture}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(picture, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 183,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiShareSharePictureMarkConstMeta,
+        argValues: [picture],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareSharePictureMarkConstMeta =>
+      const TaskConstMeta(
+        debugName: "share_picture_mark",
+        argNames: ["picture"],
+      );
+
+  @override
+  String? crateApiShareSigningDescribe({
+    required String privateKey,
+    required String data,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(privateKey, serializer);
+          sse_encode_String(data, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 184,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiShareSigningDescribeConstMeta,
+        argValues: [privateKey, data],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareSigningDescribeConstMeta =>
+      const TaskConstMeta(
+        debugName: "signing_describe",
+        argNames: ["privateKey", "data"],
+      );
+
+  @override
+  String crateApiShareSigningSign({
+    required String privateKey,
+    required String data,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(privateKey, serializer);
+          sse_encode_String(data, serializer);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 185,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiShareSigningSignConstMeta,
+        argValues: [privateKey, data],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiShareSigningSignConstMeta => const TaskConstMeta(
+    debugName: "signing_sign",
+    argNames: ["privateKey", "data"],
+  );
 
   @override
   Future<SyncReport> crateApiTransferSyncApply({
@@ -3071,7 +7388,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 78,
+            funcId: 186,
             port: port_,
           );
         },
@@ -3124,7 +7441,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 79,
+            funcId: 187,
             port: port_,
           );
         },
@@ -3161,6 +7478,237 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  bool crateApiTailscaleTailscaleAvailable() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 188,
+          )!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleAvailableConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleAvailableConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_available", argNames: []);
+
+  @override
+  Future<TailscaleDevice> crateApiTailscaleTypesTailscaleDeviceDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 189,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_device,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTypesTailscaleDeviceDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTypesTailscaleDeviceDefaultConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_device_default", argNames: []);
+
+  @override
+  Future<void> crateApiTailscaleTailscaleLogin() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 190,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleLoginConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleLoginConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_login", argNames: []);
+
+  @override
+  Future<void> crateApiTailscaleTailscaleLogout() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 191,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleLogoutConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleLogoutConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_logout", argNames: []);
+
+  @override
+  Future<double> crateApiTailscaleTailscalePing({
+    required String ip,
+    required String kind,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(ip, serializer);
+          sse_encode_String(kind, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 192,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_f_64,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTailscalePingConstMeta,
+        argValues: [ip, kind],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscalePingConstMeta =>
+      const TaskConstMeta(
+        debugName: "tailscale_ping",
+        argNames: ["ip", "kind"],
+      );
+
+  @override
+  Future<void> crateApiTailscaleTailscaleStart({
+    required String dir,
+    required String hostname,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(dir, serializer);
+          sse_encode_String(hostname, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 193,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleStartConstMeta,
+        argValues: [dir, hostname],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleStartConstMeta =>
+      const TaskConstMeta(
+        debugName: "tailscale_start",
+        argNames: ["dir", "hostname"],
+      );
+
+  @override
+  Future<TailscaleStatus> crateApiTailscaleTailscaleStatus() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 194,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiTailscaleTailscaleStatusConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTailscaleStatusConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_status", argNames: []);
+
+  @override
+  Future<TailscaleStatus> crateApiTailscaleTypesTailscaleStatusDefault() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 195,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tailscale_status,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiTailscaleTypesTailscaleStatusDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiTailscaleTypesTailscaleStatusDefaultConstMeta =>
+      const TaskConstMeta(debugName: "tailscale_status_default", argNames: []);
+
+  @override
   Future<TerminalPalette> crateApiTerminalTypesTerminalPaletteDefault() {
     return handler.executeNormal(
       NormalTask(
@@ -3169,7 +7717,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 80,
+            funcId: 196,
             port: port_,
           );
         },
@@ -3196,7 +7744,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 81,
+            funcId: 197,
             port: port_,
           );
         },
@@ -3228,7 +7776,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 82,
+            funcId: 198,
             port: port_,
           );
         },
@@ -3252,7 +7800,11 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 83)!;
+          return pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 199,
+          )!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_prim_u_8_strict,
@@ -3284,7 +7836,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 84,
+            funcId: 200,
             port: port_,
           );
         },
@@ -3304,6 +7856,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     argNames: ["path", "key", "contents"],
   );
 
+  @override
+  Future<void> crateApiWakeWakeOnLan({
+    required String mac,
+    String? homeAddress,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(mac, serializer);
+          sse_encode_opt_String(homeAddress, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 201,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiWakeWakeOnLanConstMeta,
+        argValues: [mac, homeAddress],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWakeWakeOnLanConstMeta => const TaskConstMeta(
+    debugName: "wake_on_lan",
+    argNames: ["mac", "homeAddress"],
+  );
+
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_ActiveTunnel => wire
       .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel;
@@ -3311,6 +7897,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_ActiveTunnel => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerActiveTunnel;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_DeskWatch => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_DeskWatch => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_FileSide => wire
@@ -3329,6 +7923,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileTransfer;
 
   RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_HerdWatch => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_HerdWatch => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteDesktop => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteDesktop => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop;
+
+  RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_RemoteFiles => wire
       .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles;
 
@@ -3343,6 +7953,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
   get rust_arc_decrement_strong_count_RemoteShell => wire
       .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteShell;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteTouchpad => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteTouchpad => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_RemoteWatch => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_RemoteWatch => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ScreenStream => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ScreenStream => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_ShareLink => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_ShareLink => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SoundStream => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SoundStream => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream;
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_SpeakerStream => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_SpeakerStream => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream;
 
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_SshSession => wire
@@ -3368,6 +8026,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   FileSide
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     dynamic raw,
@@ -3383,6 +8050,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FileTransferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  HerdWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteDesktop
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -3404,6 +8089,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteWatch
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ScreenStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ShareLink
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SoundStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SpeakerStream
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   SshSession
   dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     dynamic raw,
@@ -3419,6 +8158,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return ActiveTunnelImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  DeskWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -3440,6 +8188,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HerdWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteDesktop
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   RemoteFiles
   dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     dynamic raw,
@@ -3455,6 +8221,60 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return RemoteShellImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteTouchpad
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteWatch
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ScreenStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ShareLink
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SoundStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SpeakerStream
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -3476,6 +8296,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   FileSide
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     dynamic raw,
@@ -3491,6 +8320,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return FileTransferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  HerdWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteDesktop
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -3512,12 +8359,108 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RemoteWatch
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ScreenStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  ShareLink
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SoundStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  SpeakerStream
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   SshSession
   dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return SshSessionImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  RustStreamSink<String> dco_decode_StreamSink_String_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<DeskState> dco_decode_StreamSink_desk_state_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<DesktopEvent> dco_decode_StreamSink_desktop_event_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<HerdState> dco_decode_StreamSink_herd_state_Sse(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<Uint8List> dco_decode_StreamSink_list_prim_u_8_strict_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<ShareEvent> dco_decode_StreamSink_share_event_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
   }
 
   @protected
@@ -3543,15 +8486,92 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Agent dco_decode_agent(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return Agent(
+      id: dco_decode_String(arr[0]),
+      name: dco_decode_String(arr[1]),
+      status: dco_decode_agent_status(arr[2]),
+      title: dco_decode_String(arr[3]),
+      workspace: dco_decode_String(arr[4]),
+      folder: dco_decode_String(arr[5]),
+      session: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
+  AgentStatus dco_decode_agent_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AgentStatus.values[raw as int];
+  }
+
+  @protected
   bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as bool;
   }
 
   @protected
+  bool dco_decode_box_autoadd_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
+  ClipPictureData dco_decode_box_autoadd_clip_picture_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_clip_picture_data(raw);
+  }
+
+  @protected
   ConnectOptions dco_decode_box_autoadd_connect_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_connect_options(raw);
+  }
+
+  @protected
+  DeskAction dco_decode_box_autoadd_desk_action(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desk_action(raw);
+  }
+
+  @protected
+  DeskMedia dco_decode_box_autoadd_desk_media(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desk_media(raw);
+  }
+
+  @protected
+  DeskVolume dco_decode_box_autoadd_desk_volume(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desk_volume(raw);
+  }
+
+  @protected
+  DeskWindow dco_decode_box_autoadd_desk_window(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desk_window(raw);
+  }
+
+  @protected
+  DesktopOptions dco_decode_box_autoadd_desktop_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desktop_options(raw);
+  }
+
+  @protected
+  DesktopStats dco_decode_box_autoadd_desktop_stats(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_desktop_stats(raw);
+  }
+
+  @protected
+  HerdAsked dco_decode_box_autoadd_herd_asked(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_herd_asked(raw);
   }
 
   @protected
@@ -3591,6 +8611,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice dco_decode_box_autoadd_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_tailscale_device(raw);
+  }
+
+  @protected
   TerminalPalette dco_decode_box_autoadd_terminal_palette(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_terminal_palette(raw);
@@ -3606,6 +8632,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int dco_decode_box_autoadd_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  ClipPictureData dco_decode_clip_picture_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return ClipPictureData(
+      kind: dco_decode_String(arr[0]),
+      bytes: dco_decode_list_prim_u_8_strict(arr[1]),
+    );
   }
 
   @protected
@@ -3666,8 +8704,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ConnectOptions dco_decode_connect_options(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return ConnectOptions(
       host: dco_decode_String(arr[0]),
       port: dco_decode_u_16(arr[1]),
@@ -3678,6 +8716,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       connectTimeoutSecs: dco_decode_u_32(arr[6]),
       jump: dco_decode_opt_box_autoadd_jump_host(arr[7]),
       forwardAgent: dco_decode_bool(arr[8]),
+      viaTailscale: dco_decode_bool(arr[9]),
     );
   }
 
@@ -3716,6 +8755,274 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskAction dco_decode_desk_action(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return DeskAction_Workspace(
+          slot: dco_decode_u_8(raw[1]),
+          monitor: dco_decode_opt_String(raw[2]),
+        );
+      case 1:
+        return DeskAction_MoveWindow(slot: dco_decode_u_8(raw[1]));
+      case 2:
+        return DeskAction_FocusMonitor(name: dco_decode_String(raw[1]));
+      case 3:
+        return DeskAction_Focus(direction: dco_decode_desk_direction(raw[1]));
+      case 4:
+        return DeskAction_Swap(direction: dco_decode_desk_direction(raw[1]));
+      case 5:
+        return DeskAction_Close();
+      case 6:
+        return DeskAction_Fullscreen();
+      case 7:
+        return DeskAction_Float();
+      case 8:
+        return DeskAction_Split();
+      case 9:
+        return DeskAction_PlayPause();
+      case 10:
+        return DeskAction_Next();
+      case 11:
+        return DeskAction_Previous();
+      case 12:
+        return DeskAction_VolumeUp();
+      case 13:
+        return DeskAction_VolumeDown();
+      case 14:
+        return DeskAction_Mute();
+      case 15:
+        return DeskAction_Dnd(enabled: dco_decode_bool(raw[1]));
+      case 16:
+        return DeskAction_Bind(keys: dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  DeskBinding dco_decode_desk_binding(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return DeskBinding(
+      keys: dco_decode_String(arr[0]),
+      title: dco_decode_String(arr[1]),
+      run: dco_decode_bool(arr[2]),
+    );
+  }
+
+  @protected
+  DeskDirection dco_decode_desk_direction(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DeskDirection.values[raw as int];
+  }
+
+  @protected
+  DeskMedia dco_decode_desk_media(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return DeskMedia(
+      player: dco_decode_String(arr[0]),
+      playing: dco_decode_bool(arr[1]),
+      title: dco_decode_String(arr[2]),
+      artist: dco_decode_String(arr[3]),
+    );
+  }
+
+  @protected
+  DeskMonitor dco_decode_desk_monitor(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return DeskMonitor(
+      name: dco_decode_String(arr[0]),
+      focused: dco_decode_bool(arr[1]),
+      slots: dco_decode_list_desk_slot(arr[2]),
+    );
+  }
+
+  @protected
+  DeskSlot dco_decode_desk_slot(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return DeskSlot(
+      slot: dco_decode_u_8(arr[0]),
+      windows: dco_decode_u_32(arr[1]),
+      active: dco_decode_bool(arr[2]),
+    );
+  }
+
+  @protected
+  DeskState dco_decode_desk_state(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return DeskState(
+      monitors: dco_decode_list_desk_monitor(arr[0]),
+      window: dco_decode_opt_box_autoadd_desk_window(arr[1]),
+      media: dco_decode_opt_box_autoadd_desk_media(arr[2]),
+      volume: dco_decode_opt_box_autoadd_desk_volume(arr[3]),
+      dnd: dco_decode_opt_box_autoadd_bool(arr[4]),
+    );
+  }
+
+  @protected
+  DeskVolume dco_decode_desk_volume(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return DeskVolume(
+      percent: dco_decode_u_8(arr[0]),
+      muted: dco_decode_bool(arr[1]),
+    );
+  }
+
+  @protected
+  DeskWindow dco_decode_desk_window(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return DeskWindow(
+      title: dco_decode_String(arr[0]),
+      class_: dco_decode_String(arr[1]),
+      floating: dco_decode_bool(arr[2]),
+      fullscreen: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  DesktopButton dco_decode_desktop_button(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DesktopButton.values[raw as int];
+  }
+
+  @protected
+  DesktopEvent dco_decode_desktop_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return DesktopEvent_Started(
+          fitted: dco_decode_bool(raw[1]),
+          output: dco_decode_String(raw[2]),
+          outputs: dco_decode_list_desktop_output(raw[3]),
+        );
+      case 1:
+        return DesktopEvent_Stream(
+          width: dco_decode_u_32(raw[1]),
+          height: dco_decode_u_32(raw[2]),
+          scale: dco_decode_f_64(raw[3]),
+          hardware: dco_decode_bool(raw[4]),
+        );
+      case 2:
+        return DesktopEvent_Picture(
+          width: dco_decode_u_32(raw[1]),
+          height: dco_decode_u_32(raw[2]),
+          visibleWidth: dco_decode_u_32(raw[3]),
+          visibleHeight: dco_decode_u_32(raw[4]),
+        );
+      case 3:
+        return DesktopEvent_CursorShape(
+          id: dco_decode_u_32(raw[1]),
+          width: dco_decode_u_32(raw[2]),
+          height: dco_decode_u_32(raw[3]),
+          hotX: dco_decode_i_32(raw[4]),
+          hotY: dco_decode_i_32(raw[5]),
+          bgra: dco_decode_list_prim_u_8_strict(raw[6]),
+        );
+      case 4:
+        return DesktopEvent_CursorMoved(
+          x: dco_decode_f_64(raw[1]),
+          y: dco_decode_f_64(raw[2]),
+          shapeId: dco_decode_u_32(raw[3]),
+          visible: dco_decode_bool(raw[4]),
+        );
+      case 5:
+        return DesktopEvent_Clipboard(text: dco_decode_String(raw[1]));
+      case 6:
+        return DesktopEvent_Stats(dco_decode_box_autoadd_desktop_stats(raw[1]));
+      case 7:
+        return DesktopEvent_Ended(
+          reason: dco_decode_String(raw[1]),
+          retryable: dco_decode_bool(raw[2]),
+        );
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  DesktopMode dco_decode_desktop_mode(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return DesktopMode_Fitted();
+      case 1:
+        return DesktopMode_Mirror();
+      case 2:
+        return DesktopMode_Output(name: dco_decode_String(raw[1]));
+      default:
+        throw Exception("unreachable");
+    }
+  }
+
+  @protected
+  DesktopOptions dco_decode_desktop_options(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return DesktopOptions(
+      mode: dco_decode_desktop_mode(arr[0]),
+      width: dco_decode_u_32(arr[1]),
+      height: dco_decode_u_32(arr[2]),
+      scale: dco_decode_f_64(arr[3]),
+      lowBandwidth: dco_decode_bool(arr[4]),
+      textureId: dco_decode_i_64(arr[5]),
+      serverCommand: dco_decode_String(arr[6]),
+      warmRadio: dco_decode_bool(arr[7]),
+    );
+  }
+
+  @protected
+  DesktopOutput dco_decode_desktop_output(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return DesktopOutput(
+      name: dco_decode_String(arr[0]),
+      width: dco_decode_u_32(arr[1]),
+      height: dco_decode_u_32(arr[2]),
+      scale: dco_decode_f_64(arr[3]),
+    );
+  }
+
+  @protected
+  DesktopStats dco_decode_desktop_stats(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return DesktopStats(
+      fps: dco_decode_f_64(arr[0]),
+      kbps: dco_decode_f_64(arr[1]),
+      rttMs: dco_decode_f_64(arr[2]),
+      decodeMs: dco_decode_f_64(arr[3]),
+      frameAgeMs: dco_decode_f_64(arr[4]),
+    );
+  }
+
+  @protected
   EntryKind dco_decode_entry_kind(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return EntryKind.values[raw as int];
@@ -3744,6 +9051,190 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       stderr: dco_decode_String(arr[1]),
       exitCode: dco_decode_opt_box_autoadd_u_32(arr[2]),
       truncated: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  double dco_decode_f_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as double;
+  }
+
+  @protected
+  HerdAgent dco_decode_herd_agent(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return HerdAgent(
+      session: dco_decode_String(arr[0]),
+      workspace: dco_decode_String(arr[1]),
+      tab: dco_decode_String(arr[2]),
+      pane: dco_decode_String(arr[3]),
+      name: dco_decode_String(arr[4]),
+      status: dco_decode_agent_status(arr[5]),
+      title: dco_decode_String(arr[6]),
+      folder: dco_decode_String(arr[7]),
+    );
+  }
+
+  @protected
+  HerdAsked dco_decode_herd_asked(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HerdAsked(
+      question: dco_decode_String(arr[0]),
+      choices: dco_decode_list_herd_choice(arr[1]),
+      mark: dco_decode_String(arr[2]),
+    );
+  }
+
+  @protected
+  HerdChoice dco_decode_herd_choice(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HerdChoice(
+      key: dco_decode_String(arr[0]),
+      label: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  HerdKind dco_decode_herd_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HerdKind(
+      name: dco_decode_String(arr[0]),
+      installed: dco_decode_bool(arr[1]),
+    );
+  }
+
+  @protected
+  HerdMade dco_decode_herd_made(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HerdMade(
+      workspace: dco_decode_String(arr[0]),
+      tab: dco_decode_String(arr[1]),
+      pane: dco_decode_String(arr[2]),
+    );
+  }
+
+  @protected
+  HerdOutside dco_decode_herd_outside(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return HerdOutside(
+      agent: dco_decode_String(arr[0]),
+      folder: dco_decode_String(arr[1]),
+      folderName: dco_decode_String(arr[2]),
+      canContinue: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  HerdPane dco_decode_herd_pane(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return HerdPane(
+      id: dco_decode_String(arr[0]),
+      title: dco_decode_String(arr[1]),
+      folder: dco_decode_String(arr[2]),
+      folderName: dco_decode_String(arr[3]),
+      focused: dco_decode_bool(arr[4]),
+      agent: dco_decode_opt_String(arr[5]),
+      status: dco_decode_agent_status(arr[6]),
+    );
+  }
+
+  @protected
+  HerdPlace dco_decode_herd_place(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return HerdPlace(
+      path: dco_decode_String(arr[0]),
+      shown: dco_decode_String(arr[1]),
+      name: dco_decode_String(arr[2]),
+      project: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  HerdSession dco_decode_herd_session(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HerdSession(
+      name: dco_decode_String(arr[0]),
+      running: dco_decode_bool(arr[1]),
+      workspaces: dco_decode_list_herd_workspace(arr[2]),
+    );
+  }
+
+  @protected
+  HerdState dco_decode_herd_state(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return HerdState(
+      available: dco_decode_bool(arr[0]),
+      sessions: dco_decode_list_herd_session(arr[1]),
+      inbox: dco_decode_list_herd_agent(arr[2]),
+      waiting: dco_decode_u_32(arr[3]),
+    );
+  }
+
+  @protected
+  HerdTab dco_decode_herd_tab(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HerdTab(
+      id: dco_decode_String(arr[0]),
+      label: dco_decode_String(arr[1]),
+      panes: dco_decode_list_herd_pane(arr[2]),
+    );
+  }
+
+  @protected
+  HerdText dco_decode_herd_text(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HerdText(
+      text: dco_decode_String(arr[0]),
+      asked: dco_decode_opt_box_autoadd_herd_asked(arr[1]),
+    );
+  }
+
+  @protected
+  HerdWorkspace dco_decode_herd_workspace(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return HerdWorkspace(
+      id: dco_decode_String(arr[0]),
+      label: dco_decode_String(arr[1]),
+      tabs: dco_decode_list_herd_tab(arr[2]),
     );
   }
 
@@ -3846,9 +9337,99 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Agent> dco_decode_list_agent(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_agent).toList();
+  }
+
+  @protected
+  List<DeskBinding> dco_decode_list_desk_binding(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_desk_binding).toList();
+  }
+
+  @protected
+  List<DeskMonitor> dco_decode_list_desk_monitor(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_desk_monitor).toList();
+  }
+
+  @protected
+  List<DeskSlot> dco_decode_list_desk_slot(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_desk_slot).toList();
+  }
+
+  @protected
+  List<DesktopOutput> dco_decode_list_desktop_output(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_desktop_output).toList();
+  }
+
+  @protected
   List<EnvVar> dco_decode_list_env_var(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_env_var).toList();
+  }
+
+  @protected
+  List<HerdAgent> dco_decode_list_herd_agent(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_agent).toList();
+  }
+
+  @protected
+  List<HerdChoice> dco_decode_list_herd_choice(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_choice).toList();
+  }
+
+  @protected
+  List<HerdKind> dco_decode_list_herd_kind(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_kind).toList();
+  }
+
+  @protected
+  List<HerdOutside> dco_decode_list_herd_outside(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_outside).toList();
+  }
+
+  @protected
+  List<HerdPane> dco_decode_list_herd_pane(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_pane).toList();
+  }
+
+  @protected
+  List<HerdPlace> dco_decode_list_herd_place(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_place).toList();
+  }
+
+  @protected
+  List<HerdSession> dco_decode_list_herd_session(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_session).toList();
+  }
+
+  @protected
+  List<HerdTab> dco_decode_list_herd_tab(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_tab).toList();
+  }
+
+  @protected
+  List<HerdWorkspace> dco_decode_list_herd_workspace(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_herd_workspace).toList();
+  }
+
+  @protected
+  List<int> dco_decode_list_prim_u_32_loose(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as List<int>;
   }
 
   @protected
@@ -3888,6 +9469,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TailscaleDevice> dco_decode_list_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tailscale_device).toList();
+  }
+
+  @protected
   List<TerminalLine> dco_decode_list_terminal_line(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_terminal_line).toList();
@@ -3903,6 +9490,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   String? dco_decode_opt_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  bool? dco_decode_opt_box_autoadd_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_bool(raw);
+  }
+
+  @protected
+  ClipPictureData? dco_decode_opt_box_autoadd_clip_picture_data(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_clip_picture_data(raw);
+  }
+
+  @protected
+  DeskMedia? dco_decode_opt_box_autoadd_desk_media(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_desk_media(raw);
+  }
+
+  @protected
+  DeskVolume? dco_decode_opt_box_autoadd_desk_volume(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_desk_volume(raw);
+  }
+
+  @protected
+  DeskWindow? dco_decode_opt_box_autoadd_desk_window(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_desk_window(raw);
+  }
+
+  @protected
+  HerdAsked? dco_decode_opt_box_autoadd_herd_asked(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_herd_asked(raw);
   }
 
   @protected
@@ -3924,9 +9547,48 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice? dco_decode_opt_box_autoadd_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_tailscale_device(raw);
+  }
+
+  @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_u_32(raw);
+  }
+
+  @protected
+  PairingInfo dco_decode_pairing_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return PairingInfo(
+      name: dco_decode_String(arr[0]),
+      user: dco_decode_String(arr[1]),
+      port: dco_decode_u_16(arr[2]),
+      addresses: dco_decode_list_String(arr[3]),
+      tailscale: dco_decode_opt_String(arr[4]),
+      hostKey: dco_decode_String(arr[5]),
+      mac: dco_decode_opt_String(arr[6]),
+      secondsLeft: dco_decode_u_32(arr[7]),
+    );
+  }
+
+  @protected
+  PairingOutcome dco_decode_pairing_outcome(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return PairingOutcome(
+      info: dco_decode_pairing_info(arr[0]),
+      address: dco_decode_String(arr[1]),
+      viaTailscale: dco_decode_bool(arr[2]),
+      features: dco_decode_list_String(arr[3]),
+      phoneName: dco_decode_String(arr[4]),
+    );
   }
 
   @protected
@@ -3943,6 +9605,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       size: dco_decode_u_64(arr[4]),
       permissions: dco_decode_u_32(arr[5]),
       modified: dco_decode_opt_box_autoadd_i_64(arr[6]),
+    );
+  }
+
+  @protected
+  ScreenStatus dco_decode_screen_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ScreenStatus(
+      bitrate: dco_decode_u_32(arr[0]),
+      inFlight: dco_decode_u_64(arr[1]),
+      skipped: dco_decode_u_64(arr[2]),
+      skipping: dco_decode_bool(arr[3]),
+    );
+  }
+
+  @protected
+  ScreenWrite dco_decode_screen_write(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return ScreenWrite(
+      ended: dco_decode_bool(arr[0]),
+      reason: dco_decode_String(arr[1]),
+      bitrate: dco_decode_opt_box_autoadd_u_32(arr[2]),
+      keyFrame: dco_decode_bool(arr[3]),
     );
   }
 
@@ -3973,6 +9663,70 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       banner: dco_decode_opt_String(arr[4]),
       hostKey: dco_decode_host_key_info(arr[5]),
     );
+  }
+
+  @protected
+  ShareEvent dco_decode_share_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    switch (raw[0]) {
+      case 0:
+        return ShareEvent_File(
+          id: dco_decode_String(raw[1]),
+          name: dco_decode_String(raw[2]),
+          size: dco_decode_u_64(raw[3]),
+          path: dco_decode_String(raw[4]),
+        );
+      case 1:
+        return ShareEvent_Clip(text: dco_decode_String(raw[1]));
+      case 2:
+        return ShareEvent_Picture(
+          kind: dco_decode_String(raw[1]),
+          size: dco_decode_u_64(raw[2]),
+          mark: dco_decode_String(raw[3]),
+        );
+      case 3:
+        return ShareEvent_Ring(seconds: dco_decode_u_32(raw[1]));
+      case 4:
+        return ShareEvent_Sms(
+          to: dco_decode_String(raw[1]),
+          text: dco_decode_String(raw[2]),
+        );
+      case 5:
+        return ShareEvent_Agent(
+          name: dco_decode_String(raw[1]),
+          title: dco_decode_String(raw[2]),
+          workspace: dco_decode_String(raw[3]),
+          waiting: dco_decode_bool(raw[4]),
+          session: dco_decode_String(raw[5]),
+          pane: dco_decode_String(raw[6]),
+          asked: dco_decode_opt_box_autoadd_herd_asked(raw[7]),
+        );
+      case 6:
+        return ShareEvent_Settled(
+          session: dco_decode_String(raw[1]),
+          pane: dco_decode_String(raw[2]),
+        );
+      case 7:
+        return ShareEvent_Approve(
+          id: dco_decode_String(raw[1]),
+          reason: dco_decode_String(raw[2]),
+          challenge: dco_decode_String(raw[3]),
+        );
+      case 8:
+        return ShareEvent_Sign(
+          id: dco_decode_String(raw[1]),
+          data: dco_decode_String(raw[2]),
+        );
+      case 9:
+        return ShareEvent_Hands(
+          id: dco_decode_String(raw[1]),
+          keys: dco_decode_list_prim_u_8_strict(raw[2]),
+          pointer: dco_decode_list_prim_u_8_strict(raw[3]),
+          look: dco_decode_bool(raw[4]),
+        );
+      default:
+        throw Exception("unreachable");
+    }
   }
 
   @protected
@@ -4067,6 +9821,40 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice dco_decode_tailscale_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TailscaleDevice(
+      name: dco_decode_String(arr[0]),
+      dnsName: dco_decode_String(arr[1]),
+      ips: dco_decode_list_String(arr[2]),
+      os: dco_decode_String(arr[3]),
+      online: dco_decode_bool(arr[4]),
+      direct: dco_decode_bool(arr[5]),
+      relay: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
+  TailscaleStatus dco_decode_tailscale_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TailscaleStatus(
+      state: dco_decode_String(arr[0]),
+      authUrl: dco_decode_String(arr[1]),
+      tailnet: dco_decode_String(arr[2]),
+      user: dco_decode_String(arr[3]),
+      thisDevice: dco_decode_opt_box_autoadd_tailscale_device(arr[4]),
+      devices: dco_decode_list_tailscale_device(arr[5]),
+      error: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
   TerminalCursor dco_decode_terminal_cursor(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -4136,6 +9924,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TextFound dco_decode_text_found(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TextFound(
+      text: dco_decode_String(arr[0]),
+      languages: dco_decode_list_String(arr[1]),
+    );
+  }
+
+  @protected
   TextRun dco_decode_text_run(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -4149,6 +9949,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bg: dco_decode_u_32(arr[4]),
       style: dco_decode_u_8(arr[5]),
     );
+  }
+
+  @protected
+  TouchpadButton dco_decode_touchpad_button(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return TouchpadButton.values[raw as int];
   }
 
   @protected
@@ -4254,6 +10060,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   FileSide
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -4272,6 +10090,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return FileTransferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  HerdWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteDesktop
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -4302,6 +10144,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteWatch
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ScreenStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ShareLink
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SoundStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SpeakerStream
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   SshSession
   sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SseDeserializer deserializer,
@@ -4320,6 +10234,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return ActiveTunnelImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  DeskWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -4350,6 +10276,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HerdWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteDesktop
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   RemoteFiles
   sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     SseDeserializer deserializer,
@@ -4368,6 +10318,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return RemoteShellImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteTouchpad
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteWatch
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ScreenStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ShareLink
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SoundStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SpeakerStream
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -4398,6 +10420,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return DeskWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   FileSide
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     SseDeserializer deserializer,
@@ -4416,6 +10450,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return FileTransferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  HerdWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return HerdWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteDesktop
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteDesktopImpl.frbInternalSseDecode(
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
@@ -4446,6 +10504,78 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RemoteTouchpad
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteTouchpadImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  RemoteWatch
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return RemoteWatchImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ScreenStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ScreenStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  ShareLink
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return ShareLinkImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SoundStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SoundStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  SpeakerStream
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return SpeakerStreamImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
   SshSession
   sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SseDeserializer deserializer,
@@ -4455,6 +10585,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       sse_decode_usize(deserializer),
       sse_decode_i_32(deserializer),
     );
+  }
+
+  @protected
+  RustStreamSink<String> sse_decode_StreamSink_String_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<DeskState> sse_decode_StreamSink_desk_state_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<DesktopEvent> sse_decode_StreamSink_desktop_event_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<HerdState> sse_decode_StreamSink_herd_state_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<Uint8List> sse_decode_StreamSink_list_prim_u_8_strict_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<ShareEvent> sse_decode_StreamSink_share_event_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
   }
 
   @protected
@@ -4481,9 +10659,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Agent sse_decode_agent(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_status = sse_decode_agent_status(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_workspace = sse_decode_String(deserializer);
+    var var_folder = sse_decode_String(deserializer);
+    var var_session = sse_decode_String(deserializer);
+    return Agent(
+      id: var_id,
+      name: var_name,
+      status: var_status,
+      title: var_title,
+      workspace: var_workspace,
+      folder: var_folder,
+      session: var_session,
+    );
+  }
+
+  @protected
+  AgentStatus sse_decode_agent_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return AgentStatus.values[inner];
+  }
+
+  @protected
   bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  bool sse_decode_box_autoadd_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_bool(deserializer));
+  }
+
+  @protected
+  ClipPictureData sse_decode_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_clip_picture_data(deserializer));
   }
 
   @protected
@@ -4492,6 +10712,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_connect_options(deserializer));
+  }
+
+  @protected
+  DeskAction sse_decode_box_autoadd_desk_action(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desk_action(deserializer));
+  }
+
+  @protected
+  DeskMedia sse_decode_box_autoadd_desk_media(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desk_media(deserializer));
+  }
+
+  @protected
+  DeskVolume sse_decode_box_autoadd_desk_volume(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desk_volume(deserializer));
+  }
+
+  @protected
+  DeskWindow sse_decode_box_autoadd_desk_window(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desk_window(deserializer));
+  }
+
+  @protected
+  DesktopOptions sse_decode_box_autoadd_desktop_options(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desktop_options(deserializer));
+  }
+
+  @protected
+  DesktopStats sse_decode_box_autoadd_desktop_stats(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_desktop_stats(deserializer));
+  }
+
+  @protected
+  HerdAsked sse_decode_box_autoadd_herd_asked(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_herd_asked(deserializer));
   }
 
   @protected
@@ -4537,6 +10803,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice sse_decode_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_tailscale_device(deserializer));
+  }
+
+  @protected
   TerminalPalette sse_decode_box_autoadd_terminal_palette(
     SseDeserializer deserializer,
   ) {
@@ -4554,6 +10828,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_u_32(deserializer));
+  }
+
+  @protected
+  ClipPictureData sse_decode_clip_picture_data(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_kind = sse_decode_String(deserializer);
+    var var_bytes = sse_decode_list_prim_u_8_strict(deserializer);
+    return ClipPictureData(kind: var_kind, bytes: var_bytes);
   }
 
   @protected
@@ -4638,6 +10920,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_connectTimeoutSecs = sse_decode_u_32(deserializer);
     var var_jump = sse_decode_opt_box_autoadd_jump_host(deserializer);
     var var_forwardAgent = sse_decode_bool(deserializer);
+    var var_viaTailscale = sse_decode_bool(deserializer);
     return ConnectOptions(
       host: var_host,
       port: var_port,
@@ -4648,6 +10931,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       connectTimeoutSecs: var_connectTimeoutSecs,
       jump: var_jump,
       forwardAgent: var_forwardAgent,
+      viaTailscale: var_viaTailscale,
     );
   }
 
@@ -4689,6 +10973,306 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DeskAction sse_decode_desk_action(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_slot = sse_decode_u_8(deserializer);
+        var var_monitor = sse_decode_opt_String(deserializer);
+        return DeskAction_Workspace(slot: var_slot, monitor: var_monitor);
+      case 1:
+        var var_slot = sse_decode_u_8(deserializer);
+        return DeskAction_MoveWindow(slot: var_slot);
+      case 2:
+        var var_name = sse_decode_String(deserializer);
+        return DeskAction_FocusMonitor(name: var_name);
+      case 3:
+        var var_direction = sse_decode_desk_direction(deserializer);
+        return DeskAction_Focus(direction: var_direction);
+      case 4:
+        var var_direction = sse_decode_desk_direction(deserializer);
+        return DeskAction_Swap(direction: var_direction);
+      case 5:
+        return DeskAction_Close();
+      case 6:
+        return DeskAction_Fullscreen();
+      case 7:
+        return DeskAction_Float();
+      case 8:
+        return DeskAction_Split();
+      case 9:
+        return DeskAction_PlayPause();
+      case 10:
+        return DeskAction_Next();
+      case 11:
+        return DeskAction_Previous();
+      case 12:
+        return DeskAction_VolumeUp();
+      case 13:
+        return DeskAction_VolumeDown();
+      case 14:
+        return DeskAction_Mute();
+      case 15:
+        var var_enabled = sse_decode_bool(deserializer);
+        return DeskAction_Dnd(enabled: var_enabled);
+      case 16:
+        var var_keys = sse_decode_String(deserializer);
+        return DeskAction_Bind(keys: var_keys);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  DeskBinding sse_decode_desk_binding(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_keys = sse_decode_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_run = sse_decode_bool(deserializer);
+    return DeskBinding(keys: var_keys, title: var_title, run: var_run);
+  }
+
+  @protected
+  DeskDirection sse_decode_desk_direction(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DeskDirection.values[inner];
+  }
+
+  @protected
+  DeskMedia sse_decode_desk_media(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_player = sse_decode_String(deserializer);
+    var var_playing = sse_decode_bool(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_artist = sse_decode_String(deserializer);
+    return DeskMedia(
+      player: var_player,
+      playing: var_playing,
+      title: var_title,
+      artist: var_artist,
+    );
+  }
+
+  @protected
+  DeskMonitor sse_decode_desk_monitor(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_focused = sse_decode_bool(deserializer);
+    var var_slots = sse_decode_list_desk_slot(deserializer);
+    return DeskMonitor(name: var_name, focused: var_focused, slots: var_slots);
+  }
+
+  @protected
+  DeskSlot sse_decode_desk_slot(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_slot = sse_decode_u_8(deserializer);
+    var var_windows = sse_decode_u_32(deserializer);
+    var var_active = sse_decode_bool(deserializer);
+    return DeskSlot(slot: var_slot, windows: var_windows, active: var_active);
+  }
+
+  @protected
+  DeskState sse_decode_desk_state(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_monitors = sse_decode_list_desk_monitor(deserializer);
+    var var_window = sse_decode_opt_box_autoadd_desk_window(deserializer);
+    var var_media = sse_decode_opt_box_autoadd_desk_media(deserializer);
+    var var_volume = sse_decode_opt_box_autoadd_desk_volume(deserializer);
+    var var_dnd = sse_decode_opt_box_autoadd_bool(deserializer);
+    return DeskState(
+      monitors: var_monitors,
+      window: var_window,
+      media: var_media,
+      volume: var_volume,
+      dnd: var_dnd,
+    );
+  }
+
+  @protected
+  DeskVolume sse_decode_desk_volume(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_percent = sse_decode_u_8(deserializer);
+    var var_muted = sse_decode_bool(deserializer);
+    return DeskVolume(percent: var_percent, muted: var_muted);
+  }
+
+  @protected
+  DeskWindow sse_decode_desk_window(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_title = sse_decode_String(deserializer);
+    var var_class_ = sse_decode_String(deserializer);
+    var var_floating = sse_decode_bool(deserializer);
+    var var_fullscreen = sse_decode_bool(deserializer);
+    return DeskWindow(
+      title: var_title,
+      class_: var_class_,
+      floating: var_floating,
+      fullscreen: var_fullscreen,
+    );
+  }
+
+  @protected
+  DesktopButton sse_decode_desktop_button(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return DesktopButton.values[inner];
+  }
+
+  @protected
+  DesktopEvent sse_decode_desktop_event(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_fitted = sse_decode_bool(deserializer);
+        var var_output = sse_decode_String(deserializer);
+        var var_outputs = sse_decode_list_desktop_output(deserializer);
+        return DesktopEvent_Started(
+          fitted: var_fitted,
+          output: var_output,
+          outputs: var_outputs,
+        );
+      case 1:
+        var var_width = sse_decode_u_32(deserializer);
+        var var_height = sse_decode_u_32(deserializer);
+        var var_scale = sse_decode_f_64(deserializer);
+        var var_hardware = sse_decode_bool(deserializer);
+        return DesktopEvent_Stream(
+          width: var_width,
+          height: var_height,
+          scale: var_scale,
+          hardware: var_hardware,
+        );
+      case 2:
+        var var_width = sse_decode_u_32(deserializer);
+        var var_height = sse_decode_u_32(deserializer);
+        var var_visibleWidth = sse_decode_u_32(deserializer);
+        var var_visibleHeight = sse_decode_u_32(deserializer);
+        return DesktopEvent_Picture(
+          width: var_width,
+          height: var_height,
+          visibleWidth: var_visibleWidth,
+          visibleHeight: var_visibleHeight,
+        );
+      case 3:
+        var var_id = sse_decode_u_32(deserializer);
+        var var_width = sse_decode_u_32(deserializer);
+        var var_height = sse_decode_u_32(deserializer);
+        var var_hotX = sse_decode_i_32(deserializer);
+        var var_hotY = sse_decode_i_32(deserializer);
+        var var_bgra = sse_decode_list_prim_u_8_strict(deserializer);
+        return DesktopEvent_CursorShape(
+          id: var_id,
+          width: var_width,
+          height: var_height,
+          hotX: var_hotX,
+          hotY: var_hotY,
+          bgra: var_bgra,
+        );
+      case 4:
+        var var_x = sse_decode_f_64(deserializer);
+        var var_y = sse_decode_f_64(deserializer);
+        var var_shapeId = sse_decode_u_32(deserializer);
+        var var_visible = sse_decode_bool(deserializer);
+        return DesktopEvent_CursorMoved(
+          x: var_x,
+          y: var_y,
+          shapeId: var_shapeId,
+          visible: var_visible,
+        );
+      case 5:
+        var var_text = sse_decode_String(deserializer);
+        return DesktopEvent_Clipboard(text: var_text);
+      case 6:
+        var var_field0 = sse_decode_box_autoadd_desktop_stats(deserializer);
+        return DesktopEvent_Stats(var_field0);
+      case 7:
+        var var_reason = sse_decode_String(deserializer);
+        var var_retryable = sse_decode_bool(deserializer);
+        return DesktopEvent_Ended(reason: var_reason, retryable: var_retryable);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  DesktopMode sse_decode_desktop_mode(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        return DesktopMode_Fitted();
+      case 1:
+        return DesktopMode_Mirror();
+      case 2:
+        var var_name = sse_decode_String(deserializer);
+        return DesktopMode_Output(name: var_name);
+      default:
+        throw UnimplementedError('');
+    }
+  }
+
+  @protected
+  DesktopOptions sse_decode_desktop_options(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_mode = sse_decode_desktop_mode(deserializer);
+    var var_width = sse_decode_u_32(deserializer);
+    var var_height = sse_decode_u_32(deserializer);
+    var var_scale = sse_decode_f_64(deserializer);
+    var var_lowBandwidth = sse_decode_bool(deserializer);
+    var var_textureId = sse_decode_i_64(deserializer);
+    var var_serverCommand = sse_decode_String(deserializer);
+    var var_warmRadio = sse_decode_bool(deserializer);
+    return DesktopOptions(
+      mode: var_mode,
+      width: var_width,
+      height: var_height,
+      scale: var_scale,
+      lowBandwidth: var_lowBandwidth,
+      textureId: var_textureId,
+      serverCommand: var_serverCommand,
+      warmRadio: var_warmRadio,
+    );
+  }
+
+  @protected
+  DesktopOutput sse_decode_desktop_output(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_width = sse_decode_u_32(deserializer);
+    var var_height = sse_decode_u_32(deserializer);
+    var var_scale = sse_decode_f_64(deserializer);
+    return DesktopOutput(
+      name: var_name,
+      width: var_width,
+      height: var_height,
+      scale: var_scale,
+    );
+  }
+
+  @protected
+  DesktopStats sse_decode_desktop_stats(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_fps = sse_decode_f_64(deserializer);
+    var var_kbps = sse_decode_f_64(deserializer);
+    var var_rttMs = sse_decode_f_64(deserializer);
+    var var_decodeMs = sse_decode_f_64(deserializer);
+    var var_frameAgeMs = sse_decode_f_64(deserializer);
+    return DesktopStats(
+      fps: var_fps,
+      kbps: var_kbps,
+      rttMs: var_rttMs,
+      decodeMs: var_decodeMs,
+      frameAgeMs: var_frameAgeMs,
+    );
+  }
+
+  @protected
   EntryKind sse_decode_entry_kind(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
@@ -4716,6 +11300,178 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       exitCode: var_exitCode,
       truncated: var_truncated,
     );
+  }
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getFloat64();
+  }
+
+  @protected
+  HerdAgent sse_decode_herd_agent(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_session = sse_decode_String(deserializer);
+    var var_workspace = sse_decode_String(deserializer);
+    var var_tab = sse_decode_String(deserializer);
+    var var_pane = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_status = sse_decode_agent_status(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_folder = sse_decode_String(deserializer);
+    return HerdAgent(
+      session: var_session,
+      workspace: var_workspace,
+      tab: var_tab,
+      pane: var_pane,
+      name: var_name,
+      status: var_status,
+      title: var_title,
+      folder: var_folder,
+    );
+  }
+
+  @protected
+  HerdAsked sse_decode_herd_asked(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_question = sse_decode_String(deserializer);
+    var var_choices = sse_decode_list_herd_choice(deserializer);
+    var var_mark = sse_decode_String(deserializer);
+    return HerdAsked(
+      question: var_question,
+      choices: var_choices,
+      mark: var_mark,
+    );
+  }
+
+  @protected
+  HerdChoice sse_decode_herd_choice(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_key = sse_decode_String(deserializer);
+    var var_label = sse_decode_String(deserializer);
+    return HerdChoice(key: var_key, label: var_label);
+  }
+
+  @protected
+  HerdKind sse_decode_herd_kind(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_installed = sse_decode_bool(deserializer);
+    return HerdKind(name: var_name, installed: var_installed);
+  }
+
+  @protected
+  HerdMade sse_decode_herd_made(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_workspace = sse_decode_String(deserializer);
+    var var_tab = sse_decode_String(deserializer);
+    var var_pane = sse_decode_String(deserializer);
+    return HerdMade(workspace: var_workspace, tab: var_tab, pane: var_pane);
+  }
+
+  @protected
+  HerdOutside sse_decode_herd_outside(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_agent = sse_decode_String(deserializer);
+    var var_folder = sse_decode_String(deserializer);
+    var var_folderName = sse_decode_String(deserializer);
+    var var_canContinue = sse_decode_bool(deserializer);
+    return HerdOutside(
+      agent: var_agent,
+      folder: var_folder,
+      folderName: var_folderName,
+      canContinue: var_canContinue,
+    );
+  }
+
+  @protected
+  HerdPane sse_decode_herd_pane(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_folder = sse_decode_String(deserializer);
+    var var_folderName = sse_decode_String(deserializer);
+    var var_focused = sse_decode_bool(deserializer);
+    var var_agent = sse_decode_opt_String(deserializer);
+    var var_status = sse_decode_agent_status(deserializer);
+    return HerdPane(
+      id: var_id,
+      title: var_title,
+      folder: var_folder,
+      folderName: var_folderName,
+      focused: var_focused,
+      agent: var_agent,
+      status: var_status,
+    );
+  }
+
+  @protected
+  HerdPlace sse_decode_herd_place(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_path = sse_decode_String(deserializer);
+    var var_shown = sse_decode_String(deserializer);
+    var var_name = sse_decode_String(deserializer);
+    var var_project = sse_decode_bool(deserializer);
+    return HerdPlace(
+      path: var_path,
+      shown: var_shown,
+      name: var_name,
+      project: var_project,
+    );
+  }
+
+  @protected
+  HerdSession sse_decode_herd_session(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_running = sse_decode_bool(deserializer);
+    var var_workspaces = sse_decode_list_herd_workspace(deserializer);
+    return HerdSession(
+      name: var_name,
+      running: var_running,
+      workspaces: var_workspaces,
+    );
+  }
+
+  @protected
+  HerdState sse_decode_herd_state(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_available = sse_decode_bool(deserializer);
+    var var_sessions = sse_decode_list_herd_session(deserializer);
+    var var_inbox = sse_decode_list_herd_agent(deserializer);
+    var var_waiting = sse_decode_u_32(deserializer);
+    return HerdState(
+      available: var_available,
+      sessions: var_sessions,
+      inbox: var_inbox,
+      waiting: var_waiting,
+    );
+  }
+
+  @protected
+  HerdTab sse_decode_herd_tab(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_label = sse_decode_String(deserializer);
+    var var_panes = sse_decode_list_herd_pane(deserializer);
+    return HerdTab(id: var_id, label: var_label, panes: var_panes);
+  }
+
+  @protected
+  HerdText sse_decode_herd_text(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_text = sse_decode_String(deserializer);
+    var var_asked = sse_decode_opt_box_autoadd_herd_asked(deserializer);
+    return HerdText(text: var_text, asked: var_asked);
+  }
+
+  @protected
+  HerdWorkspace sse_decode_herd_workspace(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_String(deserializer);
+    var var_label = sse_decode_String(deserializer);
+    var var_tabs = sse_decode_list_herd_tab(deserializer);
+    return HerdWorkspace(id: var_id, label: var_label, tabs: var_tabs);
   }
 
   @protected
@@ -4829,6 +11585,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<Agent> sse_decode_list_agent(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <Agent>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_agent(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<DeskBinding> sse_decode_list_desk_binding(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <DeskBinding>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_desk_binding(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<DeskMonitor> sse_decode_list_desk_monitor(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <DeskMonitor>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_desk_monitor(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<DeskSlot> sse_decode_list_desk_slot(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <DeskSlot>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_desk_slot(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<DesktopOutput> sse_decode_list_desktop_output(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <DesktopOutput>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_desktop_output(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<EnvVar> sse_decode_list_env_var(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -4838,6 +11656,123 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_env_var(deserializer));
     }
     return ans_;
+  }
+
+  @protected
+  List<HerdAgent> sse_decode_list_herd_agent(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdAgent>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_agent(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdChoice> sse_decode_list_herd_choice(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdChoice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_choice(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdKind> sse_decode_list_herd_kind(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdKind>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_kind(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdOutside> sse_decode_list_herd_outside(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdOutside>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_outside(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdPane>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_pane(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdPlace> sse_decode_list_herd_place(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdPlace>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_place(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdSession> sse_decode_list_herd_session(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdSession>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_session(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdTab> sse_decode_list_herd_tab(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdTab>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_tab(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<HerdWorkspace> sse_decode_list_herd_workspace(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <HerdWorkspace>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_herd_workspace(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<int> sse_decode_list_prim_u_32_loose(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint32List(len_);
   }
 
   @protected
@@ -4898,6 +11833,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TailscaleDevice> sse_decode_list_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TailscaleDevice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tailscale_device(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<TerminalLine> sse_decode_list_terminal_line(
     SseDeserializer deserializer,
   ) {
@@ -4929,6 +11878,82 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  bool? sse_decode_opt_box_autoadd_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_bool(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  ClipPictureData? sse_decode_opt_box_autoadd_clip_picture_data(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_clip_picture_data(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  DeskMedia? sse_decode_opt_box_autoadd_desk_media(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_desk_media(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  DeskVolume? sse_decode_opt_box_autoadd_desk_volume(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_desk_volume(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  DeskWindow? sse_decode_opt_box_autoadd_desk_window(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_desk_window(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  HerdAsked? sse_decode_opt_box_autoadd_herd_asked(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_herd_asked(deserializer));
     } else {
       return null;
     }
@@ -4968,6 +11993,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice? sse_decode_opt_box_autoadd_tailscale_device(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_tailscale_device(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -4976,6 +12014,46 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     } else {
       return null;
     }
+  }
+
+  @protected
+  PairingInfo sse_decode_pairing_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_user = sse_decode_String(deserializer);
+    var var_port = sse_decode_u_16(deserializer);
+    var var_addresses = sse_decode_list_String(deserializer);
+    var var_tailscale = sse_decode_opt_String(deserializer);
+    var var_hostKey = sse_decode_String(deserializer);
+    var var_mac = sse_decode_opt_String(deserializer);
+    var var_secondsLeft = sse_decode_u_32(deserializer);
+    return PairingInfo(
+      name: var_name,
+      user: var_user,
+      port: var_port,
+      addresses: var_addresses,
+      tailscale: var_tailscale,
+      hostKey: var_hostKey,
+      mac: var_mac,
+      secondsLeft: var_secondsLeft,
+    );
+  }
+
+  @protected
+  PairingOutcome sse_decode_pairing_outcome(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_info = sse_decode_pairing_info(deserializer);
+    var var_address = sse_decode_String(deserializer);
+    var var_viaTailscale = sse_decode_bool(deserializer);
+    var var_features = sse_decode_list_String(deserializer);
+    var var_phoneName = sse_decode_String(deserializer);
+    return PairingOutcome(
+      info: var_info,
+      address: var_address,
+      viaTailscale: var_viaTailscale,
+      features: var_features,
+      phoneName: var_phoneName,
+    );
   }
 
   @protected
@@ -4996,6 +12074,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       size: var_size,
       permissions: var_permissions,
       modified: var_modified,
+    );
+  }
+
+  @protected
+  ScreenStatus sse_decode_screen_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_bitrate = sse_decode_u_32(deserializer);
+    var var_inFlight = sse_decode_u_64(deserializer);
+    var var_skipped = sse_decode_u_64(deserializer);
+    var var_skipping = sse_decode_bool(deserializer);
+    return ScreenStatus(
+      bitrate: var_bitrate,
+      inFlight: var_inFlight,
+      skipped: var_skipped,
+      skipping: var_skipping,
+    );
+  }
+
+  @protected
+  ScreenWrite sse_decode_screen_write(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_ended = sse_decode_bool(deserializer);
+    var var_reason = sse_decode_String(deserializer);
+    var var_bitrate = sse_decode_opt_box_autoadd_u_32(deserializer);
+    var var_keyFrame = sse_decode_bool(deserializer);
+    return ScreenWrite(
+      ended: var_ended,
+      reason: var_reason,
+      bitrate: var_bitrate,
+      keyFrame: var_keyFrame,
     );
   }
 
@@ -5025,6 +12133,92 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       banner: var_banner,
       hostKey: var_hostKey,
     );
+  }
+
+  @protected
+  ShareEvent sse_decode_share_event(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var tag_ = sse_decode_i_32(deserializer);
+    switch (tag_) {
+      case 0:
+        var var_id = sse_decode_String(deserializer);
+        var var_name = sse_decode_String(deserializer);
+        var var_size = sse_decode_u_64(deserializer);
+        var var_path = sse_decode_String(deserializer);
+        return ShareEvent_File(
+          id: var_id,
+          name: var_name,
+          size: var_size,
+          path: var_path,
+        );
+      case 1:
+        var var_text = sse_decode_String(deserializer);
+        return ShareEvent_Clip(text: var_text);
+      case 2:
+        var var_kind = sse_decode_String(deserializer);
+        var var_size = sse_decode_u_64(deserializer);
+        var var_mark = sse_decode_String(deserializer);
+        return ShareEvent_Picture(
+          kind: var_kind,
+          size: var_size,
+          mark: var_mark,
+        );
+      case 3:
+        var var_seconds = sse_decode_u_32(deserializer);
+        return ShareEvent_Ring(seconds: var_seconds);
+      case 4:
+        var var_to = sse_decode_String(deserializer);
+        var var_text = sse_decode_String(deserializer);
+        return ShareEvent_Sms(to: var_to, text: var_text);
+      case 5:
+        var var_name = sse_decode_String(deserializer);
+        var var_title = sse_decode_String(deserializer);
+        var var_workspace = sse_decode_String(deserializer);
+        var var_waiting = sse_decode_bool(deserializer);
+        var var_session = sse_decode_String(deserializer);
+        var var_pane = sse_decode_String(deserializer);
+        var var_asked = sse_decode_opt_box_autoadd_herd_asked(deserializer);
+        return ShareEvent_Agent(
+          name: var_name,
+          title: var_title,
+          workspace: var_workspace,
+          waiting: var_waiting,
+          session: var_session,
+          pane: var_pane,
+          asked: var_asked,
+        );
+      case 6:
+        var var_session = sse_decode_String(deserializer);
+        var var_pane = sse_decode_String(deserializer);
+        return ShareEvent_Settled(session: var_session, pane: var_pane);
+      case 7:
+        var var_id = sse_decode_String(deserializer);
+        var var_reason = sse_decode_String(deserializer);
+        var var_challenge = sse_decode_String(deserializer);
+        return ShareEvent_Approve(
+          id: var_id,
+          reason: var_reason,
+          challenge: var_challenge,
+        );
+      case 8:
+        var var_id = sse_decode_String(deserializer);
+        var var_data = sse_decode_String(deserializer);
+        return ShareEvent_Sign(id: var_id, data: var_data);
+      case 9:
+        var var_id = sse_decode_String(deserializer);
+        var var_keys = sse_decode_list_prim_u_8_strict(deserializer);
+        var var_pointer = sse_decode_list_prim_u_8_strict(deserializer);
+        var var_look = sse_decode_bool(deserializer);
+        return ShareEvent_Hands(
+          id: var_id,
+          keys: var_keys,
+          pointer: var_pointer,
+          look: var_look,
+        );
+      default:
+        throw UnimplementedError('');
+    }
   }
 
   @protected
@@ -5133,6 +12327,50 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TailscaleDevice sse_decode_tailscale_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_dnsName = sse_decode_String(deserializer);
+    var var_ips = sse_decode_list_String(deserializer);
+    var var_os = sse_decode_String(deserializer);
+    var var_online = sse_decode_bool(deserializer);
+    var var_direct = sse_decode_bool(deserializer);
+    var var_relay = sse_decode_String(deserializer);
+    return TailscaleDevice(
+      name: var_name,
+      dnsName: var_dnsName,
+      ips: var_ips,
+      os: var_os,
+      online: var_online,
+      direct: var_direct,
+      relay: var_relay,
+    );
+  }
+
+  @protected
+  TailscaleStatus sse_decode_tailscale_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_state = sse_decode_String(deserializer);
+    var var_authUrl = sse_decode_String(deserializer);
+    var var_tailnet = sse_decode_String(deserializer);
+    var var_user = sse_decode_String(deserializer);
+    var var_thisDevice = sse_decode_opt_box_autoadd_tailscale_device(
+      deserializer,
+    );
+    var var_devices = sse_decode_list_tailscale_device(deserializer);
+    var var_error = sse_decode_String(deserializer);
+    return TailscaleStatus(
+      state: var_state,
+      authUrl: var_authUrl,
+      tailnet: var_tailnet,
+      user: var_user,
+      thisDevice: var_thisDevice,
+      devices: var_devices,
+      error: var_error,
+    );
+  }
+
+  @protected
   TerminalCursor sse_decode_terminal_cursor(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_row = sse_decode_u_16(deserializer);
@@ -5211,6 +12449,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TextFound sse_decode_text_found(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_text = sse_decode_String(deserializer);
+    var var_languages = sse_decode_list_String(deserializer);
+    return TextFound(text: var_text, languages: var_languages);
+  }
+
+  @protected
   TextRun sse_decode_text_run(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_col = sse_decode_u_16(deserializer);
@@ -5227,6 +12473,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       bg: var_bg,
       style: var_style,
     );
+  }
+
+  @protected
+  TouchpadButton sse_decode_touchpad_button(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return TouchpadButton.values[inner];
   }
 
   @protected
@@ -5335,6 +12588,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as DeskWatchImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -5355,6 +12621,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as FileTransferImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HerdWatchImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteDesktopImpl).frbInternalSseEncode(move: true),
       serializer,
     );
   }
@@ -5387,6 +12679,84 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteWatchImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ScreenStreamImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ShareLinkImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SoundStreamImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SpeakerStreamImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SshSession self,
     SseSerializer serializer,
@@ -5407,6 +12777,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as ActiveTunnelImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as DeskWatchImpl).frbInternalSseEncode(move: false),
       serializer,
     );
   }
@@ -5439,6 +12822,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HerdWatchImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteDesktopImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteFiles(
     RemoteFiles self,
     SseSerializer serializer,
@@ -5459,6 +12868,84 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as RemoteShellImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteWatchImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ScreenStreamImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ShareLinkImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SoundStreamImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SpeakerStreamImpl).frbInternalSseEncode(move: false),
       serializer,
     );
   }
@@ -5491,6 +12978,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerDeskWatch(
+    DeskWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as DeskWatchImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerFileSide(
     FileSide self,
     SseSerializer serializer,
@@ -5511,6 +13011,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as FileTransferImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerHerdWatch(
+    HerdWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as HerdWatchImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteDesktop(
+    RemoteDesktop self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteDesktopImpl).frbInternalSseEncode(move: null),
       serializer,
     );
   }
@@ -5543,6 +13069,84 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteTouchpad(
+    RemoteTouchpad self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteTouchpadImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerRemoteWatch(
+    RemoteWatch self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as RemoteWatchImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerScreenStream(
+    ScreenStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ScreenStreamImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerShareLink(
+    ShareLink self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as ShareLinkImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSoundStream(
+    SoundStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SoundStreamImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSpeakerStream(
+    SpeakerStream self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as SpeakerStreamImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void
   sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerSshSession(
     SshSession self,
     SseSerializer serializer,
@@ -5550,6 +13154,108 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
       (self as SshSessionImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_String_Sse(
+    RustStreamSink<String> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_desk_state_Sse(
+    RustStreamSink<DeskState> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desk_state,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_desktop_event_Sse(
+    RustStreamSink<DesktopEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_desktop_event,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_herd_state_Sse(
+    RustStreamSink<HerdState> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_herd_state,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_list_prim_u_8_strict_Sse(
+    RustStreamSink<Uint8List> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_prim_u_8_strict,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_share_event_Sse(
+    RustStreamSink<ShareEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_share_event,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
       serializer,
     );
   }
@@ -5595,9 +13301,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_agent(Agent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_agent_status(self.status, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.workspace, serializer);
+    sse_encode_String(self.folder, serializer);
+    sse_encode_String(self.session, serializer);
+  }
+
+  @protected
+  void sse_encode_agent_status(AgentStatus self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_clip_picture_data(self, serializer);
   }
 
   @protected
@@ -5607,6 +13346,69 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_connect_options(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desk_action(
+    DeskAction self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desk_action(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desk_media(
+    DeskMedia self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desk_media(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desk_volume(
+    DeskVolume self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desk_volume(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desk_window(
+    DeskWindow self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desk_window(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desktop_options(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_desktop_stats(
+    DesktopStats self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desktop_stats(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_herd_asked(
+    HerdAsked self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_herd_asked(self, serializer);
   }
 
   @protected
@@ -5661,6 +13463,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tailscale_device(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_terminal_palette(
     TerminalPalette self,
     SseSerializer serializer,
@@ -5682,6 +13493,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_32(self, serializer);
+  }
+
+  @protected
+  void sse_encode_clip_picture_data(
+    ClipPictureData self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.kind, serializer);
+    sse_encode_list_prim_u_8_strict(self.bytes, serializer);
   }
 
   @protected
@@ -5767,6 +13588,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.connectTimeoutSecs, serializer);
     sse_encode_opt_box_autoadd_jump_host(self.jump, serializer);
     sse_encode_bool(self.forwardAgent, serializer);
+    sse_encode_bool(self.viaTailscale, serializer);
   }
 
   @protected
@@ -5794,6 +13616,249 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_desk_action(DeskAction self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case DeskAction_Workspace(slot: final slot, monitor: final monitor):
+        sse_encode_i_32(0, serializer);
+        sse_encode_u_8(slot, serializer);
+        sse_encode_opt_String(monitor, serializer);
+      case DeskAction_MoveWindow(slot: final slot):
+        sse_encode_i_32(1, serializer);
+        sse_encode_u_8(slot, serializer);
+      case DeskAction_FocusMonitor(name: final name):
+        sse_encode_i_32(2, serializer);
+        sse_encode_String(name, serializer);
+      case DeskAction_Focus(direction: final direction):
+        sse_encode_i_32(3, serializer);
+        sse_encode_desk_direction(direction, serializer);
+      case DeskAction_Swap(direction: final direction):
+        sse_encode_i_32(4, serializer);
+        sse_encode_desk_direction(direction, serializer);
+      case DeskAction_Close():
+        sse_encode_i_32(5, serializer);
+      case DeskAction_Fullscreen():
+        sse_encode_i_32(6, serializer);
+      case DeskAction_Float():
+        sse_encode_i_32(7, serializer);
+      case DeskAction_Split():
+        sse_encode_i_32(8, serializer);
+      case DeskAction_PlayPause():
+        sse_encode_i_32(9, serializer);
+      case DeskAction_Next():
+        sse_encode_i_32(10, serializer);
+      case DeskAction_Previous():
+        sse_encode_i_32(11, serializer);
+      case DeskAction_VolumeUp():
+        sse_encode_i_32(12, serializer);
+      case DeskAction_VolumeDown():
+        sse_encode_i_32(13, serializer);
+      case DeskAction_Mute():
+        sse_encode_i_32(14, serializer);
+      case DeskAction_Dnd(enabled: final enabled):
+        sse_encode_i_32(15, serializer);
+        sse_encode_bool(enabled, serializer);
+      case DeskAction_Bind(keys: final keys):
+        sse_encode_i_32(16, serializer);
+        sse_encode_String(keys, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_desk_binding(DeskBinding self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.keys, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_bool(self.run, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_direction(DeskDirection self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_media(DeskMedia self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.player, serializer);
+    sse_encode_bool(self.playing, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.artist, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_monitor(DeskMonitor self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_bool(self.focused, serializer);
+    sse_encode_list_desk_slot(self.slots, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_slot(DeskSlot self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_8(self.slot, serializer);
+    sse_encode_u_32(self.windows, serializer);
+    sse_encode_bool(self.active, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_state(DeskState self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_desk_monitor(self.monitors, serializer);
+    sse_encode_opt_box_autoadd_desk_window(self.window, serializer);
+    sse_encode_opt_box_autoadd_desk_media(self.media, serializer);
+    sse_encode_opt_box_autoadd_desk_volume(self.volume, serializer);
+    sse_encode_opt_box_autoadd_bool(self.dnd, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_volume(DeskVolume self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_8(self.percent, serializer);
+    sse_encode_bool(self.muted, serializer);
+  }
+
+  @protected
+  void sse_encode_desk_window(DeskWindow self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.class_, serializer);
+    sse_encode_bool(self.floating, serializer);
+    sse_encode_bool(self.fullscreen, serializer);
+  }
+
+  @protected
+  void sse_encode_desktop_button(DesktopButton self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_desktop_event(DesktopEvent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case DesktopEvent_Started(
+        fitted: final fitted,
+        output: final output,
+        outputs: final outputs,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_bool(fitted, serializer);
+        sse_encode_String(output, serializer);
+        sse_encode_list_desktop_output(outputs, serializer);
+      case DesktopEvent_Stream(
+        width: final width,
+        height: final height,
+        scale: final scale,
+        hardware: final hardware,
+      ):
+        sse_encode_i_32(1, serializer);
+        sse_encode_u_32(width, serializer);
+        sse_encode_u_32(height, serializer);
+        sse_encode_f_64(scale, serializer);
+        sse_encode_bool(hardware, serializer);
+      case DesktopEvent_Picture(
+        width: final width,
+        height: final height,
+        visibleWidth: final visibleWidth,
+        visibleHeight: final visibleHeight,
+      ):
+        sse_encode_i_32(2, serializer);
+        sse_encode_u_32(width, serializer);
+        sse_encode_u_32(height, serializer);
+        sse_encode_u_32(visibleWidth, serializer);
+        sse_encode_u_32(visibleHeight, serializer);
+      case DesktopEvent_CursorShape(
+        id: final id,
+        width: final width,
+        height: final height,
+        hotX: final hotX,
+        hotY: final hotY,
+        bgra: final bgra,
+      ):
+        sse_encode_i_32(3, serializer);
+        sse_encode_u_32(id, serializer);
+        sse_encode_u_32(width, serializer);
+        sse_encode_u_32(height, serializer);
+        sse_encode_i_32(hotX, serializer);
+        sse_encode_i_32(hotY, serializer);
+        sse_encode_list_prim_u_8_strict(bgra, serializer);
+      case DesktopEvent_CursorMoved(
+        x: final x,
+        y: final y,
+        shapeId: final shapeId,
+        visible: final visible,
+      ):
+        sse_encode_i_32(4, serializer);
+        sse_encode_f_64(x, serializer);
+        sse_encode_f_64(y, serializer);
+        sse_encode_u_32(shapeId, serializer);
+        sse_encode_bool(visible, serializer);
+      case DesktopEvent_Clipboard(text: final text):
+        sse_encode_i_32(5, serializer);
+        sse_encode_String(text, serializer);
+      case DesktopEvent_Stats(field0: final field0):
+        sse_encode_i_32(6, serializer);
+        sse_encode_box_autoadd_desktop_stats(field0, serializer);
+      case DesktopEvent_Ended(reason: final reason, retryable: final retryable):
+        sse_encode_i_32(7, serializer);
+        sse_encode_String(reason, serializer);
+        sse_encode_bool(retryable, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_desktop_mode(DesktopMode self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case DesktopMode_Fitted():
+        sse_encode_i_32(0, serializer);
+      case DesktopMode_Mirror():
+        sse_encode_i_32(1, serializer);
+      case DesktopMode_Output(name: final name):
+        sse_encode_i_32(2, serializer);
+        sse_encode_String(name, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_desktop_options(
+    DesktopOptions self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_desktop_mode(self.mode, serializer);
+    sse_encode_u_32(self.width, serializer);
+    sse_encode_u_32(self.height, serializer);
+    sse_encode_f_64(self.scale, serializer);
+    sse_encode_bool(self.lowBandwidth, serializer);
+    sse_encode_i_64(self.textureId, serializer);
+    sse_encode_String(self.serverCommand, serializer);
+    sse_encode_bool(self.warmRadio, serializer);
+  }
+
+  @protected
+  void sse_encode_desktop_output(DesktopOutput self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_u_32(self.width, serializer);
+    sse_encode_u_32(self.height, serializer);
+    sse_encode_f_64(self.scale, serializer);
+  }
+
+  @protected
+  void sse_encode_desktop_stats(DesktopStats self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_f_64(self.fps, serializer);
+    sse_encode_f_64(self.kbps, serializer);
+    sse_encode_f_64(self.rttMs, serializer);
+    sse_encode_f_64(self.decodeMs, serializer);
+    sse_encode_f_64(self.frameAgeMs, serializer);
+  }
+
+  @protected
   void sse_encode_entry_kind(EntryKind self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
@@ -5813,6 +13878,125 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_String(self.stderr, serializer);
     sse_encode_opt_box_autoadd_u_32(self.exitCode, serializer);
     sse_encode_bool(self.truncated, serializer);
+  }
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putFloat64(self);
+  }
+
+  @protected
+  void sse_encode_herd_agent(HerdAgent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.session, serializer);
+    sse_encode_String(self.workspace, serializer);
+    sse_encode_String(self.tab, serializer);
+    sse_encode_String(self.pane, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_agent_status(self.status, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.folder, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_asked(HerdAsked self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.question, serializer);
+    sse_encode_list_herd_choice(self.choices, serializer);
+    sse_encode_String(self.mark, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_choice(HerdChoice self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.key, serializer);
+    sse_encode_String(self.label, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_kind(HerdKind self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_bool(self.installed, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_made(HerdMade self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.workspace, serializer);
+    sse_encode_String(self.tab, serializer);
+    sse_encode_String(self.pane, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_outside(HerdOutside self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.agent, serializer);
+    sse_encode_String(self.folder, serializer);
+    sse_encode_String(self.folderName, serializer);
+    sse_encode_bool(self.canContinue, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_pane(HerdPane self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_String(self.folder, serializer);
+    sse_encode_String(self.folderName, serializer);
+    sse_encode_bool(self.focused, serializer);
+    sse_encode_opt_String(self.agent, serializer);
+    sse_encode_agent_status(self.status, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_place(HerdPlace self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.path, serializer);
+    sse_encode_String(self.shown, serializer);
+    sse_encode_String(self.name, serializer);
+    sse_encode_bool(self.project, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_session(HerdSession self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_bool(self.running, serializer);
+    sse_encode_list_herd_workspace(self.workspaces, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_state(HerdState self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.available, serializer);
+    sse_encode_list_herd_session(self.sessions, serializer);
+    sse_encode_list_herd_agent(self.inbox, serializer);
+    sse_encode_u_32(self.waiting, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_tab(HerdTab self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.label, serializer);
+    sse_encode_list_herd_pane(self.panes, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_text(HerdText self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.text, serializer);
+    sse_encode_opt_box_autoadd_herd_asked(self.asked, serializer);
+  }
+
+  @protected
+  void sse_encode_herd_workspace(HerdWorkspace self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.id, serializer);
+    sse_encode_String(self.label, serializer);
+    sse_encode_list_herd_tab(self.tabs, serializer);
   }
 
   @protected
@@ -5892,12 +14076,186 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_agent(List<Agent> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_agent(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_desk_binding(
+    List<DeskBinding> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_desk_binding(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_desk_monitor(
+    List<DeskMonitor> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_desk_monitor(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_desk_slot(
+    List<DeskSlot> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_desk_slot(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_desktop_output(
+    List<DesktopOutput> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_desktop_output(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_env_var(List<EnvVar> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_env_var(item, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_list_herd_agent(
+    List<HerdAgent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_agent(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_choice(
+    List<HerdChoice> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_choice(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_kind(
+    List<HerdKind> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_kind(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_outside(
+    List<HerdOutside> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_outside(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_pane(
+    List<HerdPane> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_pane(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_place(
+    List<HerdPlace> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_place(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_session(
+    List<HerdSession> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_session(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_tab(List<HerdTab> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_tab(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_herd_workspace(
+    List<HerdWorkspace> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_herd_workspace(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_prim_u_32_loose(
+    List<int> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putUint32List(
+      self is Uint32List ? self : Uint32List.fromList(self),
+    );
   }
 
   @protected
@@ -5969,6 +14327,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_tailscale_device(
+    List<TailscaleDevice> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tailscale_device(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_terminal_line(
     List<TerminalLine> self,
     SseSerializer serializer,
@@ -5996,6 +14366,81 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_bool(bool? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_bool(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_clip_picture_data(
+    ClipPictureData? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_clip_picture_data(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_media(
+    DeskMedia? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_desk_media(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_volume(
+    DeskVolume? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_desk_volume(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_desk_window(
+    DeskWindow? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_desk_window(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_herd_asked(
+    HerdAsked? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_herd_asked(self, serializer);
     }
   }
 
@@ -6036,6 +14481,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_opt_box_autoadd_tailscale_device(
+    TailscaleDevice? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_tailscale_device(self, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -6043,6 +14501,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (self != null) {
       sse_encode_box_autoadd_u_32(self, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_pairing_info(PairingInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.user, serializer);
+    sse_encode_u_16(self.port, serializer);
+    sse_encode_list_String(self.addresses, serializer);
+    sse_encode_opt_String(self.tailscale, serializer);
+    sse_encode_String(self.hostKey, serializer);
+    sse_encode_opt_String(self.mac, serializer);
+    sse_encode_u_32(self.secondsLeft, serializer);
+  }
+
+  @protected
+  void sse_encode_pairing_outcome(
+    PairingOutcome self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_pairing_info(self.info, serializer);
+    sse_encode_String(self.address, serializer);
+    sse_encode_bool(self.viaTailscale, serializer);
+    sse_encode_list_String(self.features, serializer);
+    sse_encode_String(self.phoneName, serializer);
   }
 
   @protected
@@ -6055,6 +14539,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_64(self.size, serializer);
     sse_encode_u_32(self.permissions, serializer);
     sse_encode_opt_box_autoadd_i_64(self.modified, serializer);
+  }
+
+  @protected
+  void sse_encode_screen_status(ScreenStatus self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.bitrate, serializer);
+    sse_encode_u_64(self.inFlight, serializer);
+    sse_encode_u_64(self.skipped, serializer);
+    sse_encode_bool(self.skipping, serializer);
+  }
+
+  @protected
+  void sse_encode_screen_write(ScreenWrite self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.ended, serializer);
+    sse_encode_String(self.reason, serializer);
+    sse_encode_opt_box_autoadd_u_32(self.bitrate, serializer);
+    sse_encode_bool(self.keyFrame, serializer);
   }
 
   @protected
@@ -6074,6 +14576,88 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.via, serializer);
     sse_encode_opt_String(self.banner, serializer);
     sse_encode_host_key_info(self.hostKey, serializer);
+  }
+
+  @protected
+  void sse_encode_share_event(ShareEvent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    switch (self) {
+      case ShareEvent_File(
+        id: final id,
+        name: final name,
+        size: final size,
+        path: final path,
+      ):
+        sse_encode_i_32(0, serializer);
+        sse_encode_String(id, serializer);
+        sse_encode_String(name, serializer);
+        sse_encode_u_64(size, serializer);
+        sse_encode_String(path, serializer);
+      case ShareEvent_Clip(text: final text):
+        sse_encode_i_32(1, serializer);
+        sse_encode_String(text, serializer);
+      case ShareEvent_Picture(
+        kind: final kind,
+        size: final size,
+        mark: final mark,
+      ):
+        sse_encode_i_32(2, serializer);
+        sse_encode_String(kind, serializer);
+        sse_encode_u_64(size, serializer);
+        sse_encode_String(mark, serializer);
+      case ShareEvent_Ring(seconds: final seconds):
+        sse_encode_i_32(3, serializer);
+        sse_encode_u_32(seconds, serializer);
+      case ShareEvent_Sms(to: final to, text: final text):
+        sse_encode_i_32(4, serializer);
+        sse_encode_String(to, serializer);
+        sse_encode_String(text, serializer);
+      case ShareEvent_Agent(
+        name: final name,
+        title: final title,
+        workspace: final workspace,
+        waiting: final waiting,
+        session: final session,
+        pane: final pane,
+        asked: final asked,
+      ):
+        sse_encode_i_32(5, serializer);
+        sse_encode_String(name, serializer);
+        sse_encode_String(title, serializer);
+        sse_encode_String(workspace, serializer);
+        sse_encode_bool(waiting, serializer);
+        sse_encode_String(session, serializer);
+        sse_encode_String(pane, serializer);
+        sse_encode_opt_box_autoadd_herd_asked(asked, serializer);
+      case ShareEvent_Settled(session: final session, pane: final pane):
+        sse_encode_i_32(6, serializer);
+        sse_encode_String(session, serializer);
+        sse_encode_String(pane, serializer);
+      case ShareEvent_Approve(
+        id: final id,
+        reason: final reason,
+        challenge: final challenge,
+      ):
+        sse_encode_i_32(7, serializer);
+        sse_encode_String(id, serializer);
+        sse_encode_String(reason, serializer);
+        sse_encode_String(challenge, serializer);
+      case ShareEvent_Sign(id: final id, data: final data):
+        sse_encode_i_32(8, serializer);
+        sse_encode_String(id, serializer);
+        sse_encode_String(data, serializer);
+      case ShareEvent_Hands(
+        id: final id,
+        keys: final keys,
+        pointer: final pointer,
+        look: final look,
+      ):
+        sse_encode_i_32(9, serializer);
+        sse_encode_String(id, serializer);
+        sse_encode_list_prim_u_8_strict(keys, serializer);
+        sse_encode_list_prim_u_8_strict(pointer, serializer);
+        sse_encode_bool(look, serializer);
+    }
   }
 
   @protected
@@ -6156,6 +14740,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_tailscale_device(
+    TailscaleDevice self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.dnsName, serializer);
+    sse_encode_list_String(self.ips, serializer);
+    sse_encode_String(self.os, serializer);
+    sse_encode_bool(self.online, serializer);
+    sse_encode_bool(self.direct, serializer);
+    sse_encode_String(self.relay, serializer);
+  }
+
+  @protected
+  void sse_encode_tailscale_status(
+    TailscaleStatus self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.state, serializer);
+    sse_encode_String(self.authUrl, serializer);
+    sse_encode_String(self.tailnet, serializer);
+    sse_encode_String(self.user, serializer);
+    sse_encode_opt_box_autoadd_tailscale_device(self.thisDevice, serializer);
+    sse_encode_list_tailscale_device(self.devices, serializer);
+    sse_encode_String(self.error, serializer);
+  }
+
+  @protected
   void sse_encode_terminal_cursor(
     TerminalCursor self,
     SseSerializer serializer,
@@ -6211,6 +14825,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_text_found(TextFound self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.text, serializer);
+    sse_encode_list_String(self.languages, serializer);
+  }
+
+  @protected
   void sse_encode_text_run(TextRun self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_16(self.col, serializer);
@@ -6219,6 +14840,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_32(self.fg, serializer);
     sse_encode_u_32(self.bg, serializer);
     sse_encode_u_8(self.style, serializer);
+  }
+
+  @protected
+  void sse_encode_touchpad_button(
+    TouchpadButton self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected
@@ -6329,6 +14959,32 @@ class ActiveTunnelImpl extends RustOpaque implements ActiveTunnel {
 }
 
 @sealed
+class DeskWatchImpl extends RustOpaque implements DeskWatch {
+  // Not to be used by end users
+  DeskWatchImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  DeskWatchImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_DeskWatch,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_DeskWatch,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_DeskWatchPtr,
+  );
+
+  /// Each new state. Listen once.
+  Stream<DeskState> states() =>
+      RustLib.instance.api.crateApiDeskDeskWatchStates(that: this);
+
+  void stop() => RustLib.instance.api.crateApiDeskDeskWatchStop(that: this);
+}
+
+@sealed
 class FileSideImpl extends RustOpaque implements FileSide {
   // Not to be used by end users
   FileSideImpl.frbInternalDcoDecode(List<dynamic> wire)
@@ -6400,6 +15056,131 @@ class FileTransferImpl extends RustOpaque implements FileTransfer {
   /// transfer; early updates are kept.
   Stream<TransferProgress> watch() =>
       RustLib.instance.api.crateApiSftpFileTransferWatch(that: this);
+}
+
+@sealed
+class HerdWatchImpl extends RustOpaque implements HerdWatch {
+  // Not to be used by end users
+  HerdWatchImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  HerdWatchImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_HerdWatch,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_HerdWatch,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_HerdWatchPtr,
+  );
+
+  /// Each new state. Listen once.
+  Stream<HerdState> states() =>
+      RustLib.instance.api.crateApiHerdHerdWatchStates(that: this);
+
+  void stop() => RustLib.instance.api.crateApiHerdHerdWatchStop(that: this);
+}
+
+@sealed
+class RemoteDesktopImpl extends RustOpaque implements RemoteDesktop {
+  // Not to be used by end users
+  RemoteDesktopImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteDesktopImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteDesktop,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteDesktop,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteDesktopPtr,
+  );
+
+  void button({required DesktopButton button, required bool pressed}) =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopButton(
+        that: this,
+        button: button,
+        pressed: pressed,
+      );
+
+  /// Taps a key while holding `modifiers` (Linux input codes), for
+  /// example Super+Enter.
+  void chord({required List<int> modifiers, required int code}) =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopChord(
+        that: this,
+        modifiers: modifiers,
+        code: code,
+      );
+
+  /// Presses and releases a button (a click).
+  void click({required DesktopButton button}) => RustLib.instance.api
+      .crateApiDesktopRemoteDesktopClick(that: this, button: button);
+
+  /// Ends the desktop. The connection stays open.
+  void close() =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopClose(that: this);
+
+  /// Stream shape, cursor, clipboard, stats and the end, as a stream.
+  /// Listen once per desktop.
+  Stream<DesktopEvent> events() =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopEvents(that: this);
+
+  bool isClosed() =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopIsClosed(that: this);
+
+  /// Presses or releases a key (Linux input code, US layout).
+  void key({required int code, required bool pressed}) =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopKey(
+        that: this,
+        code: code,
+        pressed: pressed,
+      );
+
+  /// Moves the remote pointer to `x`, `y` (logical remote pixels).
+  void pointerMove({required double x, required double y}) => RustLib
+      .instance
+      .api
+      .crateApiDesktopRemoteDesktopPointerMove(that: this, x: x, y: y);
+
+  /// Asks for a full picture (after the view was rebuilt).
+  void refresh() =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopRefresh(that: this);
+
+  /// The view changed size (rotation, split screen) or the text size
+  /// changed.
+  void resize({
+    required int width,
+    required int height,
+    required double scale,
+  }) => RustLib.instance.api.crateApiDesktopRemoteDesktopResize(
+    that: this,
+    width: width,
+    height: height,
+    scale: scale,
+  );
+
+  /// Scrolls by logical pixels; `wheel` sends mouse-wheel steps.
+  void scroll({required double dx, required double dy, required bool wheel}) =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopScroll(
+        that: this,
+        dx: dx,
+        dy: dy,
+        wheel: wheel,
+      );
+
+  void scrollStop() =>
+      RustLib.instance.api.crateApiDesktopRemoteDesktopScrollStop(that: this);
+
+  /// Puts text on the remote clipboard.
+  void setClipboard({required String text}) => RustLib.instance.api
+      .crateApiDesktopRemoteDesktopSetClipboard(that: this, text: text);
 }
 
 @sealed
@@ -6631,6 +15412,219 @@ class RemoteShellImpl extends RustOpaque implements RemoteShell {
 }
 
 @sealed
+class RemoteTouchpadImpl extends RustOpaque implements RemoteTouchpad {
+  // Not to be used by end users
+  RemoteTouchpadImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteTouchpadImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteTouchpad,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteTouchpad,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteTouchpadPtr,
+  );
+
+  void button({required TouchpadButton button, required bool down}) =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadButton(
+        that: this,
+        button: button,
+        down: down,
+      );
+
+  void close() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadClose(that: this);
+
+  /// Hears once why the touchpad stopped (empty when it was closed from
+  /// here). Listen once.
+  Stream<String> ended() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadEnded(that: this);
+
+  /// A key by its Linux code, pressed or released.
+  void key({required int code, required bool down}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadKey(that: this, code: code, down: down);
+
+  /// Moves the pointer by this much.
+  void moveBy({required double dx, required double dy}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadMoveBy(that: this, dx: dx, dy: dy);
+
+  /// Puts text on the computer's clipboard and pastes it (for text the
+  /// US keyboard cannot type).
+  void paste({required String text}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadPaste(that: this, text: text);
+
+  void releaseAll() =>
+      RustLib.instance.api.crateApiTouchpadRemoteTouchpadReleaseAll(that: this);
+
+  void scroll({required double dx, required double dy}) => RustLib.instance.api
+      .crateApiTouchpadRemoteTouchpadScroll(that: this, dx: dx, dy: dy);
+}
+
+@sealed
+class RemoteWatchImpl extends RustOpaque implements RemoteWatch {
+  // Not to be used by end users
+  RemoteWatchImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  RemoteWatchImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_RemoteWatch,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteWatch,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_RemoteWatchPtr,
+  );
+
+  /// The command's output, one line at a time. Listen once.
+  Stream<String> lines() =>
+      RustLib.instance.api.crateApiWatchRemoteWatchLines(that: this);
+
+  /// Ends the command.
+  void stop() => RustLib.instance.api.crateApiWatchRemoteWatchStop(that: this);
+}
+
+@sealed
+class ScreenStreamImpl extends RustOpaque implements ScreenStream {
+  // Not to be used by end users
+  ScreenStreamImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  ScreenStreamImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_ScreenStream,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ScreenStream,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ScreenStreamPtr,
+  );
+
+  void close() =>
+      RustLib.instance.api.crateApiScreenScreenStreamClose(that: this);
+
+  /// Hears once why the stream ended (empty when it was closed from
+  /// here or the window was closed). Listen once.
+  Stream<String> ended() =>
+      RustLib.instance.api.crateApiScreenScreenStreamEnded(that: this);
+
+  ScreenStatus status() =>
+      RustLib.instance.api.crateApiScreenScreenStreamStatus(that: this);
+
+  /// Sends the next piece from the encoder, or skips it when the
+  /// connection is behind (the window then catches up instead of
+  /// showing the past).
+  ScreenWrite write({required List<int> bytes}) => RustLib.instance.api
+      .crateApiScreenScreenStreamWrite(that: this, bytes: bytes);
+}
+
+@sealed
+class ShareLinkImpl extends RustOpaque implements ShareLink {
+  // Not to be used by end users
+  ShareLinkImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  ShareLinkImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_ShareLink,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ShareLink,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_ShareLinkPtr,
+  );
+
+  /// Listen once.
+  Stream<ShareEvent> events() =>
+      RustLib.instance.api.crateApiShareShareLinkEvents(that: this);
+
+  void stop() => RustLib.instance.api.crateApiShareShareLinkStop(that: this);
+}
+
+@sealed
+class SoundStreamImpl extends RustOpaque implements SoundStream {
+  // Not to be used by end users
+  SoundStreamImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  SoundStreamImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_SoundStream,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SoundStream,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SoundStreamPtr,
+  );
+
+  void close() =>
+      RustLib.instance.api.crateApiScreenSoundStreamClose(that: this);
+
+  /// Hears once why the stream ended (empty when it was closed from
+  /// here). Listen once.
+  Stream<String> ended() =>
+      RustLib.instance.api.crateApiScreenSoundStreamEnded(that: this);
+
+  ScreenStatus status() =>
+      RustLib.instance.api.crateApiScreenSoundStreamStatus(that: this);
+
+  /// Sends the next frame. When the connection is behind, the frame is
+  /// left out instead: sound that arrives a second late is of no use,
+  /// and each frame stands by itself.
+  ScreenWrite write({required List<int> bytes}) => RustLib.instance.api
+      .crateApiScreenSoundStreamWrite(that: this, bytes: bytes);
+}
+
+@sealed
+class SpeakerStreamImpl extends RustOpaque implements SpeakerStream {
+  // Not to be used by end users
+  SpeakerStreamImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  SpeakerStreamImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_SpeakerStream,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SpeakerStream,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_SpeakerStreamPtr,
+  );
+
+  void close() =>
+      RustLib.instance.api.crateApiSpeakerSpeakerStreamClose(that: this);
+
+  /// Hears once why the stream ended (empty when it was closed from
+  /// here). Listen once.
+  Stream<String> ended() =>
+      RustLib.instance.api.crateApiSpeakerSpeakerStreamEnded(that: this);
+
+  /// The frames. Listen once.
+  Stream<Uint8List> sound() =>
+      RustLib.instance.api.crateApiSpeakerSpeakerStreamSound(that: this);
+}
+
+@sealed
 class SshSessionImpl extends RustOpaque implements SshSession {
   // Not to be used by end users
   SshSessionImpl.frbInternalDcoDecode(List<dynamic> wire)
@@ -6649,9 +15643,30 @@ class SshSessionImpl extends RustOpaque implements SshSession {
         RustLib.instance.api.rust_arc_decrement_strong_count_SshSessionPtr,
   );
 
+  /// The agents running on the computer now. Empty without herdr.
+  Future<List<Agent>> agents() =>
+      RustLib.instance.api.crateApiSshSshSessionAgents(that: this);
+
   /// True when the server answers within `timeout_secs`.
   Future<bool> checkAlive({required int timeoutSecs}) => RustLib.instance.api
       .crateApiSshSshSessionCheckAlive(that: this, timeoutSecs: timeoutSecs);
+
+  /// Every key binding with a description, in Omarchy's order.
+  Future<List<DeskBinding>> deskBindings() =>
+      RustLib.instance.api.crateApiSshSshSessionDeskBindings(that: this);
+
+  /// Asks the desktop to do something. The answer is the state after it.
+  Future<DeskState> deskDo({required DeskAction action}) => RustLib.instance.api
+      .crateApiSshSshSessionDeskDo(that: this, action: action);
+
+  /// The desktop's state now.
+  Future<DeskState> deskState() =>
+      RustLib.instance.api.crateApiSshSshSessionDeskState(that: this);
+
+  /// The state now, and again whenever it changes, until
+  /// [`DeskWatch::stop`].
+  Future<DeskWatch> deskWatch() =>
+      RustLib.instance.api.crateApiSshSshSessionDeskWatch(that: this);
 
   /// Closes the connection (and everything running on it).
   Future<void> disconnect() =>
@@ -6666,15 +15681,230 @@ class SshSessionImpl extends RustOpaque implements SshSession {
         maxBytes: maxBytes,
       );
 
+  /// Takes one of the choices an agent offers, if it still asks the
+  /// question the choice was shown for (`mark`). Otherwise nothing is
+  /// sent, and the error says why in words for the owner.
+  Future<void> herdAnswerChoice({
+    required String session,
+    required String pane,
+    required String mark,
+    required String choice,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdAnswerChoice(
+    that: this,
+    session: session,
+    pane: pane,
+    mark: mark,
+    choice: choice,
+  );
+
+  /// Gives an agent that finished, or asks in its own words, this text
+  /// and Enter: only if it is not working again and no choice has come
+  /// up on its screen (`mark` is empty when none was shown).
+  Future<void> herdAnswerText({
+    required String session,
+    required String pane,
+    required String mark,
+    required String text,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdAnswerText(
+    that: this,
+    session: session,
+    pane: pane,
+    mark: mark,
+    text: text,
+  );
+
+  /// Closes a pane, and whatever runs in it.
+  Future<void> herdClosePane({required String session, required String pane}) =>
+      RustLib.instance.api.crateApiSshSshSessionHerdClosePane(
+        that: this,
+        session: session,
+        pane: pane,
+      );
+
+  /// Closes a tab with all its panes.
+  Future<void> herdCloseTab({required String session, required String tab}) =>
+      RustLib.instance.api.crateApiSshSshSessionHerdCloseTab(
+        that: this,
+        session: session,
+        tab: tab,
+      );
+
+  /// A new workspace in a folder, with an agent of this kind asked to
+  /// carry on its latest conversation there.
+  Future<HerdMade> herdContinue({
+    required String session,
+    required String folder,
+    required String kind,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdContinue(
+    that: this,
+    session: session,
+    folder: folder,
+    kind: kind,
+  );
+
+  /// The folders inside a folder of the computer, by name.
+  Future<List<HerdPlace>> herdFolders({required String inside}) => RustLib
+      .instance
+      .api
+      .crateApiSshSshSessionHerdFolders(that: this, inside: inside);
+
+  /// Presses keys in a pane, by herdr's names for them: "esc", "enter",
+  /// "ctrl+c", "up", "2".
+  Future<void> herdKeys({
+    required String session,
+    required String pane,
+    required List<String> keys,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdKeys(
+    that: this,
+    session: session,
+    pane: pane,
+    keys: keys,
+  );
+
+  /// The kinds of agent that can be started on the computer, those that
+  /// are installed first; the others install themselves when first
+  /// started.
+  Future<List<HerdKind>> herdKinds() =>
+      RustLib.instance.api.crateApiSshSshSessionHerdKinds(that: this);
+
+  /// A new tab in a workspace, with a terminal in it. With an empty
+  /// label herdr names it.
+  Future<HerdMade> herdNewTab({
+    required String session,
+    required String workspace,
+    required String label,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdNewTab(
+    that: this,
+    session: session,
+    workspace: workspace,
+    label: label,
+  );
+
+  /// A new workspace in a folder of the computer, with a tab and a
+  /// terminal in it.
+  Future<HerdMade> herdNewWorkspace({
+    required String session,
+    required String folder,
+    required String label,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdNewWorkspace(
+    that: this,
+    session: session,
+    folder: folder,
+    label: label,
+  );
+
+  /// The agents that run outside any terminal the computer keeps.
+  Future<List<HerdOutside>> herdOutside() =>
+      RustLib.instance.api.crateApiSshSshSessionHerdOutside(that: this);
+
+  /// Folders worth offering for a new workspace: those the user goes
+  /// to, those herdr's panes are in, and projects in the home folder.
+  Future<List<HerdPlace>> herdPlaces() =>
+      RustLib.instance.api.crateApiSshSshSessionHerdPlaces(that: this);
+
+  /// Gives a pane's agent this text and Enter, as one piece. In a plain
+  /// terminal it is typed, then Enter.
+  Future<void> herdPrompt({
+    required String session,
+    required String pane,
+    required String text,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdPrompt(
+    that: this,
+    session: session,
+    pane: pane,
+    text: text,
+  );
+
+  /// A pane's recent output, as text, at most `lines` lines of it; and
+  /// what its agent asks, when it waits on a choice.
+  Future<HerdText> herdRead({
+    required String session,
+    required String pane,
+    required int lines,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdRead(
+    that: this,
+    session: session,
+    pane: pane,
+    lines: lines,
+  );
+
+  /// Gives a workspace another name.
+  Future<void> herdRename({
+    required String session,
+    required String workspace,
+    required String label,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdRename(
+    that: this,
+    session: session,
+    workspace: workspace,
+    label: label,
+  );
+
+  /// Starts an agent of this kind in a pane that sits at its prompt.
+  /// Returns once the agent is ready there, or says why it is not.
+  Future<void> herdStartAgent({
+    required String session,
+    required String pane,
+    required String kind,
+  }) => RustLib.instance.api.crateApiSshSshSessionHerdStartAgent(
+    that: this,
+    session: session,
+    pane: pane,
+    kind: kind,
+  );
+
+  /// The herd now.
+  Future<HerdState> herdState() =>
+      RustLib.instance.api.crateApiSshSshSessionHerdState(that: this);
+
+  /// The herd now, and again whenever something in it changes, until
+  /// [`HerdWatch::stop`]. The computer is told by herdr itself, so a
+  /// change is here as fast as the connection carries it.
+  Future<HerdWatch> herdWatch() =>
+      RustLib.instance.api.crateApiSshSshSessionHerdWatch(that: this);
+
   SessionInfo info() =>
       RustLib.instance.api.crateApiSshSshSessionInfo(that: this);
 
   bool isConnected() =>
       RustLib.instance.api.crateApiSshSshSessionIsConnected(that: this);
 
+  /// Makes the phone's camera a webcam of the computer. It is there
+  /// (once the first picture has arrived) for as long as the stream is
+  /// open. `turn`: degrees the picture is turned clockwise to stand
+  /// upright.
+  Future<ScreenStream> openCamera({required String phone, required int turn}) =>
+      RustLib.instance.api.crateApiSshSshSessionOpenCamera(
+        that: this,
+        phone: phone,
+        turn: turn,
+      );
+
+  /// Starts a remote desktop (gliff) on this connection. The video is
+  /// drawn into `options.texture_id`; listen to [`RemoteDesktop::events`]
+  /// for everything else.
+  Future<RemoteDesktop> openDesktop({required DesktopOptions options}) =>
+      RustLib.instance.api.crateApiSshSshSessionOpenDesktop(
+        that: this,
+        options: options,
+      );
+
   /// Opens a file browser on this connection.
   Future<RemoteFiles> openFiles() =>
       RustLib.instance.api.crateApiSshSshSessionOpenFiles(that: this);
+
+  /// Makes the phone's microphone a microphone of the computer, for as
+  /// long as the stream is open.
+  Future<SoundStream> openMic({required String phone}) => RustLib.instance.api
+      .crateApiSshSshSessionOpenMic(that: this, phone: phone);
+
+  /// Opens the window on the computer. It is there when this returns.
+  /// `phone` (the name this phone paired under, or empty) goes in its
+  /// title.
+  Future<ScreenStream> openScreen({required String phone}) => RustLib
+      .instance
+      .api
+      .crateApiSshSshSessionOpenScreen(that: this, phone: phone);
 
   /// Opens an interactive shell. Listen to [`RemoteShell::events`] for
   /// screen updates; events from before that are kept and delivered.
@@ -6682,6 +15912,60 @@ class SshSessionImpl extends RustOpaque implements SshSession {
       .instance
       .api
       .crateApiSshSshSessionOpenShell(that: this, options: options);
+
+  /// Gives the computer one more sound output, named after the phone
+  /// (`phone`, or empty), whose sound comes here. With `everything` it
+  /// becomes the computer's default output while this is open, so all
+  /// of its sound is heard on the phone.
+  Future<SpeakerStream> openSpeaker({
+    required String phone,
+    required bool everything,
+  }) => RustLib.instance.api.crateApiSshSshSessionOpenSpeaker(
+    that: this,
+    phone: phone,
+    everything: everything,
+  );
+
+  /// Starts a touchpad and keyboard on the computer. It is ready when
+  /// this returns.
+  Future<RemoteTouchpad> openTouchpad() =>
+      RustLib.instance.api.crateApiSshSshSessionOpenTouchpad(that: this);
+
+  /// A call on the phone began or ended: the computer pauses what is
+  /// playing, and carries on with it afterwards.
+  Future<void> phoneCall({required String phone, required bool active}) =>
+      RustLib.instance.api.crateApiSshSshSessionPhoneCall(
+        that: this,
+        phone: phone,
+        active: active,
+      );
+
+  /// Shows one of the phone's notifications on the computer's screen.
+  Future<void> phoneNotice({
+    required String phone,
+    required String app,
+    required String title,
+    required String text,
+  }) => RustLib.instance.api.crateApiSshSshSessionPhoneNotice(
+    that: this,
+    phone: phone,
+    app: app,
+    title: title,
+    text: text,
+  );
+
+  /// Tells the computer the phone's battery level (0 to 100) and whether
+  /// it is charging. `phone` is the name it paired under.
+  Future<void> phoneStatus({
+    required String phone,
+    required int battery,
+    required bool charging,
+  }) => RustLib.instance.api.crateApiSshSshSessionPhoneStatus(
+    that: this,
+    phone: phone,
+    battery: battery,
+    charging: charging,
+  );
 
   /// Joins a shell whose connection dropped to this (new) connection.
   /// Its screen and history stay; the new shell carries on below them.
@@ -6694,9 +15978,81 @@ class SshSessionImpl extends RustOpaque implements SshSession {
     options: options,
   );
 
+  /// Answers an approval the computer asked for: `answer` is what
+  /// [`approval_sign`] made, or "no".
+  Future<void> shareApproved({required String id, required String answer}) =>
+      RustLib.instance.api.crateApiSshSshSessionShareApproved(
+        that: this,
+        id: id,
+        answer: answer,
+      );
+
+  /// Puts text on the computer's clipboard.
+  Future<void> shareCopy({required String text}) => RustLib.instance.api
+      .crateApiSshSshSessionShareCopy(that: this, text: text);
+
+  /// Puts a picture (`kind`: `png`, `jpeg`, `webp` or `gif`) on the
+  /// computer's clipboard.
+  Future<void> shareCopyPicture({
+    required String kind,
+    required List<int> picture,
+  }) => RustLib.instance.api.crateApiSshSshSessionShareCopyPicture(
+    that: this,
+    kind: kind,
+    picture: picture,
+  );
+
+  /// The phone has a waiting file now: the computer forgets it.
+  Future<void> shareDone({required String id}) =>
+      RustLib.instance.api.crateApiSshSshSessionShareDone(that: this, id: id);
+
+  /// The folder on the computer that files from the phone go to.
+  Future<String> shareInbox() =>
+      RustLib.instance.api.crateApiSshSshSessionShareInbox(that: this);
+
+  /// Hears what the computer has for this phone: files waiting (also
+  /// ones sent while the phone was away) and clipboard changes. `phone`
+  /// is the name this phone paired under; empty when it is the only one.
+  Future<ShareLink> shareLink({required String phone}) => RustLib.instance.api
+      .crateApiSshSshSessionShareLink(that: this, phone: phone);
+
+  /// Opens a web link in the computer's browser.
+  Future<void> shareOpen({required String url}) =>
+      RustLib.instance.api.crateApiSshSshSessionShareOpen(that: this, url: url);
+
+  /// The text on the computer's clipboard, if it holds text.
+  Future<String?> sharePaste() =>
+      RustLib.instance.api.crateApiSshSshSessionSharePaste(that: this);
+
+  /// The picture on the computer's clipboard, if it holds one.
+  Future<ClipPictureData?> sharePastePicture() =>
+      RustLib.instance.api.crateApiSshSshSessionSharePastePicture(that: this);
+
+  /// Has the computer read the text in a picture (a JPEG or PNG) and
+  /// put it on its clipboard.
+  Future<TextFound> shareReadText({required List<int> picture}) => RustLib
+      .instance
+      .api
+      .crateApiSshSshSessionShareReadText(that: this, picture: picture);
+
+  /// Tells the computer which files arrived, so it can say so on screen.
+  Future<void> shareReceived({
+    required String phone,
+    required List<String> names,
+  }) => RustLib.instance.api.crateApiSshSshSessionShareReceived(
+    that: this,
+    phone: phone,
+    names: names,
+  );
+
   /// Starts a port forward on this connection.
   Future<ActiveTunnel> startTunnel({required TunnelSpec spec}) => RustLib
       .instance
       .api
       .crateApiSshSshSessionStartTunnel(that: this, spec: spec);
+
+  /// Starts a long-running command whose output lines stream back (a
+  /// watcher on the server). Stop it with [`RemoteWatch::stop`].
+  Future<RemoteWatch> watch({required String command}) => RustLib.instance.api
+      .crateApiSshSshSessionWatch(that: this, command: command);
 }
