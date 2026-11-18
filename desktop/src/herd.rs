@@ -503,7 +503,9 @@ pub fn run(args: &[&str]) -> Result<()> {
         ["pane", session, pane, rest @ ..] => {
             ours(session)?;
             // One terminal in this one: Ctrl+\ leaves it running.
-            if let Some(code) = sessions::attach(&sessions::socket_path(), pane, true, rest.contains(&"--watch"))? {
+            // Drawn for this terminal's size without changing the kept
+            // terminal's own: its window on the computer stays as it is.
+            if let Some(code) = sessions::attach_view(&sessions::socket_path(), pane, rest.contains(&"--watch"))? {
                 std::process::exit(code);
             }
         }

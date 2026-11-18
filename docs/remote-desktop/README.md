@@ -226,7 +226,7 @@ A tap on an agent opens it without a terminal:
 - what it last wrote, read again whenever its state changes (and every two seconds while it works);
 - the keys its questions take: Esc, 1, 2, 3, the arrows, Tab, Enter;
 - a line to answer it or ask for more, sent as one piece with Enter;
-- **Open its terminal**: that agent's pane alone in Multiplex's terminal, at the phone's own columns and rows. A terminal has the size of whoever typed in it last: back at the computer, the first key in its window gives it the window's size again.
+- **Open its terminal**: that agent's pane alone in Multiplex's terminal, drawn for the phone's own columns and rows without changing the terminal: its lines are wrapped at the phone's width, and its window on the computer stays exactly as it is. What you type on the phone goes into it as usual.
 
 Home itself says who wants you: under **Agents**, the agents that wait for an answer and then those that finished, from every computer the phone is connected to, each one tap from the agent itself. It is kept current while the app is in front; with the app out of sight the notification does that job.
 

@@ -1100,6 +1100,180 @@ pub fn attach(socket: &Path, id: &str, leave: bool, watch: bool) -> Result<Optio
     Ok(ended)
 }
 
+/// A terminal's screen drawn for a viewer of another size, without
+/// touching the terminal: each of its lines wrapped at the viewer's
+/// width, and as many of the last of them as the viewer has rows, the
+/// cursor's line always among them. What a phone is shown of a terminal
+/// that a window on the computer has at its own size: the window stays
+/// as it is, and nothing the program drew for 270 columns is left
+/// half-redrawn for 44.
+pub fn frame(screen: &vt100::Screen, cols: u16, rows: u16) -> Vec<u8> {
+    let (cols, rows) = (cols.max(2), usize::from(rows.max(1)));
+    let width = screen.size().1.get();
+    let pieces = width.div_ceil(cols);
+    let text: Vec<String> = screen.rows(0, width).collect();
+    // Each line cut into pieces of the viewer's width, colours and all.
+    let cut: Vec<Vec<String>> = (0..pieces).map(|piece| screen.rows_formatted(piece * cols, cols).collect()).collect();
+    let (cursor_row, cursor_col) = screen.cursor_position();
+    let mut lines: Vec<&str> = Vec::new();
+    let (mut cursor_line, mut last_used) = (0, 0);
+    for (row, line) in text.iter().enumerate() {
+        let long = line.trim_end().chars().count() as u16;
+        let mut takes = long.div_ceil(cols).max(1);
+        if row == usize::from(cursor_row) {
+            cursor_line = lines.len() + usize::from(cursor_col / cols);
+            takes = takes.max(cursor_col / cols + 1);
+            last_used = last_used.max(cursor_line);
+        }
+        for piece in 0..takes.min(pieces) {
+            if long > 0 {
+                last_used = lines.len();
+            }
+            lines.push(cut[usize::from(piece)].get(row).map_or("", String::as_str));
+        }
+    }
+    // The last of them that fit, the cursor's line among them.
+    let end = (last_used.max(cursor_line) + 1).min(lines.len());
+    let start = end.saturating_sub(rows).min(cursor_line);
+    let shown = &lines[start..(start + rows).min(end)];
+    let mut out = String::from("\x1b[?25l");
+    // The keys the program wants (arrows in its own mode, pastes marked).
+    out.push_str(if screen.application_cursor() { "\x1b[?1h" } else { "\x1b[?1l" });
+    out.push_str(if screen.bracketed_paste() { "\x1b[?2004h" } else { "\x1b[?2004l" });
+    for (at, line) in shown.iter().enumerate() {
+        out.push_str(&format!("\x1b[{};1H\x1b[0m\x1b[2K{line}", at + 1));
+    }
+    // Nothing of an earlier, longer picture stays below.
+    out.push_str("\x1b[0m");
+    if shown.len() < rows {
+        out.push_str(&format!("\x1b[{};1H\x1b[J", shown.len() + 1));
+    }
+    out.push_str(&format!("\x1b[{};{}H", cursor_line.saturating_sub(start) + 1, cursor_col % cols + 1));
+    if !screen.hide_cursor() {
+        out.push_str("\x1b[?25h");
+    }
+    out.into_bytes()
+}
+
+/// Sits in front of a terminal without giving it this terminal's size:
+/// the terminal stays as its own window has it, and this one is drawn
+/// [`frame`]s of it, again whenever it changes. How a phone looks at a
+/// terminal that is also open on the computer. With `watch`, nothing
+/// typed is sent; Ctrl+\ leaves.
+pub fn attach_view(socket: &Path, id: &str, watch: bool) -> Result<Option<i32>> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let _raw = crate::pane::Raw::on();
+    let leaving = Arc::new(AtomicBool::new(false));
+    let typed: Arc<Mutex<Option<UnixStream>>> = Arc::new(Mutex::new(None));
+    // What is typed here goes to whichever connection is the current one.
+    {
+        let (leaving, typed) = (leaving.clone(), typed.clone());
+        std::thread::spawn(move || {
+            let mut stdin = std::io::stdin().lock();
+            let mut buffer = [0u8; 4096];
+            loop {
+                let read = match stdin.read(&mut buffer) {
+                    Ok(0) | Err(_) => break,
+                    Ok(read) => read,
+                };
+                if buffer[..read].contains(&LEAVE) {
+                    break;
+                }
+                if !watch {
+                    // What is typed before the terminal is reached waits
+                    // for it a moment, and is not dropped.
+                    let asked = Instant::now();
+                    loop {
+                        if let Some(up) = typed.lock().unwrap().as_mut() {
+                            let _ = write_frame(up, b'I', &buffer[..read]);
+                            break;
+                        }
+                        if asked.elapsed() > Duration::from_secs(3) {
+                            break;
+                        }
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                }
+            }
+            leaving.store(true, Ordering::SeqCst);
+            if let Some(up) = typed.lock().unwrap().as_ref() {
+                let _ = up.shutdown(std::net::Shutdown::Both);
+            }
+        });
+    }
+    let mut out = std::io::stdout().lock();
+    let restore = |out: &mut std::io::StdoutLock| {
+        let _ = out.write_all(b"\x1b[?1l\x1b[?2004l\x1b[?25h\x1b[0m\x1b[2J\x1b[H");
+        let _ = out.flush();
+    };
+    let size_of = |id: &str| ask(socket, &Request::List).ok().and_then(|(answer, _)| answer.terminals.into_iter().find(|told| told.id == id)).map(|told| (told.cols, told.rows));
+    loop {
+        // The terminal's own size: asked for it, attaching changes nothing.
+        let Some((cols, rows)) = size_of(id) else {
+            restore(&mut out);
+            bail!("There is no terminal {id}.");
+        };
+        let (_, stream) = ask(socket, &Request::Attach { id: id.to_owned(), cols, rows })?;
+        *typed.lock().unwrap() = Some(stream.try_clone()?);
+        let screen = Arc::new(Mutex::new(vt100::Parser::new(nz(rows), nz(cols), 0)));
+        let fresh = Arc::new(AtomicBool::new(true));
+        let ended: Arc<Mutex<Option<Option<i32>>>> = Arc::new(Mutex::new(None));
+        {
+            let (screen, fresh, ended, mut stream) = (screen.clone(), fresh.clone(), ended.clone(), stream.try_clone()?);
+            std::thread::spawn(move || loop {
+                match read_frame(&mut stream) {
+                    Ok((b'O', bytes)) => {
+                        screen.lock().unwrap().process(&bytes);
+                        fresh.store(true, Ordering::SeqCst);
+                    }
+                    Ok((b'X', bytes)) => {
+                        *ended.lock().unwrap() = Some(String::from_utf8_lossy(&bytes).parse().ok());
+                        return;
+                    }
+                    Ok(_) => {}
+                    Err(_) => {
+                        ended.lock().unwrap().get_or_insert(None);
+                        return;
+                    }
+                }
+            });
+        }
+        let mut mine = (0, 0);
+        let mut looked = Instant::now();
+        let again = loop {
+            if leaving.load(Ordering::SeqCst) {
+                restore(&mut out);
+                return Ok(None);
+            }
+            if let Some(how) = *ended.lock().unwrap() {
+                // Its program ended, or the server went: this view is over.
+                restore(&mut out);
+                return Ok(how);
+            }
+            let now = crate::pane::terminal_size().unwrap_or((80, 24));
+            if fresh.swap(false, Ordering::SeqCst) || now != mine {
+                mine = now;
+                out.write_all(&frame(screen.lock().unwrap().screen(), now.0, now.1))?;
+                out.flush()?;
+            }
+            // Its window was resized on the computer: looked at afresh.
+            if looked.elapsed() > Duration::from_secs(1) {
+                looked = Instant::now();
+                if size_of(id).is_some_and(|size| size != (cols, rows)) {
+                    break true;
+                }
+            }
+            std::thread::sleep(Duration::from_millis(30));
+        };
+        let _ = stream.shutdown(std::net::Shutdown::Both);
+        if !again {
+            break;
+        }
+    }
+    restore(&mut out);
+    Ok(None)
+}
+
 pub fn run(args: &[&str]) -> Result<()> {
     let socket = socket_path();
     match args {
@@ -1743,5 +1917,27 @@ mod tests {
         let told = told_plainly(&state, &[("w1:p1".to_owned(), 2)].into(), "/home/sam");
         assert!(told.starts_with("the api\n  w1:p1    claude needs you, in ~/code/api (2 viewers)\n  w1:p2    a terminal, in /home/samuel (nobody in front of it)\n"), "{told}");
         assert!(told_plainly(&Session::default(), &HashMap::new(), "/home/sam").starts_with("Nothing is kept."));
+    }
+
+    #[test]
+    fn a_wide_screen_is_wrapped_for_a_narrow_viewer_and_the_cursor_stays_in_sight() {
+        let mut wide = vt100::Parser::new(nz(6), nz(40), 0);
+        wide.process(b"first line that is longer than twenty columns\r\n\x1b[31mred\x1b[0m\r\n$ typed here");
+        let seen = |cols: u16, rows: u16| {
+            let mut narrow = vt100::Parser::new(nz(rows), nz(cols), 0);
+            narrow.process(&frame(wide.screen(), cols, rows));
+            (narrow.screen().contents(), narrow.screen().cursor_position(), narrow.screen().cell(3, 0).map(|cell| cell.fgcolor()))
+        };
+        let (text, cursor, red) = seen(20, 10);
+        assert_eq!(text, "first line that is l\nonger than twenty co\nlumns\nred\n$ typed here");
+        assert_eq!(cursor, (4, 12), "the cursor is where typing goes on");
+        assert_eq!(red, Some(vt100::Color::Idx(1)), "colours come along");
+        // Fewer rows than lines: the last of them, the cursor's among them.
+        let (text, cursor, _) = seen(20, 2);
+        assert_eq!((text.as_str(), cursor), ("red\n$ typed here", (1, 12)));
+        // A viewer as wide as the terminal sees it as it is.
+        let mut same = vt100::Parser::new(nz(6), nz(40), 0);
+        same.process(&frame(wide.screen(), 40, 6));
+        assert_eq!(same.screen().rows(0, 40).collect::<Vec<_>>(), wide.screen().rows(0, 40).collect::<Vec<_>>());
     }
 }
