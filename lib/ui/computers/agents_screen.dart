@@ -143,8 +143,9 @@ class AgentsScreen extends StatefulWidget {
         for (final entry in jobs.entries)
           if (entry.value.state == TransferState.done) entry.key,
       ];
-      if (arrived.length < jobs.length && context.mounted)
+      if (arrived.length < jobs.length && context.mounted) {
         Toast.show(context, arrived.isEmpty ? 'The pictures did not reach the computer.' : 'Not every picture reached the computer.');
+      }
       return arrived;
     } catch (error) {
       if (context.mounted) Toast.show(context, errorSentence(error, fallback: 'The pictures did not reach the computer.'));
@@ -158,7 +159,7 @@ class AgentsScreen extends StatefulWidget {
   static String pictureName(String name, int stamp, int n) {
     final dot = name.lastIndexOf('.');
     final ending = dot > 0 ? name.substring(dot).toLowerCase().replaceAll(RegExp(r'[^a-z0-9.]'), '') : '';
-    final words = (dot > 0 ? name.substring(0, dot) : name).replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
+    final words = (dot > 0 ? name.substring(0, dot) : name).replaceAll(RegExp(r'[^A-Za-z0-9_]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
     final short = words.length > 40 ? words.substring(0, 40) : words;
     return 'from-phone-$stamp-${n + 1}${short.isEmpty ? '' : '-$short'}${ending.length > 1 && ending.length <= 6 ? ending : '.png'}';
   }
