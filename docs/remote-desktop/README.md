@@ -185,7 +185,7 @@ On a computer's page, **Scan text** opens the phone's page scanner (Google's: it
 
 If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile. It is an inbox: every agent of every herdr session, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: herdr tells the computer of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
 
-Beside the inbox, **Everything** shows all that herdr holds, in herdr's own order: each session (one that is not running too, with **Start**), its workspaces, their tabs and every pane, plain terminals included. A pane with an agent opens the agent; a plain terminal opens as a terminal. The **+** on a workspace makes something new in it, in a tab of its own: a terminal, or an agent (herdr starts it and the phone lands in front of it). The agents that are installed come first; one that is not, on a computer that installs its tools the first time they are run (Omarchy does, through mise), says that its first start is a download. A long press on a pane closes it, asked about first.
+Beside the inbox, **Everything** shows all that herdr holds, in herdr's own order: each session (one that is not running too, with **Start**), its workspaces, their tabs and every pane, plain terminals included. A pane with an agent opens the agent; a plain terminal opens as a terminal. The **+** on a workspace makes something new in it, in a tab of its own: a terminal, or an agent (herdr starts it and the phone lands in front of it). The agents that are installed come first; one that is not, on a computer that installs its tools the first time they are run (Omarchy does, through mise), says that its first start is a download. A long press on a pane closes it, asked about first. **Open a folder**, at the end of each running session, opens a folder of the computer as a new workspace: the picker starts with the folders you go to (from zoxide, where it is installed), those herdr already has open and projects in your home folder, any folder can be looked into, and the home folder and the root come last, so every folder can be reached. Then it asks what to have there: the terminal it came with, or an agent.
 
 A tap on an agent opens it without a terminal:
 
@@ -211,6 +211,8 @@ multiplex herd do new-workspace <session> <folder as base64> [<name as base64>]
 multiplex herd do start <session> <pane> claude              # start an agent of a kind in a pane at its prompt
 multiplex herd do close-pane <session> <pane>                # and close-tab <session> <tab>
 multiplex herd kinds                                         # the agents that can be started here
+multiplex herd places                                        # folders worth offering for a new workspace
+multiplex herd folders <folder as base64>                    # the folders inside one
 multiplex herd pane <session> <pane>                         # that pane in this terminal, at this terminal's size
 ```
 
@@ -218,7 +220,7 @@ multiplex herd pane <session> <pane>                         # that pane in this
 
 Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly herdr's shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-More of the way [Herdr](https://herdr.dev) works is on its way: a new workspace from a folder picked on the phone, all computers in one inbox, and resuming agents and earlier conversations after a restart.
+More of the way [Herdr](https://herdr.dev) works is on its way: all computers in one inbox on Home, answering from the notification, and resuming agents and earlier conversations after a restart.
 
 ## A yes from the phone
 

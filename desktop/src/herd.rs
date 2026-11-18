@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use multiplex_proto::agents::{clean_session_name, AgentStatus};
-use multiplex_proto::herd::{clean_kind, Herd, HerdAction, Kind, Made, Pane, PaneAgent, PaneText, Session, Tab, Workspace};
+use multiplex_proto::herd::{clean_folder, clean_kind, Herd, HerdAction, Kind, Made, Pane, PaneAgent, PaneText, Place, Session, Tab, Workspace};
 use serde_json::{json, Value};
 
 /// One of herdr's running sessions: its name and where its socket is.
@@ -433,6 +433,110 @@ fn kinds() -> Vec<Kind> {
     asked.into_iter().filter_map(|thread| thread.join().ok()).collect()
 }
 
+/// A path as people write it: `~` for the home folder.
+pub fn shown(path: &str, home: &str) -> String {
+    let home = home.trim_end_matches('/');
+    match path.strip_prefix(home) {
+        Some("") if !home.is_empty() => "~".to_owned(),
+        Some(rest) if !home.is_empty() && rest.starts_with('/') => format!("~{rest}"),
+        _ => path.to_owned(),
+    }
+}
+
+/// The folders to offer for a new workspace, best first: those the user
+/// goes to, then those herdr's panes are in, then projects. Each once,
+/// and never the home folder or the root themselves.
+pub fn offered(visited: Vec<String>, open: Vec<String>, projects: Vec<String>, home: &str) -> Vec<Place> {
+    let mut seen = BTreeSet::new();
+    visited
+        .into_iter()
+        .chain(open)
+        .chain(projects)
+        .map(|path| if path.len() > 1 { path.trim_end_matches('/').to_owned() } else { path })
+        .filter(|path| clean_folder(path).is_ok() && path != "/" && path != home.trim_end_matches('/'))
+        .filter(|path| seen.insert(path.clone()))
+        .take(60)
+        .map(|path| Place { shown: shown(&path, home), project: false, path })
+        .collect()
+}
+
+/// The folders inside a folder, by name, each marked when it holds a
+/// project. Hidden ones are left out.
+pub fn folders_in(dir: &Path, home: &str) -> Vec<Place> {
+    let mut inside: Vec<PathBuf> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir() && path.file_name().is_some_and(|name| !name.to_string_lossy().starts_with('.')))
+        .collect();
+    inside.sort_by_key(|path| path.file_name().map(|name| name.to_string_lossy().to_lowercase()));
+    inside
+        .into_iter()
+        .filter_map(|path| {
+            let text = path.to_str()?.to_owned();
+            clean_folder(&text).ok()?;
+            Some(Place { shown: shown(&text, home), project: path.join(".git").exists(), path: text })
+        })
+        .take(400)
+        .collect()
+}
+
+/// Projects in the home folder: folders with a `.git` in them, the home
+/// folder's own and those one level further in (`~/api`, `~/code/api`).
+/// Hidden folders are not looked into.
+pub fn projects_under(home: &Path) -> Vec<String> {
+    let folders = |dir: &Path| -> Vec<PathBuf> {
+        let mut list: Vec<PathBuf> = std::fs::read_dir(dir)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .map(|entry| entry.path())
+            .filter(|path| path.is_dir() && path.file_name().is_some_and(|name| !name.to_string_lossy().starts_with('.')))
+            .take(400)
+            .collect();
+        list.sort();
+        list
+    };
+    let mut found = Vec::new();
+    for child in folders(home) {
+        if child.join(".git").exists() {
+            found.push(child.to_string_lossy().into_owned());
+            continue;
+        }
+        found.extend(folders(&child).into_iter().filter(|inner| inner.join(".git").exists()).map(|inner| inner.to_string_lossy().into_owned()));
+    }
+    found
+}
+
+/// `multiplex herd places`.
+fn places() -> Vec<Place> {
+    let home = std::env::var("HOME").unwrap_or_default();
+    // Where the user goes, from zoxide when it is there, most used first.
+    let visited: Vec<String> = Command::new("zoxide").args(["query", "-l"]).output().map(|out| String::from_utf8_lossy(&out.stdout).lines().map(str::to_owned).collect()).unwrap_or_default();
+    let open: Vec<String> = state().sessions.iter().flat_map(|s| &s.workspaces).flat_map(|w| &w.tabs).flat_map(|t| &t.panes).map(|p| p.folder.clone()).filter(|folder| !folder.is_empty()).collect();
+    let projects = if home.is_empty() { Vec::new() } else { projects_under(Path::new(&home)) };
+    let mut places: Vec<Place> = offered(visited, open, projects, &home)
+        .into_iter()
+        .filter(|place| Path::new(&place.path).is_dir())
+        .map(|place| Place { project: Path::new(&place.path).join(".git").exists(), ..place })
+        .collect();
+    places.extend(starting_points(&home));
+    places
+}
+
+/// The two folders every other one can be walked to from, offered last:
+/// the home folder and the root.
+pub fn starting_points(home: &str) -> Vec<Place> {
+    let home = home.trim_end_matches('/');
+    let mut points = Vec::new();
+    if clean_folder(home).is_ok() {
+        points.push(Place { path: home.to_owned(), shown: "~".to_owned(), project: false });
+    }
+    points.push(Place { path: "/".to_owned(), shown: "/".to_owned(), project: false });
+    points
+}
+
 /// A name for an agent that herdr takes and no other agent has: its kind
 /// and a few letters of chance ("claude-3fa9").
 pub fn agent_name(kind: &str, chance: &str) -> String {
@@ -498,9 +602,17 @@ pub fn run(args: &[&str]) -> Result<()> {
         ["state"] => println!("{}", serde_json::to_string(&state())?),
         ["watch"] => watch()?,
         ["kinds"] => println!("{}", serde_json::to_string(&kinds())?),
+        ["places"] => println!("{}", serde_json::to_string(&places())?),
+        ["folders", word] => {
+            let inside = multiplex_proto::herd::folder_asked(word).map_err(|e| anyhow!("{e}"))?;
+            if !Path::new(&inside).is_dir() {
+                bail!("{inside} is not a folder on this computer");
+            }
+            println!("{}", serde_json::to_string(&folders_in(Path::new(&inside), &std::env::var("HOME").unwrap_or_default()))?);
+        }
         ["do", rest @ ..] => act(&HerdAction::parse(rest).map_err(|e| anyhow!("{e}"))?)?,
         ["pane", rest @ ..] => crate::pane::run(rest)?,
-        _ => bail!("usage: multiplex herd state | watch | kinds | do <action> | pane <session> <pane>"),
+        _ => bail!("usage: multiplex herd state | watch | kinds | places | do <action> | pane <session> <pane>"),
     }
     Ok(())
 }
@@ -605,6 +717,50 @@ mod tests {
         assert_eq!(name, "claude-39c0", "only what herdr takes in a name is kept");
         let longest = agent_name(&"k".repeat(24), "abcdef");
         assert!(longest.len() <= 32 && longest.starts_with('k'));
+    }
+
+    #[test]
+    fn folders_for_a_new_workspace_are_offered_best_first_and_once() {
+        assert_eq!(shown("/home/sam/code/api", "/home/sam"), "~/code/api");
+        assert_eq!(shown("/home/sam", "/home/sam/"), "~");
+        assert_eq!(shown("/home/samuel/x", "/home/sam"), "/home/samuel/x", "another user's folder is not this one's");
+        assert_eq!(shown("/srv/site", "/home/sam"), "/srv/site");
+        assert_eq!(shown("/srv/site", ""), "/srv/site");
+        let places = offered(
+            vec!["/home/sam/code/api".into(), "/home/sam".into(), "relative/path".into()],
+            vec!["/home/sam/code/api/".into(), "/srv/site".into(), "/".into()],
+            vec!["/home/sam/code/web".into(), "/srv/site".into()],
+            "/home/sam",
+        );
+        assert_eq!(places.iter().map(|p| p.shown.as_str()).collect::<Vec<_>>(), ["~/code/api", "/srv/site", "~/code/web"]);
+        assert_eq!(places[0].path, "/home/sam/code/api");
+        assert_eq!(offered((0..200).map(|i| format!("/x/{i}")).collect(), vec![], vec![], "/home/sam").len(), 60);
+        // Last come the two folders every other one can be walked to from.
+        assert_eq!(starting_points("/home/sam/").iter().map(|p| (p.path.as_str(), p.shown.as_str())).collect::<Vec<_>>(), [("/home/sam", "~"), ("/", "/")]);
+        assert_eq!(starting_points("").len(), 1, "without a home folder there is still the root");
+    }
+
+    #[test]
+    fn projects_are_folders_with_a_git_in_them_up_to_one_level_in() {
+        let home = tempfile::tempdir().unwrap();
+        let make = |path: &str| std::fs::create_dir_all(home.path().join(path)).unwrap();
+        make("api/.git");
+        make("code/web/.git");
+        make("code/notes");
+        make("code/deep/inner/.git");
+        make(".hidden/.git");
+        make("code/.cache/.git");
+        make("music");
+        let found = projects_under(home.path());
+        let names: Vec<String> = found.iter().map(|path| path.strip_prefix(&format!("{}/", home.path().display())).unwrap().to_owned()).collect();
+        assert_eq!(names, ["api", "code/web"]);
+        assert!(projects_under(&home.path().join("none")).is_empty());
+        // Looking inside one folder: its folders by name, projects marked, hidden ones left out.
+        std::fs::write(home.path().join("code/a file"), b"").unwrap();
+        make("code/Zeta");
+        let inside = folders_in(&home.path().join("code"), &home.path().to_string_lossy());
+        assert_eq!(inside.iter().map(|p| (p.shown.as_str(), p.project)).collect::<Vec<_>>(), [("~/code/deep", false), ("~/code/notes", false), ("~/code/web", true), ("~/code/Zeta", false)]);
+        assert!(folders_in(&home.path().join("none"), "").is_empty());
     }
 
     #[test]

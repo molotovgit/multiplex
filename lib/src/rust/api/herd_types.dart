@@ -9,7 +9,7 @@ import 'agents.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `status`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
 
 /// One agent with where it is.
 class HerdAgent {
@@ -163,6 +163,42 @@ class HerdPane {
           focused == other.focused &&
           agent == other.agent &&
           status == other.status;
+}
+
+/// A folder on the computer that a new workspace could be opened in.
+class HerdPlace {
+  /// Its full path.
+  final String path;
+
+  /// The path as people write it ("~/code/api").
+  final String shown;
+
+  /// Its own name, the last part of the path.
+  final String name;
+
+  /// It holds a project (a `.git` is in it).
+  final bool project;
+
+  const HerdPlace({
+    required this.path,
+    required this.shown,
+    required this.name,
+    required this.project,
+  });
+
+  @override
+  int get hashCode =>
+      path.hashCode ^ shown.hashCode ^ name.hashCode ^ project.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdPlace &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          shown == other.shown &&
+          name == other.name &&
+          project == other.project;
 }
 
 class HerdSession {

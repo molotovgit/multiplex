@@ -7,7 +7,7 @@ use std::sync::Arc;
 use flutter_rust_bridge::frb;
 use multiplex_proto::herd as proto;
 
-use super::herd_types::{HerdKind, HerdMade, HerdState};
+use super::herd_types::{HerdKind, HerdMade, HerdPlace, HerdState};
 use super::ssh::SshSession;
 use super::watch::RemoteWatch;
 use crate::engine::herd;
@@ -89,6 +89,21 @@ impl SshSession {
         let conn = self.conn.clone();
         let kinds = AsyncRuntime::run(async move { herd::kinds(&conn).await }).await??;
         Ok(kinds.into_iter().map(|kind| HerdKind { name: kind.kind, installed: kind.installed }).collect())
+    }
+
+    /// Folders worth offering for a new workspace: those the user goes
+    /// to, those herdr's panes are in, and projects in the home folder.
+    pub async fn herd_places(&self) -> anyhow::Result<Vec<HerdPlace>> {
+        let conn = self.conn.clone();
+        let places = AsyncRuntime::run(async move { herd::places(&conn).await }).await??;
+        Ok(places.into_iter().map(Into::into).collect())
+    }
+
+    /// The folders inside a folder of the computer, by name.
+    pub async fn herd_folders(&self, inside: String) -> anyhow::Result<Vec<HerdPlace>> {
+        let conn = self.conn.clone();
+        let places = AsyncRuntime::run(async move { herd::folders(&conn, &inside).await }).await??;
+        Ok(places.into_iter().map(Into::into).collect())
     }
 
     /// A pane's recent output, as text, at most `lines` lines of it.

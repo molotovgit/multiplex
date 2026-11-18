@@ -224,6 +224,32 @@ class _AgentsScreenState extends State<AgentsScreen> {
     await widget.onOpenTerminal(context, session, made.pane);
   }
 
+  /// A folder of the computer opened as a new workspace, and then what
+  /// to have in it: the terminal it comes with, or an agent started there.
+  Future<void> _openFolder(String session) async {
+    final place = await OpenFolderSheet.show(context, herd: _herd);
+    if (place == null || !mounted) return;
+    final made = await _herd.newWorkspace(session, place.path, label: place.name);
+    if (!mounted) return;
+    if (made == null) {
+      Toast.show(context, _herd.problem ?? 'The folder could not be opened.');
+      return;
+    }
+    final name = place.name.isEmpty ? place.shown : place.name;
+    final choice = await NewInWorkspaceSheet.show(context, herd: _herd, workspace: name, fresh: true);
+    // Left without choosing: the workspace is there, with its terminal.
+    if (choice == null || !mounted) return;
+    final kind = choice.kind;
+    if (kind != null) {
+      Toast.show(context, 'Starting ${agentKindName(kind)}…');
+      final started = await _herd.startAgent(session, made.pane, kind);
+      if (!mounted) return;
+      if (!started) Toast.show(context, _herd.problem ?? '${agentKindName(kind)} did not start.');
+    }
+    widget.onVisited?.call(session, made.pane, kind == null ? name : agentKindName(kind), kind ?? '');
+    await widget.onOpenTerminal(context, session, made.pane);
+  }
+
   /// Closes a pane, asked about first: what runs in it ends with it.
   Future<void> _close(String session, HerdPane pane) async {
     final what = pane.title.isNotEmpty ? pane.title : (pane.agent ?? 'this terminal');
@@ -332,6 +358,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                   onStart: (session) => widget.onOpenHerdr(context, session),
                   onNew: _new,
                   onClose: _close,
+                  onOpenFolder: _openFolder,
                 ),
               ],
             );
@@ -377,7 +404,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
 /// their workspaces, each workspace's tabs, each tab's panes. An agent's
 /// pane opens the agent; a plain terminal opens as a terminal.
 class _Everything extends StatelessWidget {
-  const _Everything({required this.state, required this.onPane, required this.onStart, required this.onNew, required this.onClose});
+  const _Everything({required this.state, required this.onPane, required this.onStart, required this.onNew, required this.onClose, required this.onOpenFolder});
 
   final HerdState state;
   final void Function(String session, String pane) onPane;
@@ -388,6 +415,9 @@ class _Everything extends StatelessWidget {
 
   /// Close a pane (asked about by the caller).
   final void Function(String session, HerdPane pane) onClose;
+
+  /// Open a folder of the computer as a new workspace of a session.
+  final void Function(String session) onOpenFolder;
 
   @override
   Widget build(BuildContext context) {
@@ -474,6 +504,18 @@ class _Everything extends StatelessWidget {
           }
         }
       }
+      // Each running session ends with the way to add to it.
+      if (session.running) {
+        rows.add(
+          ListTile(
+            key: ValueKey('open-folder/${session.name}'),
+            leading: Icon(Icons.create_new_folder_outlined, color: colors.accent),
+            title: const Text('Open a folder'),
+            subtitle: Text(named ? 'As a new workspace in ${session.name}' : 'As a new workspace'),
+            onTap: () => onOpenFolder(session.name),
+          ),
+        );
+      }
     }
     return ListView(children: rows);
   }
@@ -522,20 +564,24 @@ class NewChoice {
 /// Asks what to make in a workspace: a plain terminal, or one of the
 /// agents installed on the computer. Each opens in a new tab.
 class NewInWorkspaceSheet extends StatefulWidget {
-  const NewInWorkspaceSheet({super.key, required this.herd, required this.workspace});
+  const NewInWorkspaceSheet({super.key, required this.herd, required this.workspace, this.fresh = false});
 
   final HerdController herd;
 
   /// The workspace's name, for the heading.
   final String workspace;
 
-  static Future<NewChoice?> show(BuildContext context, {required HerdController herd, required String workspace}) {
+  /// The workspace was only just made: it has its terminal already, and
+  /// what is chosen goes into that one instead of a new tab.
+  final bool fresh;
+
+  static Future<NewChoice?> show(BuildContext context, {required HerdController herd, required String workspace, bool fresh = false}) {
     return showModalBottomSheet<NewChoice>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => NewInWorkspaceSheet(herd: herd, workspace: workspace),
+      builder: (_) => NewInWorkspaceSheet(herd: herd, workspace: workspace, fresh: fresh),
     );
   }
 
@@ -573,12 +619,15 @@ class _NewInWorkspaceSheetState extends State<NewInWorkspaceSheet> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text('New in ${widget.workspace}', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              widget.fresh ? '${widget.workspace} is open. What in it?' : 'New in ${widget.workspace}',
+              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
           ),
           ListTile(
             leading: const Icon(Icons.terminal),
             title: const Text('Terminal'),
-            subtitle: const Text('A new tab with a shell in it'),
+            subtitle: Text(widget.fresh ? 'The shell it came with' : 'A new tab with a shell in it'),
             onTap: () => Navigator.of(context).pop(const NewChoice()),
           ),
           if (!_asked)
@@ -600,11 +649,151 @@ class _NewInWorkspaceSheetState extends State<NewInWorkspaceSheet> {
                 title: Text(agentKindName(kind.name)),
                 // One that is not installed downloads itself when it is
                 // first started: said before, not found out after.
-                subtitle: Text(kind.installed ? 'Starts in a new tab' : 'Not installed yet: the first start downloads it'),
+                subtitle: Text(
+                  kind.installed ? (widget.fresh ? 'Starts in its terminal' : 'Starts in a new tab') : 'Not installed yet: the first start downloads it',
+                ),
                 onTap: () => Navigator.of(context).pop(NewChoice(kind.name)),
               ),
         ],
       ),
+    );
+  }
+}
+
+/// Picks a folder of the computer to open as a workspace. It starts with
+/// the folders worth offering (those the owner goes to, those open in
+/// herdr, projects in the home folder); any folder can be looked into,
+/// so every folder can be reached. A tap on a folder picks it.
+class OpenFolderSheet extends StatefulWidget {
+  const OpenFolderSheet({super.key, required this.herd});
+
+  final HerdController herd;
+
+  static Future<HerdPlace?> show(BuildContext context, {required HerdController herd}) {
+    return showModalBottomSheet<HerdPlace>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => FractionallySizedBox(heightFactor: 0.85, child: OpenFolderSheet(herd: herd)),
+    );
+  }
+
+  @override
+  State<OpenFolderSheet> createState() => _OpenFolderSheetState();
+}
+
+class _OpenFolderSheetState extends State<OpenFolderSheet> {
+  /// The folders looked into, outermost first; empty at the offers.
+  final List<HerdPlace> _inside = [];
+  List<HerdPlace>? _places;
+  bool _asking = true;
+  int _asked = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final mine = ++_asked;
+    setState(() => _asking = true);
+    final places = await widget.herd.places(inside: _inside.isEmpty ? null : _inside.last.path);
+    // An answer to an earlier question is not this folder's.
+    if (!mounted || mine != _asked) return;
+    setState(() {
+      _places = places;
+      _asking = false;
+    });
+  }
+
+  void _lookInto(HerdPlace place) {
+    _inside.add(place);
+    _load();
+  }
+
+  void _back() {
+    _inside.removeLast();
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final places = _places;
+    final here = _inside.isEmpty ? null : _inside.last;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 16, 4),
+          child: Row(
+            children: [
+              if (here == null) const SizedBox(width: 12) else IconButton(tooltip: 'Back', icon: const Icon(Icons.arrow_back), onPressed: _back),
+              Expanded(
+                // Inside a folder: its name, which is what matters, and
+                // under it the whole path, which may be too long to show
+                // (seen on the phone: only its beginning fitted).
+                child: here == null
+                    ? Text('Open a folder', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600))
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            here.name.isEmpty ? here.shown : here.name,
+                            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (here.name.isNotEmpty)
+                            Text(
+                              here.shown,
+                              style: textTheme.bodySmall?.copyWith(color: colors.muted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+              ),
+              if (here != null) FilledButton.tonal(onPressed: () => Navigator.of(context).pop(here), child: const Text('Open this one')),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _asking
+              ? const Center(child: BusyNote('Asking the computer…'))
+              : places == null
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: NoticeBox(tone: NoticeTone.error, text: widget.herd.problem ?? 'The computer did not answer.'),
+                )
+              : places.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(here == null ? 'No folder to offer yet.' : 'No folders in here.', style: textTheme.bodyMedium?.copyWith(color: colors.muted)),
+                  ),
+                )
+              : ListView(
+                  children: [
+                    for (final place in places)
+                      ListTile(
+                        key: ValueKey('folder/${place.path}'),
+                        leading: Icon(place.project ? Icons.source_outlined : Icons.folder_outlined, color: place.project ? colors.accent : null),
+                        title: Text(place.name.isEmpty ? place.shown : place.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        // Among the offers a folder says where it is; inside
+                        // a folder that is the heading's to say.
+                        subtitle: here == null ? Text(place.shown, maxLines: 1, overflow: TextOverflow.ellipsis) : null,
+                        trailing: IconButton(tooltip: 'Look inside ${place.name}', icon: const Icon(Icons.chevron_right), onPressed: () => _lookInto(place)),
+                        onTap: () => Navigator.of(context).pop(place),
+                      ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 }

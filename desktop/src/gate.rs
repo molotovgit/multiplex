@@ -225,7 +225,9 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             // Seeing what runs in the terminals, as `agents`; typing into
             // them and reading them is the terminal's own power.
             ["herd", "state" | "watch" | "kinds"] => need(access.desktop || access.terminal, "desktop"),
-            ["herd", "do" | "pane", ..] => need(access.terminal, "terminal"),
+            // The names of the user's folders, for opening one: the
+            // terminal's own power, like opening it.
+            ["herd", "do" | "pane", ..] | ["herd", "places"] | ["herd", "folders", _] => need(access.terminal, "terminal"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
             ["screen" | "camera" | "mic" | "speaker", ..] => need(access.desktop, "desktop"),
@@ -441,6 +443,8 @@ mod tests {
         assert!(permits(&no_terminal, &multiplex(&["herd", "watch"])).is_ok());
         assert!(permits(&no_terminal, &multiplex(&["herd", "state"])).is_ok());
         assert!(permits(&no_terminal, &multiplex(&["herd", "kinds"])).is_ok());
+        assert_eq!(permits(&no_terminal, &multiplex(&["herd", "places"])), Err("terminal"));
+        assert_eq!(permits(&no_terminal, &multiplex(&["herd", "folders", "L2hvbWU"])), Err("terminal"));
         for making in [&["herd", "do", "new-tab", "default", "w1"][..], &["herd", "do", "start", "default", "w1:p1", "claude"], &["herd", "do", "close-pane", "default", "w1:p1"]] {
             assert_eq!(permits(&no_terminal, &multiplex(making)), Err("terminal"), "{making:?}");
         }

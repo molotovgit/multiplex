@@ -204,6 +204,32 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
     assert!(ok);
     multiplex_proto::herd::parse_kinds(&printed).expect("a list of kinds");
 
+    // A folder opened as a workspace: offered (the test's pane is in
+    // /tmp, and what is open in herdr is offered), looked into, opened.
+    let (ok, printed) = own.multiplex(&["herd", "places"]);
+    assert!(ok);
+    let places = multiplex_proto::herd::parse_places(&printed).expect("a list of folders");
+    assert!(places.iter().any(|place| place.path == "/tmp"), "the folder a pane is in is offered");
+    assert_eq!(places.last().map(|place| place.shown.as_str()), Some("/"), "the root comes last, to walk from");
+    let inside = std::env::temp_dir().join(format!("mpx-live-{}", std::process::id()));
+    std::fs::create_dir_all(inside.join("project/.git")).unwrap();
+    std::fs::create_dir_all(inside.join("plain")).unwrap();
+    let (ok, printed) = own.multiplex(&["herd", "folders", &URL_SAFE_NO_PAD.encode(inside.to_str().unwrap())]);
+    assert!(ok);
+    let folders = multiplex_proto::herd::parse_places(&printed).unwrap();
+    assert_eq!(folders.iter().map(|p| (multiplex_proto::herd::folder_name(&p.path), p.project)).collect::<Vec<_>>(), [("plain", false), ("project", true)]);
+    let (ok, printed) = own.multiplex(&["herd", "do", "new-workspace", &name, &URL_SAFE_NO_PAD.encode(folders[1].path.as_str()), &URL_SAFE_NO_PAD.encode("project")]);
+    assert!(ok);
+    let space = multiplex_proto::herd::parse_made(&printed).unwrap();
+    let herd = next(&lines, Duration::from_secs(3), "the new workspace", |herd| herd.sessions[0].workspaces.iter().any(|w| w.id == space.workspace));
+    let made = herd.sessions[0].workspaces.iter().find(|w| w.id == space.workspace).unwrap();
+    assert_eq!((made.label.as_str(), made.tabs[0].panes[0].id.as_str()), ("project", space.pane.as_str()));
+    assert!(made.tabs[0].panes[0].folder.ends_with("/project"), "its terminal is in that folder");
+    assert!(own.multiplex(&["herd", "do", "close-pane", &name, &space.pane]).0);
+    next(&lines, Duration::from_secs(3), "the workspace gone with its only pane", |herd| herd.sessions[0].workspaces.iter().all(|w| w.id != space.workspace));
+    assert!(!own.multiplex(&["herd", "folders", &URL_SAFE_NO_PAD.encode("/no/such/folder")]).0);
+    let _ = std::fs::remove_dir_all(&inside);
+
     // What is not there, or not an id, is refused.
     assert!(!own.multiplex(&["herd", "do", "keys", &name, "w9:p9", "enter"]).0);
     assert!(!own.multiplex(&["herd", "do", "read", &name, "w1:p1;ls", "5"]).0);

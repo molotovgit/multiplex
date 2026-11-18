@@ -574,6 +574,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdPane dco_decode_herd_pane(dynamic raw);
 
   @protected
+  HerdPlace dco_decode_herd_place(dynamic raw);
+
+  @protected
   HerdSession dco_decode_herd_session(dynamic raw);
 
   @protected
@@ -638,6 +641,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdPane> dco_decode_list_herd_pane(dynamic raw);
+
+  @protected
+  List<HerdPlace> dco_decode_list_herd_place(dynamic raw);
 
   @protected
   List<HerdSession> dco_decode_list_herd_session(dynamic raw);
@@ -1307,6 +1313,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdPane sse_decode_herd_pane(SseDeserializer deserializer);
 
   @protected
+  HerdPlace sse_decode_herd_place(SseDeserializer deserializer);
+
+  @protected
   HerdSession sse_decode_herd_session(SseDeserializer deserializer);
 
   @protected
@@ -1373,6 +1382,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer);
+
+  @protected
+  List<HerdPlace> sse_decode_list_herd_place(SseDeserializer deserializer);
 
   @protected
   List<HerdSession> sse_decode_list_herd_session(SseDeserializer deserializer);
@@ -2156,6 +2168,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_herd_pane(HerdPane self, SseSerializer serializer);
 
   @protected
+  void sse_encode_herd_place(HerdPlace self, SseSerializer serializer);
+
+  @protected
   void sse_encode_herd_session(HerdSession self, SseSerializer serializer);
 
   @protected
@@ -2232,6 +2247,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_herd_pane(List<HerdPane> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_place(
+    List<HerdPlace> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_herd_session(

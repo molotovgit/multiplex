@@ -32,6 +32,17 @@ pub async fn kinds(conn: &Connection) -> anyhow::Result<Vec<proto::Kind>> {
     proto::parse_kinds(&reply(conn, &proto::kinds_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
 }
 
+/// Folders worth offering for a new workspace.
+pub async fn places(conn: &Connection) -> anyhow::Result<Vec<proto::Place>> {
+    proto::parse_places(&reply(conn, &proto::places_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
+}
+
+/// The folders inside a folder of the computer.
+pub async fn folders(conn: &Connection, inside: &str) -> anyhow::Result<Vec<proto::Place>> {
+    let command = proto::folders_command(inside).map_err(|err| anyhow::anyhow!("{err}"))?;
+    proto::parse_places(&reply(conn, &command).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
+}
+
 /// A pane's recent output.
 pub async fn read(conn: &Connection, session: String, pane: String, lines: u32) -> anyhow::Result<String> {
     let printed = act(conn, &HerdAction::Read { session, pane, lines }).await?;

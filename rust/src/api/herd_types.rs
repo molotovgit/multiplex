@@ -73,6 +73,25 @@ impl From<proto::Made> for HerdMade {
     }
 }
 
+/// A folder on the computer that a new workspace could be opened in.
+#[derive(Debug, Clone)]
+pub struct HerdPlace {
+    /// Its full path.
+    pub path: String,
+    /// The path as people write it ("~/code/api").
+    pub shown: String,
+    /// Its own name, the last part of the path.
+    pub name: String,
+    /// It holds a project (a `.git` is in it).
+    pub project: bool,
+}
+
+impl From<proto::Place> for HerdPlace {
+    fn from(place: proto::Place) -> Self {
+        Self { name: proto::folder_name(&place.path).to_owned(), path: place.path, shown: place.shown, project: place.project }
+    }
+}
+
 /// A kind of agent the computer can start.
 #[derive(Debug, Clone)]
 pub struct HerdKind {

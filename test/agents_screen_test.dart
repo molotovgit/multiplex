@@ -73,6 +73,31 @@ class _Herd implements HerdLink {
 
   @override
   Future<void> closePane(String session, String pane) async => asked.add('close $session $pane');
+
+  /// The folders the computer offers; null: it cannot say.
+  List<HerdPlace>? offers = const [
+    HerdPlace(path: '/home/sam/code/api', shown: '~/code/api', name: 'api', project: true),
+    HerdPlace(path: '/home/sam/notes', shown: '~/notes', name: 'notes', project: false),
+  ];
+
+  @override
+  Future<List<HerdPlace>> places() async {
+    asked.add('places');
+    if (offers == null) throw Exception('The computer did not answer.');
+    return offers!;
+  }
+
+  @override
+  Future<List<HerdPlace>> foldersIn(String folder) async {
+    asked.add('folders in $folder');
+    return [HerdPlace(path: '$folder/drafts', shown: '~/notes/drafts', name: 'drafts', project: false)];
+  }
+
+  @override
+  Future<HerdMade> newWorkspace(String session, String folder, String label) async {
+    asked.add('new workspace $session $folder "$label"');
+    return const HerdMade(workspace: 'w7', tab: 'w7:t1', pane: 'w7:p1');
+  }
 }
 
 HerdAgent _agent(
@@ -246,9 +271,12 @@ void main() {
     await open(tester, herd, terminals: terminals);
     await tester.tap(find.text('Everything'));
     await tester.pumpAndSettle();
-    final order = ['default', 'api · 1', 'sam@desk:~/code/api', 'api · review', 'Allow this command?', 'w2', 'Terminal', 'night · not running'];
+    final order = ['default', 'api · 1', 'sam@desk:~/code/api', 'api · review', 'Allow this command?', 'w2', 'Terminal'];
     final tops = [for (final text in order) tester.getTopLeft(find.text(text)).dy];
     expect(tops, [...tops]..sort(), reason: "in herdr's own order, a workspace with one tab under its name alone");
+    // The running session ends with the way to add to it, by name since there are two.
+    expect(find.text('As a new workspace in default'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('Open a folder')).dy, greaterThan(tops.last));
     expect(find.text('Terminal · api'), findsOneWidget);
     expect(find.text('codex · Needs you · api'), findsOneWidget);
     expect(find.text('Terminal · notes'), findsOneWidget);
@@ -265,7 +293,12 @@ void main() {
     expect(find.byTooltip('Send'), findsOneWidget);
     Navigator.of(tester.element(find.byTooltip('Send'))).pop();
     await tester.pumpAndSettle();
-    // A session that is not running starts when its screen is opened.
+    // A session that is not running comes last, with nothing to add to it
+    // until it is started; opening its screen is what starts it.
+    await tester.drag(find.text('Open a folder'), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('night · not running'), findsOneWidget);
+    expect(tester.widgetList(find.text('Open a folder')).length, lessThanOrEqualTo(1), reason: 'only the running session offers it');
     terminals.clear();
     await tester.tap(find.text('Start'));
     expect(terminals, ['herdr of night']);
@@ -406,6 +439,86 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('The computer did not answer.'), findsWidgets);
       expect(find.text('Terminal'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('a folder of the computer opens as a workspace, and then what to have in it is asked', (tester) async {
+      final terminals = <String>[];
+      final visited = <String>[];
+      final herd = _Herd(one());
+      await everything(tester, herd, terminals, visited);
+      expect(find.text('As a new workspace'), findsOneWidget, reason: 'one session needs no name');
+      await tester.tap(find.text('Open a folder'));
+      await tester.pumpAndSettle();
+      // The folders worth offering, each with where it is; a project is marked.
+      expect(find.text('~/code/api'), findsOneWidget);
+      expect(find.text('~/notes'), findsOneWidget);
+      expect(find.byIcon(Icons.source_outlined), findsOneWidget);
+      await tester.tap(find.text('api'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['places', 'new workspace default /home/sam/code/api "api"', 'kinds']);
+      // It comes with a terminal: that one is used, no further tab is made.
+      expect(find.text('api is open. What in it?'), findsOneWidget);
+      expect(find.text('The shell it came with'), findsOneWidget);
+      await tester.tap(find.text('Terminal'));
+      await tester.pumpAndSettle();
+      expect(herd.asked.where((a) => a.startsWith('new tab')), isEmpty);
+      expect(terminals, ['default/w7:p1']);
+      expect(visited.last, 'default/w7:p1 "api" (terminal)');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('any folder can be reached by looking inside, and an agent starts in the new workspace itself', (tester) async {
+      final terminals = <String>[];
+      final herd = _Herd(one());
+      await everything(tester, herd, terminals, []);
+      await tester.tap(find.text('Open a folder'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Look inside notes'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['places', 'folders in /home/sam/notes']);
+      expect(find.text('~/notes'), findsOneWidget, reason: 'the heading says where this is');
+      expect(find.text('notes'), findsOneWidget, reason: 'and first of all what it is called');
+      expect(find.text('drafts'), findsOneWidget);
+      expect(find.text('~/notes/drafts'), findsNothing, reason: 'inside a folder its folders need no path of their own');
+      // Back to the offers, and in again.
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('~/code/api'), findsOneWidget);
+      await tester.tap(find.byTooltip('Look inside notes'));
+      await tester.pumpAndSettle();
+      // The folder being looked at can itself be the one.
+      await tester.tap(find.text('Open this one'));
+      await tester.pumpAndSettle();
+      expect(herd.asked.last, 'kinds');
+      expect(herd.asked[herd.asked.length - 2], 'new workspace default /home/sam/notes "notes"');
+      await tester.tap(find.text('Claude'));
+      await tester.pumpAndSettle();
+      expect(herd.asked.last, 'start default w7:p1 claude', reason: 'in the terminal the workspace came with');
+      expect(terminals, ['default/w7:p1']);
+      await tester.pump(const Duration(seconds: 5));
+
+      // Leaving the second question keeps the workspace and opens nothing.
+      terminals.clear();
+      await tester.tap(find.text('Open a folder'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('api'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.text('api is open. What in it?'))).pop();
+      await tester.pumpAndSettle();
+      expect(terminals, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('a computer that cannot say which folders it has says so in the picker', (tester) async {
+      final herd = _Herd(one())..offers = null;
+      await everything(tester, herd, [], []);
+      await tester.tap(find.text('Open a folder'));
+      await tester.pumpAndSettle();
+      expect(find.text('The computer did not answer.'), findsWidgets);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 3));
     });

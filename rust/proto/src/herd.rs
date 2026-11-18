@@ -418,6 +418,40 @@ pub fn parse_kinds(line: &str) -> Result<Vec<Kind>, ProtoError> {
     Ok(kinds)
 }
 
+/// A folder on the computer that a new workspace could be opened in.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Place {
+    /// Its full path.
+    pub path: String,
+    /// The path as people write it, with `~` for the home folder.
+    pub shown: String,
+    /// It holds a project (a `.git` is in it).
+    #[serde(default)]
+    pub project: bool,
+}
+
+/// Prints folders worth offering for a new workspace: those the user
+/// goes to, those herdr's panes are in, and projects in the home folder.
+pub fn places_command() -> String {
+    format!("{SHARE_COMMAND} herd places")
+}
+
+/// Prints the folders inside a folder, for walking to the one wanted.
+pub fn folders_command(inside: &str) -> Result<String, ProtoError> {
+    Ok(format!("{SHARE_COMMAND} herd folders {}", quoted(&packed(&clean_folder(inside)?))))
+}
+
+/// The folder asked about, from the word after `herd folders`.
+pub fn folder_asked(word: &str) -> Result<String, ProtoError> {
+    clean_folder(&unpacked(word)?)
+}
+
+/// Reads that list; what is not a folder's full path is left out.
+pub fn parse_places(line: &str) -> Result<Vec<Place>, ProtoError> {
+    let places: Vec<Place> = serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)?;
+    Ok(places.into_iter().filter(|place| clean_folder(&place.path).is_ok() && !place.shown.chars().any(char::is_control) && place.shown.len() <= 1100).take(400).collect())
+}
+
 /// What `herd do read` prints: the pane's recent output, one line of JSON.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
 pub struct PaneText {
@@ -613,6 +647,25 @@ mod tests {
         assert!(parse_kinds("[]").unwrap().is_empty());
         assert!(parse_kinds("claude").is_err() && parse_kinds(r#"["claude"]"#).is_err());
         assert!(kinds_command().ends_with(" herd kinds"));
+    }
+
+    #[test]
+    fn folders_offered_for_a_workspace_are_full_paths_only() {
+        let line = r#"[{"path":"/home/sam/code/api","shown":"~/code/api"},{"path":"code/web","shown":"code/web"},{"path":"/srv/site","shown":"/srv/site"},{"path":"/home/sam/../root","shown":"x"},{"path":"/home/sam/a","shown":"two\nlines"}]"#;
+        let places = parse_places(line).unwrap();
+        assert_eq!(places.iter().map(|p| (p.path.as_str(), p.shown.as_str())).collect::<Vec<_>>(), [("/home/sam/code/api", "~/code/api"), ("/srv/site", "/srv/site")]);
+        assert!(parse_places("[]").unwrap().is_empty());
+        assert!(parse_places("nothing").is_err());
+        assert!(places_command().ends_with(" herd places"));
+        assert!(!places[0].project, "a computer that does not say is not believed to have said yes");
+        assert!(parse_places(r#"[{"path":"/srv/site","shown":"/srv/site","project":true}]"#).unwrap()[0].project);
+        // Looking inside a folder: its path travels like all text, and is read back checked.
+        let asked = folders_command("/home/sam/my code").unwrap();
+        assert!(asked.contains(" herd folders '") && !asked.contains("my code"), "{asked}");
+        let word = asked.rsplit(' ').next().unwrap().trim_matches('\'');
+        assert_eq!(folder_asked(word).unwrap(), "/home/sam/my code");
+        assert!(folders_command("relative").is_err() && folders_command("/a/../b").is_err());
+        assert!(folder_asked("not base64 !").is_err());
     }
 
     #[test]

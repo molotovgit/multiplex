@@ -65,6 +65,9 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Closes a tab with all its panes.
   Future<void> herdCloseTab({required String session, required String tab});
 
+  /// The folders inside a folder of the computer, by name.
+  Future<List<HerdPlace>> herdFolders({required String inside});
+
   /// Presses keys in a pane, by herdr's names for them: "esc", "enter",
   /// "ctrl+c", "up", "2".
   Future<void> herdKeys({
@@ -93,6 +96,10 @@ abstract class SshSession implements RustOpaqueInterface {
     required String folder,
     required String label,
   });
+
+  /// Folders worth offering for a new workspace: those the user goes
+  /// to, those herdr's panes are in, and projects in the home folder.
+  Future<List<HerdPlace>> herdPlaces();
 
   /// Gives a pane's agent this text and Enter, as one piece. In a plain
   /// terminal it is typed, then Enter.

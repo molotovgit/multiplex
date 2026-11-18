@@ -36,6 +36,15 @@ abstract class HerdLink {
 
   /// Closes a pane and what runs in it.
   Future<void> closePane(String session, String pane);
+
+  /// Folders worth offering for a new workspace.
+  Future<List<HerdPlace>> places();
+
+  /// The folders inside a folder of the computer.
+  Future<List<HerdPlace>> foldersIn(String folder);
+
+  /// A new workspace in a folder, with a tab and a terminal in it.
+  Future<HerdMade> newWorkspace(String session, String folder, String label);
 }
 
 class SshHerdLink implements HerdLink {
@@ -74,6 +83,15 @@ class SshHerdLink implements HerdLink {
 
   @override
   Future<void> closePane(String session, String pane) => ssh().herdClosePane(session: session, pane: pane);
+
+  @override
+  Future<List<HerdPlace>> places() => ssh().herdPlaces();
+
+  @override
+  Future<List<HerdPlace>> foldersIn(String folder) => ssh().herdFolders(inside: folder);
+
+  @override
+  Future<HerdMade> newWorkspace(String session, String folder, String label) => ssh().herdNewWorkspace(session: session, folder: folder, label: label);
 }
 
 /// The herd of one computer for the screens: what it is now, kept current
@@ -194,6 +212,31 @@ class HerdController extends ChangeNotifier {
 
   /// Closes the pane and what runs in it. False when it could not.
   Future<bool> closePane(String session, String pane) => _ask(() => _link.closePane(session, pane));
+
+  /// Folders worth offering for a new workspace, or with [inside] the
+  /// folders in that one. Null when it could not be asked.
+  Future<List<HerdPlace>?> places({String? inside}) async {
+    try {
+      final places = inside == null ? await _link.places() : await _link.foldersIn(inside);
+      _clear();
+      return places;
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
+
+  /// Opens [folder] as a new workspace; null when it could not.
+  Future<HerdMade?> newWorkspace(String session, String folder, {String label = ''}) async {
+    try {
+      final made = await _link.newWorkspace(session, folder, label);
+      _clear();
+      return made;
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
 
   Future<bool> _ask(Future<void> Function() request) async {
     try {
