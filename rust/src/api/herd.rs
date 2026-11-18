@@ -7,7 +7,7 @@ use std::sync::Arc;
 use flutter_rust_bridge::frb;
 use multiplex_proto::herd as proto;
 
-use super::herd_types::HerdState;
+use super::herd_types::{HerdKind, HerdMade, HerdState};
 use super::ssh::SshSession;
 use super::watch::RemoteWatch;
 use crate::engine::herd;
@@ -44,6 +44,51 @@ impl SshSession {
         let conn = self.conn.clone();
         AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::Keys { session, pane, keys }).await }).await??;
         Ok(())
+    }
+
+    /// A new tab in a workspace, with a terminal in it. With an empty
+    /// label herdr names it.
+    pub async fn herd_new_tab(&self, session: String, workspace: String, label: String) -> anyhow::Result<HerdMade> {
+        let conn = self.conn.clone();
+        Ok(AsyncRuntime::run(async move { herd::make(&conn, &proto::HerdAction::NewTab { session, workspace, label }).await }).await??.into())
+    }
+
+    /// A new workspace in a folder of the computer, with a tab and a
+    /// terminal in it.
+    pub async fn herd_new_workspace(&self, session: String, folder: String, label: String) -> anyhow::Result<HerdMade> {
+        let conn = self.conn.clone();
+        Ok(AsyncRuntime::run(async move { herd::make(&conn, &proto::HerdAction::NewWorkspace { session, folder, label }).await }).await??.into())
+    }
+
+    /// Starts an agent of this kind in a pane that sits at its prompt.
+    /// Returns once the agent is ready there, or says why it is not.
+    pub async fn herd_start_agent(&self, session: String, pane: String, kind: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::Start { session, pane, kind }).await }).await??;
+        Ok(())
+    }
+
+    /// Closes a pane, and whatever runs in it.
+    pub async fn herd_close_pane(&self, session: String, pane: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::ClosePane { session, pane }).await }).await??;
+        Ok(())
+    }
+
+    /// Closes a tab with all its panes.
+    pub async fn herd_close_tab(&self, session: String, tab: String) -> anyhow::Result<()> {
+        let conn = self.conn.clone();
+        AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::CloseTab { session, tab }).await }).await??;
+        Ok(())
+    }
+
+    /// The kinds of agent that can be started on the computer, those that
+    /// are installed first; the others install themselves when first
+    /// started.
+    pub async fn herd_kinds(&self) -> anyhow::Result<Vec<HerdKind>> {
+        let conn = self.conn.clone();
+        let kinds = AsyncRuntime::run(async move { herd::kinds(&conn).await }).await??;
+        Ok(kinds.into_iter().map(|kind| HerdKind { name: kind.kind, installed: kind.installed }).collect())
     }
 
     /// A pane's recent output, as text, at most `lines` lines of it.

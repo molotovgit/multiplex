@@ -22,6 +22,16 @@ pub async fn act(conn: &Connection, action: &HerdAction) -> anyhow::Result<Strin
     reply(conn, &command).await
 }
 
+/// Makes a tab or a workspace; herdr's ids for what was made come back.
+pub async fn make(conn: &Connection, action: &HerdAction) -> anyhow::Result<proto::Made> {
+    proto::parse_made(&act(conn, action).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
+}
+
+/// The kinds of agent that can be started on the computer.
+pub async fn kinds(conn: &Connection) -> anyhow::Result<Vec<proto::Kind>> {
+    proto::parse_kinds(&reply(conn, &proto::kinds_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
+}
+
 /// A pane's recent output.
 pub async fn read(conn: &Connection, session: String, pane: String, lines: u32) -> anyhow::Result<String> {
     let printed = act(conn, &HerdAction::Read { session, pane, lines }).await?;

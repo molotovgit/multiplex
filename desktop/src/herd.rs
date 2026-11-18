@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, bail, Context, Result};
 use multiplex_proto::agents::{clean_session_name, AgentStatus};
-use multiplex_proto::herd::{Herd, HerdAction, Pane, PaneAgent, PaneText, Session, Tab, Workspace};
+use multiplex_proto::herd::{clean_kind, Herd, HerdAction, Kind, Made, Pane, PaneAgent, PaneText, Session, Tab, Workspace};
 use serde_json::{json, Value};
 
 /// One of herdr's running sessions: its name and where its socket is.
@@ -347,9 +347,131 @@ fn read_text(printed: &str) -> String {
     wrapped.unwrap_or_else(|| printed.trim_end_matches('\n').to_owned())
 }
 
+/// herdr's ids for what it just made, from its answer to `tab create` or
+/// `workspace create`.
+pub fn made(printed: &str) -> Result<Made> {
+    let answer: Value = serde_json::from_str(printed.trim()).map_err(|_| anyhow!("herdr's answer is not JSON"))?;
+    let result = &answer["result"];
+    let id = |what: &str, key: &str| result[what][key].as_str().map(str::to_owned);
+    Ok(Made {
+        workspace: id("workspace", "workspace_id").unwrap_or_default(),
+        tab: id("tab", "tab_id").context("herdr did not say which tab it made")?,
+        pane: id("root_pane", "pane_id").context("herdr did not say which pane it made")?,
+    })
+}
+
+/// The kinds of agent in what `herdr agent` prints about itself: a line
+/// "kinds: claude|codex|…". A kind's name is also its program's.
+pub fn kinds_in(help: &str) -> Vec<String> {
+    help.lines()
+        .find_map(|line| line.trim().strip_prefix("kinds:"))
+        .map(|list| list.split('|').map(str::trim).filter(|kind| clean_kind(kind).is_ok()).map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
+/// The folders of a `PATH` in a process's environment as the kernel
+/// shows it (`/proc/<pid>/environ`: entries divided by zero bytes).
+pub fn path_in(environ: &[u8]) -> Vec<PathBuf> {
+    environ
+        .split(|byte| *byte == 0)
+        .find_map(|entry| entry.strip_prefix(b"PATH="))
+        .map(|path| std::env::split_paths(std::ffi::OsStr::new(&*String::from_utf8_lossy(path))).collect())
+        .unwrap_or_default()
+}
+
+/// Where herdr itself looks for programs: the `PATH` of each herdr that
+/// runs, besides this command's own. It is herdr that starts an agent,
+/// and it was started from the user's desktop, where version managers
+/// have put their folders on the path; this command, asked over SSH, has
+/// a barer one (seen: 2 agents found this way, 14 herdr's way).
+fn herdr_folders() -> Vec<PathBuf> {
+    let mut folders: Vec<PathBuf> = std::env::var_os("PATH").map(|path| std::env::split_paths(&path).collect()).unwrap_or_default();
+    for entry in std::fs::read_dir("/proc").into_iter().flatten().flatten() {
+        let dir = entry.path();
+        if std::fs::read_to_string(dir.join("comm")).is_ok_and(|name| name.trim() == "herdr") {
+            if let Ok(environ) = std::fs::read(dir.join("environ")) {
+                folders.extend(path_in(&environ));
+            }
+        }
+    }
+    folders
+}
+
+/// Those of `kinds` whose program is in one of `folders`, each with where
+/// it was found first.
+pub fn found(kinds: Vec<String>, folders: &[PathBuf]) -> Vec<(String, PathBuf)> {
+    kinds.into_iter().filter_map(|kind| folders.iter().map(|folder| folder.join(&kind)).find(|program| program.is_file()).map(|program| (kind, program))).collect()
+}
+
+/// Whether a program is a stand-in of the tool manager mise: a link to
+/// mise itself, which runs the real tool, and first installs one that is
+/// marked to be installed when first used.
+pub fn is_mise_shim(program: &Path) -> bool {
+    std::fs::read_link(program).is_ok_and(|target| target.file_name().is_some_and(|name| name == "mise"))
+}
+
+/// The kinds that can be started here, and for each whether its program
+/// is really there. Omarchy keeps most agents as tools that install
+/// themselves on first use (seen: asking herdr to start one began a
+/// 139 MB download); those are told apart by asking mise where the tool
+/// is, which it can only say for one that is installed.
+fn kinds() -> Vec<Kind> {
+    let help = Command::new("herdr").arg("agent").output().map(|out| format!("{}{}", String::from_utf8_lossy(&out.stdout), String::from_utf8_lossy(&out.stderr))).unwrap_or_default();
+    let found = found(kinds_in(&help), &herdr_folders());
+    let asked: Vec<_> = found
+        .into_iter()
+        .map(|(kind, program)| {
+            let shim = is_mise_shim(&program);
+            std::thread::spawn(move || {
+                // The program itself is never run to find out: for a tool
+                // not yet installed, running it is what installs it.
+                let installed = !shim || Command::new("mise").args(["which", &kind]).output().is_ok_and(|out| out.status.success());
+                Kind { kind, installed }
+            })
+        })
+        .collect();
+    asked.into_iter().filter_map(|thread| thread.join().ok()).collect()
+}
+
+/// A name for an agent that herdr takes and no other agent has: its kind
+/// and a few letters of chance ("claude-3fa9").
+pub fn agent_name(kind: &str, chance: &str) -> String {
+    let tail: String = chance.chars().filter(|c| c.is_ascii_lowercase() || c.is_ascii_digit()).take(4).collect();
+    format!("{kind}-{tail}")
+}
+
 /// `multiplex herd do …`.
 fn act(action: &HerdAction) -> Result<()> {
     match action {
+        HerdAction::NewTab { session, workspace, label } => {
+            let mut args = vec!["tab", "create", "--workspace", workspace, "--no-focus"];
+            if !label.is_empty() {
+                args.extend(["--label", label]);
+            }
+            println!("{}", serde_json::to_string(&made(&herdr(session, &args)?)?)?);
+        }
+        HerdAction::NewWorkspace { session, folder, label } => {
+            if !Path::new(folder).is_dir() {
+                bail!("{folder} is not a folder on this computer");
+            }
+            let mut args = vec!["workspace", "create", "--cwd", folder, "--no-focus"];
+            if !label.is_empty() {
+                args.extend(["--label", label]);
+            }
+            println!("{}", serde_json::to_string(&made(&herdr(session, &args)?)?)?);
+        }
+        HerdAction::Start { session, pane, kind } => {
+            // herdr answers once the agent sits ready in the pane, or says
+            // why it does not.
+            let name = agent_name(kind, &crate::share::random_id()?);
+            herdr(session, &["agent", "start", &name, "--kind", kind, "--pane", pane, "--timeout", "30000"])?;
+        }
+        HerdAction::ClosePane { session, pane } => {
+            herdr(session, &["pane", "close", pane])?;
+        }
+        HerdAction::CloseTab { session, tab } => {
+            herdr(session, &["tab", "close", tab])?;
+        }
         HerdAction::Prompt { session, pane, text } => {
             // An agent takes text and Enter as one piece. A plain terminal
             // has no agent to give it to: there it is typed, then Enter.
@@ -375,9 +497,10 @@ pub fn run(args: &[&str]) -> Result<()> {
     match args {
         ["state"] => println!("{}", serde_json::to_string(&state())?),
         ["watch"] => watch()?,
+        ["kinds"] => println!("{}", serde_json::to_string(&kinds())?),
         ["do", rest @ ..] => act(&HerdAction::parse(rest).map_err(|e| anyhow!("{e}"))?)?,
         ["pane", rest @ ..] => crate::pane::run(rest)?,
-        _ => bail!("usage: multiplex herd state | watch | do <action> | pane <session> <pane>"),
+        _ => bail!("usage: multiplex herd state | watch | kinds | do <action> | pane <session> <pane>"),
     }
     Ok(())
 }
@@ -445,6 +568,43 @@ mod tests {
         assert_eq!(panes_of(&session), ["w1:p1", "w1:p2", "w1:p3"].map(str::to_owned).into());
         // Nothing at all is an empty session, not an error.
         assert_eq!(build("x", &json!({})), Session { name: "x".into(), running: true, workspaces: vec![] });
+    }
+
+    #[test]
+    fn what_herdr_made_is_read_from_its_answer() {
+        let tab = r#"{"id":"cli:tab:create","result":{"root_pane":{"pane_id":"w1:p5","tab_id":"w1:t3","workspace_id":"w1"},"tab":{"tab_id":"w1:t3","label":"x"},"type":"tab_created"}}"#;
+        assert_eq!(made(tab).unwrap(), Made { workspace: String::new(), tab: "w1:t3".into(), pane: "w1:p5".into() });
+        let space = r#"{"id":"cli:workspace:create","result":{"root_pane":{"pane_id":"w4:p1"},"tab":{"tab_id":"w4:t1"},"workspace":{"workspace_id":"w4","label":"api"}}}"#;
+        assert_eq!(made(space).unwrap(), Made { workspace: "w4".into(), tab: "w4:t1".into(), pane: "w4:p1".into() });
+        assert!(made(r#"{"result":{"tab":{"tab_id":"w1:t3"}}}"#).is_err());
+        assert!(made("not json").is_err());
+    }
+
+    #[test]
+    fn the_kinds_of_agent_are_read_from_herdrs_own_words() {
+        let help = "herdr agent commands:\n  herdr agent list\n  targets accept unique agent names\n  kinds: pi|claude|codex|not a kind|gemini\n";
+        assert_eq!(kinds_in(help), ["pi", "claude", "codex", "gemini"]);
+        assert!(kinds_in("no such line").is_empty());
+        // Startable means: its program is in a folder herdr looks in.
+        let bin = tempfile::tempdir().unwrap();
+        std::fs::write(bin.path().join("codex"), b"#!/bin/sh\n").unwrap();
+        std::fs::create_dir(bin.path().join("pi")).unwrap();
+        let folders = path_in(format!("HOME=/home/sam\0PATH=/usr/bin:{}\0TERM=xterm\0", bin.path().display()).as_bytes());
+        assert_eq!(folders, [PathBuf::from("/usr/bin"), bin.path().to_path_buf()]);
+        assert_eq!(found(kinds_in(help), &folders), [("codex".to_owned(), bin.path().join("codex"))], "a folder of that name is not a program");
+        assert!(path_in(b"HOME=/home/sam\0").is_empty() && path_in(b"").is_empty());
+        // A stand-in of mise is a link to mise itself; a program or another link is not.
+        let mise = bin.path().join("mise");
+        std::fs::write(&mise, b"").unwrap();
+        std::os::unix::fs::symlink(&mise, bin.path().join("amp")).unwrap();
+        std::os::unix::fs::symlink(bin.path().join("codex"), bin.path().join("gemini")).unwrap();
+        assert!(is_mise_shim(&bin.path().join("amp")));
+        assert!(!is_mise_shim(&bin.path().join("codex")) && !is_mise_shim(&bin.path().join("gemini")) && !is_mise_shim(&bin.path().join("none")));
+        // A name herdr takes: starts with a letter, at most 32 of a-z, 0-9, - and _.
+        let name = agent_name("claude", "3FA9c0de11");
+        assert_eq!(name, "claude-39c0", "only what herdr takes in a name is kept");
+        let longest = agent_name(&"k".repeat(24), "abcdef");
+        assert!(longest.len() <= 32 && longest.starts_with('k'));
     }
 
     #[test]

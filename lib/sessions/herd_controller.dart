@@ -23,6 +23,19 @@ abstract class HerdLink {
 
   /// Keys by herdr's names for them: "esc", "enter", "2".
   Future<void> keys(String session, String pane, List<String> keys);
+
+  /// The kinds of agent that can be started on the computer, those that
+  /// are installed first.
+  Future<List<HerdKind>> kinds();
+
+  /// A new tab in a workspace, with a terminal in it.
+  Future<HerdMade> newTab(String session, String workspace, String label);
+
+  /// Starts an agent of [kind] in a pane that sits at its prompt.
+  Future<void> start(String session, String pane, String kind);
+
+  /// Closes a pane and what runs in it.
+  Future<void> closePane(String session, String pane);
 }
 
 class SshHerdLink implements HerdLink {
@@ -49,6 +62,18 @@ class SshHerdLink implements HerdLink {
 
   @override
   Future<void> keys(String session, String pane, List<String> keys) => ssh().herdKeys(session: session, pane: pane, keys: keys);
+
+  @override
+  Future<List<HerdKind>> kinds() => ssh().herdKinds();
+
+  @override
+  Future<HerdMade> newTab(String session, String workspace, String label) => ssh().herdNewTab(session: session, workspace: workspace, label: label);
+
+  @override
+  Future<void> start(String session, String pane, String kind) => ssh().herdStartAgent(session: session, pane: pane, kind: kind);
+
+  @override
+  Future<void> closePane(String session, String pane) => ssh().herdClosePane(session: session, pane: pane);
 }
 
 /// The herd of one computer for the screens: what it is now, kept current
@@ -135,6 +160,40 @@ class HerdController extends ChangeNotifier {
 
   /// Presses [keys] in the pane. False when it could not.
   Future<bool> press(String session, String pane, List<String> keys) => _ask(() => _link.keys(session, pane, keys));
+
+  List<HerdKind>? _kinds;
+
+  /// The kinds of agent that can be started on the computer; asked once.
+  /// Null when it could not be asked (then [problem] says why).
+  Future<List<HerdKind>?> kinds() async {
+    if (_kinds != null) return _kinds;
+    try {
+      _kinds = await _link.kinds();
+      _clear();
+      return _kinds;
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
+
+  /// Makes a tab with a terminal in [workspace]; null when it could not.
+  Future<HerdMade?> newTab(String session, String workspace, {String label = ''}) async {
+    try {
+      final made = await _link.newTab(session, workspace, label);
+      _clear();
+      return made;
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
+
+  /// Starts an agent of [kind] in the pane. False when it could not.
+  Future<bool> startAgent(String session, String pane, String kind) => _ask(() => _link.start(session, pane, kind));
+
+  /// Closes the pane and what runs in it. False when it could not.
+  Future<bool> closePane(String session, String pane) => _ask(() => _link.closePane(session, pane));
 
   Future<bool> _ask(Future<void> Function() request) async {
     try {

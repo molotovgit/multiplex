@@ -47,6 +47,32 @@ class _Herd implements HerdLink {
 
   @override
   Future<void> keys(String session, String pane, List<String> keys) async => asked.add('keys $session $pane: ${keys.join(' ')}');
+
+  /// The agents this computer has; null: it cannot say.
+  List<HerdKind>? has = const [HerdKind(name: 'claude', installed: true), HerdKind(name: 'codex', installed: true), HerdKind(name: 'amp', installed: false)];
+  Object? startFails;
+
+  @override
+  Future<List<HerdKind>> kinds() async {
+    asked.add('kinds');
+    if (has == null) throw Exception('The computer did not answer.');
+    return has!;
+  }
+
+  @override
+  Future<HerdMade> newTab(String session, String workspace, String label) async {
+    asked.add('new tab $session $workspace "$label"');
+    return const HerdMade(workspace: '', tab: 'w1:t9', pane: 'w1:p9');
+  }
+
+  @override
+  Future<void> start(String session, String pane, String kind) async {
+    asked.add('start $session $pane $kind');
+    if (startFails != null) throw startFails!;
+  }
+
+  @override
+  Future<void> closePane(String session, String pane) async => asked.add('close $session $pane');
 }
 
 HerdAgent _agent(
@@ -245,6 +271,164 @@ void main() {
     expect(terminals, ['herdr of night']);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 3));
+  });
+
+  group('making and closing', () {
+    HerdState one() => _state(
+      [],
+      sessions: [
+        const HerdSession(
+          name: 'default',
+          running: true,
+          workspaces: [
+            HerdWorkspace(
+              id: 'w1',
+              label: 'api',
+              tabs: [
+                HerdTab(
+                  id: 'w1:t1',
+                  label: '1',
+                  panes: [
+                    HerdPane(
+                      id: 'w1:p1',
+                      title: 'sam@desk:~/code/api',
+                      folder: '/home/sam/code/api',
+                      folderName: 'api',
+                      focused: true,
+                      status: AgentStatus.unknown,
+                    ),
+                  ],
+                ),
+                HerdTab(
+                  id: 'w1:t2',
+                  label: 'notes',
+                  panes: [
+                    HerdPane(
+                      id: 'w1:p2',
+                      title: 'Refactor',
+                      folder: '/home/sam/code/api',
+                      folderName: 'api',
+                      focused: false,
+                      agent: 'Claude',
+                      status: AgentStatus.working,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+
+    Future<void> everything(WidgetTester tester, _Herd herd, List<String> terminals, List<String> visited) async {
+      await open(tester, herd, terminals: terminals, visited: visited);
+      await tester.tap(find.text('Everything'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a new terminal in a workspace: one tap to ask, one to choose, and the phone is in it', (tester) async {
+      final terminals = <String>[];
+      final visited = <String>[];
+      final herd = _Herd(one());
+      await everything(tester, herd, terminals, visited);
+      // The plus is on the workspace's first heading only.
+      expect(find.byTooltip('New in api'), findsOneWidget);
+      await tester.tap(find.byTooltip('New in api'));
+      await tester.pumpAndSettle();
+      expect(find.text('New in api'), findsOneWidget);
+      expect(find.text('Claude'), findsOneWidget, reason: 'the agents this computer has, by name');
+      expect(find.text('Codex'), findsOneWidget);
+      // One that would download itself first says so, after those that are there.
+      expect(find.text('Starts in a new tab'), findsNWidgets(2));
+      expect(
+        find.descendant(
+          of: find.ancestor(of: find.text('Amp'), matching: find.byType(ListTile)),
+          matching: find.text('Not installed yet: the first start downloads it'),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.getTopLeft(find.text('Codex')).dy, lessThan(tester.getTopLeft(find.text('Amp')).dy));
+      await tester.tap(find.text('Terminal'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['kinds', 'new tab default w1 ""']);
+      expect(terminals, ['default/w1:p9']);
+      expect(visited.last, 'default/w1:p9 "" (terminal)');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('a new agent: a tab named after it, the agent started in it, then its terminal', (tester) async {
+      final terminals = <String>[];
+      final visited = <String>[];
+      final herd = _Herd(one());
+      await everything(tester, herd, terminals, visited);
+      await tester.tap(find.byTooltip('New in api'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Codex'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['kinds', 'new tab default w1 "codex"', 'start default w1:p9 codex']);
+      expect(terminals, ['default/w1:p9']);
+      expect(visited.last, 'default/w1:p9 "Codex" codex');
+      await tester.pump(const Duration(seconds: 5));
+
+      // An agent that does not start is said; the tab is still opened, to see why.
+      herd.asked.clear();
+      terminals.clear();
+      herd.startFails = Exception('Herdr: agent_not_ready');
+      await tester.tap(find.byTooltip('New in api'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Claude'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Herdr: agent_not_ready'), findsOneWidget);
+      expect(herd.asked, ['new tab default w1 "claude"', 'start default w1:p9 claude'], reason: 'which agents there are is asked once');
+      expect(terminals, ['default/w1:p9']);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 6));
+    });
+
+    testWidgets('with no agent installed, or no answer, a terminal can still be made', (tester) async {
+      final herd = _Herd(one())..has = [];
+      await everything(tester, herd, [], []);
+      await tester.tap(find.byTooltip('New in api'));
+      await tester.pumpAndSettle();
+      expect(find.text('None of the agents herdr knows is installed on this computer.'), findsOneWidget);
+      expect(find.text('Terminal'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Terminal'))).pop();
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['kinds'], reason: 'leaving the sheet makes nothing');
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      final silent = _Herd(one())..has = null;
+      await everything(tester, silent, [], []);
+      await tester.tap(find.byTooltip('New in api'));
+      await tester.pumpAndSettle();
+      expect(find.text('The computer did not answer.'), findsWidgets);
+      expect(find.text('Terminal'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('closing a pane is asked about first', (tester) async {
+      final herd = _Herd(one());
+      await everything(tester, herd, [], []);
+      await tester.longPress(find.text('Refactor'));
+      await tester.pumpAndSettle();
+      expect(find.text('Close this agent?'), findsOneWidget);
+      expect(find.textContaining('What runs in it on the computer ends with it.'), findsOneWidget);
+      await tester.tap(find.text('Keep it'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, isEmpty);
+      await tester.longPress(find.text('sam@desk:~/code/api'));
+      await tester.pumpAndSettle();
+      expect(find.text('Close this terminal?'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(herd.asked, ['close default w1:p1']);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
   });
 
   testWidgets('one running session with nothing open says so, without a heading of its own', (tester) async {

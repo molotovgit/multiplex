@@ -224,7 +224,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["agents"] => need(access.desktop || access.terminal, "desktop"),
             // Seeing what runs in the terminals, as `agents`; typing into
             // them and reading them is the terminal's own power.
-            ["herd", "state" | "watch"] => need(access.desktop || access.terminal, "desktop"),
+            ["herd", "state" | "watch" | "kinds"] => need(access.desktop || access.terminal, "desktop"),
             ["herd", "do" | "pane", ..] => need(access.terminal, "terminal"),
             ["desk", "do", ..] | ["input"] => need(access.input, "input"),
             // The phone showing its own screen here opens a window: part of the desktop.
@@ -440,6 +440,10 @@ mod tests {
         // are; typed into and read only with the terminal.
         assert!(permits(&no_terminal, &multiplex(&["herd", "watch"])).is_ok());
         assert!(permits(&no_terminal, &multiplex(&["herd", "state"])).is_ok());
+        assert!(permits(&no_terminal, &multiplex(&["herd", "kinds"])).is_ok());
+        for making in [&["herd", "do", "new-tab", "default", "w1"][..], &["herd", "do", "start", "default", "w1:p1", "claude"], &["herd", "do", "close-pane", "default", "w1:p1"]] {
+            assert_eq!(permits(&no_terminal, &multiplex(making)), Err("terminal"), "{making:?}");
+        }
         for typing in [&["herd", "do", "prompt", "default", "w1:p1", "aGk"][..], &["herd", "do", "keys", "default", "w1:p1", "enter"], &["herd", "do", "read", "default", "w1:p1", "40"], &["herd", "pane", "default", "w1:p1"]] {
             assert_eq!(permits(&no_terminal, &multiplex(typing)), Err("terminal"), "{typing:?}");
             assert!(permits(&all, &multiplex(typing)).is_ok());

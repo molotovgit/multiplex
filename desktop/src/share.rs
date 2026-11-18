@@ -56,7 +56,7 @@ fn state_dir() -> PathBuf {
         .join("multiplex")
 }
 
-fn random_id() -> Result<String> {
+pub(crate) fn random_id() -> Result<String> {
     let mut bytes = [0u8; 8];
     std::fs::File::open("/dev/urandom")?.read_exact(&mut bytes)?;
     Ok(bytes.iter().map(|b| format!("{b:02x}")).collect())

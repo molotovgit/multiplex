@@ -57,6 +57,32 @@ pub struct HerdPane {
     pub status: AgentStatus,
 }
 
+/// What was just made on the computer: a tab (in a new workspace, when
+/// one was asked for) and the terminal in it.
+#[derive(Debug, Clone, Default)]
+pub struct HerdMade {
+    /// Empty unless a workspace was made.
+    pub workspace: String,
+    pub tab: String,
+    pub pane: String,
+}
+
+impl From<proto::Made> for HerdMade {
+    fn from(made: proto::Made) -> Self {
+        Self { workspace: made.workspace, tab: made.tab, pane: made.pane }
+    }
+}
+
+/// A kind of agent the computer can start.
+#[derive(Debug, Clone)]
+pub struct HerdKind {
+    /// herdr's name for it ("claude").
+    pub name: String,
+    /// False for one that installs itself (a download) the first time it
+    /// is started.
+    pub installed: bool,
+}
+
 /// One agent with where it is.
 #[derive(Debug, Clone)]
 pub struct HerdAgent {

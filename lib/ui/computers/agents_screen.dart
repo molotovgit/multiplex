@@ -198,6 +198,50 @@ class _AgentsScreenState extends State<AgentsScreen> {
     _show(agent);
   }
 
+  /// A new tab in a workspace: a plain terminal, or an agent of a kind
+  /// the computer has, started in it. Either way the phone then sits in
+  /// front of it.
+  Future<void> _new(String session, HerdWorkspace workspace) async {
+    final name = workspace.label.isEmpty ? workspace.id : workspace.label;
+    final choice = await NewInWorkspaceSheet.show(context, herd: _herd, workspace: name);
+    if (choice == null || !mounted) return;
+    final kind = choice.kind;
+    final made = await _herd.newTab(session, workspace.id, label: kind ?? '');
+    if (!mounted) return;
+    if (made == null) {
+      Toast.show(context, _herd.problem ?? 'The tab could not be made.');
+      return;
+    }
+    if (kind != null) {
+      Toast.show(context, 'Starting ${agentKindName(kind)}…');
+      final started = await _herd.startAgent(session, made.pane, kind);
+      if (!mounted) return;
+      // The tab is there either way; without its agent it is a terminal
+      // in which to see why.
+      if (!started) Toast.show(context, _herd.problem ?? '${agentKindName(kind)} did not start.');
+    }
+    widget.onVisited?.call(session, made.pane, kind == null ? '' : agentKindName(kind), kind ?? '');
+    await widget.onOpenTerminal(context, session, made.pane);
+  }
+
+  /// Closes a pane, asked about first: what runs in it ends with it.
+  Future<void> _close(String session, HerdPane pane) async {
+    final what = pane.title.isNotEmpty ? pane.title : (pane.agent ?? 'this terminal');
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(pane.agent == null ? 'Close this terminal?' : 'Close this agent?'),
+        content: Text('$what\n\nWhat runs in it on the computer ends with it.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Keep it')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Close')),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    if (!await _herd.closePane(session, pane.id) && mounted) Toast.show(context, _herd.problem ?? 'It could not be closed.');
+  }
+
   void _show(HerdAgent agent) {
     unawaited(AgentSheet.show(context, herd: _herd, agent: agent, onOpenTerminal: () => widget.onOpenTerminal(context, agent.session, agent.pane)));
   }
@@ -286,6 +330,8 @@ class _AgentsScreenState extends State<AgentsScreen> {
                     if (pane != null) _openPane(session, pane);
                   },
                   onStart: (session) => widget.onOpenHerdr(context, session),
+                  onNew: _new,
+                  onClose: _close,
                 ),
               ],
             );
@@ -331,11 +377,17 @@ class _AgentsScreenState extends State<AgentsScreen> {
 /// their workspaces, each workspace's tabs, each tab's panes. An agent's
 /// pane opens the agent; a plain terminal opens as a terminal.
 class _Everything extends StatelessWidget {
-  const _Everything({required this.state, required this.onPane, required this.onStart});
+  const _Everything({required this.state, required this.onPane, required this.onStart, required this.onNew, required this.onClose});
 
   final HerdState state;
   final void Function(String session, String pane) onPane;
   final void Function(String session) onStart;
+
+  /// Something new in a workspace: a terminal, or an agent.
+  final void Function(String session, HerdWorkspace workspace) onNew;
+
+  /// Close a pane (asked about by the caller).
+  final void Function(String session, HerdPane pane) onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +438,20 @@ class _Everything extends StatelessWidget {
         final label = workspace.label.isEmpty ? workspace.id : workspace.label;
         for (final tab in workspace.tabs) {
           // A workspace with one tab is headed by its own name alone.
-          rows.add(SectionHeader(workspace.tabs.length == 1 ? label : '$label · ${tab.label.isEmpty ? tab.id : tab.label}'));
+          rows.add(
+            SectionHeader(
+              workspace.tabs.length == 1 ? label : '$label · ${tab.label.isEmpty ? tab.id : tab.label}',
+              // Once per workspace, on its first heading.
+              trailing: tab == workspace.tabs.first
+                  ? IconButton(
+                      tooltip: 'New in $label',
+                      icon: const Icon(Icons.add),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => onNew(session.name, workspace),
+                    )
+                  : null,
+            ),
+          );
           for (final pane in tab.panes) {
             final agent = pane.agent;
             final look = agent == null ? null : agentLook(colors, pane.status);
@@ -403,6 +468,7 @@ class _Everything extends StatelessWidget {
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => onPane(session.name, pane.id),
+                onLongPress: () => onClose(session.name, pane),
               ),
             );
           }
@@ -438,6 +504,107 @@ class _AgentTile extends StatelessWidget {
       subtitle: Text(where, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+}
+
+/// A kind of agent as a name to show: herdr's word for it, capitalised
+/// ("claude" is Claude).
+String agentKindName(String kind) => kind.isEmpty ? kind : kind[0].toUpperCase() + kind.substring(1);
+
+/// What to make in a workspace: a terminal ([kind] null) or an agent.
+class NewChoice {
+  const NewChoice([this.kind]);
+
+  final String? kind;
+}
+
+/// Asks what to make in a workspace: a plain terminal, or one of the
+/// agents installed on the computer. Each opens in a new tab.
+class NewInWorkspaceSheet extends StatefulWidget {
+  const NewInWorkspaceSheet({super.key, required this.herd, required this.workspace});
+
+  final HerdController herd;
+
+  /// The workspace's name, for the heading.
+  final String workspace;
+
+  static Future<NewChoice?> show(BuildContext context, {required HerdController herd, required String workspace}) {
+    return showModalBottomSheet<NewChoice>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => NewInWorkspaceSheet(herd: herd, workspace: workspace),
+    );
+  }
+
+  @override
+  State<NewInWorkspaceSheet> createState() => _NewInWorkspaceSheetState();
+}
+
+class _NewInWorkspaceSheetState extends State<NewInWorkspaceSheet> {
+  List<HerdKind>? _kinds;
+  bool _asked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.herd.kinds().then((kinds) {
+      if (mounted) {
+        setState(() {
+          _kinds = kinds;
+          _asked = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColorsTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final kinds = _kinds;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.7),
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.only(bottom: 16),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('New in ${widget.workspace}', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.terminal),
+            title: const Text('Terminal'),
+            subtitle: const Text('A new tab with a shell in it'),
+            onTap: () => Navigator.of(context).pop(const NewChoice()),
+          ),
+          if (!_asked)
+            const Padding(padding: EdgeInsets.all(16), child: BusyNote('Asking which agents this computer has…'))
+          else if (kinds == null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: NoticeBox(tone: NoticeTone.error, text: widget.herd.problem ?? 'The computer did not say which agents it has.'),
+            )
+          else if (kinds.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text('None of the agents herdr knows is installed on this computer.', style: textTheme.bodyMedium?.copyWith(color: colors.muted)),
+            )
+          else
+            for (final kind in kinds)
+              ListTile(
+                leading: Icon(Icons.smart_toy_outlined, color: kind.installed ? null : colors.muted),
+                title: Text(agentKindName(kind.name)),
+                // One that is not installed downloads itself when it is
+                // first started: said before, not found out after.
+                subtitle: Text(kind.installed ? 'Starts in a new tab' : 'Not installed yet: the first start downloads it'),
+                onTap: () => Navigator.of(context).pop(NewChoice(kind.name)),
+              ),
+        ],
+      ),
     );
   }
 }

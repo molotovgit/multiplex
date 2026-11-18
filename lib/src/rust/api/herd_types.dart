@@ -9,7 +9,7 @@ import 'agents.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `status`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// One agent with where it is.
 class HerdAgent {
@@ -59,6 +59,59 @@ class HerdAgent {
           status == other.status &&
           title == other.title &&
           folder == other.folder;
+}
+
+/// A kind of agent the computer can start.
+class HerdKind {
+  /// herdr's name for it ("claude").
+  final String name;
+
+  /// False for one that installs itself (a download) the first time it
+  /// is started.
+  final bool installed;
+
+  const HerdKind({required this.name, required this.installed});
+
+  @override
+  int get hashCode => name.hashCode ^ installed.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdKind &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          installed == other.installed;
+}
+
+/// What was just made on the computer: a tab (in a new workspace, when
+/// one was asked for) and the terminal in it.
+class HerdMade {
+  /// Empty unless a workspace was made.
+  final String workspace;
+  final String tab;
+  final String pane;
+
+  const HerdMade({
+    required this.workspace,
+    required this.tab,
+    required this.pane,
+  });
+
+  static Future<HerdMade> default_() =>
+      RustLib.instance.api.crateApiHerdTypesHerdMadeDefault();
+
+  @override
+  int get hashCode => workspace.hashCode ^ tab.hashCode ^ pane.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdMade &&
+          runtimeType == other.runtimeType &&
+          workspace == other.workspace &&
+          tab == other.tab &&
+          pane == other.pane;
 }
 
 class HerdPane {

@@ -59,12 +59,39 @@ abstract class SshSession implements RustOpaqueInterface {
   /// `max_bytes`).
   Future<ExecOutput> exec({required String command, required int maxBytes});
 
+  /// Closes a pane, and whatever runs in it.
+  Future<void> herdClosePane({required String session, required String pane});
+
+  /// Closes a tab with all its panes.
+  Future<void> herdCloseTab({required String session, required String tab});
+
   /// Presses keys in a pane, by herdr's names for them: "esc", "enter",
   /// "ctrl+c", "up", "2".
   Future<void> herdKeys({
     required String session,
     required String pane,
     required List<String> keys,
+  });
+
+  /// The kinds of agent that can be started on the computer, those that
+  /// are installed first; the others install themselves when first
+  /// started.
+  Future<List<HerdKind>> herdKinds();
+
+  /// A new tab in a workspace, with a terminal in it. With an empty
+  /// label herdr names it.
+  Future<HerdMade> herdNewTab({
+    required String session,
+    required String workspace,
+    required String label,
+  });
+
+  /// A new workspace in a folder of the computer, with a tab and a
+  /// terminal in it.
+  Future<HerdMade> herdNewWorkspace({
+    required String session,
+    required String folder,
+    required String label,
   });
 
   /// Gives a pane's agent this text and Enter, as one piece. In a plain
@@ -80,6 +107,14 @@ abstract class SshSession implements RustOpaqueInterface {
     required String session,
     required String pane,
     required int lines,
+  });
+
+  /// Starts an agent of this kind in a pane that sits at its prompt.
+  /// Returns once the agent is ready there, or says why it is not.
+  Future<void> herdStartAgent({
+    required String session,
+    required String pane,
+    required String kind,
   });
 
   /// The herd now.

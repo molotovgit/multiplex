@@ -181,6 +181,29 @@ fn the_herd_is_told_as_it_changes_and_does_as_asked() {
     assert!(!none.status.success());
     assert!(String::from_utf8_lossy(&none.stderr).contains("not found"));
 
+    // Made from outside: a tab with a name, told by `watch` like any
+    // other change, and closed again; and which agents could be started.
+    let (ok, printed) = own.multiplex(&["herd", "do", "new-tab", &name, "w1", &URL_SAFE_NO_PAD.encode("from the phone")]);
+    assert!(ok);
+    let made = multiplex_proto::herd::parse_made(&printed).expect("what was made is said");
+    let herd = next(&lines, Duration::from_secs(3), "the tab made from outside", |herd| herd.sessions[0].workspaces[0].tabs.iter().any(|tab| tab.id == made.tab));
+    let tab = herd.sessions[0].workspaces[0].tabs.iter().find(|tab| tab.id == made.tab).unwrap();
+    assert_eq!((tab.label.as_str(), tab.panes.len(), tab.panes[0].id.as_str()), ("from the phone", 1, made.pane.as_str()));
+    assert!(own.multiplex(&["herd", "do", "close-pane", &name, &made.pane]).0);
+    next(&lines, Duration::from_secs(3), "the tab gone with its last pane", |herd| herd.sessions[0].workspaces[0].tabs.iter().all(|tab| tab.id != made.tab));
+    let (ok, printed) = own.multiplex(&["herd", "do", "new-tab", &name, "w1"]);
+    assert!(ok);
+    let again = multiplex_proto::herd::parse_made(&printed).unwrap();
+    // Waited for before it is closed: `watch` tells where things have
+    // settled, and a tab made and closed in one breath is never told.
+    next(&lines, Duration::from_secs(3), "the second tab", |herd| herd.sessions[0].workspaces[0].tabs.iter().any(|tab| tab.id == again.tab));
+    assert!(own.multiplex(&["herd", "do", "close-tab", &name, &again.tab]).0);
+    next(&lines, Duration::from_secs(3), "that tab closed too", |herd| herd.sessions[0].workspaces[0].tabs.iter().all(|tab| tab.id != again.tab));
+    assert!(!own.multiplex(&["herd", "do", "new-tab", &name, "w99"]).0, "a workspace that is not there");
+    let (ok, printed) = own.multiplex(&["herd", "kinds"]);
+    assert!(ok);
+    multiplex_proto::herd::parse_kinds(&printed).expect("a list of kinds");
+
     // What is not there, or not an id, is refused.
     assert!(!own.multiplex(&["herd", "do", "keys", &name, "w9:p9", "enter"]).0);
     assert!(!own.multiplex(&["herd", "do", "read", &name, "w1:p1;ls", "5"]).0);

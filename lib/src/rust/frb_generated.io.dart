@@ -565,6 +565,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdAgent dco_decode_herd_agent(dynamic raw);
 
   @protected
+  HerdKind dco_decode_herd_kind(dynamic raw);
+
+  @protected
+  HerdMade dco_decode_herd_made(dynamic raw);
+
+  @protected
   HerdPane dco_decode_herd_pane(dynamic raw);
 
   @protected
@@ -626,6 +632,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdAgent> dco_decode_list_herd_agent(dynamic raw);
+
+  @protected
+  List<HerdKind> dco_decode_list_herd_kind(dynamic raw);
 
   @protected
   List<HerdPane> dco_decode_list_herd_pane(dynamic raw);
@@ -1289,6 +1298,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdAgent sse_decode_herd_agent(SseDeserializer deserializer);
 
   @protected
+  HerdKind sse_decode_herd_kind(SseDeserializer deserializer);
+
+  @protected
+  HerdMade sse_decode_herd_made(SseDeserializer deserializer);
+
+  @protected
   HerdPane sse_decode_herd_pane(SseDeserializer deserializer);
 
   @protected
@@ -1352,6 +1367,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdAgent> sse_decode_list_herd_agent(SseDeserializer deserializer);
+
+  @protected
+  List<HerdKind> sse_decode_list_herd_kind(SseDeserializer deserializer);
 
   @protected
   List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer);
@@ -2129,6 +2147,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_herd_agent(HerdAgent self, SseSerializer serializer);
 
   @protected
+  void sse_encode_herd_kind(HerdKind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_herd_made(HerdMade self, SseSerializer serializer);
+
+  @protected
   void sse_encode_herd_pane(HerdPane self, SseSerializer serializer);
 
   @protected
@@ -2202,6 +2226,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     List<HerdAgent> self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_list_herd_kind(List<HerdKind> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_herd_pane(List<HerdPane> self, SseSerializer serializer);

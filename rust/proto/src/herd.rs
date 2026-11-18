@@ -210,6 +210,39 @@ pub fn clean_key(key: &str) -> Result<String, ProtoError> {
     }
 }
 
+/// A kind of agent by herdr's name for it, which is also the name of its
+/// program: "claude", "codex".
+pub fn clean_kind(kind: &str) -> Result<String, ProtoError> {
+    let ok = !kind.is_empty() && kind.len() <= 24 && kind.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'_'));
+    if ok {
+        Ok(kind.to_owned())
+    } else {
+        Err(ProtoError::Invalid("this is not a kind of agent"))
+    }
+}
+
+/// A name for a tab or a workspace: one line of up to 48 characters.
+pub fn clean_label(label: &str) -> Result<String, ProtoError> {
+    if label.chars().any(char::is_control) {
+        return Err(ProtoError::Invalid("a name is one line of ordinary characters"));
+    }
+    let tidy = label.split_whitespace().collect::<Vec<_>>().join(" ");
+    if tidy.is_empty() || tidy.chars().count() > 48 {
+        return Err(ProtoError::Invalid("a name is 1 to 48 characters"));
+    }
+    Ok(tidy)
+}
+
+/// A folder on the computer: a full path, one line, no way up out of it.
+pub fn clean_folder(folder: &str) -> Result<String, ProtoError> {
+    let ok = folder.starts_with('/') && folder.len() <= 1024 && !folder.chars().any(char::is_control) && !folder.split('/').any(|part| part == "..");
+    if ok {
+        Ok(folder.to_owned())
+    } else {
+        Err(ProtoError::Invalid("a folder is given by its full path"))
+    }
+}
+
 /// Something the phone asks of the herd.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HerdAction {
@@ -219,6 +252,15 @@ pub enum HerdAction {
     Keys { session: String, pane: String, keys: Vec<String> },
     /// Print a pane's recent output.
     Read { session: String, pane: String, lines: u32 },
+    /// A new tab in a workspace, with a terminal in it. An empty label
+    /// leaves the naming to herdr.
+    NewTab { session: String, workspace: String, label: String },
+    /// A new workspace in a folder, with a tab and a terminal in it.
+    NewWorkspace { session: String, folder: String, label: String },
+    /// Start an agent of this kind in a pane that sits at its prompt.
+    Start { session: String, pane: String, kind: String },
+    ClosePane { session: String, pane: String },
+    CloseTab { session: String, tab: String },
 }
 
 fn lines(text: &str) -> Result<u32, ProtoError> {
@@ -257,6 +299,23 @@ impl HerdAction {
                 args
             }
             HerdAction::Read { session, pane, lines } => vec!["read".to_owned(), session.clone(), pane.clone(), lines.to_string()],
+            HerdAction::NewTab { session, workspace, label } => {
+                let mut args = vec!["new-tab".to_owned(), session.clone(), workspace.clone()];
+                if !label.is_empty() {
+                    args.push(packed(label));
+                }
+                args
+            }
+            HerdAction::NewWorkspace { session, folder, label } => {
+                let mut args = vec!["new-workspace".to_owned(), session.clone(), packed(folder)];
+                if !label.is_empty() {
+                    args.push(packed(label));
+                }
+                args
+            }
+            HerdAction::Start { session, pane, kind } => vec!["start".to_owned(), session.clone(), pane.clone(), kind.clone()],
+            HerdAction::ClosePane { session, pane } => vec!["close-pane".to_owned(), session.clone(), pane.clone()],
+            HerdAction::CloseTab { session, tab } => vec!["close-tab".to_owned(), session.clone(), tab.clone()],
         }
     }
 
@@ -268,6 +327,15 @@ impl HerdAction {
                 HerdAction::Keys { session: clean_session_name(session)?, pane: clean_pane_id(pane)?, keys: keys.iter().map(|key| clean_key(key)).collect::<Result<_, _>>()? }
             }
             ["read", session, pane, count] => HerdAction::Read { session: clean_session_name(session)?, pane: clean_pane_id(pane)?, lines: lines(count)? },
+            ["new-tab", session, workspace] => HerdAction::NewTab { session: clean_session_name(session)?, workspace: clean_workspace_id(workspace)?, label: String::new() },
+            ["new-tab", session, workspace, label] => HerdAction::NewTab { session: clean_session_name(session)?, workspace: clean_workspace_id(workspace)?, label: clean_label(&unpacked(label)?)? },
+            ["new-workspace", session, folder] => HerdAction::NewWorkspace { session: clean_session_name(session)?, folder: clean_folder(&unpacked(folder)?)?, label: String::new() },
+            ["new-workspace", session, folder, label] => {
+                HerdAction::NewWorkspace { session: clean_session_name(session)?, folder: clean_folder(&unpacked(folder)?)?, label: clean_label(&unpacked(label)?)? }
+            }
+            ["start", session, pane, kind] => HerdAction::Start { session: clean_session_name(session)?, pane: clean_pane_id(pane)?, kind: clean_kind(kind)? },
+            ["close-pane", session, pane] => HerdAction::ClosePane { session: clean_session_name(session)?, pane: clean_pane_id(pane)? },
+            ["close-tab", session, tab] => HerdAction::CloseTab { session: clean_session_name(session)?, tab: clean_tab_id(tab)? },
             _ => return Err(ProtoError::Invalid("this is not something the herd can be asked to do")),
         })
     }
@@ -301,6 +369,53 @@ pub fn pane_command(session: &str, pane: &str) -> Result<String, ProtoError> {
 /// Reads a line the state or watch command printed.
 pub fn parse_state(line: &str) -> Result<Herd, ProtoError> {
     serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)
+}
+
+/// What making a tab or a workspace prints: herdr's ids for what was
+/// made, so the phone can go straight to the new terminal.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+pub struct Made {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub workspace: String,
+    pub tab: String,
+    pub pane: String,
+}
+
+/// Reads it, and takes only ids that are ids.
+pub fn parse_made(line: &str) -> Result<Made, ProtoError> {
+    let made: Made = serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)?;
+    if !made.workspace.is_empty() {
+        clean_workspace_id(&made.workspace)?;
+    }
+    clean_tab_id(&made.tab)?;
+    clean_pane_id(&made.pane)?;
+    Ok(made)
+}
+
+/// Prints the kinds of agent that can be started on the computer: those
+/// herdr knows whose program is installed, as a JSON list.
+pub fn kinds_command() -> String {
+    format!("{SHARE_COMMAND} herd kinds")
+}
+
+/// A kind of agent the computer can start.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Kind {
+    /// herdr's name for it, which is also its program's.
+    pub kind: String,
+    /// False for one whose program installs itself the first time it is
+    /// run (a download, on a computer that keeps its tools that way).
+    #[serde(default = "yes")]
+    pub installed: bool,
+}
+
+/// Reads that list; what is not a kind's name is left out. Those that are
+/// installed come first, each group in the computer's order.
+pub fn parse_kinds(line: &str) -> Result<Vec<Kind>, ProtoError> {
+    let kinds: Vec<Kind> = serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)?;
+    let mut kinds: Vec<Kind> = kinds.into_iter().filter(|kind| clean_kind(&kind.kind).is_ok()).take(64).collect();
+    kinds.sort_by_key(|kind| !kind.installed);
+    Ok(kinds)
 }
 
 /// What `herd do read` prints: the pane's recent output, one line of JSON.
@@ -452,6 +567,52 @@ mod tests {
         // A session or pane the phone was handed that is not one: refused before any command line exists.
         assert!(HerdAction::Keys { session: "a b".into(), pane: "w1:p1".into(), keys: vec!["esc".into()] }.command_line().is_err());
         assert!(HerdAction::Read { session: "default".into(), pane: "w1:p1; reboot".into(), lines: 10 }.command_line().is_err());
+    }
+
+    #[test]
+    fn making_and_closing_are_checked_like_everything_else() {
+        let tab = HerdAction::NewTab { session: "default".into(), workspace: "w2".into(), label: "fix the tests".into() };
+        let line = tab.command_line().unwrap();
+        assert!(line.contains(" herd do 'new-tab' 'default' 'w2' '") && !line.contains("fix"), "{line}");
+        let words: Vec<String> = line.split(" herd do ").nth(1).unwrap().split(' ').map(|w| w.trim_matches('\'').to_owned()).collect();
+        let refs: Vec<&str> = words.iter().map(String::as_str).collect();
+        assert_eq!(HerdAction::parse(&refs).unwrap(), tab);
+        // Without a name herdr gives it one.
+        let plain = HerdAction::NewTab { session: "default".into(), workspace: "w2".into(), label: String::new() };
+        assert!(plain.command_line().unwrap().ends_with(" herd do 'new-tab' 'default' 'w2'"));
+        assert_eq!(HerdAction::parse(&["new-tab", "default", "w2"]).unwrap(), plain);
+        // A name is tidied to one line; a folder is a full path.
+        assert_eq!(clean_label("  fix   the tests ").unwrap(), "fix the tests");
+        assert!(clean_label("two\nlines").is_err() && clean_label("").is_err() && clean_label(&"x".repeat(49)).is_err());
+        let space = HerdAction::NewWorkspace { session: "default".into(), folder: "/home/sam/code/my app".into(), label: "my app".into() };
+        let words = space.to_args();
+        let refs: Vec<&str> = words.iter().map(String::as_str).collect();
+        assert_eq!(HerdAction::parse(&refs).unwrap(), space);
+        assert!(!space.command_line().unwrap().contains("my app"));
+        for bad in ["code", "~/code", "/home/sam/../root", "/home/sam\n/x", ""] {
+            assert!(clean_folder(bad).is_err(), "{bad:?}");
+        }
+        // Starting and closing: only kinds that are a kind's name, only ids that are ids.
+        assert!(HerdAction::Start { session: "default".into(), pane: "w1:p2".into(), kind: "claude".into() }.command_line().unwrap().ends_with(" herd do 'start' 'default' 'w1:p2' 'claude'"));
+        assert!(HerdAction::Start { session: "default".into(), pane: "w1:p2".into(), kind: "claude --dangerously".into() }.command_line().is_err());
+        assert!(HerdAction::parse(&["start", "default", "w1:p2", "Claude"]).is_err());
+        assert!(HerdAction::ClosePane { session: "default".into(), pane: "w1:p2".into() }.command_line().unwrap().ends_with(" herd do 'close-pane' 'default' 'w1:p2'"));
+        assert!(HerdAction::CloseTab { session: "default".into(), tab: "w1:t2".into() }.command_line().unwrap().ends_with(" herd do 'close-tab' 'default' 'w1:t2'"));
+        assert!(HerdAction::parse(&["close-tab", "default", "w1:p2"]).is_err() && HerdAction::parse(&["close-pane", "default", "w1:t2"]).is_err());
+    }
+
+    #[test]
+    fn what_was_made_and_what_can_be_started_are_read_back_checked() {
+        assert_eq!(parse_made(r#"{"tab":"w1:t3","pane":"w1:p5"}"#).unwrap(), Made { workspace: String::new(), tab: "w1:t3".into(), pane: "w1:p5".into() });
+        let made = Made { workspace: "w4".into(), tab: "w4:t1".into(), pane: "w4:p1".into() };
+        assert_eq!(parse_made(&serde_json::to_string(&made).unwrap()).unwrap(), made);
+        assert!(parse_made(r#"{"tab":"w1:t3","pane":"w1:p5; reboot"}"#).is_err());
+        assert!(parse_made(r#"{"tab":"w1:t3"}"#).is_err() && parse_made("").is_err());
+        let kinds = parse_kinds(r#"[{"kind":"amp","installed":false},{"kind":"claude","installed":true},{"kind":"rm -rf","installed":true},{"kind":"codex"},{"kind":"pi","installed":false}]"#).unwrap();
+        assert_eq!(kinds.iter().map(|k| (k.kind.as_str(), k.installed)).collect::<Vec<_>>(), [("claude", true), ("codex", true), ("amp", false), ("pi", false)], "installed first, the rest in order");
+        assert!(parse_kinds("[]").unwrap().is_empty());
+        assert!(parse_kinds("claude").is_err() && parse_kinds(r#"["claude"]"#).is_err());
+        assert!(kinds_command().ends_with(" herd kinds"));
     }
 
     #[test]
