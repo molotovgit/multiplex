@@ -17,6 +17,7 @@ pub mod qobject {
         #[qproperty(QString, phones)]
         #[qproperty(QString, access)]
         #[qproperty(QString, checks)]
+        #[qproperty(QString, kept)]
         #[qproperty(QString, pairing)]
         #[qproperty(QString, notice)]
         #[qproperty(QString, accent)]
@@ -30,6 +31,16 @@ pub mod qobject {
         /// Reads the phones, their switches and the theme again.
         #[qinvokable]
         fn refresh(self: Pin<&mut Self>);
+
+        /// Reads the terminals the session server keeps.
+        #[qinvokable]
+        #[cxx_name = "readKept"]
+        fn read_kept(self: Pin<&mut Self>);
+
+        /// Opens one of them in a terminal window.
+        #[qinvokable]
+        #[cxx_name = "openKept"]
+        fn open_kept(self: Pin<&mut Self>, id: &QString);
 
         /// Checks what this computer is ready for.
         #[qinvokable]
@@ -91,6 +102,7 @@ pub struct BackendRust {
     access: QString,
     /// `[{name, ok, required, detail}]`, empty until asked for.
     checks: QString,
+    kept: QString,
     /// `{}` when not pairing; `{code, qr, computer, expires}` while a code
     /// is shown; `{paired}`, `{expired}` or `{error}` at the end.
     pairing: QString,
@@ -123,6 +135,7 @@ impl Default for BackendRust {
             phones: QString::from(&command.phones()),
             access: QString::from(&command.access()),
             checks: QString::from("[]"),
+            kept: QString::from("[]"),
             pairing: QString::from("{}"),
             notice: QString::default(),
             ink: QString::from(logic::ink_on(&accent)),
@@ -212,6 +225,26 @@ impl qobject::Backend {
                 }
             });
         });
+    }
+
+    /// Reads the terminals the session server keeps.
+    pub fn read_kept(self: Pin<&mut Self>) {
+        let command = self.rust().command.clone();
+        let qt_thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let kept = command.kept();
+            let _ = qt_thread.queue(move |mut backend| {
+                if backend.kept().to_string() != kept {
+                    backend.as_mut().set_kept(QString::from(&kept));
+                }
+            });
+        });
+    }
+
+    /// Opens one of them in a terminal window.
+    pub fn open_kept(mut self: Pin<&mut Self>, id: &QString) {
+        let said = self.rust().command.open_kept(&id.to_string()).said;
+        self.as_mut().set_notice(QString::from(&said));
     }
 
     /// Checks what this computer is ready for.

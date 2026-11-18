@@ -41,10 +41,11 @@ ApplicationWindow {
     readonly property var phones: parsed(backend.phones, [])
     readonly property var access: parsed(backend.access, ({}))
     readonly property var checks: parsed(backend.checks, [])
+    readonly property var kept: parsed(backend.kept, [])
     readonly property var pairing: parsed(backend.pairing, ({}))
     property int picked: 0
     readonly property var phone: phones.length > 0 ? phones[Math.min(picked, phones.length - 1)] : null
-    // "", "pair", "checks", "help" or "unpair"
+    // "", "pair", "checks", "kept", "help" or "unpair"
     property string overlay: ""
     property int now: Math.floor(Date.now() / 1000)
 
@@ -114,6 +115,9 @@ ApplicationWindow {
         else if (what === "checks") {
             overlay = "checks"
             backend.checkComputer()
+        } else if (what === "kept") {
+            overlay = "kept"
+            backend.readKept()
         } else if (what.indexOf("phone:") === 0) {
             // By name: the bar widget opens the window on one phone.
             for (var i = 0; i < phones.length; i++)
@@ -161,6 +165,9 @@ ApplicationWindow {
     Shortcut { sequences: ["Return", "Enter"]; context: Qt.ApplicationShortcut; enabled: win.overlay === "unpair"; onActivated: win.act("confirm") }
     Shortcut { sequence: "P"; context: Qt.ApplicationShortcut; onActivated: win.act("pair") }
     Shortcut { sequence: "D"; context: Qt.ApplicationShortcut; onActivated: win.act("checks") }
+    Shortcut { sequence: "T"; context: Qt.ApplicationShortcut; onActivated: win.act("kept") }
+    // What is kept is read again while its list is open.
+    Timer { interval: 1500; running: win.overlay === "kept"; repeat: true; onTriggered: backend.readKept() }
     Shortcut { sequences: ["Space", "S"]; context: Qt.ApplicationShortcut; enabled: win.overlay === ""; onActivated: win.act("send") }
     Shortcut { sequence: "R"; context: Qt.ApplicationShortcut; onActivated: win.act("ring") }
     Shortcut { sequence: "Delete"; context: Qt.ApplicationShortcut; onActivated: win.act("unpair") }
@@ -276,6 +283,12 @@ ApplicationWindow {
                     }
                 }
                 Item { Layout.fillWidth: true }
+                Act {
+                    text: qsTr("Terminals")
+                    kind: "quiet"
+                    onClicked: win.act("kept")
+                }
+                Key { name: "T" }
                 Act {
                     text: qsTr("This computer")
                     kind: "quiet"
@@ -576,6 +589,46 @@ ApplicationWindow {
             }
         }
 
+        // The terminals the session server keeps: what the phone can pick up.
+        Sheet {
+            visible: win.overlay === "kept"
+            sheetWidth: 640
+            heading: qsTr("Terminals kept running")
+
+            Ink {
+                visible: win.kept.length === 0
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                elide: Text.ElideNone
+                color: win.muted
+                text: qsTr("Nothing is kept right now. A terminal window is kept from the moment it opens, and stays when its window closes with something running in it.")
+            }
+            ListView {
+                visible: win.kept.length > 0
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(contentHeight, win.height - 220)
+                clip: true
+                spacing: 8
+                model: win.kept
+                delegate: RowLayout {
+                    required property var modelData
+                    width: ListView.view.width
+                    spacing: 10
+                    Ink { Layout.preferredWidth: 16; font.bold: true; color: modelData.wants ? win.warn : win.muted; text: modelData.wants ? "!" : "·" }
+                    Ink { Layout.preferredWidth: 170; text: modelData.what; font.bold: modelData.wants }
+                    Ink { Layout.fillWidth: true; text: modelData.where; color: win.muted }
+                    Act { text: qsTr("Open"); kind: "quiet"; onClicked: backend.openKept(modelData.id) }
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                Ink { Layout.fillWidth: true; color: win.muted; font.pixelSize: 12; text: qsTr("Each is also on the phone, under Agents.") }
+                Act { text: qsTr("Close"); onClicked: win.closeOverlay() }
+                Key { name: "Esc" }
+            }
+        }
+
         // Removing a phone is asked about first.
         Sheet {
             visible: win.overlay === "unpair"
@@ -613,6 +666,7 @@ ApplicationWindow {
                     ["1 – 6", qsTr("Switch what it may do on or off")],
                     ["Del", qsTr("Unpair it (Enter confirms)")],
                     ["D", qsTr("What this computer is ready for")],
+                    ["T", qsTr("The terminals kept running")],
                     ["Esc", qsTr("Close what is open")],
                     ["Q", qsTr("Quit")]
                 ]

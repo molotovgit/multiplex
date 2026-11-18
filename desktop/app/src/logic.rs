@@ -91,12 +91,69 @@ impl Command {
         self.json(&["access", "--json"], DEMO_ACCESS, "{}")
     }
 
+    /// The terminals the session server keeps, as lines for the window:
+    /// `[{id, where, what, wants}]`.
+    pub fn kept(&self) -> String {
+        kept_lines(&self.json(&["herd", "state"], DEMO_SESSIONS, "{}"), &std::env::var("HOME").unwrap_or_default())
+    }
+
+    /// Opens one kept terminal in a terminal window of its own.
+    pub fn open_kept(&self, id: &str) -> Reply {
+        if self.demo {
+            return Reply { ok: true, out: String::new(), said: format!("Opened {id}.") };
+        }
+        // Only an id of the server's own shape ever becomes a word of a command.
+        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == ':') || id.is_empty() {
+            return Reply { ok: false, out: String::new(), said: "That is not a terminal.".to_owned() };
+        }
+        match Process::new("xdg-terminal-exec").arg(&self.bin).args(["sessions", "attach", id]).spawn() {
+            Ok(_) => Reply { ok: true, out: String::new(), said: "Opened in a terminal window.".to_owned() },
+            Err(_) => Reply { ok: false, out: String::new(), said: "No terminal could be opened (xdg-terminal-exec is missing).".to_owned() },
+        }
+    }
+
     /// What this computer is ready for: `[{name, ok, required, detail}]`.
     pub fn checks(&self) -> String {
         self.json(&["doctor", "--json"], DEMO_CHECKS, "[]")
     }
 }
 
+/// What `multiplex herd state` printed, as the window's lines: one per
+/// terminal, with where it is, what runs in it, and whether its agent
+/// wants its owner.
+pub fn kept_lines(state: &str, home: &str) -> String {
+    let state: serde_json::Value = serde_json::from_str(state).unwrap_or_default();
+    let mut lines = Vec::new();
+    for session in state["sessions"].as_array().into_iter().flatten() {
+        for space in session["workspaces"].as_array().into_iter().flatten() {
+            for pane in space["tabs"].as_array().into_iter().flatten().flat_map(|tab| tab["panes"].as_array().into_iter().flatten()) {
+                let Some(id) = pane["id"].as_str() else { continue };
+                let folder = pane["folder"].as_str().unwrap_or_default();
+                let folder = match folder.strip_prefix(home) {
+                    Some(rest) if !home.is_empty() && (rest.is_empty() || rest.starts_with('/')) => format!("~{rest}"),
+                    _ => folder.to_owned(),
+                };
+                let status = pane["agent"]["status"].as_str().unwrap_or_default();
+                let what = match pane["agent"]["name"].as_str() {
+                    Some(agent) => format!(
+                        "{agent} {}",
+                        match status {
+                            "blocked" => "needs you",
+                            "done" => "is done",
+                            "working" => "is working",
+                            _ => "is idle",
+                        }
+                    ),
+                    None => "a terminal".to_owned(),
+                };
+                lines.push(serde_json::json!({ "id": id, "where": format!("{} · {folder}", space["label"].as_str().unwrap_or_default()), "what": what, "wants": matches!(status, "blocked" | "done") }));
+            }
+        }
+    }
+    serde_json::Value::Array(lines).to_string()
+}
+
+const DEMO_SESSIONS: &str = r#"{"sessions":[{"name":"main","workspaces":[{"id":"w1","label":"api","tabs":[{"id":"w1:t1","label":"1","panes":[{"id":"w1:p1","title":"","folder":"/home/sam/code/api","focused":false,"agent":{"name":"claude","status":"blocked"}}]},{"id":"w1:t2","label":"2","panes":[{"id":"w1:p2","title":"","folder":"/home/sam/code/api","focused":false}]}]}]}]}"#;
 const DEMO_PHONES: &str = r#"[{"name":"Sam's Pixel","connected":true,"battery":81,"charging":true},{"name":"Old tablet","connected":false,"battery":null,"charging":null}]"#;
 const DEMO_ACCESS: &str = r#"{"Sam's Pixel":{"desktop":true,"input":true,"files":true,"clipboard":true,"terminal":true,"tunnels":true},"Old tablet":{"desktop":true,"input":false,"files":true,"clipboard":false,"terminal":false,"tunnels":false}}"#;
 const DEMO_CHECKS: &str = r#"[{"name":"SSH server","ok":true,"required":true,"detail":"running"},{"name":"Key-only logins","ok":true,"required":true,"detail":"password logins are off"},{"name":"Tailscale","ok":true,"required":false,"detail":"connected as desk"},{"name":"Wake-on-LAN","ok":false,"required":false,"detail":"off: run `multiplex setup`, and allow it in the firmware's settings"},{"name":"Phone screen","ok":true,"required":false,"detail":"showing the phone's screen in a window needs mpv"},{"name":"Firewall","ok":null,"required":false,"detail":"ufw is on; `sudo ufw status` shows whether SSH is open to the home network"}]"#;
@@ -371,5 +428,14 @@ mod tests {
         assert!(first_actions(&args(&["--send"]), "").unwrap_err().contains("needs the phone's name"));
         assert!(first_actions(&args(&["--phone", ""]), "").is_err());
         assert!(first_actions(&args(&["--pear"]), "").unwrap_err().contains("--pear"));
+    }
+
+    #[test]
+    fn kept_terminals_become_lines_for_the_window() {
+        let lines: serde_json::Value = serde_json::from_str(&kept_lines(DEMO_SESSIONS, "/home/sam")).unwrap();
+        assert_eq!(lines[0], serde_json::json!({"id": "w1:p1", "where": "api · ~/code/api", "what": "claude needs you", "wants": true}));
+        assert_eq!(lines[1], serde_json::json!({"id": "w1:p2", "where": "api · ~/code/api", "what": "a terminal", "wants": false}));
+        assert_eq!(kept_lines("not json", "/home/sam"), "[]");
+        assert_eq!(kept_lines("{}", ""), "[]");
     }
 }

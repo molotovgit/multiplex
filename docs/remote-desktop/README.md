@@ -65,6 +65,10 @@ Building Tailscale into the app needs Go and the Android NDK. Run `native/tailsc
 ![The Multiplex window: the paired phones, and what the picked one may do](pictures/window.png)
 
 - The paired phones, whether each is connected, and its battery.
+- **Terminals** (T): the terminals kept running, with what the agent in each is doing and which wants you; **Open** puts one in a terminal window. The same list as the phone's.
+
+  ![The window's list of kept terminals](pictures/window-terminals.png)
+
 - **Pair a phone** (`P`) shows the pairing code for the phone's camera and waits for it. Closing the window, or **Cancel**, takes the code back at once.
 - For the phone that is picked (`↑` `↓`): **Send files…** (`S` or Space; files dropped on the window go the same way), **Ring it** (`R`), **Unpair** (`Del`, asked about first), and the six switches of what it may do on this computer (`1` to `6`).
 - **This computer** (`D`) lists what `multiplex doctor` checks.
