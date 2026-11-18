@@ -48,6 +48,13 @@ abstract class HerdLink {
   /// Another name for a workspace.
   Future<void> rename(String session, String workspace, String label);
 
+  /// The agents that run in terminals the computer does not keep.
+  Future<List<HerdOutside>> outside();
+
+  /// A new workspace in [folder] with an agent of [kind] carrying on its
+  /// latest conversation there.
+  Future<HerdMade> carryOn(String session, String folder, String kind);
+
   /// Folders worth offering for a new workspace.
   Future<List<HerdPlace>> places();
 
@@ -104,6 +111,12 @@ class SshHerdLink implements HerdLink {
 
   @override
   Future<void> rename(String session, String workspace, String label) => ssh().herdRename(session: session, workspace: workspace, label: label);
+
+  @override
+  Future<List<HerdOutside>> outside() => ssh().herdOutside();
+
+  @override
+  Future<HerdMade> carryOn(String session, String folder, String kind) => ssh().herdContinue(session: session, folder: folder, kind: kind);
 
   @override
   Future<List<HerdPlace>> places() => ssh().herdPlaces();
@@ -246,6 +259,30 @@ class HerdController extends ChangeNotifier {
 
   /// Starts an agent of [kind] in the pane. False when it could not.
   Future<bool> startAgent(String session, String pane, String kind) => _ask(() => _link.start(session, pane, kind));
+
+  /// The agents that run in terminals the computer does not keep; none
+  /// when it could not be asked (an older package, say): not worth a
+  /// complaint.
+  Future<List<HerdOutside>> outside() async {
+    try {
+      return await _link.outside();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Carries on the latest conversation of [kind] in [folder], in a new
+  /// workspace; null when it could not.
+  Future<HerdMade?> carryOn(String session, String folder, String kind) async {
+    try {
+      final made = await _link.carryOn(session, folder, kind);
+      _clear();
+      return made;
+    } catch (e) {
+      _fail(e);
+      return null;
+    }
+  }
 
   /// Gives a workspace another name. False when it could not.
   Future<bool> rename(String session, String workspace, String label) => _ask(() => _link.rename(session, workspace, label));

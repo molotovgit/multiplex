@@ -244,7 +244,11 @@ multiplex herd pane <session> <pane>                         # that pane in this
 
 Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly of their shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-The pencil beside a workspace's name in **Everything** renames it. Still to come: sending pictures to an agent, and continuing the conversations of agents that ran outside a kept terminal.
+The pencil beside a workspace's name in **Everything** renames it.
+
+**Agents outside.** An agent started in a terminal Multiplex does not keep (one opened before the switch was turned on, or inside another program) cannot be entered from anywhere else. **Everything** lists these under **Running outside Multiplex**; a tap offers to continue its latest conversation in that folder in a new terminal that can be reached (`claude --continue`, `codex resume --last`). Close the other one first: two at once on one conversation get in each other's way. On the computer: `multiplex herd outside`.
+
+Still to come: sending pictures to an agent.
 
 ## A yes from the phone
 

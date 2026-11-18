@@ -264,6 +264,9 @@ pub enum HerdAction {
     CloseTab { session: String, tab: String },
     /// Another name for a workspace.
     Rename { session: String, workspace: String, label: String },
+    /// A new workspace in a folder, with an agent of this kind asked to
+    /// carry on its latest conversation there.
+    Continue { session: String, folder: String, kind: String },
     /// Answer what an agent asked, if it still asks it: `mark` is the
     /// mark of the question the answer was given to (empty when it was
     /// not a choice). See [`crate::asked::may_answer`].
@@ -324,6 +327,7 @@ impl HerdAction {
             HerdAction::ClosePane { session, pane } => vec!["close-pane".to_owned(), session.clone(), pane.clone()],
             HerdAction::CloseTab { session, tab } => vec!["close-tab".to_owned(), session.clone(), tab.clone()],
             HerdAction::Rename { session, workspace, label } => vec!["rename".to_owned(), session.clone(), workspace.clone(), packed(label)],
+            HerdAction::Continue { session, folder, kind } => vec!["continue".to_owned(), session.clone(), packed(folder), kind.clone()],
             HerdAction::Answer { session, pane, mark, with } => {
                 // A dash stands for "it was not a choice": no word is empty.
                 let mut args = vec!["answer".to_owned(), session.clone(), pane.clone(), if mark.is_empty() { "-".to_owned() } else { mark.clone() }];
@@ -354,6 +358,7 @@ impl HerdAction {
             ["close-pane", session, pane] => HerdAction::ClosePane { session: clean_session_name(session)?, pane: clean_pane_id(pane)? },
             ["close-tab", session, tab] => HerdAction::CloseTab { session: clean_session_name(session)?, tab: clean_tab_id(tab)? },
             ["rename", session, workspace, label] => HerdAction::Rename { session: clean_session_name(session)?, workspace: clean_workspace_id(workspace)?, label: clean_label(&unpacked(label)?)? },
+            ["continue", session, folder, kind] => HerdAction::Continue { session: clean_session_name(session)?, folder: clean_folder(&unpacked(folder)?)?, kind: clean_kind(kind)? },
             ["answer", session, pane, mark, how, what] => HerdAction::Answer {
                 session: clean_session_name(session)?,
                 pane: clean_pane_id(pane)?,
@@ -478,6 +483,37 @@ pub fn folder_asked(word: &str) -> Result<String, ProtoError> {
 pub fn parse_places(line: &str) -> Result<Vec<Place>, ProtoError> {
     let places: Vec<Place> = serde_json::from_str(line.trim()).map_err(|_| ProtoError::Damaged)?;
     Ok(places.into_iter().filter(|place| clean_folder(&place.path).is_ok() && !place.shown.chars().any(char::is_control) && place.shown.len() <= 1100).take(400).collect())
+}
+
+/// An agent that runs on the computer outside any terminal Multiplex
+/// keeps: it cannot be sat in front of, only told of.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct Outside {
+    /// Its program: "claude", "codex".
+    pub agent: String,
+    /// The folder it runs in.
+    pub folder: String,
+}
+
+/// Prints the agents that run outside, as one line of JSON.
+pub fn outside_command() -> String {
+    format!("{SHARE_COMMAND} herd outside")
+}
+
+pub fn parse_outside(text: &str) -> Result<Vec<Outside>, ProtoError> {
+    let all: Vec<Outside> = serde_json::from_str(text.trim()).map_err(|_| ProtoError::Damaged)?;
+    // Only what could be an agent in a folder; never more than a screenful.
+    Ok(all.into_iter().filter(|one| clean_kind(&one.agent).is_ok() && clean_folder(&one.folder).is_ok()).take(50).collect())
+}
+
+/// What an agent is started with to carry on the latest conversation in
+/// the folder it is started in. None for one whose way is not known.
+pub fn continue_command(kind: &str) -> Option<&'static str> {
+    match kind {
+        "claude" => Some("claude --continue"),
+        "codex" => Some("codex resume --last"),
+        _ => None,
+    }
 }
 
 /// What `herd do read` prints: the pane's recent output, one line of JSON.
@@ -636,6 +672,13 @@ mod tests {
         assert_eq!(HerdAction::parse(&args.iter().map(String::as_str).collect::<Vec<_>>()).unwrap(), rename);
         assert!(!rename.command_line().unwrap().contains("really"), "a name travels packed");
         assert!(HerdAction::parse(&["rename", "main", "w2:p1", "eA"]).is_err());
+        let carry_on = HerdAction::Continue { session: "main".into(), folder: "/home/sam/code/api".into(), kind: "claude".into() };
+        let args = carry_on.to_args();
+        assert_eq!(HerdAction::parse(&args.iter().map(String::as_str).collect::<Vec<_>>()).unwrap(), carry_on);
+        assert!(HerdAction::parse(&["continue", "main", "eA", "claude; reboot"]).is_err());
+        assert_eq!((continue_command("claude"), continue_command("codex"), continue_command("other")), (Some("claude --continue"), Some("codex resume --last"), None));
+        let outside = parse_outside(r#"[{"agent":"claude","folder":"/home/sam/code/api"},{"agent":"rm -rf","folder":"/x"},{"agent":"codex","folder":"relative"}]"#).unwrap();
+        assert_eq!(outside, [Outside { agent: "claude".into(), folder: "/home/sam/code/api".into() }]);
         // An answer travels with the mark of the question it was given to.
         let yes = HerdAction::Answer { session: "night".into(), pane: "w1:p4".into(), mark: "0123456789abcdef".into(), with: Reply::Choice("2".into()) };
         assert!(yes.command_line().unwrap().ends_with(" herd do 'answer' 'night' 'w1:p4' '0123456789abcdef' 'choice' '2'"));

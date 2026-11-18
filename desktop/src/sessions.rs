@@ -283,8 +283,8 @@ impl Terminal {
     fn agent(&self) -> Option<String> {
         let pid = self.front()?;
         let line = std::fs::read(format!("/proc/{pid}/cmdline")).ok()?;
-        // The program's own name, or the script an interpreter runs.
-        line.split(|b| *b == 0).take(2).filter_map(|word| Path::new(std::str::from_utf8(word).ok()?).file_name()?.to_str()).find_map(|name| AGENTS.iter().find(|agent| **agent == name)).map(|agent| (*agent).to_owned())
+        let words: Vec<String> = line.split(|b| *b == 0).take(2).map(|word| String::from_utf8_lossy(word).into_owned()).collect();
+        agent_of(&words).map(str::to_owned)
     }
 
     /// What its agent is doing: as its hooks said, or as its screen shows.
@@ -690,6 +690,18 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
         }
     });
     Ok(MadeIds { id, tab: format!("w{space}:t{number}"), workspace: format!("w{space}") })
+}
+
+/// The agent a command line is, if it is one: by its program's name, or
+/// by the script's name when the program is an interpreter running one
+/// (`node …/claude`). An agent's name as another program's argument
+/// (`vim claude`) is not an agent.
+pub fn agent_of(words: &[String]) -> Option<&'static str> {
+    const INTERPRETERS: &[&str] = &["node", "bun", "deno", "python", "python3", "bash", "sh", "zsh"];
+    let name = |word: &String| Path::new(word).file_name().and_then(|name| name.to_str()).map(str::to_owned);
+    let known = |name: String| AGENTS.iter().find(|agent| **agent == name).copied();
+    let program = name(words.first()?)?;
+    known(program.clone()).or_else(|| INTERPRETERS.contains(&program.as_str()).then(|| words.get(1).and_then(name).and_then(known)).flatten())
 }
 
 /// A key's name as the bytes a terminal sends for it.

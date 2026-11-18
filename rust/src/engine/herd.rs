@@ -32,6 +32,11 @@ pub async fn kinds(conn: &Connection) -> anyhow::Result<Vec<proto::Kind>> {
     proto::parse_kinds(&reply(conn, &proto::kinds_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
 }
 
+/// The agents that run outside any terminal the computer keeps.
+pub async fn outside(conn: &Connection) -> anyhow::Result<Vec<proto::Outside>> {
+    proto::parse_outside(&reply(conn, &proto::outside_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))
+}
+
 /// Folders worth offering for a new workspace.
 pub async fn places(conn: &Connection) -> anyhow::Result<Vec<proto::Place>> {
     proto::parse_places(&reply(conn, &proto::places_command()).await?).map_err(|_| anyhow::anyhow!(NOT_UNDERSTOOD))

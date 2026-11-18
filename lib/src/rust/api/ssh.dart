@@ -85,6 +85,14 @@ abstract class SshSession implements RustOpaqueInterface {
   /// Closes a tab with all its panes.
   Future<void> herdCloseTab({required String session, required String tab});
 
+  /// A new workspace in a folder, with an agent of this kind asked to
+  /// carry on its latest conversation there.
+  Future<HerdMade> herdContinue({
+    required String session,
+    required String folder,
+    required String kind,
+  });
+
   /// The folders inside a folder of the computer, by name.
   Future<List<HerdPlace>> herdFolders({required String inside});
 
@@ -116,6 +124,9 @@ abstract class SshSession implements RustOpaqueInterface {
     required String folder,
     required String label,
   });
+
+  /// The agents that run outside any terminal the computer keeps.
+  Future<List<HerdOutside>> herdOutside();
 
   /// Folders worth offering for a new workspace: those the user goes
   /// to, those herdr's panes are in, and projects in the home folder.

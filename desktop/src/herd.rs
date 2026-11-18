@@ -20,7 +20,7 @@ use anyhow::{anyhow, bail, Result};
 use multiplex_proto::agents::{Agent, AgentStatus};
 use multiplex_proto::asked::{asked, keys_for, may_answer, Asked};
 use multiplex_proto::asked::Reply;
-use multiplex_proto::herd::{clean_folder, Herd, HerdAction, HerdAgent, Kind, Made, PaneText, Place};
+use multiplex_proto::herd::{clean_folder, Herd, HerdAction, HerdAgent, Kind, Made, Outside, PaneText, Place};
 use multiplex_proto::share::LinkEvent;
 
 use crate::sessions::{self, read_frame, Request, AGENTS, SESSION};
@@ -348,6 +348,51 @@ pub fn starting_points(home: &str) -> Vec<Place> {
     points
 }
 
+/// One program on this computer, as far as it matters here.
+pub struct Running {
+    /// Its command line's words.
+    pub words: Vec<String>,
+    pub folder: String,
+    /// It has a terminal, and that terminal is not one Multiplex keeps.
+    pub in_a_plain_terminal: bool,
+}
+
+/// The agents among `running` that are in a terminal Multiplex does not
+/// keep, each folder's once. (An agent is known by its program's name,
+/// or the script an interpreter runs.)
+pub fn outside_of(running: Vec<Running>) -> Vec<Outside> {
+    let mut seen = BTreeSet::new();
+    running
+        .into_iter()
+        .filter(|one| one.in_a_plain_terminal)
+        .filter_map(|one| {
+            let agent = sessions::agent_of(&one.words)?;
+            seen.insert((agent, one.folder.clone())).then(|| Outside { agent: agent.to_owned(), folder: one.folder })
+        })
+        .collect()
+}
+
+/// `multiplex herd outside`: read from /proc, of this user's programs.
+fn outside() -> Vec<Outside> {
+    let running = std::fs::read_dir("/proc")
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|entry| {
+            let dir = entry.path();
+            dir.file_name()?.to_str()?.parse::<u32>().ok()?;
+            let words: Vec<String> = std::fs::read(dir.join("cmdline")).ok()?.split(|b| *b == 0).filter(|word| !word.is_empty()).map(|word| String::from_utf8_lossy(word).into_owned()).collect();
+            let folder = std::fs::read_link(dir.join("cwd")).ok()?.to_string_lossy().into_owned();
+            // The seventh word of its stat, after the name in brackets: its terminal (0: none).
+            let stat = std::fs::read_to_string(dir.join("stat")).ok()?;
+            let has_terminal = stat.rsplit_once(')')?.1.split_whitespace().nth(4)?.parse::<i64>().ok()? != 0;
+            let kept = std::fs::read(dir.join("environ")).ok()?.split(|b| *b == 0).any(|var| var.starts_with(b"MULTIPLEX_SESSION="));
+            Some(Running { words, folder, in_a_plain_terminal: has_terminal && !kept })
+        })
+        .collect();
+    outside_of(running)
+}
+
 fn made(answer: &sessions::Answer) -> Made {
     Made { workspace: answer.workspace.clone(), tab: answer.tab.clone(), pane: answer.id.clone() }
 }
@@ -384,6 +429,13 @@ fn act(action: &HerdAction) -> Result<()> {
             ours(session)?;
             // A tab holds one terminal, whose number it shares.
             server(&Request::Kill { id: tab.replacen(":t", ":p", 1) })?;
+        }
+        HerdAction::Continue { session, folder, kind } => {
+            ours(session)?;
+            let command = multiplex_proto::herd::continue_command(kind).ok_or_else(|| anyhow!("How {kind} carries on a conversation is not known to Multiplex."))?;
+            let made = new_terminal(folder, "", "", true)?;
+            server(&Request::Text { id: made.pane.clone(), text: command.to_owned() })?;
+            println!("{}", serde_json::to_string(&made)?);
         }
         HerdAction::Rename { session, workspace, label } => {
             ours(session)?;
@@ -439,6 +491,7 @@ pub fn run(args: &[&str]) -> Result<()> {
         }
         ["kinds"] => println!("{}", serde_json::to_string(&kinds())?),
         ["places"] => println!("{}", serde_json::to_string(&places())?),
+        ["outside"] => println!("{}", serde_json::to_string(&outside())?),
         ["folders", word] => {
             let inside = multiplex_proto::herd::folder_asked(word).map_err(|e| anyhow!("{e}"))?;
             if !Path::new(&inside).is_dir() {
@@ -552,5 +605,22 @@ mod tests {
         let inside = folders_in(&home.path().join("code"), &home.path().to_string_lossy());
         assert_eq!(inside.iter().map(|p| (p.shown.as_str(), p.project)).collect::<Vec<_>>(), [("~/code/deep", false), ("~/code/notes", false), ("~/code/web", true), ("~/code/Zeta", false)]);
         assert!(folders_in(&home.path().join("none"), "").is_empty());
+    }
+
+    #[test]
+    fn agents_in_terminals_multiplex_does_not_keep_are_found_once_per_folder() {
+        let one = |words: &[&str], folder: &str, plain: bool| Running { words: words.iter().map(|w| (*w).to_owned()).collect(), folder: folder.to_owned(), in_a_plain_terminal: plain };
+        let found = outside_of(vec![
+            one(&["claude"], "/home/sam/api", true),
+            // The same agent's helper in the same folder is not a second one.
+            one(&["node", "/usr/lib/node_modules/x/claude", "--child"], "/home/sam/api", true),
+            one(&["/home/sam/.local/bin/codex", "resume"], "/home/sam/web", true),
+            // In a kept terminal, or with no terminal at all (a service): not outside.
+            one(&["claude"], "/home/sam/kept", false),
+            // Not an agent, whatever its arguments say.
+            one(&["vim", "claude"], "/home/sam/notes", true),
+            one(&["bash"], "/home/sam", true),
+        ]);
+        assert_eq!(found.iter().map(|o| (o.agent.as_str(), o.folder.as_str())).collect::<Vec<_>>(), [("claude", "/home/sam/api"), ("codex", "/home/sam/web")]);
     }
 }

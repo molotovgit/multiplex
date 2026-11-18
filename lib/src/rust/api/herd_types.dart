@@ -9,7 +9,7 @@ import 'agents.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `status`, `tidy_asked`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`, `from`, `from`
 
 /// One agent with where it is.
 class HerdAgent {
@@ -160,6 +160,45 @@ class HerdMade {
           workspace == other.workspace &&
           tab == other.tab &&
           pane == other.pane;
+}
+
+/// An agent that runs on the computer in a terminal it does not keep:
+/// it can be told of, not sat in front of.
+class HerdOutside {
+  /// Its program ("claude").
+  final String agent;
+
+  /// The folder it runs in, and that folder's own name.
+  final String folder;
+  final String folderName;
+
+  /// Whether its latest conversation there can be carried on in a new
+  /// terminal.
+  final bool canContinue;
+
+  const HerdOutside({
+    required this.agent,
+    required this.folder,
+    required this.folderName,
+    required this.canContinue,
+  });
+
+  @override
+  int get hashCode =>
+      agent.hashCode ^
+      folder.hashCode ^
+      folderName.hashCode ^
+      canContinue.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HerdOutside &&
+          runtimeType == other.runtimeType &&
+          agent == other.agent &&
+          folder == other.folder &&
+          folderName == other.folderName &&
+          canContinue == other.canContinue;
 }
 
 class HerdPane {

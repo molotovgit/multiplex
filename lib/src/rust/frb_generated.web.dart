@@ -582,6 +582,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdMade dco_decode_herd_made(dynamic raw);
 
   @protected
+  HerdOutside dco_decode_herd_outside(dynamic raw);
+
+  @protected
   HerdPane dco_decode_herd_pane(dynamic raw);
 
   @protected
@@ -655,6 +658,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdKind> dco_decode_list_herd_kind(dynamic raw);
+
+  @protected
+  List<HerdOutside> dco_decode_list_herd_outside(dynamic raw);
 
   @protected
   List<HerdPane> dco_decode_list_herd_pane(dynamic raw);
@@ -1339,6 +1345,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   HerdMade sse_decode_herd_made(SseDeserializer deserializer);
 
   @protected
+  HerdOutside sse_decode_herd_outside(SseDeserializer deserializer);
+
+  @protected
   HerdPane sse_decode_herd_pane(SseDeserializer deserializer);
 
   @protected
@@ -1414,6 +1423,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<HerdKind> sse_decode_list_herd_kind(SseDeserializer deserializer);
+
+  @protected
+  List<HerdOutside> sse_decode_list_herd_outside(SseDeserializer deserializer);
 
   @protected
   List<HerdPane> sse_decode_list_herd_pane(SseDeserializer deserializer);
@@ -2217,6 +2229,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_herd_made(HerdMade self, SseSerializer serializer);
 
   @protected
+  void sse_encode_herd_outside(HerdOutside self, SseSerializer serializer);
+
+  @protected
   void sse_encode_herd_pane(HerdPane self, SseSerializer serializer);
 
   @protected
@@ -2305,6 +2320,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_list_herd_kind(List<HerdKind> self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_herd_outside(
+    List<HerdOutside> self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_list_herd_pane(List<HerdPane> self, SseSerializer serializer);

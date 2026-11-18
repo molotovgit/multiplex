@@ -92,6 +92,26 @@ impl From<proto::Place> for HerdPlace {
     }
 }
 
+/// An agent that runs on the computer in a terminal it does not keep:
+/// it can be told of, not sat in front of.
+#[derive(Debug, Clone)]
+pub struct HerdOutside {
+    /// Its program ("claude").
+    pub agent: String,
+    /// The folder it runs in, and that folder's own name.
+    pub folder: String,
+    pub folder_name: String,
+    /// Whether its latest conversation there can be carried on in a new
+    /// terminal.
+    pub can_continue: bool,
+}
+
+impl From<proto::Outside> for HerdOutside {
+    fn from(one: proto::Outside) -> Self {
+        Self { folder_name: proto::folder_name(&one.folder).to_owned(), can_continue: proto::continue_command(&one.agent).is_some(), agent: one.agent, folder: one.folder }
+    }
+}
+
 /// A kind of agent the computer can start.
 #[derive(Debug, Clone)]
 pub struct HerdKind {

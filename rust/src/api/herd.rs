@@ -8,7 +8,7 @@ use flutter_rust_bridge::frb;
 use multiplex_proto::asked::Reply;
 use multiplex_proto::herd as proto;
 
-use super::herd_types::{tidy_asked, HerdKind, HerdMade, HerdPlace, HerdState, HerdText};
+use super::herd_types::{tidy_asked, HerdKind, HerdMade, HerdOutside, HerdPlace, HerdState, HerdText};
 use super::ssh::SshSession;
 use super::watch::RemoteWatch;
 use crate::engine::herd;
@@ -74,6 +74,20 @@ impl SshSession {
         let conn = self.conn.clone();
         AsyncRuntime::run(async move { herd::act(&conn, &proto::HerdAction::ClosePane { session, pane }).await }).await??;
         Ok(())
+    }
+
+    /// The agents that run outside any terminal the computer keeps.
+    pub async fn herd_outside(&self) -> anyhow::Result<Vec<HerdOutside>> {
+        let conn = self.conn.clone();
+        let all = AsyncRuntime::run(async move { herd::outside(&conn).await }).await??;
+        Ok(all.into_iter().map(Into::into).collect())
+    }
+
+    /// A new workspace in a folder, with an agent of this kind asked to
+    /// carry on its latest conversation there.
+    pub async fn herd_continue(&self, session: String, folder: String, kind: String) -> anyhow::Result<HerdMade> {
+        let conn = self.conn.clone();
+        Ok(AsyncRuntime::run(async move { herd::make(&conn, &proto::HerdAction::Continue { session, folder, kind }).await }).await??.into())
     }
 
     /// Gives a workspace another name.

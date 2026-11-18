@@ -241,7 +241,7 @@ pub fn permits(access: &Access, wanted: &Wanted) -> Result<(), &'static str> {
             ["agents"] => need(access.desktop || access.terminal, "desktop"),
             // Seeing what runs in the terminals, as `agents`; typing into
             // them and reading them is the terminal's own power.
-            ["herd", "state" | "watch" | "kinds"] => need(access.desktop || access.terminal, "desktop"),
+            ["herd", "state" | "watch" | "kinds" | "outside"] => need(access.desktop || access.terminal, "desktop"),
             // The names of the user's folders, for opening one: the
             // terminal's own power, like opening it.
             ["herd", "do" | "pane", ..] | ["herd", "places" | "news"] | ["herd", "folders", _] => need(access.terminal, "terminal"),

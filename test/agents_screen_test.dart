@@ -91,6 +91,18 @@ class _Herd implements HerdLink {
   @override
   Future<void> rename(String session, String workspace, String label) async => asked.add('rename $session $workspace "$label"');
 
+  /// The agents that run where the phone cannot reach.
+  List<HerdOutside> runsOutside = const [];
+
+  @override
+  Future<List<HerdOutside>> outside() async => runsOutside;
+
+  @override
+  Future<HerdMade> carryOn(String session, String folder, String kind) async {
+    asked.add('carry on $session $folder $kind');
+    return const HerdMade(workspace: 'w7', tab: 'w7:t9', pane: 'w7:p9');
+  }
+
   /// The folders the computer offers; null: it cannot say.
   List<HerdPlace>? offers = const [
     HerdPlace(path: '/home/sam/code/api', shown: '~/code/api', name: 'api', project: true),
@@ -510,6 +522,42 @@ void main() {
       await tester.tap(find.text('Open a folder'));
       await tester.pumpAndSettle();
       expect(find.text('The computer did not answer.'), findsWidgets);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 3));
+    });
+
+    testWidgets('an agent outside a kept terminal is listed, and its conversation continued in one that is', (tester) async {
+      final terminals = <String>[];
+      final herd = _Herd(one())
+        ..runsOutside = const [
+          HerdOutside(agent: 'claude', folder: '/home/sam/code/web', folderName: 'web', canContinue: true),
+          HerdOutside(agent: 'amp', folder: '/home/sam/code/old', folderName: 'old', canContinue: false),
+        ];
+      await everything(tester, herd, terminals, []);
+      expect(find.text('Running outside Multiplex'), findsOneWidget);
+      expect(find.text('Claude in web'), findsOneWidget);
+      // Asked about first, with why; "Not now" does nothing.
+      await tester.tap(find.text('Claude in web'));
+      await tester.pumpAndSettle();
+      expect(find.text('Continue Claude here?'), findsOneWidget);
+      expect(find.textContaining('two at once on one conversation'), findsOneWidget);
+      await tester.tap(find.text('Not now'));
+      await tester.pumpAndSettle();
+      expect(herd.asked.where((what) => what.startsWith('carry on')), isEmpty);
+      // Continued: a new workspace on the computer, and the phone in front of it.
+      await tester.tap(find.text('Claude in web'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue here'));
+      await tester.pumpAndSettle();
+      expect(herd.asked.where((what) => what.startsWith('carry on')), ['carry on default /home/sam/code/web claude']);
+      expect(terminals, ['default/w7:p9']);
+      // One whose way of carrying on is not known is only told of.
+      await tester.tap(find.text('Amp in old'));
+      await tester.pumpAndSettle();
+      expect(find.text('Amp runs outside'), findsOneWidget);
+      expect(find.text('Continue here'), findsNothing);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 3));
     });

@@ -150,12 +150,53 @@ class _AgentsScreenState extends State<AgentsScreen> {
   void initState() {
     super.initState();
     _herd.addListener(_arrive);
+    unawaited(_lookOutside());
     if (widget.herd == null) {
       unawaited(_herd.start());
     } else {
       // Already known: go where asked without waiting for news.
       WidgetsBinding.instance.addPostFrameCallback((_) => _arrive());
     }
+  }
+
+  /// The agents that run in terminals the computer does not keep.
+  List<HerdOutside> _outside = const [];
+
+  Future<void> _lookOutside() async {
+    final found = await _herd.outside();
+    if (mounted) setState(() => _outside = found);
+  }
+
+  /// An agent outside cannot be sat in front of. Its latest conversation
+  /// in that folder can be carried on in a terminal that can: asked
+  /// about first, because two at once on one conversation get in each
+  /// other's way.
+  Future<void> _carryOn(String session, HerdOutside one) async {
+    final agent = agentKindName(one.agent);
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(one.canContinue ? 'Continue $agent here?' : '$agent runs outside'),
+        content: Text(
+          '$agent in ${one.folder} was started in a terminal Multiplex does not keep, so it cannot be opened from the phone.'
+          '${one.canContinue ? '\n\nIts latest conversation in that folder can be continued in a new terminal that can. If the other one is still in use, close it first: two at once on one conversation get in each other\'s way.' : '\n\nStart it in a new terminal on the computer and it shows up here.'}',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(one.canContinue ? 'Not now' : 'Close')),
+          if (one.canContinue) FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Continue here')),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+    final made = await _herd.carryOn(session, one.folder, one.agent);
+    if (!mounted) return;
+    if (made == null) {
+      Toast.show(context, _herd.problem ?? 'It could not be continued.');
+      return;
+    }
+    widget.onVisited?.call(session, made.pane, one.folderName, one.agent);
+    await widget.onOpenTerminal(context, session, made.pane);
+    unawaited(_lookOutside());
   }
 
   /// Once the herd is known, goes where the owner was: its agent, its
@@ -383,6 +424,8 @@ class _AgentsScreenState extends State<AgentsScreen> {
                   onRename: _rename,
                   onClose: _close,
                   onOpenFolder: _openFolder,
+                  outside: _outside,
+                  onOutside: _carryOn,
                 ),
               ],
             );
@@ -436,6 +479,8 @@ class _Everything extends StatelessWidget {
     required this.onRename,
     required this.onClose,
     required this.onOpenFolder,
+    this.outside = const [],
+    this.onOutside,
   });
 
   final HerdState state;
@@ -451,6 +496,11 @@ class _Everything extends StatelessWidget {
 
   /// Open a folder of the computer as a new workspace of a session.
   final void Function(String session) onOpenFolder;
+
+  /// Agents that run in terminals the computer does not keep, and what
+  /// to do when one is tapped.
+  final List<HerdOutside> outside;
+  final void Function(String session, HerdOutside one)? onOutside;
 
   @override
   Widget build(BuildContext context) {
@@ -553,6 +603,25 @@ class _Everything extends StatelessWidget {
             title: const Text('Open a folder'),
             subtitle: Text(named ? 'As a new workspace in ${session.name}' : 'As a new workspace'),
             onTap: () => onOpenFolder(session.name),
+          ),
+        );
+      }
+    }
+    final running = state.sessions.where((session) => session.running).firstOrNull;
+    if (outside.isNotEmpty && running != null) {
+      rows.add(const SectionHeader('Running outside Multiplex'));
+      for (final one in outside) {
+        rows.add(
+          ListTile(
+            key: ValueKey('outside/${one.agent}/${one.folder}'),
+            leading: Icon(Icons.link_off, color: colors.muted),
+            title: Text('${agentKindName(one.agent)} in ${one.folderName.isEmpty ? one.folder : one.folderName}', maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              one.canContinue ? 'Not reachable from here. Tap to continue it in a terminal that is.' : 'Not reachable from here.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: onOutside == null ? null : () => onOutside!(running.name, one),
           ),
         );
       }
