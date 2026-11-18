@@ -1104,6 +1104,16 @@ pub fn run(args: &[&str]) -> Result<()> {
     let socket = socket_path();
     match args {
         ["serve"] => serve(&socket, &remembered_file())?,
+        // Without a word: what is kept, for a person to read.
+        [] => {
+            if UnixStream::connect(&socket).is_err() {
+                println!("The session server is not running; it starts when a terminal is first kept (multiplex here).");
+                return Ok(());
+            }
+            let state = ask(&socket, &Request::State)?.0.state.unwrap_or_default();
+            let viewers: HashMap<String, usize> = ask(&socket, &Request::List)?.0.terminals.into_iter().map(|told| (told.id, told.viewers)).collect();
+            print!("{}", told_plainly(&state, &viewers, &std::env::var("HOME").unwrap_or_default()));
+        }
         ["list"] => println!("{}", serde_json::to_string(&ask(&socket, &Request::List)?.0.terminals)?),
         ["attach", id] => {
             if let Some(code) = attach(&socket, id, false, false)? {
@@ -1122,7 +1132,7 @@ pub fn run(args: &[&str]) -> Result<()> {
                 let _ = ask(&socket, &Request::Stop);
             }
         }
-        _ => bail!("usage: multiplex sessions serve | list | attach <id> | kill <id> | report <id> <agent> <state> | stop"),
+        _ => bail!("usage: multiplex sessions [serve | list | attach <id> | kill <id> | report <id> <agent> <state> | stop]"),
     }
     Ok(())
 }
@@ -1323,6 +1333,46 @@ pub fn standing() -> (bool, String) {
     } else {
         (false, format!("{state}; {}", missing.join("; ")))
     }
+}
+
+/// What is kept, in lines for a person: each workspace, and under it
+/// each terminal with where it is, what its agent does, and whether
+/// anyone is in front of it.
+pub fn told_plainly(state: &Session, viewers: &HashMap<String, usize>, home: &str) -> String {
+    if state.workspaces.is_empty() {
+        return "Nothing is kept. A new terminal window is kept from the moment it opens (multiplex setup --terminals), or run: multiplex here\n".to_owned();
+    }
+    let mut lines = String::new();
+    for space in &state.workspaces {
+        lines.push_str(&format!("{}\n", space.label));
+        for pane in space.tabs.iter().flat_map(|tab| &tab.panes) {
+            let folder = match pane.folder.strip_prefix(home) {
+                Some(rest) if !home.is_empty() && (rest.is_empty() || rest.starts_with('/')) => format!("~{rest}"),
+                _ => pane.folder.clone(),
+            };
+            let what = match &pane.agent {
+                Some(agent) => format!(
+                    "{} {}",
+                    agent.name,
+                    match agent.status {
+                        AgentStatus::Blocked => "needs you",
+                        AgentStatus::Done => "is done",
+                        AgentStatus::Working => "is working",
+                        _ => "is idle",
+                    }
+                ),
+                None => "a terminal".to_owned(),
+            };
+            let seen = match viewers.get(&pane.id).copied().unwrap_or(0) {
+                0 => "nobody in front of it".to_owned(),
+                1 => "1 viewer".to_owned(),
+                n => format!("{n} viewers"),
+            };
+            lines.push_str(&format!("  {:<8} {what}, in {folder} ({seen})\n", pane.id));
+        }
+    }
+    lines.push_str("\nSit in front of one: multiplex sessions attach <id>    End one: multiplex sessions kill <id>\n");
+    lines
 }
 
 /// What `multiplex here --window` exits with when this terminal could
@@ -1673,5 +1723,25 @@ mod tests {
         assert_eq!(resume_command("claude", "abc; rm -rf ~"), None);
         assert_eq!(resume_command("claude", ""), None);
         assert_eq!(resume_command("some-agent", "abc"), None);
+    }
+
+    #[test]
+    fn what_is_kept_is_told_in_plain_lines() {
+        let pane = |id: &str, folder: &str, agent: Option<(&str, AgentStatus)>| Pane { id: id.into(), title: String::new(), folder: folder.into(), focused: false, agent: agent.map(|(name, status)| PaneAgent { name: name.into(), status }) };
+        let state = Session {
+            name: SESSION.into(),
+            running: true,
+            workspaces: vec![Workspace {
+                id: "w1".into(),
+                label: "the api".into(),
+                tabs: vec![
+                    Tab { id: "w1:t1".into(), label: "1".into(), panes: vec![pane("w1:p1", "/home/sam/code/api", Some(("claude", AgentStatus::Blocked)))] },
+                    Tab { id: "w1:t2".into(), label: "2".into(), panes: vec![pane("w1:p2", "/home/samuel", None)] },
+                ],
+            }],
+        };
+        let told = told_plainly(&state, &[("w1:p1".to_owned(), 2)].into(), "/home/sam");
+        assert!(told.starts_with("the api\n  w1:p1    claude needs you, in ~/code/api (2 viewers)\n  w1:p2    a terminal, in /home/samuel (nobody in front of it)\n"), "{told}");
+        assert!(told_plainly(&Session::default(), &HashMap::new(), "/home/sam").starts_with("Nothing is kept."));
     }
 }

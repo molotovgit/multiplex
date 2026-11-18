@@ -189,7 +189,7 @@ Multiplex keeps the computer's terminals running itself: a small session server 
 - `multiplex setup --agents`: Claude Code tells Multiplex when it works, asks and stops, and which conversation it is in (six hooks in `~/.claude/settings.json`, beside your own). Other agents are known by their program and read off their screen.
 - `multiplex setup --service`: the session server as a systemd user service.
 
-`multiplex here` does for one terminal what the first switch does for all.
+`multiplex here` does for one terminal what the first switch does for all. `multiplex setup` on its own turns all three on along with everything else it prepares, `multiplex doctor` says how they stand, and `multiplex sessions` lists what is kept in plain lines (`multiplex sessions attach <id>` sits in front of one from any terminal).
 
 After a restart of the computer, each terminal in which Claude Code or Codex was in a conversation comes back: a terminal in its folder, and the agent asked to carry on (`claude --resume …`, `codex resume …`). Claude Code says which conversation it is in through its hooks; Codex's is found among its own saved sessions, by the folder it was started in. A terminal with nothing running that nobody has looked at for a day is ended.
 
