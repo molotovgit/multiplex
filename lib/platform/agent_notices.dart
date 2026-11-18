@@ -11,7 +11,7 @@ class AgentPlace {
   /// The computer, by the id of its host.
   final String hostId;
 
-  /// The herdr session and the pane in it.
+  /// The session and the terminal in it.
   final String session;
   final String pane;
 

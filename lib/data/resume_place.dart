@@ -1,14 +1,14 @@
 import 'models.dart';
 
 /// Where the owner last was with an agent or a terminal of a computer's
-/// herdr, so that Home can take them straight back there.
+/// session server, so that Home can take them straight back there.
 class ResumePlace {
   const ResumePlace({required this.hostId, required this.session, required this.pane, required this.title, this.agent = ''});
 
   /// The computer, by the id of its host.
   final String hostId;
 
-  /// The herdr session and the pane in it.
+  /// The session and the terminal in it.
   final String session;
   final String pane;
 

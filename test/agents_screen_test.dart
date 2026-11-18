@@ -7,7 +7,7 @@ import 'package:multiplex/src/rust/api/agents.dart';
 import 'package:multiplex/src/rust/api/herd_types.dart';
 import 'package:multiplex/ui/computers/agents_screen.dart';
 
-/// A computer's herdr that tests feed by hand.
+/// A computer's session server that tests feed by hand.
 class _Herd implements HerdLink {
   _Herd(this.now);
 
@@ -157,7 +157,7 @@ void main() {
           title: 'Desk',
           link: herd,
           onOpenTerminal: (_, session, pane) async => terminals?.add('$session/$pane'),
-          onOpenHerdr: (_, session) async => terminals?.add('herdr of $session'),
+          onStartSession: (_, session) async => terminals?.add('start of $session'),
           openAt: openAt,
           onVisited: (session, pane, title, agent) => visited?.add('$session/$pane "$title" ${agent.isEmpty ? '(terminal)' : agent}'),
         ),
@@ -202,7 +202,7 @@ void main() {
     herd.tell(_state([], sessions: [_session('default', panes: 2)]));
     await tester.pump();
     expect(find.text('No agents are running'), findsOneWidget);
-    expect(find.textContaining('2 terminals open'), findsOneWidget);
+    expect(find.textContaining('2 terminals are open'), findsOneWidget);
     expect(herd.asked, isEmpty, reason: 'nothing was asked of the computer for any of this');
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -215,33 +215,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets("herdr's own screen is one tap away: at once with one session, by name with several", (tester) async {
-    final terminals = <String>[];
-    final one = _Herd(_state([_agent('w1:p1', AgentStatus.idle, 'Waiting for work')], sessions: [_session('default')]));
-    await open(tester, one, terminals: terminals);
-    await tester.tap(find.byTooltip("Open herdr's own screen"));
-    expect(terminals, ['herdr of default']);
-    await tester.pumpWidget(const SizedBox.shrink());
-
-    terminals.clear();
-    final two = _Herd(_state([_agent('w1:p1', AgentStatus.idle, 'Waiting for work')], sessions: [_session('default'), _session('night')]));
-    await open(tester, two, terminals: terminals);
-    await tester.tap(find.byTooltip("Open herdr's own screen"));
-    await tester.pumpAndSettle();
-    expect(terminals, isEmpty, reason: 'which one is asked first');
-    await tester.tap(find.text('night'));
-    await tester.pumpAndSettle();
-    expect(terminals, ['herdr of night']);
-    await tester.pumpWidget(const SizedBox.shrink());
-
-    // Nothing to open where herdr runs nothing.
-    final none = _Herd(_state([], available: false));
-    await open(tester, none);
-    expect(find.byTooltip("Open herdr's own screen"), findsNothing);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('everything herdr holds: sessions, workspaces, tabs, and plain terminals too', (tester) async {
+  testWidgets('everything the computer keeps: sessions, workspaces, tabs, and plain terminals too', (tester) async {
     final terminals = <String>[];
     HerdPane pane(String id, String title, {String? agent, AgentStatus status = AgentStatus.unknown, String folder = 'api'}) =>
         HerdPane(id: id, title: title, folder: '/home/sam/code/$folder', folderName: folder, focused: false, agent: agent, status: status);
@@ -287,7 +261,7 @@ void main() {
     await tester.pumpAndSettle();
     final order = ['default', 'api · 1', 'sam@desk:~/code/api', 'api · review', 'Allow this command?', 'w2', 'Terminal'];
     final tops = [for (final text in order) tester.getTopLeft(find.text(text)).dy];
-    expect(tops, [...tops]..sort(), reason: "in herdr's own order, a workspace with one tab under its name alone");
+    expect(tops, [...tops]..sort(), reason: "in the computer's own order, a workspace with one tab under its name alone");
     // The running session ends with the way to add to it, by name since there are two.
     expect(find.text('As a new workspace in default'), findsOneWidget);
     expect(tester.getTopLeft(find.text('Open a folder')).dy, greaterThan(tops.last));
@@ -315,7 +289,7 @@ void main() {
     expect(tester.widgetList(find.text('Open a folder')).length, lessThanOrEqualTo(1), reason: 'only the running session offers it');
     terminals.clear();
     await tester.tap(find.text('Start'));
-    expect(terminals, ['herdr of night']);
+    expect(terminals, ['start of night']);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 3));
   });
@@ -440,7 +414,7 @@ void main() {
       await everything(tester, herd, [], []);
       await tester.tap(find.byTooltip('New in api'));
       await tester.pumpAndSettle();
-      expect(find.text('None of the agents herdr knows is installed on this computer.'), findsOneWidget);
+      expect(find.text('None of the agents Multiplex knows is installed on this computer.'), findsOneWidget);
       expect(find.text('Terminal'), findsOneWidget);
       Navigator.of(tester.element(find.text('Terminal'))).pop();
       await tester.pumpAndSettle();
@@ -664,10 +638,10 @@ void main() {
     });
   });
 
-  testWidgets('a computer without herdr, and one that does not answer', (tester) async {
+  testWidgets('a computer whose package is too old, and one that does not answer', (tester) async {
     final none = _Herd(_state([], available: false));
     await open(tester, none);
-    expect(find.text('herdr is not on this computer'), findsOneWidget);
+    expect(find.text('This computer does not keep sessions yet'), findsOneWidget);
     expect(find.text('Everything'), findsNothing, reason: 'no tabs over nothing');
     await tester.pumpWidget(const SizedBox.shrink());
 

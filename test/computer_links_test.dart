@@ -48,7 +48,7 @@ class _AgentNotices implements AgentNotices {
   void stop() => answer = null;
 }
 
-/// A computer's herdr that writes down the answers it is given.
+/// A computer's session server that writes down the answers it is given.
 class _AnsweredHerd implements HerdLink {
   final log = <String>[];
   Object? refuses;

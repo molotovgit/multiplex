@@ -183,22 +183,32 @@ On a computer's page, **Scan text** opens the phone's page scanner (Google's: it
 
 ## Coding agents
 
-If the computer runs coding agents under [herdr](https://herdr.dev) (Omarchy ships it), the computer's page has an **Agents** tile. It is an inbox: every agent of every herdr session, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: herdr tells the computer of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
+Multiplex keeps the computer's terminals running itself: a small session server (`multiplex sessions serve`, a service of your own that starts with the desktop) owns them, and a terminal window is only a viewer of one. So what runs in a terminal runs on when its window closes, and the phone can sit in front of the same terminal. Three switches set this up, each with an `-off` twin and `--dry-run`:
 
-Beside the inbox, **Everything** shows all that herdr holds, in herdr's own order: each session (one that is not running too, with **Start**), its workspaces, their tabs and every pane, plain terminals included. A pane with an agent opens the agent; a plain terminal opens as a terminal. The **+** on a workspace makes something new in it, in a tab of its own: a terminal, or an agent (herdr starts it and the phone lands in front of it). The agents that are installed come first; one that is not, on a computer that installs its tools the first time they are run (Omarchy does, through mise), says that its first start is a download. A long press on a pane closes it, asked about first. **Open a folder**, at the end of each running session, opens a folder of the computer as a new workspace: the picker starts with the folders you go to (from zoxide, where it is installed), those herdr already has open and projects in your home folder, any folder can be looked into, and the home folder and the root come last, so every folder can be reached. Then it asks what to have there: the terminal it came with, or an agent.
+- `multiplex setup --terminals`: every new terminal window is a kept session (a few marked lines at the end of `~/.bashrc` or `~/.zshrc`; the file as it was is kept beside it). A window closed with something running leaves it running; closed idle, its session ends. Not over SSH, in tmux, or where `MULTIPLEX_PLAIN=1` is set; and if the server cannot take a terminal, it is a plain one.
+- `multiplex setup --agents`: Claude Code tells Multiplex when it works, asks and stops, and which conversation it is in (six hooks in `~/.claude/settings.json`, beside your own). Other agents are known by their program and read off their screen.
+- `multiplex setup --service`: the session server as a systemd user service.
+
+`multiplex here` does for one terminal what the first switch does for all.
+
+After a restart of the computer, each terminal in which an agent was in a conversation comes back: a terminal in its folder, and the agent asked to carry on (`claude --resume …`).
+
+On the phone, the computer's page has an **Agents** tile. It is an inbox: every agent in every kept terminal, those that need you first, then those that finished, the busy, the idle, each with what it is doing and where. The list is always the present: the session server tells of every change and the computer tells the phone, so nothing is asked again and again (a change is on its way about 30 ms after herdr reports it).
+
+Beside the inbox, **Everything** shows all that is kept: a workspace per folder, and in it every terminal, plain ones included. A pane with an agent opens the agent; a plain terminal opens as a terminal. The **+** on a workspace makes something new in it, in a tab of its own: a terminal, or an agent (it is started there and the phone lands in front of it). The agents that are installed come first; one that is not, on a computer that installs its tools the first time they are run (Omarchy does, through mise), says that its first start is a download. A long press on a pane closes it, asked about first. **Open a folder**, at the end of each running session, opens a folder of the computer as a new workspace: the picker starts with the folders you go to (from zoxide, where it is installed), those herdr already has open and projects in your home folder, any folder can be looked into, and the home folder and the root come last, so every folder can be reached. Then it asks what to have there: the terminal it came with, or an agent.
 
 A tap on an agent opens it without a terminal:
 
 - what it last wrote, read again whenever its state changes (and every two seconds while it works);
 - the keys its questions take: Esc, 1, 2, 3, the arrows, Tab, Enter;
 - a line to answer it or ask for more, sent as one piece with Enter;
-- **Open its terminal**: that agent's pane alone in Multiplex's terminal, drawn at the phone's own columns and rows. Nothing on the computer is resized by it: herdr draws the pane a second time for the phone. herdr's whole screen is the button at the top of the inbox.
+- **Open its terminal**: that agent's pane alone in Multiplex's terminal, at the phone's own columns and rows. A terminal has the size of whoever typed in it last: back at the computer, the first key in its window gives it the window's size again.
 
 Home itself says who wants you: under **Agents**, the agents that wait for an answer and then those that finished, from every computer the phone is connected to, each one tap from the agent itself. It is kept current while the app is in front; with the app out of sight the notification does that job.
 
 The app remembers the agent or terminal you opened last. Home offers it first, under **Continue**: one tap connects and puts you back in front of it (or says that it is no longer running, and shows what is).
 
-**Answering where you are.** While the phone is connected it is told when an agent starts waiting for an answer or finishes, also with the app out of sight: a notification, "Claude needs you" or "Claude is done". herdr tells the computer the moment it happens, and the computer tells the phone. When the agent waits on a choice (a command to allow, a list to pick from), the notification says what it asks and has a button for each of its choices, in the agent's own words; press one and that is the answer. When it finished or asks in its own words, **Reply** takes an answer typed into the notification. A tap on the notification opens the agent in the app, where its sheet shows the same choices as buttons.
+**Answering where you are.** While the phone is connected it is told when an agent starts waiting for an answer or finishes, also with the app out of sight: a notification, "Claude needs you" or "Claude is done". The session server tells the moment it happens, and the computer tells the phone. When the agent waits on a choice (a command to allow, a list to pick from), the notification says what it asks and has a button for each of its choices, in the agent's own words; press one and that is the answer. When it finished or asks in its own words, **Reply** takes an answer typed into the notification. A tap on the notification opens the agent in the app, where its sheet shows the same choices as buttons.
 
 An answer may let a command run on your computer, so it is handled with care:
 
@@ -216,7 +226,7 @@ multiplex herd state      # sessions, workspaces, tabs, panes and their agents, 
 multiplex herd watch      # the same, and again whenever something changes
 multiplex herd news       # a line when an agent starts to wait (with its question and choices) or finishes, and when one no longer does
 multiplex herd do prompt <session> <pane> <text as base64>   # text and Enter for a pane's agent
-multiplex herd do keys <session> <pane> esc 2 enter          # keys, by herdr's names
+multiplex herd do keys <session> <pane> esc 2 enter          # keys, by name
 multiplex herd do read <session> <pane> 80                   # a pane's recent output, and what its agent asks by choice
 multiplex herd do answer <session> <pane> <mark> choice 2    # take a choice, only while that question (its mark, from news or read) is asked
 multiplex herd do answer <session> <pane> - text <base64>    # words for an agent that finished or asks in words ("-": no choice was shown)
@@ -230,11 +240,11 @@ multiplex herd folders <folder as base64>                    # the folders insid
 multiplex herd pane <session> <pane>                         # that pane in this terminal, at this terminal's size
 ```
 
-`multiplex herd pane` works in any terminal, not only the phone's: Ctrl+\\ leaves (the pane keeps running), Shift+PageUp and Shift+PageDown move through the pane's earlier output, `--watch` only looks.
+`multiplex herd pane` works in any terminal, not only the phone's: Ctrl+\\ leaves (the terminal keeps running), `--watch` only looks.
 
-Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly herdr's shape and text travels as base64, so nothing a phone sends is ever read by a shell.
+Seeing the herd needs the Desktop or the Terminal switch (see [What a phone may do](#what-a-phone-may-do)); typing into panes and reading them needs Terminal. Ids are checked to be exactly of their shape and text travels as base64, so nothing a phone sends is ever read by a shell.
 
-More of the way [Herdr](https://herdr.dev) works is on its way: resuming agents and earlier conversations after a restart, and sending pictures to an agent.
+Still to come: sending pictures to an agent, renaming, and continuing the conversations of agents that ran outside a kept terminal.
 
 ## A yes from the phone
 

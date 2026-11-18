@@ -6,7 +6,7 @@ import '../src/rust/api/herd_types.dart';
 import '../src/rust/api/ssh.dart';
 import 'error_text.dart';
 
-/// How the Agents screen talks to the computer's herdr. The real one runs
+/// How the Agents screen talks to the computer's session server. The real one runs
 /// the computer's `multiplex herd` command over SSH (in the Rust core);
 /// tests pass a stand-in.
 abstract class HerdLink {
@@ -29,7 +29,7 @@ abstract class HerdLink {
   /// Text and Enter for a pane's agent, as one piece.
   Future<void> prompt(String session, String pane, String text);
 
-  /// Keys by herdr's names for them: "esc", "enter", "2".
+  /// Keys by name: "esc", "enter", "2".
   Future<void> keys(String session, String pane, List<String> keys);
 
   /// The kinds of agent that can be started on the computer, those that

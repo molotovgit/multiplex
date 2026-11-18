@@ -32,7 +32,7 @@ class _Sessions extends SessionManager {
   void changed() => notifyListeners();
 }
 
-/// One computer's herdr, fed by hand; it counts who listens.
+/// One computer's session server, fed by hand; it counts who listens.
 class _Herd implements HerdLink {
   _Herd(this.now);
 

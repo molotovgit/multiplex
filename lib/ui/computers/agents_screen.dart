@@ -28,7 +28,7 @@ import '../terminal/terminal_screen.dart';
   AgentStatus.unknown => (label: 'Other', color: colors.muted, icon: Icons.help_outline),
 };
 
-/// The coding agents on a paired computer (kept running by herdr), as an
+/// The coding agents on a paired computer (in the terminals its session server keeps running), as an
 /// inbox: those that need an answer first, then those that finished, the
 /// busy, the idle. The computer tells of every change, so the list is
 /// always the present. A tap opens an agent to read and answer it.
@@ -38,7 +38,7 @@ class AgentsScreen extends StatefulWidget {
     required this.title,
     required this.link,
     required this.onOpenTerminal,
-    required this.onOpenHerdr,
+    this.onStartSession,
     this.openAt,
     this.onVisited,
     this.herd,
@@ -47,7 +47,7 @@ class AgentsScreen extends StatefulWidget {
   /// The computer's name.
   final String title;
 
-  /// The computer's herdr. Tests pass a stand-in.
+  /// The computer's session server. Tests pass a stand-in.
   final HerdLink link;
 
   /// The computer's herd when it is already being kept (Home keeps one
@@ -59,8 +59,8 @@ class AgentsScreen extends StatefulWidget {
   /// size: an agent's, or a plain terminal's.
   final Future<void> Function(BuildContext context, String session, String pane) onOpenTerminal;
 
-  /// Opens a terminal with a herdr session's whole screen.
-  final Future<void> Function(BuildContext context, String session) onOpenHerdr;
+  /// Starts a session that is not running (none is, with one server).
+  final Future<void> Function(BuildContext context, String session)? onStartSession;
 
   /// A pane to go straight to once the herd is known: where the owner
   /// was last (Home's "Continue").
@@ -84,7 +84,6 @@ class AgentsScreen extends StatefulWidget {
           link: SshHerdLink(() => session.ssh),
           herd: HerdHub.app?.herdOf(host.id),
           onOpenTerminal: (context, name, pane) => _run(context, session, herdPaneCommand(session: name, pane: pane), aView: true),
-          onOpenHerdr: (context, name) => _run(context, session, agentAttachCommand(session: name)),
           openAt: place == null ? null : (session: place.session, pane: place.pane),
           onVisited: (name, pane, title, agent) => store.updateSettings(
             store.settings.copyWith(
@@ -313,25 +312,6 @@ class _AgentsScreenState extends State<AgentsScreen> {
                 ],
               )
             : null,
-        actions: [
-          ListenableBuilder(
-            listenable: _herd,
-            builder: (context, _) {
-              final sessions = [for (final session in _herd.state?.sessions ?? const <HerdSession>[]) session.name];
-              if (sessions.isEmpty) return const SizedBox.shrink();
-              const tip = "Open herdr's own screen";
-              if (sessions.length == 1) {
-                return IconButton(tooltip: tip, icon: const Icon(Icons.dashboard_outlined), onPressed: () => widget.onOpenHerdr(context, sessions.single));
-              }
-              return PopupMenuButton<String>(
-                tooltip: tip,
-                icon: const Icon(Icons.dashboard_outlined),
-                onSelected: (name) => widget.onOpenHerdr(context, name),
-                itemBuilder: (_) => [for (final name in sessions) PopupMenuItem(value: name, child: Text(name))],
-              );
-            },
-          ),
-        ],
       ),
       body: ContentWidth(
         child: ListenableBuilder(
@@ -359,8 +339,8 @@ class _AgentsScreenState extends State<AgentsScreen> {
             if (!state.available) {
               return const EmptyState(
                 icon: Icons.smart_toy_outlined,
-                title: 'herdr is not on this computer',
-                message: 'herdr keeps coding agents running in terminals that outlive every window. Install it on the computer and start an agent in it; it shows up here.',
+                title: 'This computer does not keep sessions yet',
+                message: 'Its Multiplex package is older than this app. Update it on the computer, and the terminals and agents it keeps running show up here.',
               );
             }
             return TabBarView(
@@ -372,7 +352,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
                     final pane = _pane(state, session, id);
                     if (pane != null) _openPane(session, pane);
                   },
-                  onStart: (session) => widget.onOpenHerdr(context, session),
+                  onStart: (session) => widget.onStartSession?.call(context, session),
                   onNew: _new,
                   onClose: _close,
                   onOpenFolder: _openFolder,
@@ -392,8 +372,8 @@ class _AgentsScreenState extends State<AgentsScreen> {
         icon: Icons.smart_toy_outlined,
         title: 'No agents are running',
         message: terminals == 0
-            ? 'Coding agents started under herdr on this computer show up here, with what each is doing.'
-            : 'herdr has ${terminals == 1 ? 'one terminal' : '$terminals terminals'} open, none with an agent in it. They are under Everything; an agent started in one shows up here.',
+            ? 'Coding agents started in a terminal on this computer show up here, with what each is doing.'
+            : '${terminals == 1 ? 'One terminal is' : '$terminals terminals are'} open, none with an agent in it. ${terminals == 1 ? 'It is' : 'They are'} under Everything; an agent started in one shows up here.',
       );
     }
     final several = state.sessions.length > 1;
@@ -417,7 +397,7 @@ class _AgentsScreenState extends State<AgentsScreen> {
   }
 }
 
-/// All that herdr holds on the computer, in its own order: sessions,
+/// All that the computer keeps running, in its own order: sessions,
 /// their workspaces, each workspace's tabs, each tab's panes. An agent's
 /// pane opens the agent; a plain terminal opens as a terminal.
 class _Everything extends StatelessWidget {
@@ -441,11 +421,7 @@ class _Everything extends StatelessWidget {
     final colors = AppColorsTheme.of(context);
     final textTheme = Theme.of(context).textTheme;
     if (state.sessions.isEmpty) {
-      return const EmptyState(
-        icon: Icons.dashboard_outlined,
-        title: 'herdr holds nothing yet',
-        message: 'Open herdr on the computer, or from here once it has a session, and what runs in it shows up.',
-      );
+      return const EmptyState(icon: Icons.dashboard_outlined, title: 'Nothing is open yet', message: 'Open a terminal on the computer and it shows up here.');
     }
     // One running session needs no heading of its own.
     final named = state.sessions.length > 1 || state.sessions.any((session) => !session.running);
@@ -567,7 +543,7 @@ class _AgentTile extends StatelessWidget {
   }
 }
 
-/// A kind of agent as a name to show: herdr's word for it, capitalised
+/// A kind of agent as a name to show: its program's name, capitalised
 /// ("claude" is Claude).
 String agentKindName(String kind) => kind.isEmpty ? kind : kind[0].toUpperCase() + kind.substring(1);
 
@@ -657,7 +633,7 @@ class _NewInWorkspaceSheetState extends State<NewInWorkspaceSheet> {
           else if (kinds.isEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Text('None of the agents herdr knows is installed on this computer.', style: textTheme.bodyMedium?.copyWith(color: colors.muted)),
+              child: Text('None of the agents Multiplex knows is installed on this computer.', style: textTheme.bodyMedium?.copyWith(color: colors.muted)),
             )
           else
             for (final kind in kinds)
@@ -679,7 +655,7 @@ class _NewInWorkspaceSheetState extends State<NewInWorkspaceSheet> {
 
 /// Picks a folder of the computer to open as a workspace. It starts with
 /// the folders worth offering (those the owner goes to, those open in
-/// herdr, projects in the home folder); any folder can be looked into,
+/// already, projects in the home folder); any folder can be looked into,
 /// so every folder can be reached. A tap on a folder picks it.
 class OpenFolderSheet extends StatefulWidget {
   const OpenFolderSheet({super.key, required this.herd});
@@ -839,7 +815,7 @@ class AgentSheet extends StatefulWidget {
     );
   }
 
-  /// The keys an agent's questions take, by herdr's names, with what each
+  /// The keys an agent's questions take, by their names, with what each
   /// is called on its button and in its tooltip.
   ///
   /// Enter comes second: on a phone six keys fit before the row scrolls,

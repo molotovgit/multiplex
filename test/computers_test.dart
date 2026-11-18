@@ -315,7 +315,7 @@ class _Connected extends SessionManager {
   void changed() => notifyListeners();
 }
 
-/// One computer's herdr, fed by hand.
+/// One computer's session server, fed by hand.
 class _Herd implements HerdLink {
   _Herd(this.now);
 
