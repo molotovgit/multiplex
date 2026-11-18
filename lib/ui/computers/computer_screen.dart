@@ -37,7 +37,7 @@ class ComputerScreen extends StatelessWidget {
   static Future<void> open(BuildContext context, Host host) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ComputerScreen(hostId: host.id)));
 
   /// Sends the wake signal. Tests pass a stand-in for the sender.
-  Future<void> _wake(BuildContext context, Host host) async {
+  static Future<void> _wake(BuildContext context, Host host, Future<void> Function(String mac, String? home)? wake) async {
     try {
       await (wake ?? ((String mac, String? home) => wakeOnLan(mac: mac, homeAddress: home)))(host.mac!, host.viaTailscale ? null : host.address);
       if (context.mounted) Toast.show(context, 'Wake signal sent to ${host.title}. It reaches the computer only on its home network.');
@@ -62,32 +62,34 @@ class ComputerScreen extends StatelessWidget {
     Navigator.of(context).pop();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final store = AppScope.watch(context);
-    final host = store.host(hostId);
-    if (host == null) return const Scaffold(body: SizedBox.shrink());
-    final colors = AppColorsTheme.of(context);
-    final text = Theme.of(context).textTheme;
+  /// Everything a computer offers, in groups by what one comes for, not
+  /// a wall of tiles. Also what Home's search looks through.
+  static List<(String, List<ComputerFeature>)> featuresOf(BuildContext context, Host host, {Future<void> Function(String mac, String? home)? wake}) {
     // In groups by what one comes for, not a wall of tiles: work on the
     // computer first, then controlling it, then what the phone lends it,
     // then the connection itself.
-    final groups = <(String, List<_Tile>)>[
+    return <(String, List<ComputerFeature>)>[
       (
         'Work',
         [
-          _Tile(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host), primary: true),
-          _Tile(Icons.terminal, 'Terminal', 'A shell on the computer', () => HostConnector.openTerminal(context, host)),
-          _Tile(Icons.folder_outlined, 'Files', 'Browse, send and fetch', () => ComputerCard.openFiles(context, host)),
+          ComputerFeature(Icons.smart_toy_outlined, 'Agents', 'Coding agents and what they do', () => AgentsScreen.show(context, host), primary: true),
+          ComputerFeature(Icons.terminal, 'Terminal', 'A shell on the computer', () => HostConnector.openTerminal(context, host)),
+          ComputerFeature(Icons.folder_outlined, 'Files', 'Browse, send and fetch', () => ComputerCard.openFiles(context, host)),
         ],
       ),
       (
         'Control',
         [
-          _Tile(Icons.desktop_windows_outlined, 'Desktop', 'See and control the screen', () => HostConnector.openDesktop(context, host), primary: true),
-          _Tile(Icons.space_dashboard_outlined, 'Panel', 'Workspaces, windows, media', () => PanelScreen.open(context, host)),
-          _Tile(Icons.touch_app_outlined, 'Touchpad', 'Pointer and keys, no picture', () => TouchpadScreen.show(context, host)),
-          _Tile(
+          ComputerFeature(
+            Icons.desktop_windows_outlined,
+            'Desktop',
+            'See and control the screen',
+            () => HostConnector.openDesktop(context, host),
+            primary: true,
+          ),
+          ComputerFeature(Icons.space_dashboard_outlined, 'Panel', 'Workspaces, windows, media', () => PanelScreen.open(context, host)),
+          ComputerFeature(Icons.touch_app_outlined, 'Touchpad', 'Pointer and keys, no picture', () => TouchpadScreen.show(context, host)),
+          ComputerFeature(
             Icons.add_to_queue_outlined,
             'Extend screen',
             'The phone as one more monitor',
@@ -98,23 +100,39 @@ class ComputerScreen extends StatelessWidget {
       (
         'Lend the phone',
         [
-          _Tile(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
-          _Tile(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
-          _Tile(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
-          _Tile(Icons.speaker_phone, 'Speaker', 'The computer\'s sound on this phone', () => SpeakerScreen.show(context, host)),
-          _Tile(Icons.document_scanner_outlined, 'Scan text', 'From paper to the computer\'s clipboard', () => ScanText.fromCamera(context, host)),
+          ComputerFeature(Icons.cast, 'Phone screen', 'Show this phone on the computer', () => ScreenCastScreen.show(context, host)),
+          ComputerFeature(Icons.videocam_outlined, 'Camera', 'This phone as a webcam', () => ScreenCastScreen.showCamera(context, host)),
+          ComputerFeature(Icons.mic_none, 'Microphone', 'This phone as a microphone', () => ScreenCastScreen.showMicrophone(context, host)),
+          ComputerFeature(Icons.speaker_phone, 'Speaker', 'The computer\'s sound on this phone', () => SpeakerScreen.show(context, host)),
+          ComputerFeature(Icons.document_scanner_outlined, 'Scan text', 'From paper to the computer\'s clipboard', () => ScanText.fromCamera(context, host)),
         ],
       ),
       (
         'Connection',
         [
-          _Tile(Icons.swap_horiz, 'Tunnels', 'Forward ports', () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host)))),
-          _Tile(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
+          ComputerFeature(
+            Icons.swap_horiz,
+            'Tunnels',
+            'Forward ports',
+            () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => TunnelsScreen(host: host))),
+          ),
+          ComputerFeature(Icons.monitor_heart_outlined, 'Status', 'Load, memory and disks', () => ServerStatusScreen.open(context, host)),
           // Wake-on-LAN, with the network card's address saved at pairing.
-          if ((host.mac ?? '').isNotEmpty) _Tile(Icons.power_settings_new, 'Wake', 'Switch it on from the home network', () => _wake(context, host)),
+          if ((host.mac ?? '').isNotEmpty)
+            ComputerFeature(Icons.power_settings_new, 'Wake', 'Switch it on from the home network', () => _wake(context, host, wake)),
         ],
       ),
     ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.watch(context);
+    final host = store.host(hostId);
+    if (host == null) return const Scaffold(body: SizedBox.shrink());
+    final colors = AppColorsTheme.of(context);
+    final text = Theme.of(context).textTheme;
+    final groups = featuresOf(context, host, wake: wake);
     return Scaffold(
       appBar: AppBar(
         title: Text(host.title),
@@ -191,8 +209,8 @@ class ComputerScreen extends StatelessWidget {
   }
 }
 
-class _Tile {
-  const _Tile(this.icon, this.title, this.subtitle, this.onTap, {this.primary = false});
+class ComputerFeature {
+  const ComputerFeature(this.icon, this.title, this.subtitle, this.onTap, {this.primary = false});
 
   final IconData icon;
   final String title;
@@ -206,7 +224,7 @@ class _Tile {
 class _TileCard extends StatelessWidget {
   const _TileCard({required this.tile});
 
-  final _Tile tile;
+  final ComputerFeature tile;
 
   @override
   Widget build(BuildContext context) {

@@ -4,6 +4,7 @@ import '../../app/app_scope.dart';
 import '../../app/theme.dart';
 import '../../data/models.dart';
 import '../../data/resume_place.dart';
+import '../computers/computer_screen.dart';
 import '../computers/agents_screen.dart';
 import '../../sessions/herd_hub.dart';
 import '../common/widgets.dart';
@@ -162,14 +163,50 @@ class _HostsScreenState extends State<HostsScreen> {
     final q = _query.toLowerCase();
     final matches = hosts.where((h) => '${h.label} ${h.address} ${h.username}'.toLowerCase().contains(q)).toList();
     final quick = QuickTarget.parse(_query);
+    final colors = AppColorsTheme.of(context);
+    // One search for everything one could want to go to: an agent on any
+    // connected computer, and anything a paired computer offers ("camera",
+    // "files"), each one tap from the thing itself.
+    final agents = [
+      for (final one in HerdHub.app?.all ?? const <HubAgent>[])
+        if ('${one.agent.title} ${one.agent.name} ${one.agent.folder} ${one.agent.workspace}'.toLowerCase().contains(q)) one,
+    ];
+    final features = [
+      for (final host in hosts.where((host) => host.computer))
+        for (final (group, list) in ComputerScreen.featuresOf(context, host))
+          for (final feature in list)
+            if ('${feature.title} ${feature.subtitle} $group'.toLowerCase().contains(q)) (host: host, feature: feature),
+    ];
     return [
       if (quick != null) QuickConnectTile(target: quick),
-      if (matches.isEmpty && quick == null)
+      if (matches.isEmpty && quick == null && agents.isEmpty && features.isEmpty)
         const Padding(
           padding: EdgeInsets.all(32),
-          child: Center(child: Text('No hosts match. Try a name or an address.')),
+          child: Center(child: Text('Nothing matches. Try a name, an address, or what you want to do.')),
         ),
       for (final host in matches) HostTile(host: host),
+      if (agents.isNotEmpty) const SectionHeader('Agents'),
+      for (final (:host, :agent) in agents.take(8))
+        ListTile(
+          key: ValueKey('found-agent-${host.id}-${agent.session}-${agent.pane}'),
+          leading: Icon(agentLook(colors, agent.status).icon, color: agentLook(colors, agent.status).color),
+          title: Text(agent.title.isEmpty ? agent.name : agent.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text('${agentLook(colors, agent.status).label} · ${agent.name} · ${host.title}', maxLines: 1, overflow: TextOverflow.ellipsis),
+          onTap: () => AgentsScreen.show(
+            context,
+            host,
+            place: ResumePlace(hostId: host.id, session: agent.session, pane: agent.pane, title: agent.title, agent: agent.name),
+          ),
+        ),
+      if (features.isNotEmpty) const SectionHeader('Go to'),
+      for (final (:host, :feature) in features.take(12))
+        ListTile(
+          key: ValueKey('found-${host.id}-${feature.title}'),
+          leading: Icon(feature.icon),
+          title: Text('${feature.title} · ${host.title}', maxLines: 1, overflow: TextOverflow.ellipsis),
+          subtitle: Text(feature.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+          onTap: feature.onTap,
+        ),
     ];
   }
 
@@ -195,7 +232,7 @@ class _SearchField extends StatelessWidget {
       child: SearchBar(
         controller: controller,
         onChanged: onChanged,
-        hintText: 'Search, or type user@host to connect',
+        hintText: 'Search, go to, or type user@host',
         leading: const Icon(Icons.search),
         elevation: const WidgetStatePropertyAll(0),
         keyboardType: TextInputType.url,

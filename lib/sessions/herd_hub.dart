@@ -51,6 +51,13 @@ class HerdHub extends ChangeNotifier with WidgetsBindingObserver {
     return [...all.where((one) => one.agent.status == AgentStatus.blocked), ...all.where((one) => one.agent.status == AgentStatus.done)];
   }
 
+  /// Every agent on every connected computer, in the order of the
+  /// computers and of their own inboxes. For searching.
+  List<HubAgent> get all => [
+    for (final kept in _herds.values)
+      for (final agent in kept.herd.state?.inbox ?? const <HerdAgent>[]) (host: kept.session.host, agent: agent),
+  ];
+
   /// How many agents wait for an answer on one computer.
   int waitingOn(String hostId) => _herds[hostId]?.herd.state?.waiting ?? 0;
 

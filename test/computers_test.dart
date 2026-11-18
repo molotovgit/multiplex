@@ -283,6 +283,46 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   });
 
+  testWidgets("Home's search goes to anything: a computer's feature, an agent", (tester) async {
+    store.saveHost(_desk);
+    HerdAgent agent(String pane, AgentStatus status, String title) =>
+        HerdAgent(session: 'main', workspace: 'api', tab: '1', pane: pane, name: 'Claude', status: status, title: title, folder: 'api');
+    final herd = _Herd(HerdState(available: true, sessions: const [], inbox: [agent('w1:p1', AgentStatus.working, 'Refactor the billing module')], waiting: 0));
+    final connected = _Connected(store);
+    final hub = HerdHub(connected, link: (_) => herd);
+    HerdHub.app = hub;
+    addTearDown(() {
+      HerdHub.app = null;
+      hub.dispose();
+      connected.dispose();
+    });
+    connected
+      ..open.add(LiveSession(id: 's-c', host: _desk, ssh: _Up()))
+      ..changed();
+    await home(tester);
+    await tester.pump(const Duration(milliseconds: 50));
+
+    // What one wants to do, by its name or by what it is for.
+    await tester.enterText(find.byType(TextField), 'webcam');
+    await tester.pump();
+    expect(find.text('Go to'), findsOneWidget);
+    expect(find.text('Camera · Desk'), findsOneWidget);
+    expect(find.text('Files · Desk'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'lend');
+    await tester.pump();
+    expect(find.text('Phone screen · Desk'), findsOneWidget, reason: 'by its group too');
+    // An agent, by what it is doing, also one that merely works.
+    await tester.enterText(find.byType(TextField), 'billing');
+    await tester.pump();
+    expect(find.text('Refactor the billing module'), findsOneWidget);
+    expect(find.text('Working · Claude · Desk'), findsOneWidget);
+    // A computer by its name still comes first, with what it offers under it.
+    await tester.enterText(find.byType(TextField), 'zzz nothing');
+    await tester.pump();
+    expect(find.textContaining('Nothing matches'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+  });
+
   testWidgets('removing a computer takes it off Home', (tester) async {
     store.saveHost(_desk);
     await home(tester);
