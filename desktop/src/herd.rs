@@ -355,7 +355,7 @@ fn made(answer: &sessions::Answer) -> Made {
 /// A new terminal at a phone's size; whoever sits in front of it gives it
 /// their own.
 fn new_terminal(cwd: &str, workspace: &str, label: &str, fresh: bool) -> Result<Made> {
-    Ok(made(&server(&Request::New { cwd: cwd.to_owned(), command: Vec::new(), cols: 80, rows: 24, workspace: workspace.to_owned(), label: label.to_owned(), fresh })?))
+    Ok(made(&server(&Request::New { cwd: cwd.to_owned(), command: Vec::new(), cols: 80, rows: 24, workspace: workspace.to_owned(), label: label.to_owned(), fresh, env: Vec::new(), window: false })?))
 }
 
 fn act(action: &HerdAction) -> Result<()> {

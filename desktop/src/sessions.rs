@@ -57,6 +57,15 @@ pub enum Request {
         label: String,
         #[serde(default)]
         fresh: bool,
+        /// The variables it starts with (a window's own, so that programs
+        /// in it find the desktop); the server's when empty.
+        #[serde(default)]
+        env: Vec<(String, String)>,
+        /// It stands in for a plain terminal window: when its last viewer
+        /// goes and nothing but its shell runs in it, it ends, as the
+        /// window's own shell would have.
+        #[serde(default)]
+        window: bool,
     },
     List,
     /// Everything kept, as the phone lists it.
@@ -183,9 +192,24 @@ struct Terminal {
     /// someone looks.
     unseen: bool,
     was_working: bool,
+    /// It stands in for a plain terminal window.
+    window: bool,
 }
 
 impl Terminal {
+    /// Nothing runs in it but the shell it started with.
+    fn at_its_shell(&self) -> bool {
+        self.front() == Some(self.child.id() as i32)
+    }
+
+    /// Its last viewer went: a window's stand-in with nothing running
+    /// ends, as closing the window would have ended its shell.
+    fn left_alone(&self) {
+        if self.window && self.viewers.is_empty() && self.at_its_shell() {
+            unsafe { libc::kill(-(self.child.id() as i32), libc::SIGHUP) };
+        }
+    }
+
     fn resize(&mut self, cols: u16, rows: u16) {
         let (cols, rows) = (cols.clamp(2, 1000), rows.clamp(2, 1000));
         let (now_rows, now_cols) = self.screen.screen().size();
@@ -384,7 +408,7 @@ struct MadeIds {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, workspace: &str, label: &str, fresh: bool) -> Result<MadeIds> {
+fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, workspace: &str, label: &str, fresh: bool, env: &[(String, String)], window: bool) -> Result<MadeIds> {
     if !Path::new(cwd).is_dir() {
         bail!("{cwd} is not a folder on this computer");
     }
@@ -412,7 +436,13 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
     let number = kept.next_terminal;
     let id = format!("w{space}:p{number}");
     let mut spawn = Command::new(&program);
-    spawn.args(&args).current_dir(cwd).env("TERM", "xterm-256color").env("MULTIPLEX_SESSION", &id);
+    if !env.is_empty() {
+        spawn.env_clear().envs(env.iter().map(|(name, value)| (name, value)));
+    }
+    spawn.args(&args).current_dir(cwd).env("MULTIPLEX_SESSION", &id);
+    if env.is_empty() {
+        spawn.env("TERM", "xterm-256color");
+    }
     spawn.stdin(Stdio::from(slave.try_clone()?)).stdout(Stdio::from(slave.try_clone()?)).stderr(Stdio::from(slave));
     // Its own session, with the PTY as the terminal it is in charge of.
     unsafe {
@@ -440,6 +470,7 @@ fn start(shared: &Shared, cwd: &str, command: &[String], cols: u16, rows: u16, w
         typed: now,
         unseen: false,
         was_working: false,
+        window,
     };
     kept.terminals.insert(id.clone(), terminal);
     kept.tell();
@@ -555,10 +586,10 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             unsafe { libc::kill(-(terminal.child.id() as i32), libc::SIGHUP) };
             return answer(&mut stream, Answer { id, ..Answer::default() });
         }
-        Request::New { cwd, command, cols, rows, workspace, label, fresh } => {
+        Request::New { cwd, command, cols, rows, workspace, label, fresh, env, window } => {
             return answer(
                 &mut stream,
-                match start(&shared, &cwd, &command, cols, rows, &workspace, &label, fresh) {
+                match start(&shared, &cwd, &command, cols, rows, &workspace, &label, fresh, &env, window) {
                     Ok(made) => Answer { id: made.id, tab: made.tab, workspace: made.workspace, ..Answer::default() },
                     Err(err) => Answer::error(format!("{err:#}")),
                 },
@@ -653,6 +684,7 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
     let mut kept = shared.lock().unwrap();
     if let Some(terminal) = kept.terminals.get_mut(&id) {
         terminal.viewers.retain(|viewer| viewer.id != viewer_id);
+        terminal.left_alone();
     }
     kept.tell();
     Ok(())
@@ -722,7 +754,11 @@ fn connect(socket: &Path) -> Result<UnixStream> {
 pub fn ask(socket: &Path, request: &Request) -> Result<(Answer, UnixStream)> {
     let mut stream = connect(socket)?;
     write_frame(&mut stream, b'Q', &serde_json::to_vec(request)?)?;
-    let (kind, bytes) = read_frame(&mut stream)?;
+    // A server that does not answer must not hold up whoever asks (a
+    // terminal window opening, say).
+    stream.set_read_timeout(Some(Duration::from_secs(5)))?;
+    let (kind, bytes) = read_frame(&mut stream).map_err(|_| anyhow!("The session server did not answer."))?;
+    stream.set_read_timeout(None)?;
     if kind != b'A' {
         bail!("The session server's answer was not understood.");
     }
@@ -825,18 +861,104 @@ pub fn run(args: &[&str]) -> Result<()> {
     Ok(())
 }
 
+/// What `multiplex here --window` exits with when this terminal could
+/// not be handed to the server: the shell that asked carries on as a
+/// plain one.
+pub const NOT_KEPT: i32 = 113;
+
 /// `multiplex here`: this terminal becomes a viewer of a new one that the
-/// server keeps, in the folder this one is in.
-pub fn here() -> Result<()> {
-    if std::env::var_os("MULTIPLEX_SESSION").is_some() {
-        bail!("This terminal is already kept by Multiplex.");
+/// server keeps, in the folder this one is in, with this one's variables.
+/// With `window` it stands in for the window's own shell (see
+/// `multiplex setup --terminals`): failing to start is said by the exit
+/// code alone, and a program's own exit code never passes for that.
+pub fn here(window: bool) -> Result<()> {
+    let made = || -> Result<(PathBuf, String)> {
+        if std::env::var_os("MULTIPLEX_SESSION").is_some() {
+            bail!("This terminal is already kept by Multiplex.");
+        }
+        let socket = socket_path();
+        let cwd = std::env::current_dir()?.to_string_lossy().into_owned();
+        let (cols, rows) = crate::pane::terminal_size().unwrap_or((80, 24));
+        let env: Vec<(String, String)> = std::env::vars().collect();
+        let (answer, _) = ask(&socket, &Request::New { cwd, command: Vec::new(), cols, rows, workspace: String::new(), label: String::new(), fresh: false, env, window })?;
+        Ok((socket, answer.id))
+    };
+    let (socket, id) = match made() {
+        Ok(made) => made,
+        Err(_) if window => std::process::exit(NOT_KEPT),
+        Err(err) => return Err(err),
+    };
+    match attach(&socket, &id, false, false) {
+        Ok(Some(code)) => std::process::exit(if code == NOT_KEPT { 1 } else { code }),
+        Ok(None) => Ok(()),
+        Err(_) if window => std::process::exit(NOT_KEPT),
+        Err(err) => Err(err),
     }
-    let socket = socket_path();
-    let cwd = std::env::current_dir()?.to_string_lossy().into_owned();
-    let (cols, rows) = crate::pane::terminal_size().unwrap_or((80, 24));
-    let (answer, _) = ask(&socket, &Request::New { cwd, command: Vec::new(), cols, rows, workspace: String::new(), label: String::new(), fresh: false })?;
-    if let Some(code) = attach(&socket, &answer.id, false, false)? {
-        std::process::exit(code);
+}
+
+/// The lines `multiplex setup --terminals` keeps in a shell's start-up
+/// file, between two marks so they can be found and taken out again.
+pub const MARK_BEGIN: &str = "# >>> multiplex terminals >>>";
+pub const MARK_END: &str = "# <<< multiplex terminals <<<";
+
+pub fn shell_lines() -> String {
+    format!(
+        "{MARK_BEGIN}\n# Every terminal window is kept by Multiplex, so it can be picked up from the\n# phone and runs on when its window closes. Not in a terminal that is already\n# kept, over SSH, or in tmux. If Multiplex cannot take it, this is a plain shell.\n# Undo with: multiplex setup --terminals-off   (once: MULTIPLEX_PLAIN=1)\nif [[ $- == *i* && -z $MULTIPLEX_SESSION && -z $MULTIPLEX_PLAIN && -z $SSH_CONNECTION && -z $TMUX && -t 0 && -t 1 ]] && command -v multiplex >/dev/null 2>&1; then\n  multiplex here --window\n  [[ $? -ne {NOT_KEPT} ]] && exit\nfi\n{MARK_END}\n"
+    )
+}
+
+/// A start-up file's text with the lines in it (`on`) or without them.
+pub fn with_shell_lines(text: &str, on: bool) -> String {
+    let mut rest = match (text.find(MARK_BEGIN), text.find(MARK_END)) {
+        (Some(from), Some(to)) if to > from => {
+            let after = &text[to + MARK_END.len()..];
+            format!("{}{}", &text[..from], after.strip_prefix('\n').unwrap_or(after))
+        }
+        _ => text.to_owned(),
+    };
+    if on {
+        if !rest.is_empty() && !rest.ends_with('\n') {
+            rest.push('\n');
+        }
+        rest.push_str(&shell_lines());
+    }
+    rest
+}
+
+/// `multiplex setup --terminals` and `--terminals-off`: every new
+/// terminal window a session, or plain again. The file as it was is kept
+/// beside it the first time.
+pub fn setup_terminals(on: bool, dry_run: bool) -> Result<()> {
+    let home = PathBuf::from(std::env::var_os("HOME").ok_or_else(|| anyhow!("There is no home folder to set this up in."))?);
+    let mut touched = 0;
+    for name in [".bashrc", ".zshrc"] {
+        let file = home.join(name);
+        let Ok(text) = std::fs::read_to_string(&file) else { continue };
+        let next = with_shell_lines(&text, on);
+        touched += 1;
+        if next == text {
+            println!("{}: already {}.", file.display(), if on { "set up" } else { "plain" });
+            continue;
+        }
+        if dry_run {
+            println!("{}: would {}.", file.display(), if on { "get these lines at its end:\n".to_owned() + &shell_lines() } else { "lose Multiplex's lines".to_owned() });
+            continue;
+        }
+        let kept = home.join(format!("{name}.before-multiplex"));
+        if !kept.exists() {
+            std::fs::copy(&file, &kept)?;
+        }
+        // Written beside it and moved into place: never half a file.
+        let beside = home.join(format!("{name}.multiplex-new"));
+        std::fs::write(&beside, &next)?;
+        std::fs::rename(&beside, &file)?;
+        println!("{}: {}.", file.display(), if on { "every new terminal window is now kept by Multiplex" } else { "terminals are plain again" });
+    }
+    if touched == 0 {
+        bail!("Neither ~/.bashrc nor ~/.zshrc is there to set this up in.");
+    }
+    if on && !dry_run {
+        println!("Terminals that are already open stay as they are. Undo with: multiplex setup --terminals-off");
     }
     Ok(())
 }
@@ -846,7 +968,7 @@ mod tests {
     use super::*;
 
     fn new(cwd: &str, command: Vec<String>) -> Request {
-        Request::New { cwd: cwd.to_owned(), command, cols: 80, rows: 24, workspace: String::new(), label: String::new(), fresh: false }
+        Request::New { cwd: cwd.to_owned(), command, cols: 80, rows: 24, workspace: String::new(), label: String::new(), fresh: false, env: Vec::new(), window: false }
     }
 
     /// Reads what a viewer is shown until `wanted` is in it.
@@ -923,5 +1045,63 @@ mod tests {
             assert!(started.elapsed() < Duration::from_secs(5), "the killed terminal stayed");
             std::thread::sleep(Duration::from_millis(20));
         }
+    }
+
+    #[test]
+    fn the_lines_for_a_shell_go_in_once_and_come_out_whole() {
+        let before = "# my shell\nalias ll='ls -l'\n";
+        let on = with_shell_lines(before, true);
+        assert!(on.starts_with(before) && on.contains("multiplex here --window") && on.ends_with(&format!("{MARK_END}\n")));
+        assert_eq!(with_shell_lines(&on, true), on, "a second time changes nothing");
+        assert_eq!(with_shell_lines(&on, false), before);
+        assert_eq!(with_shell_lines(before, false), before);
+        assert_eq!(with_shell_lines("no newline at the end", true).lines().nth(1), Some(MARK_BEGIN));
+        // What the user wrote after them stays.
+        let more = format!("{on}export EDITOR=vi\n");
+        assert_eq!(with_shell_lines(&more, false), format!("{before}export EDITOR=vi\n"));
+    }
+
+    #[test]
+    fn a_windows_stand_in_ends_with_its_window_unless_something_runs_in_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let socket = dir.path().join("sessions.sock");
+        let serving = socket.clone();
+        std::thread::spawn(move || serve(&serving));
+        while UnixStream::connect(&socket).is_err() {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let cwd = dir.path().to_string_lossy().into_owned();
+        let window = |env: Vec<(String, String)>| Request::New { cwd: cwd.clone(), command: vec!["/bin/sh".to_owned()], cols: 80, rows: 24, workspace: String::new(), label: String::new(), fresh: false, env, window: true };
+        let count = || ask(&socket, &Request::List).unwrap().0.terminals.len();
+        let gone = |what: &str| {
+            let started = Instant::now();
+            while count() != 0 {
+                assert!(started.elapsed() < Duration::from_secs(5), "{what}");
+                std::thread::sleep(Duration::from_millis(20));
+            }
+        };
+
+        // Idle at its shell: closing the window ends it. It started with
+        // the window's own variables.
+        let id = ask(&socket, &window(vec![("PATH".into(), "/usr/bin:/bin".into()), ("FROM_THE_WINDOW".into(), "yes".into())])).unwrap().0.id;
+        let (_, mut view) = ask(&socket, &Request::Attach { id, cols: 80, rows: 24 }).unwrap();
+        write_frame(&mut view, b'I', b"echo window=$FROM_THE_WINDOW kept=$MULTIPLEX_SESSION\n").unwrap();
+        assert!(shown(&mut view, "window=yes kept=w1:p1").contains("window=yes"));
+        drop(view);
+        gone("an idle stand-in stayed after its window closed");
+
+        // Something runs in it: it is kept, and can be come back to.
+        let id = ask(&socket, &window(Vec::new())).unwrap().0.id;
+        let (_, mut view) = ask(&socket, &Request::Attach { id: id.clone(), cols: 80, rows: 24 }).unwrap();
+        write_frame(&mut view, b'I', b"sleep 30\n").unwrap();
+        std::thread::sleep(Duration::from_millis(300));
+        drop(view);
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(count(), 1, "a stand-in with something running was ended");
+        let (_, mut again) = ask(&socket, &Request::Attach { id, cols: 80, rows: 24 }).unwrap();
+        write_frame(&mut again, b'I', &[3]).unwrap();
+        std::thread::sleep(Duration::from_millis(300));
+        drop(again);
+        gone("back at its shell and left again, it stayed");
     }
 }
