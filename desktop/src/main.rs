@@ -52,11 +52,11 @@ const HELP: &str = "multiplex: the Omarchy side of Multiplex
   multiplex devices --json    The same as a list a script or a bar widget can read
   multiplex unpair <name>     Remove a paired phone
   multiplex access [<name>]   What each phone may do here; `multiplex access <name> <what> on|off`
-  multiplex setup [--dry-run] Prepare this computer once (asks for sudo)
+  multiplex setup [--dry-run] Prepare this computer once. Run it as yourself, without sudo in front: it asks for your password itself
   multiplex send <file>…      Send files or folders to the phone (add --to <name> with several phones)
   multiplex ring              Make the phone ring, to find it
   multiplex approve <what>    Ask for a yes on the phone (fingerprint there); succeeds only with it
-  multiplex setup --sudo      Have sudo ask the phone first (shows a plan with --dry-run; --sudo-off undoes it)
+  multiplex setup --sudo      Have sudo ask the phone first. Also run as yourself (--dry-run only shows the plan; --sudo-off undoes it)
   multiplex agent             An SSH agent whose key lives on the phone (each use confirmed there)
   multiplex key [<name>]      The phones' public keys, for servers and for Git signing
   multiplex sms <number> <text>  Send a text message from the phone (it has to allow this computer to)
@@ -388,6 +388,7 @@ fn doctor_json() -> anyhow::Result<()> {
 }
 
 fn setup(dry_run: bool) -> anyhow::Result<()> {
+    sudo::as_yourself()?;
     let steps = system::setup_steps();
     println!("multiplex setup prepares this computer for the phone app:\n");
     for (what, command) in &steps {
@@ -397,6 +398,7 @@ fn setup(dry_run: bool) -> anyhow::Result<()> {
         }
     }
     if dry_run {
+        println!("\n{}", sudo::only_a_plan("multiplex setup"));
         return Ok(());
     }
     println!("\nThese need administrator rights; sudo asks for your password.\n");

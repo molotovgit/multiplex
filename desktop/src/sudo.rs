@@ -254,7 +254,31 @@ pub fn off_script(user: &str, pam_now: &str) -> String {
 }
 
 /// `multiplex setup --sudo [<phone>]` and `--sudo-off`, with `--dry-run`.
+/// What a dry run ends with: that nothing happened, and the one line that
+/// does it. Said because the plan is a page of shell, and the natural next
+/// step after reading one is to put `sudo` in front, which is the one
+/// thing that does not work (seen with the owner at the keyboard).
+pub fn only_a_plan(command: &str) -> String {
+    format!("That was only the plan: nothing was changed.\nTo do it, run:   {command}\nas yourself, without sudo in front. It asks for your password itself when it gets there.")
+}
+
+/// Refuses to set things up as root: it would be for root, not for the
+/// person at the keyboard, and the setup calls sudo itself where it needs
+/// to.
+pub fn as_yourself() -> Result<()> {
+    // SAFETY: a call without arguments that cannot fail.
+    refuse_root(unsafe { libc::geteuid() } == 0)
+}
+
+fn refuse_root(root: bool) -> Result<()> {
+    if root {
+        bail!("run this as yourself, without sudo in front: it asks for your password itself when it needs it (as root it would set things up for root, not for you)");
+    }
+    Ok(())
+}
+
 pub fn setup(on: bool, phone: Option<&str>, dry_run: bool) -> Result<()> {
+    as_yourself()?;
     let user = std::env::var("USER").ok().filter(|u| !u.is_empty()).context("who is this? ($USER is not set)")?;
     let pam_now = std::fs::read_to_string(PAM_FILE).with_context(|| format!("{PAM_FILE} could not be read"))?;
     let script = if on {
@@ -281,9 +305,11 @@ pub fn setup(on: bool, phone: Option<&str>, dry_run: bool) -> Result<()> {
         off_script(&user, &pam_now)
     };
     if dry_run {
-        println!("\nThis would run as root:\n\n{script}");
+        println!("\nThis would run as root:\n\n{script}\n");
+        println!("{}", only_a_plan(if on { "multiplex setup --sudo" } else { "multiplex setup --sudo-off" }));
         return Ok(());
     }
+    println!("\nsudo now asks for your password, once.\n");
     let done = std::process::Command::new("sudo").args(["sh", "-c", &script]).status().context("sudo could not be run")?;
     if !done.success() {
         bail!("it did not finish; look at {PAM_FILE} and {PAM_FILE}.before-multiplex");
@@ -294,6 +320,18 @@ pub fn setup(on: bool, phone: Option<&str>, dry_run: bool) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_plan_says_it_was_one_and_how_to_do_it_without_sudo_in_front() {
+        let said = only_a_plan("multiplex setup --sudo");
+        assert!(said.contains("nothing was changed"));
+        assert!(said.contains("multiplex setup --sudo\n"));
+        assert!(said.contains("without sudo in front"));
+        // Asked for as root, the setup says the same instead of setting up root.
+        assert!(refuse_root(false).is_ok());
+        let refused = refuse_root(true).unwrap_err().to_string();
+        assert!(refused.contains("without sudo in front") && refused.contains("for root, not for you"), "{refused}");
+    }
 
     /// A key line as the store keeps it: `ssh-ed25519 <base64>`.
     fn key() -> String {

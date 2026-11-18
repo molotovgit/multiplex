@@ -12,7 +12,7 @@ Install the package and prepare the computer once:
 git clone https://github.com/molotovgit/multiplex.git
 cd multiplex/dist/arch
 makepkg -si          # installs the `multiplex` command and the Multiplex window
-multiplex setup      # asks for sudo; `multiplex setup --dry-run` shows the steps first
+multiplex setup      # run it as yourself: it asks for your password itself. `--dry-run` shows the steps first
 multiplex doctor     # checks that everything is ready
 multiplex bar on     # optional: Multiplex in the Omarchy bar
 ```
@@ -232,6 +232,8 @@ multiplex setup --sudo --dry-run     # shows what it would do, and does nothing
 multiplex setup --sudo               # asks for your password once, then for a yes on the phone
 multiplex setup --sudo-off           # back to the password only
 ```
+
+Run these as yourself, without `sudo` in front: the command asks for your password itself where it needs it, and refuses to run as root (it would set things up for root, not for you).
 
 After `multiplex setup --sudo`, `sudo` asks the linked phone first: "Use sudo on <computer>", a fingerprint, and it goes through. With no phone linked it asks for the password at once, as before; with a no, or no answer in 30 seconds, it asks for the password then. The phone can never refuse you sudo, only save you the typing.
 
