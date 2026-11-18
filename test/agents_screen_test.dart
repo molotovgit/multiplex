@@ -761,6 +761,7 @@ void main() {
     await open(tester, herd);
     await tester.tap(find.text('Refactor the parser'));
     await tester.pumpAndSettle();
+    expect(find.text('It is working. Tell it more…'), findsOneWidget, reason: 'a prompt can be sent while it works');
     herd.asked.clear();
     await tester.pump(const Duration(seconds: 2));
     await tester.pump(const Duration(seconds: 2));

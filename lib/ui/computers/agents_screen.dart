@@ -1107,7 +1107,8 @@ class _AgentSheetState extends State<AgentSheet> {
                   minLines: 1,
                   maxLines: 5,
                   textInputAction: TextInputAction.newline,
-                  decoration: const InputDecoration(hintText: 'Answer it, or ask for more'),
+                  // It can be told more at any time, also in the middle of its work.
+                  decoration: InputDecoration(hintText: agent?.status == AgentStatus.working ? 'It is working. Tell it more…' : 'Answer it, or ask for more'),
                 ),
               ),
               const SizedBox(width: 8),
