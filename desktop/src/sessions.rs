@@ -745,25 +745,31 @@ pub fn attach(socket: &Path, id: &str, leave: bool, watch: bool) -> Result<Optio
     let (_, mut stream) = ask(socket, &Request::Attach { id: id.to_owned(), cols, rows })?;
     let _raw = crate::pane::Raw::on();
     let mut up = stream.try_clone()?;
-    // Input, and the size whenever it may have changed, on its own thread.
+    // This terminal's size, whenever it changes (a window resized, a
+    // phone turned, a phone's terminal saying its real size a moment
+    // after it opened): looked at a few times a second.
+    let mut sized = stream.try_clone()?;
     std::thread::spawn(move || {
-        let mut stdin = std::io::stdin().lock();
-        let mut buffer = [0u8; 4096];
         let mut last = (cols, rows);
         loop {
-            let read = match stdin.read(&mut buffer) {
-                Ok(0) => break,
-                Ok(read) => read,
-                // A signal (the window was resized) interrupts the read.
-                Err(err) if err.kind() == std::io::ErrorKind::Interrupted => 0,
-                Err(_) => break,
-            };
+            std::thread::sleep(Duration::from_millis(150));
             if let Some(now) = crate::pane::terminal_size().filter(|now| *now != last) {
                 last = now;
-                if write_frame(&mut up, b'R', &size_bytes(now.0, now.1)).is_err() {
+                if write_frame(&mut sized, b'R', &size_bytes(now.0, now.1)).is_err() {
                     break;
                 }
             }
+        }
+    });
+    // What is typed, on its own thread.
+    std::thread::spawn(move || {
+        let mut stdin = std::io::stdin().lock();
+        let mut buffer = [0u8; 4096];
+        loop {
+            let read = match stdin.read(&mut buffer) {
+                Ok(0) | Err(_) => break,
+                Ok(read) => read,
+            };
             if leave && buffer[..read].contains(&LEAVE) {
                 break;
             }
