@@ -811,6 +811,12 @@ fn serve_one(mut stream: UnixStream, shared: Shared, viewer_id: u64) -> Result<(
             let agent = terminal.agent().is_some();
             // No lines asked for: the screen as it stands, no more and no less.
             let text = if lines == 0 { terminal.screen.screen().contents() } else { terminal.text(lines.min(5000) as usize) };
+            // Its text asked for is its owner looking at it (the phone's
+            // sheet does that): what it finished is no longer unseen.
+            // (The screen alone is the computer's own look, and is not.)
+            if lines > 0 {
+                terminal.unseen = false;
+            }
             let status = terminal.status(agent);
             return answer(&mut stream, Answer { id, text: Some(text), status: agent.then_some(status), ..Answer::default() });
         }

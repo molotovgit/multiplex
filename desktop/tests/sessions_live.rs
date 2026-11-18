@@ -252,6 +252,20 @@ fn the_phone_sees_makes_uses_and_answers_what_the_server_keeps() {
     let (ok, said) = answer(&asks.mark, "choice", "3");
     assert!(!ok && said.contains("No agent"), "{said}");
 
+    // An agent that says it worked and stopped, with nobody watching, is
+    // done; once its text has been read (the phone's sheet does that), it
+    // is merely idle.
+    let quiet = PathBuf::from(&folder).join("codex");
+    std::fs::write(&quiet, "#!/bin/bash\nsleep 600\n").unwrap();
+    assert!(own.asked(&["herd", "do", "prompt", "main", &pane, &packed(&format!("bash {}", quiet.display()))]).0);
+    next(&watch, "the quiet agent", |herd| status_of(herd, &pane).is_some());
+    assert!(own.asked(&["sessions", "report", &pane, "codex", "working"]).0);
+    next(&watch, "it works", |herd| status_of(herd, &pane) == Some(AgentStatus::Working));
+    assert!(own.asked(&["sessions", "report", &pane, "codex", "idle"]).0);
+    next(&watch, "it is done", |herd| status_of(herd, &pane) == Some(AgentStatus::Done));
+    own.text(&pane);
+    next(&watch, "looked at, it is idle", |herd| status_of(herd, &pane) == Some(AgentStatus::Idle));
+
     // Its terminal closed: the workspace goes with its last terminal.
     assert!(own.asked(&["herd", "do", "close-pane", "main", &pane]).0);
     next(&watch, "the workspace gone", |herd| herd.sessions[0].workspaces.is_empty());
