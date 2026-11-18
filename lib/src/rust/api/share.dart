@@ -151,6 +151,19 @@ sealed class ShareEvent with _$ShareEvent {
   /// [`SshSession::share_approved`] and what [`signing_sign`] made.
   const factory ShareEvent.sign({required String id, required String data}) =
       ShareEvent_Sign;
+
+  /// The computer (an agent there) wants the phone to be keyboard and
+  /// mouse of the device it is connected to: `keys` is keyboard
+  /// reports of 8 bytes each, `pointer` mouse reports of 3 bytes each
+  /// (already checked to be whole); with `look`, a picture from the
+  /// camera is wanted back. Answer with [`SshSession::share_approved`]:
+  /// "ok", the picture's place, or "no: " and why.
+  const factory ShareEvent.hands({
+    required String id,
+    required Uint8List keys,
+    required Uint8List pointer,
+    required bool look,
+  }) = ShareEvent_Hands;
 }
 
 /// The text a computer read in a picture.

@@ -14,6 +14,7 @@ import '../data/models.dart';
 import '../data/vault_store.dart';
 import '../platform/agent_notices.dart';
 import '../platform/phone_bridge.dart';
+import '../platform/phone_hands.dart';
 import '../src/rust/api/desk_types.dart';
 import '../src/rust/api/herd_types.dart';
 import '../src/rust/api/sftp_types.dart';
@@ -220,6 +221,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
     ShareChannel Function(LiveSession session)? channel,
     Future<void> Function(String title, String body)? notify,
     AgentNotices? agentNotices,
+    PhoneHands hands = const AndroidPhoneHands(),
     HerdLink Function(LiveSession session)? herd,
     Duration answerWithin = const Duration(seconds: 15),
     Future<String?> Function()? readClipboard,
@@ -254,6 +256,8 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
        _channel = channel ?? SshShareChannel.new,
        _notify = notify ?? _postOnPhone,
        _agentNotices = agentNotices ?? PhoneAgentNotices(),
+       // ignore: prefer_initializing_formals
+       _hands = hands,
        _herd = herd ?? ((session) => SshHerdLink(() => session.ssh)),
        // ignore: prefer_initializing_formals
        _answerWithin = answerWithin,
@@ -399,6 +403,7 @@ class ComputerLinks extends ChangeNotifier with WidgetsBindingObserver {
   final ShareChannel Function(LiveSession session) _channel;
   final Future<void> Function(String title, String body) _notify;
   final AgentNotices _agentNotices;
+  final PhoneHands _hands;
   final HerdLink Function(LiveSession session) _herd;
   final Duration _answerWithin;
   final Future<String?> Function() _readClipboard;
@@ -734,6 +739,8 @@ class _Link {
         unawaited(_approve(id, reason, challenge));
       case ShareEvent_Sign(:final id, :final data):
         unawaited(_signFor(id, data));
+      case ShareEvent_Hands(:final id, :final keys, :final pointer, :final look):
+        unawaited(_hands(id, keys, pointer, look));
       case ShareEvent_Agent(:final name, :final title, :final workspace, :final waiting, :final session, :final pane, :final asked):
         // A coding agent on the computer wants an answer, or is done.
         unawaited(owner._tellOfAgent(host, name: name, title: title, workspace: workspace, waiting: waiting, session: session, pane: pane, asked: asked));
@@ -801,6 +808,25 @@ class _Link {
 
   /// The computer asked for a text message to be sent. It hears what
   /// became of it, whatever that is.
+  /// The computer wants this phone to type and click on the device it is
+  /// connected to, or to look at it. Only for a computer the owner has
+  /// switched this on for; every ask is answered, so the computer knows
+  /// whether it was done.
+  Future<void> _hands(String id, Uint8List keys, Uint8List pointer, bool look) async {
+    String answer;
+    if (!host.allowHands) {
+      answer = 'no: Typing through this phone is switched off for ${host.title}. It is under Sharing and notifications on the phone.';
+    } else if (look) {
+      final seen = await owner._hands.look();
+      answer = seen.path ?? 'no: ${seen.problem ?? 'No picture could be taken.'}';
+    } else {
+      final problem = await owner._hands.send(keys, pointer);
+      answer = problem == null ? 'ok' : 'no: $problem';
+    }
+    if (_closed) return;
+    unawaited(channel.approved(id, answer).catchError((Object _) {}));
+  }
+
   Future<void> _sendSms(String to, String text) async {
     final problem = host.allowSms ? await owner._phone.sendSms(to, text) : 'Sending text messages from this computer is switched off on the phone.';
     if (_closed) return;

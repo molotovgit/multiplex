@@ -54,6 +54,7 @@ class Host {
     this.pauseMediaOnCalls = true,
     this.syncDnd = false,
     this.allowSms = false,
+    this.allowHands = false,
     this.stayConnected = true,
     this.startupCommand,
     this.keepWithTmux = false,
@@ -126,6 +127,11 @@ class Host {
   /// This computer may send text messages from the phone (`multiplex sms`).
   final bool allowSms;
 
+  /// Whether this computer (an agent on it) may type and click, through
+  /// this phone, on whatever device the phone is connected to as a
+  /// keyboard and mouse. Off until the owner turns it on.
+  final bool allowHands;
+
   /// Link this phone to the computer whenever Multiplex runs, without
   /// anything being opened (paired computers only).
   final bool stayConnected;
@@ -189,6 +195,7 @@ class Host {
     bool? pauseMediaOnCalls,
     bool? syncDnd,
     bool? allowSms,
+    bool? allowHands,
     bool? stayConnected,
     String? Function()? startupCommand,
     bool? keepWithTmux,
@@ -198,108 +205,116 @@ class Host {
     bool? askUnlock,
     bool? favourite,
     String? Function()? uploadFolder,
-  }) =>
-      Host(
-        id: id,
-        label: label ?? this.label,
-        address: address ?? this.address,
-        port: port ?? this.port,
-        username: username ?? this.username,
-        groupId: groupId != null ? groupId() : this.groupId,
-        authMode: authMode ?? this.authMode,
-        password: password != null ? password() : this.password,
-        keyId: keyId != null ? keyId() : this.keyId,
-        jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
-        viaTailscale: viaTailscale ?? this.viaTailscale,
-        computer: computer ?? this.computer,
-        tailscaleName: tailscaleName != null ? tailscaleName() : this.tailscaleName,
-        mac: mac != null ? mac() : this.mac,
-        pins: pins ?? this.pins,
-        pairedAs: pairedAs != null ? pairedAs() : this.pairedAs,
-        shareClipboard: shareClipboard ?? this.shareClipboard,
-        mirrorNotifications: mirrorNotifications ?? this.mirrorNotifications,
-        mutedApps: mutedApps ?? this.mutedApps,
-        pauseMediaOnCalls: pauseMediaOnCalls ?? this.pauseMediaOnCalls,
-        syncDnd: syncDnd ?? this.syncDnd,
-        allowSms: allowSms ?? this.allowSms,
-        stayConnected: stayConnected ?? this.stayConnected,
-        startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
-        keepWithTmux: keepWithTmux ?? this.keepWithTmux,
-        forwardAgent: forwardAgent ?? this.forwardAgent,
-        colorTag: colorTag ?? this.colorTag,
-        lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
-        askUnlock: askUnlock ?? this.askUnlock,
-        favourite: favourite ?? this.favourite,
-        uploadFolder: uploadFolder != null ? uploadFolder() : this.uploadFolder,
-      );
+  }) => Host(
+    id: id,
+    label: label ?? this.label,
+    address: address ?? this.address,
+    port: port ?? this.port,
+    username: username ?? this.username,
+    groupId: groupId != null ? groupId() : this.groupId,
+    authMode: authMode ?? this.authMode,
+    password: password != null ? password() : this.password,
+    keyId: keyId != null ? keyId() : this.keyId,
+    jumpHostId: jumpHostId != null ? jumpHostId() : this.jumpHostId,
+    viaTailscale: viaTailscale ?? this.viaTailscale,
+    computer: computer ?? this.computer,
+    tailscaleName: tailscaleName != null ? tailscaleName() : this.tailscaleName,
+    mac: mac != null ? mac() : this.mac,
+    pins: pins ?? this.pins,
+    pairedAs: pairedAs != null ? pairedAs() : this.pairedAs,
+    shareClipboard: shareClipboard ?? this.shareClipboard,
+    mirrorNotifications: mirrorNotifications ?? this.mirrorNotifications,
+    mutedApps: mutedApps ?? this.mutedApps,
+    pauseMediaOnCalls: pauseMediaOnCalls ?? this.pauseMediaOnCalls,
+    syncDnd: syncDnd ?? this.syncDnd,
+    allowSms: allowSms ?? this.allowSms,
+    allowHands: allowHands ?? this.allowHands,
+    stayConnected: stayConnected ?? this.stayConnected,
+    startupCommand: startupCommand != null ? startupCommand() : this.startupCommand,
+    keepWithTmux: keepWithTmux ?? this.keepWithTmux,
+    forwardAgent: forwardAgent ?? this.forwardAgent,
+    colorTag: colorTag ?? this.colorTag,
+    lastConnectedAt: lastConnectedAt ?? this.lastConnectedAt,
+    askUnlock: askUnlock ?? this.askUnlock,
+    favourite: favourite ?? this.favourite,
+    uploadFolder: uploadFolder != null ? uploadFolder() : this.uploadFolder,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'address': address,
-        'port': port,
-        'username': username,
-        'groupId': groupId,
-        'authMode': authMode.name,
-        'password': password,
-        'keyId': keyId,
-        'jumpHostId': jumpHostId,
-        'viaTailscale': viaTailscale,
-        'computer': computer,
-        'tailscaleName': tailscaleName,
-        'mac': mac,
-        'pins': pins,
-        'pairedAs': pairedAs,
-        'shareClipboard': shareClipboard,
-        'mirrorNotifications': mirrorNotifications,
-        'mutedApps': mutedApps,
-        'pauseMediaOnCalls': pauseMediaOnCalls,
-        'syncDnd': syncDnd,
-        'allowSms': allowSms,
-        'stayConnected': stayConnected,
-        'startupCommand': startupCommand,
-        'keepWithTmux': keepWithTmux,
-        'forwardAgent': forwardAgent,
-        'colorTag': colorTag,
-        'lastConnectedAt': lastConnectedAt?.toIso8601String(),
-        'askUnlock': askUnlock,
-        'favourite': favourite,
-        'uploadFolder': uploadFolder,
-      };
+    'id': id,
+    'label': label,
+    'address': address,
+    'port': port,
+    'username': username,
+    'groupId': groupId,
+    'authMode': authMode.name,
+    'password': password,
+    'keyId': keyId,
+    'jumpHostId': jumpHostId,
+    'viaTailscale': viaTailscale,
+    'computer': computer,
+    'tailscaleName': tailscaleName,
+    'mac': mac,
+    'pins': pins,
+    'pairedAs': pairedAs,
+    'shareClipboard': shareClipboard,
+    'mirrorNotifications': mirrorNotifications,
+    'mutedApps': mutedApps,
+    'pauseMediaOnCalls': pauseMediaOnCalls,
+    'syncDnd': syncDnd,
+    'allowSms': allowSms,
+    'allowHands': allowHands,
+    'stayConnected': stayConnected,
+    'startupCommand': startupCommand,
+    'keepWithTmux': keepWithTmux,
+    'forwardAgent': forwardAgent,
+    'colorTag': colorTag,
+    'lastConnectedAt': lastConnectedAt?.toIso8601String(),
+    'askUnlock': askUnlock,
+    'favourite': favourite,
+    'uploadFolder': uploadFolder,
+  };
 
   factory Host.fromJson(Map<String, dynamic> j) => Host(
-        id: Json.str(j, 'id'),
-        label: Json.str(j, 'label'),
-        address: Json.str(j, 'address'),
-        port: Json.integer(j, 'port', 22),
-        username: Json.str(j, 'username'),
-        groupId: Json.strOrNull(j, 'groupId'),
-        authMode: AuthMode.values.asNameMap()[j['authMode']] ?? AuthMode.password,
-        password: Json.strOrNull(j, 'password'),
-        keyId: Json.strOrNull(j, 'keyId'),
-        jumpHostId: Json.strOrNull(j, 'jumpHostId'),
-        viaTailscale: Json.boolean(j, 'viaTailscale', false),
-        computer: Json.boolean(j, 'computer', false),
-        tailscaleName: Json.strOrNull(j, 'tailscaleName'),
-        mac: Json.strOrNull(j, 'mac'),
-        pins: [for (final p in (j['pins'] as List?) ?? const []) if (p is String) p],
-        pairedAs: Json.strOrNull(j, 'pairedAs'),
-        shareClipboard: Json.boolean(j, 'shareClipboard', true),
-        mirrorNotifications: Json.boolean(j, 'mirrorNotifications', false),
-        mutedApps: [for (final a in (j['mutedApps'] as List?) ?? const []) if (a is String) a],
-        pauseMediaOnCalls: Json.boolean(j, 'pauseMediaOnCalls', true),
-        syncDnd: Json.boolean(j, 'syncDnd', false),
-        allowSms: Json.boolean(j, 'allowSms', false),
-        stayConnected: Json.boolean(j, 'stayConnected', true),
-        startupCommand: Json.strOrNull(j, 'startupCommand'),
-        keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
-        forwardAgent: Json.boolean(j, 'forwardAgent', false),
-        colorTag: Json.integer(j, 'colorTag', 0),
-        lastConnectedAt: Json.time(j, 'lastConnectedAt'),
-        askUnlock: Json.boolean(j, 'askUnlock', false),
-        favourite: Json.boolean(j, 'favourite', false),
-        uploadFolder: Json.strOrNull(j, 'uploadFolder'),
-      );
+    id: Json.str(j, 'id'),
+    label: Json.str(j, 'label'),
+    address: Json.str(j, 'address'),
+    port: Json.integer(j, 'port', 22),
+    username: Json.str(j, 'username'),
+    groupId: Json.strOrNull(j, 'groupId'),
+    authMode: AuthMode.values.asNameMap()[j['authMode']] ?? AuthMode.password,
+    password: Json.strOrNull(j, 'password'),
+    keyId: Json.strOrNull(j, 'keyId'),
+    jumpHostId: Json.strOrNull(j, 'jumpHostId'),
+    viaTailscale: Json.boolean(j, 'viaTailscale', false),
+    computer: Json.boolean(j, 'computer', false),
+    tailscaleName: Json.strOrNull(j, 'tailscaleName'),
+    mac: Json.strOrNull(j, 'mac'),
+    pins: [
+      for (final p in (j['pins'] as List?) ?? const [])
+        if (p is String) p,
+    ],
+    pairedAs: Json.strOrNull(j, 'pairedAs'),
+    shareClipboard: Json.boolean(j, 'shareClipboard', true),
+    mirrorNotifications: Json.boolean(j, 'mirrorNotifications', false),
+    mutedApps: [
+      for (final a in (j['mutedApps'] as List?) ?? const [])
+        if (a is String) a,
+    ],
+    pauseMediaOnCalls: Json.boolean(j, 'pauseMediaOnCalls', true),
+    syncDnd: Json.boolean(j, 'syncDnd', false),
+    allowSms: Json.boolean(j, 'allowSms', false),
+    allowHands: Json.boolean(j, 'allowHands', false),
+    stayConnected: Json.boolean(j, 'stayConnected', true),
+    startupCommand: Json.strOrNull(j, 'startupCommand'),
+    keepWithTmux: Json.boolean(j, 'keepWithTmux', false),
+    forwardAgent: Json.boolean(j, 'forwardAgent', false),
+    colorTag: Json.integer(j, 'colorTag', 0),
+    lastConnectedAt: Json.time(j, 'lastConnectedAt'),
+    askUnlock: Json.boolean(j, 'askUnlock', false),
+    favourite: Json.boolean(j, 'favourite', false),
+    uploadFolder: Json.strOrNull(j, 'uploadFolder'),
+  );
 }
 
 /// A folder for hosts.
@@ -343,40 +358,40 @@ class StoredKey {
   final DateTime createdAt;
 
   StoredKey copyWith({String? name, String? Function()? passphrase}) => StoredKey(
-        id: id,
-        name: name ?? this.name,
-        privatePem: privatePem,
-        publicOpenssh: publicOpenssh,
-        fingerprint: fingerprint,
-        algorithm: algorithm,
-        passphrase: passphrase != null ? passphrase() : this.passphrase,
-        encrypted: encrypted,
-        createdAt: createdAt,
-      );
+    id: id,
+    name: name ?? this.name,
+    privatePem: privatePem,
+    publicOpenssh: publicOpenssh,
+    fingerprint: fingerprint,
+    algorithm: algorithm,
+    passphrase: passphrase != null ? passphrase() : this.passphrase,
+    encrypted: encrypted,
+    createdAt: createdAt,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'privatePem': privatePem,
-        'publicOpenssh': publicOpenssh,
-        'fingerprint': fingerprint,
-        'algorithm': algorithm,
-        'passphrase': passphrase,
-        'encrypted': encrypted,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'privatePem': privatePem,
+    'publicOpenssh': publicOpenssh,
+    'fingerprint': fingerprint,
+    'algorithm': algorithm,
+    'passphrase': passphrase,
+    'encrypted': encrypted,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory StoredKey.fromJson(Map<String, dynamic> j) => StoredKey(
-        id: Json.str(j, 'id'),
-        name: Json.str(j, 'name'),
-        privatePem: Json.str(j, 'privatePem'),
-        publicOpenssh: Json.str(j, 'publicOpenssh'),
-        fingerprint: Json.str(j, 'fingerprint'),
-        algorithm: Json.str(j, 'algorithm'),
-        passphrase: Json.strOrNull(j, 'passphrase'),
-        encrypted: Json.boolean(j, 'encrypted', false),
-        createdAt: Json.time(j, 'createdAt') ?? DateTime.now(),
-      );
+    id: Json.str(j, 'id'),
+    name: Json.str(j, 'name'),
+    privatePem: Json.str(j, 'privatePem'),
+    publicOpenssh: Json.str(j, 'publicOpenssh'),
+    fingerprint: Json.str(j, 'fingerprint'),
+    algorithm: Json.str(j, 'algorithm'),
+    passphrase: Json.strOrNull(j, 'passphrase'),
+    encrypted: Json.boolean(j, 'encrypted', false),
+    createdAt: Json.time(j, 'createdAt') ?? DateTime.now(),
+  );
 }
 
 /// A saved command.
@@ -397,27 +412,27 @@ class Snippet {
   final Map<String, String> lastValues;
 
   Snippet copyWith({String? name, String? command, bool? runImmediately, Map<String, String>? lastValues}) => Snippet(
-        id: id,
-        name: name ?? this.name,
-        command: command ?? this.command,
-        runImmediately: runImmediately ?? this.runImmediately,
-        lastValues: lastValues ?? this.lastValues,
-      );
+    id: id,
+    name: name ?? this.name,
+    command: command ?? this.command,
+    runImmediately: runImmediately ?? this.runImmediately,
+    lastValues: lastValues ?? this.lastValues,
+  );
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'command': command, 'runImmediately': runImmediately, 'lastValues': lastValues};
 
   factory Snippet.fromJson(Map<String, dynamic> j) => Snippet(
-        id: Json.str(j, 'id'),
-        name: Json.str(j, 'name'),
-        command: Json.str(j, 'command'),
-        runImmediately: Json.boolean(j, 'runImmediately', true),
-        lastValues: j['lastValues'] is Map
-            ? {
-                for (final e in (j['lastValues'] as Map).entries)
-                  if (e.key is String && e.value is String) e.key as String: e.value as String,
-              }
-            : const {},
-      );
+    id: Json.str(j, 'id'),
+    name: Json.str(j, 'name'),
+    command: Json.str(j, 'command'),
+    runImmediately: Json.boolean(j, 'runImmediately', true),
+    lastValues: j['lastValues'] is Map
+        ? {
+            for (final e in (j['lastValues'] as Map).entries)
+              if (e.key is String && e.value is String) e.key as String: e.value as String,
+          }
+        : const {},
+  );
 }
 
 /// A server identity the user accepted.
@@ -435,22 +450,22 @@ class KnownHost {
   String get endpoint => '$host:$port';
 
   Map<String, dynamic> toJson() => {
-        'host': host,
-        'port': port,
-        'publicKey': publicKey,
-        'fingerprint': fingerprint,
-        'algorithm': algorithm,
-        'addedAt': addedAt.toIso8601String(),
-      };
+    'host': host,
+    'port': port,
+    'publicKey': publicKey,
+    'fingerprint': fingerprint,
+    'algorithm': algorithm,
+    'addedAt': addedAt.toIso8601String(),
+  };
 
   factory KnownHost.fromJson(Map<String, dynamic> j) => KnownHost(
-        host: Json.str(j, 'host'),
-        port: Json.integer(j, 'port', 22),
-        publicKey: Json.str(j, 'publicKey'),
-        fingerprint: Json.str(j, 'fingerprint'),
-        algorithm: Json.str(j, 'algorithm'),
-        addedAt: Json.time(j, 'addedAt') ?? DateTime.now(),
-      );
+    host: Json.str(j, 'host'),
+    port: Json.integer(j, 'port', 22),
+    publicKey: Json.str(j, 'publicKey'),
+    fingerprint: Json.str(j, 'fingerprint'),
+    algorithm: Json.str(j, 'algorithm'),
+    addedAt: Json.time(j, 'addedAt') ?? DateTime.now(),
+  );
 }
 
 /// A saved port forward, tied to a host.
@@ -479,41 +494,41 @@ class ForwardRule {
 
   /// Short description such as "L 8080 → db:5432".
   String get summary => switch (kind) {
-        TunnelKind.local => 'Local $bindPort → $targetHost:$targetPort',
-        TunnelKind.remote => 'Remote $bindPort → $targetHost:$targetPort',
-        TunnelKind.dynamic_ => 'SOCKS5 on $bindHost:$bindPort',
-      };
+    TunnelKind.local => 'Local $bindPort → $targetHost:$targetPort',
+    TunnelKind.remote => 'Remote $bindPort → $targetHost:$targetPort',
+    TunnelKind.dynamic_ => 'SOCKS5 on $bindHost:$bindPort',
+  };
 
   ForwardRule copyWith({TunnelKind? kind, String? label, String? bindHost, int? bindPort, String? targetHost, int? targetPort}) => ForwardRule(
-        id: id,
-        hostId: hostId,
-        kind: kind ?? this.kind,
-        label: label ?? this.label,
-        bindHost: bindHost ?? this.bindHost,
-        bindPort: bindPort ?? this.bindPort,
-        targetHost: targetHost ?? this.targetHost,
-        targetPort: targetPort ?? this.targetPort,
-      );
+    id: id,
+    hostId: hostId,
+    kind: kind ?? this.kind,
+    label: label ?? this.label,
+    bindHost: bindHost ?? this.bindHost,
+    bindPort: bindPort ?? this.bindPort,
+    targetHost: targetHost ?? this.targetHost,
+    targetPort: targetPort ?? this.targetPort,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'hostId': hostId,
-        'kind': kind.name,
-        'label': label,
-        'bindHost': bindHost,
-        'bindPort': bindPort,
-        'targetHost': targetHost,
-        'targetPort': targetPort,
-      };
+    'id': id,
+    'hostId': hostId,
+    'kind': kind.name,
+    'label': label,
+    'bindHost': bindHost,
+    'bindPort': bindPort,
+    'targetHost': targetHost,
+    'targetPort': targetPort,
+  };
 
   factory ForwardRule.fromJson(Map<String, dynamic> j) => ForwardRule(
-        id: Json.str(j, 'id'),
-        hostId: Json.str(j, 'hostId'),
-        kind: TunnelKind.values.asNameMap()[j['kind']] ?? TunnelKind.local,
-        label: Json.str(j, 'label'),
-        bindHost: Json.str(j, 'bindHost', '127.0.0.1'),
-        bindPort: Json.integer(j, 'bindPort', 0),
-        targetHost: Json.str(j, 'targetHost', '127.0.0.1'),
-        targetPort: Json.integer(j, 'targetPort', 0),
-      );
+    id: Json.str(j, 'id'),
+    hostId: Json.str(j, 'hostId'),
+    kind: TunnelKind.values.asNameMap()[j['kind']] ?? TunnelKind.local,
+    label: Json.str(j, 'label'),
+    bindHost: Json.str(j, 'bindHost', '127.0.0.1'),
+    bindPort: Json.integer(j, 'bindPort', 0),
+    targetHost: Json.str(j, 'targetHost', '127.0.0.1'),
+    targetPort: Json.integer(j, 'targetPort', 0),
+  );
 }

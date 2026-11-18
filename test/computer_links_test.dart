@@ -9,6 +9,7 @@ import 'package:multiplex/data/vault_backend.dart';
 import 'package:multiplex/data/vault_store.dart';
 import 'package:multiplex/platform/agent_notices.dart';
 import 'package:multiplex/platform/phone_bridge.dart';
+import 'package:multiplex/platform/phone_hands.dart';
 import 'package:multiplex/sessions/computer_links.dart';
 import 'package:multiplex/sessions/herd_controller.dart';
 import 'package:multiplex/sessions/phone_outbox.dart';
@@ -25,6 +26,22 @@ class _Ssh implements SshSession {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+/// The phone as a keyboard, written down.
+class _Hands implements PhoneHands {
+  final sent = <String>[];
+  String? problem;
+
+  @override
+  Future<String?> send(Uint8List keys, Uint8List pointer) async {
+    if (problem != null) return problem;
+    sent.add('${keys.length} bytes of keys, ${pointer.length} of pointer');
+    return null;
+  }
+
+  @override
+  Future<({String? path, String? problem})> look() async => (path: null, problem: 'The camera is not looking at anything.');
 }
 
 /// The phone's notifications about agents, written down.
@@ -230,6 +247,7 @@ void main() {
   late _Phone phone;
   late _Updater updater;
   late _AgentNotices agentNotices;
+  late _Hands hands;
   late _AnsweredHerd herd;
   final dialled = <String>[];
   var reachable = false;
@@ -253,6 +271,7 @@ void main() {
     computer = _Computer();
     notices = [];
     agentNotices = _AgentNotices();
+    hands = _Hands();
     herd = _AnsweredHerd();
     phoneClipboard = 'on the phone already';
     phonePicture = null;
@@ -285,6 +304,7 @@ void main() {
       channel: (_) => computer,
       notify: (title, body) async => notices.add('$title | $body'),
       agentNotices: agentNotices,
+      hands: hands,
       herd: (_) => herd,
       answerWithin: const Duration(milliseconds: 400),
       readClipboard: () async => phoneClipboard,
@@ -581,6 +601,37 @@ void main() {
     computer.events.add(const ShareEvent.sms(to: '+15550100', text: 'Again'));
     await Future<void>.delayed(Duration.zero);
     expect(computer.log, ['notice Messages: Not sent to +15550100']);
+  });
+
+  test('typing through the phone: only for a computer it is switched on for, and every ask is answered', () async {
+    await connect();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    final keys = Uint8List.fromList([2, 0, 0x0b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    final none = Uint8List(0);
+    // Off, as it is until the owner says otherwise: nothing is typed, and the computer hears why.
+    computer.events.add(ShareEvent.hands(id: 'aa01', keys: keys, pointer: none, look: false));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(hands.sent, isEmpty);
+    expect(computer.log.single, startsWith('approval aa01: no: Typing through this phone is switched off for Desk.'));
+
+    computer.log.clear();
+    store.saveHost(store.host('c')!.copyWith(allowHands: true));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    computer.events.add(ShareEvent.hands(id: 'aa02', keys: keys, pointer: Uint8List.fromList([1, 0, 0, 0, 0, 0]), look: false));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(hands.sent, ['16 bytes of keys, 6 of pointer']);
+    expect(computer.log, ['approval aa02: ok']);
+    // No device is connected: said to whoever asked.
+    computer.log.clear();
+    hands.problem = 'The phone is not connected to a device as its keyboard.';
+    computer.events.add(ShareEvent.hands(id: 'aa03', keys: keys, pointer: none, look: false));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(computer.log, ['approval aa03: no: The phone is not connected to a device as its keyboard.']);
+    // A look: the picture's place, or why there is none.
+    computer.log.clear();
+    computer.events.add(ShareEvent.hands(id: 'aa04', keys: none, pointer: none, look: true));
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(computer.log, ['approval aa04: no: The camera is not looking at anything.']);
   });
 
   group('coding agents', () {

@@ -49,6 +49,13 @@ pub enum ShareEvent {
     /// [`signing_describe`] says what for; answer with
     /// [`SshSession::share_approved`] and what [`signing_sign`] made.
     Sign { id: String, data: String },
+    /// The computer (an agent there) wants the phone to be keyboard and
+    /// mouse of the device it is connected to: `keys` is keyboard
+    /// reports of 8 bytes each, `pointer` mouse reports of 3 bytes each
+    /// (already checked to be whole); with `look`, a picture from the
+    /// camera is wanted back. Answer with [`SshSession::share_approved`]:
+    /// "ok", the picture's place, or "no: " and why.
+    Hands { id: String, keys: Vec<u8>, pointer: Vec<u8>, look: bool },
 }
 
 /// A picture from a clipboard.
@@ -250,6 +257,12 @@ impl ShareLink {
                 Ok(id) if data.len() <= multiplex_proto::sign::MAX_SIGN * 2 => sink.add(ShareEvent::Sign { id, data }).is_ok(),
                 _ => true,
             },
+            Ok(proto::LinkEvent::Hands { id, keys, pointer, look }) => {
+                match (proto::clean_id(&id), multiplex_proto::hid::from_hex::<8>(&keys), multiplex_proto::hid::from_hex::<3>(&pointer)) {
+                    (Ok(id), Ok(keys), Ok(pointer)) => sink.add(ShareEvent::Hands { id, keys: keys.concat(), pointer: pointer.concat(), look }).is_ok(),
+                    _ => true,
+                }
+            }
             // Not an event (a notice from the shell, say): keep listening.
             Err(_) => true,
         }));

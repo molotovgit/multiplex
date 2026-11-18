@@ -166,6 +166,14 @@ class _ComputerSharingScreenState extends State<ComputerSharingScreen> with Widg
                   value: host.allowSms,
                   onChanged: _setSms,
                 ),
+                SwitchListTile(
+                  title: Text('Let ${host.title} type through this phone'),
+                  subtitle: const Text(
+                    'Its "multiplex device" command (an agent, say) then types and clicks on whatever device this phone is connected to as a keyboard. Off unless you want it',
+                  ),
+                  value: host.allowHands,
+                  onChanged: (on) => store.saveHost(host.copyWith(allowHands: on)),
+                ),
                 const SectionHeader('Notifications'),
                 SwitchListTile(
                   title: Text('Show this phone\'s notifications on ${host.title}'),

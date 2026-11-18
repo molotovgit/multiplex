@@ -9717,6 +9717,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           id: dco_decode_String(raw[1]),
           data: dco_decode_String(raw[2]),
         );
+      case 9:
+        return ShareEvent_Hands(
+          id: dco_decode_String(raw[1]),
+          keys: dco_decode_list_prim_u_8_strict(raw[2]),
+          pointer: dco_decode_list_prim_u_8_strict(raw[3]),
+          look: dco_decode_bool(raw[4]),
+        );
       default:
         throw Exception("unreachable");
     }
@@ -12198,6 +12205,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         var var_id = sse_decode_String(deserializer);
         var var_data = sse_decode_String(deserializer);
         return ShareEvent_Sign(id: var_id, data: var_data);
+      case 9:
+        var var_id = sse_decode_String(deserializer);
+        var var_keys = sse_decode_list_prim_u_8_strict(deserializer);
+        var var_pointer = sse_decode_list_prim_u_8_strict(deserializer);
+        var var_look = sse_decode_bool(deserializer);
+        return ShareEvent_Hands(
+          id: var_id,
+          keys: var_keys,
+          pointer: var_pointer,
+          look: var_look,
+        );
       default:
         throw UnimplementedError('');
     }
@@ -14628,6 +14646,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(8, serializer);
         sse_encode_String(id, serializer);
         sse_encode_String(data, serializer);
+      case ShareEvent_Hands(
+        id: final id,
+        keys: final keys,
+        pointer: final pointer,
+        look: final look,
+      ):
+        sse_encode_i_32(9, serializer);
+        sse_encode_String(id, serializer);
+        sse_encode_list_prim_u_8_strict(keys, serializer);
+        sse_encode_list_prim_u_8_strict(pointer, serializer);
+        sse_encode_bool(look, serializer);
     }
   }
 

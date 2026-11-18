@@ -12184,6 +12184,18 @@ impl SseDecode for crate::api::share::ShareEvent {
                     data: var_data,
                 };
             }
+            9 => {
+                let mut var_id = <String>::sse_decode(deserializer);
+                let mut var_keys = <Vec<u8>>::sse_decode(deserializer);
+                let mut var_pointer = <Vec<u8>>::sse_decode(deserializer);
+                let mut var_look = <bool>::sse_decode(deserializer);
+                return crate::api::share::ShareEvent::Hands {
+                    id: var_id,
+                    keys: var_keys,
+                    pointer: var_pointer,
+                    look: var_look,
+                };
+            }
             _ => {
                 unimplemented!("");
             }
@@ -14765,6 +14777,19 @@ impl flutter_rust_bridge::IntoDart for crate::api::share::ShareEvent {
                 data.into_into_dart().into_dart(),
             ]
             .into_dart(),
+            crate::api::share::ShareEvent::Hands {
+                id,
+                keys,
+                pointer,
+                look,
+            } => [
+                9.into_dart(),
+                id.into_into_dart().into_dart(),
+                keys.into_into_dart().into_dart(),
+                pointer.into_into_dart().into_dart(),
+                look.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -16936,6 +16961,18 @@ impl SseEncode for crate::api::share::ShareEvent {
                 <i32>::sse_encode(8, serializer);
                 <String>::sse_encode(id, serializer);
                 <String>::sse_encode(data, serializer);
+            }
+            crate::api::share::ShareEvent::Hands {
+                id,
+                keys,
+                pointer,
+                look,
+            } => {
+                <i32>::sse_encode(9, serializer);
+                <String>::sse_encode(id, serializer);
+                <Vec<u8>>::sse_encode(keys, serializer);
+                <Vec<u8>>::sse_encode(pointer, serializer);
+                <bool>::sse_encode(look, serializer);
             }
             _ => {
                 unimplemented!("");
