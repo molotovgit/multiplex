@@ -72,8 +72,8 @@ The paired phone uses these over SSH:
   multiplex share …           The inbox, the clipboard, opening a link
   multiplex link [<phone>]    What waits for the phone, and clipboard changes, as lines
   multiplex phone …           The phone's battery, and its notifications for this screen
-  multiplex agents            Coding agents under herdr, with their state
-  multiplex herd …            herdr's sessions, tabs and panes: state, watch (again on every change), news, do
+  multiplex agents            Coding agents in the terminals Multiplex keeps, with their state
+  multiplex herd …            What the session server keeps, for the phone: state, watch (again on every change), news, do
   multiplex here              This terminal, kept running by Multiplex and reachable from the phone
   multiplex sessions …        The terminals Multiplex keeps: serve, list, attach <id>, kill <id>
   multiplex herd pane <session> <pane>   One pane in this terminal, at this terminal's size (Ctrl+\\ leaves)

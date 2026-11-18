@@ -736,8 +736,8 @@ pub fn link(phone: &str) -> Result<()> {
 
     // The clipboard is watched by wl-paste, which says a word per change.
     let (changes, changed) = mpsc::channel::<Woke>();
-    // Coding agents (under herdr): the phone hears when one starts
-    // waiting for an answer or finishes, told by herdr as it happens.
+    // Coding agents in the terminals Multiplex keeps: the phone hears when one starts
+    // waiting for an answer or finishes, told by the session server as it happens.
     // Only to a phone that may see them; what one asks, only to a phone
     // that may use the terminals it is read from.
     if allowed("AGENTS") {
